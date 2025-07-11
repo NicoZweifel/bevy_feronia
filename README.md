@@ -28,13 +28,12 @@ https://github.com/user-attachments/assets/2d3f1cd7-611c-41dc-9993-d52c22cab7c5.
 ### Foliage
 `cargo run --example cargo run --example extended_material_foliage`
 
-https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
+https://github.com/user-attachments/assets/4b71415e-63d7-4a5b-b85a-9cb4408abdab
 
 ### Foliage complex
 `cargo run --example cargo run --example extended_material_foliage_complex`
 
-https://github.com/user-attachments/assets/4b71415e-63d7-4a5b-b85a-9cb4408abdab
-
+https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
 
 
 
