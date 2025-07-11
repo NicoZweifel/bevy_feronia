@@ -42,7 +42,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let noise_texture_sampler =  bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif
 
-    // --- PRE-CALCULATE INSTANCE & UNIFORM DATA ---
+    // --- INSTANCE ---
     var instance: InstanceInfo;
     let camera_world_pos = view.world_position.xyz;
     instance.world_from_local = get_world_from_local(vertex.instance_index);
@@ -67,6 +67,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
     noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
 
+    // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(
         wind,
         noise,
