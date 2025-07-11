@@ -76,7 +76,10 @@ impl From<&Wind> for WindUniform {
             bop_speed: val.bop_speed,
             bop_strength: val.bop_strength,
             twist_strength: val.twist_strength,
-            enable_billboarding: val.enable_billboarding as u32,
+            enable_billboarding: match val.enable_billboarding {
+                true => 1,
+                _ => 0,
+            },
         }
     }
 }

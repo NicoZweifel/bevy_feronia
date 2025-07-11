@@ -43,7 +43,7 @@ fn calculate_vertex_displacement(
     // 2. Billboarding
     var base_world_pos= (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
 
-    if wind.enable_billboarding == 1u {
+    if (wind.enable_billboarding == 1u) {
         let billboarded_pos = instance.instance_position.xyz + (instance.billboard_matrix * (twisted_local_pos * instance.scale));
         base_world_pos= mix(base_world_pos, billboarded_pos, f32(wind.enable_billboarding));
     }
@@ -54,8 +54,6 @@ fn calculate_vertex_displacement(
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
     var total_displacement =mix(mix(main_wind, s_curve, lod_fade),bop,lod_fade );
-   
-
 
     return base_world_pos + total_displacement;
 }
