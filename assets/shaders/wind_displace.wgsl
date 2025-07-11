@@ -40,12 +40,13 @@ fn calculate_vertex_displacement(
 
     let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
 /* 
-    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
     let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
     var total_displacement =mix(mix(main_wind, s_curve, lod_fade),bop,lod_fade );
 */
+
+    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
 
     // 2. Billboarding
     var base_world_pos= (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
@@ -60,7 +61,7 @@ fn calculate_vertex_displacement(
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
 
-    let total_displacement = main_wind + s_curve + bop;
+    let total_displacement = mix(main_wind,  s_curve + bop, lod_fade);
 
     return base_world_pos + total_displacement;
 }
