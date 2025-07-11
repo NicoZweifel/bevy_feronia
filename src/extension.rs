@@ -59,27 +59,28 @@ pub struct WindAffectedExtension {
 }
 
 impl From<&Wind> for WindUniform {
-    fn from(val: &Wind) -> Self {
+    fn from(wind: &Wind) -> Self {
         WindUniform {
-            direction: val.direction,
-            strength: val.strength,
-            noise_scale: val.noise_scale,
-            scroll_speed: val.scroll_speed,
-            bend_exponent: val.bend_exponent,
-            round_exponent: val.round_exponent,
-            micro_strength: val.micro_strength,
-            micro_noise_scale: val.micro_noise_scale,
-            micro_scroll_speed: val.micro_scroll_speed,
-            s_curve_speed: val.s_curve_speed,
-            s_curve_strength: val.s_curve_strength,
-            s_curve_frequency: val.s_curve_frequency,
-            bop_speed: val.bop_speed,
-            bop_strength: val.bop_strength,
-            twist_strength: val.twist_strength,
-            enable_billboarding: match val.enable_billboarding {
+            direction: wind.direction,
+            strength: wind.strength,
+            noise_scale: wind.noise_scale,
+            scroll_speed: wind.scroll_speed,
+            bend_exponent: wind.bend_exponent,
+            round_exponent: wind.round_exponent,
+            micro_strength: wind.micro_strength,
+            micro_noise_scale: wind.micro_noise_scale,
+            micro_scroll_speed: wind.micro_scroll_speed,
+            s_curve_speed: wind.s_curve_speed,
+            s_curve_strength: wind.s_curve_strength,
+            s_curve_frequency: wind.s_curve_frequency,
+            bop_speed: wind.bop_speed,
+            bop_strength: wind.bop_strength,
+            twist_strength: wind.twist_strength,
+            enable_billboarding: match wind.enable_billboarding {
                 true => 1,
                 _ => 0,
             },
+            lod_threshold: wind.lod_threshold,
         }
     }
 }

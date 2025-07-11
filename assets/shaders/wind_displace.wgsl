@@ -46,7 +46,7 @@ fn calculate_vertex_displacement(
     var total_displacement =mix(mix(main_wind, s_curve, lod_fade),bop,lod_fade );
 */
 
-    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
+    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold * 2.0, dist_to_camera);
 
     // 2. Billboarding
     var base_world_pos= (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
@@ -61,7 +61,7 @@ fn calculate_vertex_displacement(
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
 
-    let total_displacement = mix(main_wind,  s_curve + bop, lod_fade);
+    let total_displacement = main_wind + s_curve + bop;
 
     return base_world_pos + total_displacement;
 }
@@ -86,7 +86,6 @@ fn displace_vertex_and_calc_normal(
 
     // CALCULATE NORMALS
 #ifdef VERTEX_NORMALS
-    let lod_threshold = 75.0;
 
     // Calculate the normal by displacing neighbors
     let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance,dist_to_camera);
@@ -99,7 +98,7 @@ fn displace_vertex_and_calc_normal(
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
     // Smoothly blend between the two normals based on distance to avoid a hard pop/ring.
-    let lod_fade = smoothstep(lod_threshold, lod_threshold - 50.0, dist_to_camera);
+    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
     out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
 #endif
 

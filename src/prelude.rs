@@ -62,6 +62,7 @@ pub struct Wind {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: bool,
+    pub lod_threshold: f32
 }
 
 #[derive(ShaderType, Clone)]
@@ -82,6 +83,7 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: u32,
+    pub lod_threshold: f32
 }
 
 impl Default for Wind {
@@ -104,6 +106,7 @@ impl Default for Wind {
             bop_strength: 0.001,
             twist_strength: 0.1,
             enable_billboarding: false,
+            lod_threshold: 75.0
         }
     }
 }

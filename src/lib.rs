@@ -29,7 +29,7 @@ impl<M: Material, W: WindAffectable<M, W> + Material> Plugin for WindPlugin<M, W
             .add_systems(Startup, setup_wind_texture)
             .add_systems(
                 Update,
-                (setup_wind_affected::<M, W>, update_materials::<M, W>),
+                (setup_wind_affected::<M, W>, update_materials::<M, W>.run_if(resource_changed::<Wind>)),
             );
     }
 }
