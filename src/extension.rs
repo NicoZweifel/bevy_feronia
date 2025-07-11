@@ -18,7 +18,8 @@ impl Plugin for ExtendedMaterialWindPlugin {
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
 pub trait WindAffectable<M: Material, R: Material> {
-    fn create_material(base: M, wind: Wind, wind_noise_texture: &Res<WindTexture>) -> R;
+    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
+    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
 }
 
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
@@ -27,14 +28,21 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     fn create_material(
         base: StandardMaterial,
         wind: Wind,
-        wind_noise_texture: &Res<WindTexture>,
+        noise_texture: Handle<Image>,
     ) -> WindAffectedExtendedMaterial {
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
-                noise_texture: wind_noise_texture.0.clone(),
+                noise_texture,
                 wind,
             },
+        }
+    }
+
+    fn update_material(mut materials: ResMut<Assets<WindAffectedExtendedMaterial>>, wind: Wind) {
+        for (_, material) in materials.iter_mut() {
+            let ext = &mut material.extension;
+            ext.wind = wind.clone();
         }
     }
 }

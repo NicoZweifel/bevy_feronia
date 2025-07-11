@@ -1,21 +1,39 @@
 use std::f32::consts::FRAC_PI_2;
 
-use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*};
+use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::CursorGrabMode};
+use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
 
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_camera);
+        app.add_systems(
+            PreUpdate,
+            (block_mouse_input, block_keyboard_input)
+                .after(EguiPreUpdateSet::ProcessInput)
+                .before(EguiPreUpdateSet::BeginPass),
+        )
+        .add_systems(Update, (enable_cursor, disable_cursor, move_camera));
     }
+}
+
+#[derive(Component, Default)]
+pub struct Controller {
+    pub enabled: bool,
 }
 
 fn move_camera(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut transform: Single<&mut Transform, With<Camera3d>>,
+    single: Single<(&mut Transform, &Controller)>,
     accumulated_mouse_motion: Res<AccumulatedMouseMotion>,
 ) {
+    let (mut transform, controller) = single.into_inner();
+
+    if !controller.enabled {
+        return;
+    };
+
     let mut direction = Vec3::ZERO;
 
     if keyboard_input.pressed(KeyCode::KeyW) {
@@ -50,5 +68,64 @@ fn move_camera(
         let pitch = (pitch + delta_pitch).clamp(-PITCH_LIMIT, PITCH_LIMIT);
 
         transform.rotation = Quat::from_euler(EulerRot::YXZ, yaw, pitch, roll);
+    }
+}
+
+fn disable_cursor(
+    btn: Res<ButtonInput<MouseButton>>,
+    mut window_query: Query<&mut Window>,
+    controller: Single<&mut Controller>,
+) {
+    if !btn.just_pressed(MouseButton::Left) {
+        return;
+    };
+
+    for mut window in &mut window_query {
+        window.cursor_options.grab_mode = CursorGrabMode::Locked;
+        window.cursor_options.visible = false;
+    }
+
+    let mut controller = controller.into_inner();
+    controller.enabled = true;
+}
+
+fn enable_cursor(
+    key: Res<ButtonInput<KeyCode>>,
+    mut window_query: Query<&mut Window>,
+    controller: Single<&mut Controller>,
+) {
+    if !key.just_pressed(KeyCode::Escape) {
+        return;
+    };
+
+    for mut window in &mut window_query {
+        window.cursor_options.grab_mode = CursorGrabMode::None;
+        window.cursor_options.visible = true;
+    }
+
+    let mut controller = controller.into_inner();
+    controller.enabled = false;
+}
+
+pub fn block_mouse_input(mut mouse: ResMut<ButtonInput<MouseButton>>, mut contexts: EguiContexts) {
+    let Some(context) = contexts.try_ctx_mut() else {
+        return;
+    };
+
+    if context.is_pointer_over_area() || context.wants_pointer_input() {
+        mouse.reset_all();
+    }
+}
+
+pub fn block_keyboard_input(
+    mut keyboard_keycode: ResMut<ButtonInput<KeyCode>>,
+    mut contexts: EguiContexts,
+) {
+    let Some(context) = contexts.try_ctx_mut() else {
+        return;
+    };
+
+    if context.wants_keyboard_input() {
+        keyboard_keycode.reset_all();
     }
 }

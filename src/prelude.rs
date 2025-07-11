@@ -44,6 +44,7 @@ pub struct WindAffected;
 pub struct WindTexture(pub Handle<Image>);
 
 #[derive(Resource, Debug, Clone, Reflect)]
+#[reflect(Resource)]
 pub struct Wind {
     pub direction: Vec2,
     pub strength: f32,

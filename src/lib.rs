@@ -24,9 +24,13 @@ impl<M: Material, W: WindAffectable<M, W> + Material> Default for WindPlugin<M, 
 impl<M: Material, W: WindAffectable<M, W> + Material> Plugin for WindPlugin<M, W> {
     fn build(&self, app: &mut App) {
         app.init_resource::<Wind>()
+            .register_type::<Wind>()
             .init_resource::<WindAffectedTypes<W>>()
             .add_systems(Startup, setup_wind_texture)
-            .add_systems(Update, setup_wind_affected::<M, W>);
+            .add_systems(
+                Update,
+                (setup_wind_affected::<M, W>, update_materials::<M, W>),
+            );
     }
 }
 
@@ -40,7 +44,11 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
 ) -> WindAffectedType<W> {
     let base = materials.get(material).unwrap();
 
-    let new_material = W::create_material((*base).clone(), (*wind).clone(), wind_noise_texture);
+    let new_material = W::create_material(
+        (*base).clone(),
+        (*wind).clone(),
+        wind_noise_texture.0.clone(),
+    );
 
     let material = extended_materials.add(new_material);
 
@@ -53,6 +61,13 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
         material,
         wind: (*wind).clone(),
     }
+}
+
+fn update_materials<M: Material, W: WindAffectable<M, W> + Material>(
+    materials: ResMut<Assets<W>>,
+    wind: Res<Wind>,
+) {
+    W::update_material(materials, wind.clone());
 }
 
 fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Material>(
