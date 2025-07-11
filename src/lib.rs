@@ -9,15 +9,6 @@ mod extension;
 pub mod prelude;
 use prelude::*;
 
-pub struct ExtendedMaterialWindPlugin;
-
-impl Plugin for ExtendedMaterialWindPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
-            .add_plugins(WindPlugin::<StandardMaterial, WindAffectedExtendedMaterial>::default());
-    }
-}
-
 pub struct WindPlugin<M: Material, W: WindAffectable<M, W> + Material> {
     pub _marker: PhantomData<(M, W)>,
 }
@@ -49,7 +40,7 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
 ) -> WindAffectedType<W> {
     let base = materials.get(material).unwrap();
 
-    let new_material = W::create((*base).clone(), wind, wind_noise_texture);
+    let new_material = W::create_material((*base).clone(), (*wind).clone(), wind_noise_texture);
 
     let material = extended_materials.add(new_material);
 
@@ -76,21 +67,21 @@ fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Material>(
     wind_noise_texture: Res<WindTexture>,
     wind: Res<Wind>,
 ) {
-    let mut new_types = q
-        .iter()
-        .map(|x| {
-            create_material::<M, W>(
-                &mut cmd,
-                &mut materials,
-                &mut extended_materials,
-                x,
-                &wind_noise_texture,
-                &wind,
-            )
-        })
-        .collect();
-
-    types.values.append(&mut new_types);
+    types.values.append(
+        &mut q
+            .iter()
+            .map(|x| {
+                create_material::<M, W>(
+                    &mut cmd,
+                    &mut materials,
+                    &mut extended_materials,
+                    x,
+                    &wind_noise_texture,
+                    &wind,
+                )
+            })
+            .collect(),
+    );
 }
 
 fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {

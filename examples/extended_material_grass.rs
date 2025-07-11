@@ -3,13 +3,17 @@ mod example;
 
 use bevy::pbr::NotShadowCaster;
 use bevy::prelude::*;
-use bevy_feronia::{ExtendedMaterialWindPlugin, prelude::*};
+use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
 use rand::seq::IndexedRandom;
 
 fn main() -> AppExit {
     App::new()
+            .insert_resource(Wind {
+            enable_billboarding: true,
+            ..default()
+        })
         .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, (init_grass, scatter_on_keypress))

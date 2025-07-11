@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::{ExtendedMaterialWindPlugin, prelude::*};
+use bevy_feronia::prelude::*;
 use example::*;
 use rand::{Rng, seq::IndexedRandom};
 
@@ -10,7 +10,6 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
             strength: 0.5,
-            enable_billboarding: 0,
             s_curve_strength: 0.025,
             ..default()
         })

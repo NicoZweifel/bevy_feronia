@@ -24,6 +24,7 @@ struct InstanceInfo {
     scale: f32,
     billboard_matrix: mat3x3<f32>,
     wrapped_time: f32,
+    instance_index: u32
 }
 
 fn calculate_vertex_displacement(
@@ -54,48 +55,22 @@ fn calculate_vertex_displacement(
 }
 
 fn displace_vertex_and_calc_normal(
-    time: f32,
     wind: Wind,
-    noise_texture: texture_2d<f32>,
-    noise_sampler: sampler,
+    noise: SampledNoise,
     vertex_pos: vec3<f32>,
-    instance_index: u32,
+    instance: InstanceInfo,
 #ifdef VERTEX_NORMALS
     normal: vec3<f32>,
 #endif
-    camera_world_pos: vec3<f32>,
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
     let small_offset = 0.01;
 
-    // --- 1. PRE-CALCULATE INSTANCE & UNIFORM DATA ---
-    var instance: InstanceInfo;
-    instance.world_from_local = get_world_from_local(instance_index);
-    instance.instance_position = instance.world_from_local[3];
-    instance.scale = length(instance.world_from_local[0].xyz);
-    instance.billboard_matrix = calculate_billboard_matrix(instance.instance_position, camera_world_pos);
-    instance.wrapped_time = time % 1000.0;
-
-    // --- 2. TEXTURE SAMPLING ---
-    let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
-    let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
-
-    let texture_dimension = 512.0;
-    let phase_coord_x = f32(instance_index % u32(texture_dimension)) / texture_dimension;
-    let phase_coord_y = f32(instance_index / u32(texture_dimension)) / texture_dimension;
-    let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
-
-    var noise: SampledNoise;
-    noise.macro_noise = textureSampleLevel(noise_texture, noise_sampler, macro_coord, 0.0).r;
-    noise.micro_noise = textureSampleLevel(noise_texture, noise_sampler, micro_coord, 0.0).r;
-    let phase_sample = textureSampleLevel(noise_texture, noise_sampler, phase_coord, 0.0);
-    noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-
-    // --- 3. CALCULATE POSITIONS ---
+    // CALCULATE POSITIONS
     let final_pos_xyz = calculate_vertex_displacement(vertex_pos, wind, noise, instance);
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
-    // --- 4. CALCULATE NORMALS (BRANCHLESS) ---
+    // CALCULATE NORMALS
 #ifdef VERTEX_NORMALS
     let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
     let lod_threshold = 75.0;
@@ -108,7 +83,7 @@ fn displace_vertex_and_calc_normal(
     let calculated_normal = normalize(cross(tangent_z, tangent_x));
 
     // Get the original normal
-    let mesh_normal = mesh_normal_local_to_world(normal, instance_index);
+    let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
     // Smoothly blend between the two normals based on distance to avoid a hard pop/ring.
     let lod_fade = smoothstep(lod_threshold, lod_threshold - 50.0, dist_to_camera);

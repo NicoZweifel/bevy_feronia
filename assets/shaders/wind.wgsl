@@ -17,4 +17,14 @@ struct Wind {
     enable_billboarding: u32,
 };
 
+struct WindMaterialUniform {
+    wind: Wind,
+};
+
+struct BindlessWindIndices {
+    material: u32,
+    noise_texture: u32,
+    noise_texture_sampler: u32,
+}
+
 

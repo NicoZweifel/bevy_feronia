@@ -1,34 +1,10 @@
 use std::f32::consts::TAU;
 use std::marker::PhantomData;
 
+use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
-use bevy::{pbr::ExtendedMaterial, prelude::*};
 
 pub use crate::extension::*;
-
-pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
-
-pub trait WindAffectable<M: Material, R: Material> {
-    fn create(base: M, wind: &Wind, wind_noise_texture: &Res<WindTexture>) -> R;
-}
-
-impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
-    for WindAffectedExtendedMaterial
-{
-    fn create(
-        base: StandardMaterial,
-        wind: &Wind,
-        wind_noise_texture: &Res<WindTexture>,
-    ) -> WindAffectedExtendedMaterial {
-        ExtendedMaterial {
-            base: base.clone(),
-            extension: WindAffectedExtension {
-                noise_texture: wind_noise_texture.0.clone(),
-                wind: (*wind).clone(),
-            },
-        }
-    }
-}
 
 #[derive(Resource)]
 pub struct WindAffectedTypes<M: Material> {
@@ -67,8 +43,28 @@ pub struct WindAffected;
 #[derive(Resource)]
 pub struct WindTexture(pub Handle<Image>);
 
-#[derive(ShaderType, Resource, Debug, Clone)]
+#[derive(Resource, Debug, Clone, Reflect)]
 pub struct Wind {
+    pub direction: Vec2,
+    pub strength: f32,
+    pub noise_scale: f32,
+    pub scroll_speed: f32,
+    pub bend_exponent: f32,
+    pub round_exponent: f32,
+    pub micro_strength: f32,
+    pub micro_noise_scale: f32,
+    pub micro_scroll_speed: f32,
+    pub s_curve_speed: f32,
+    pub s_curve_strength: f32,
+    pub s_curve_frequency: f32,
+    pub bop_speed: f32,
+    pub bop_strength: f32,
+    pub twist_strength: f32,
+    pub enable_billboarding: bool,
+}
+
+#[derive(ShaderType, Clone)]
+pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,
     pub noise_scale: f32,
@@ -106,7 +102,7 @@ impl Default for Wind {
             bop_speed: 20.0,
             bop_strength: 0.001,
             twist_strength: 0.1,
-            enable_billboarding: 1,
+            enable_billboarding: false,
         }
     }
 }

@@ -44,10 +44,11 @@ pub fn setup(
     let arm_texture: Handle<Image> = asset_server.load("textures/brown_mud_leaves_01_arm_4k.jpg");
 
     cmd.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(30.0, 30.0))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(20.0, 20.0))),
         Landscape,
         MeshMaterial3d(materials.add(StandardMaterial {
-            perceptual_roughness: 0.5,
+            perceptual_roughness: 0.8,
+            metallic: 0.0,
             base_color_texture: Some(diff_texture.clone()),
             metallic_roughness_texture: Some(arm_texture.clone()),
             occlusion_texture: Some(ao_texture.clone()),
