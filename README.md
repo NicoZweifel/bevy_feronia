@@ -9,7 +9,7 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 - Texture based Scattering.
 - Manual GPU Instancing.
-- Compute Shaders for procedural grass (covering areas).
+- Compute Shaders for procedural grass (covering areas and pre-calculated geometry).
 - Performance Improvements (e.g. skip calculations for LODs) / Shortcuts (e.g. procedurally defined geometry instead of calculating neighbor pos)
  
 
