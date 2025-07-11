@@ -102,8 +102,8 @@ impl Default for Wind {
             s_curve_speed: 8.0,
             s_curve_strength: 0.1,
             s_curve_frequency: TAU * 8.0,
-            bop_speed: 20.0,
-            bop_strength: 0.001,
+            bop_speed: 100.0,
+            bop_strength: 0.01,
             twist_strength: 0.1,
             enable_billboarding: false,
             lod_threshold: 75.0
