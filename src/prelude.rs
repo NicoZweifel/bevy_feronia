@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::f32::consts::{PI, TAU};
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
@@ -44,6 +44,7 @@ pub struct WindAffected;
 pub struct WindTexture(pub Handle<Image>);
 
 #[derive(Resource, Debug, Clone, Reflect)]
+#[reflect(Resource)]
 pub struct Wind {
     pub direction: Vec2,
     pub strength: f32,
@@ -61,6 +62,7 @@ pub struct Wind {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: bool,
+    pub lod_threshold: f32
 }
 
 #[derive(ShaderType, Clone)]
@@ -81,6 +83,7 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: u32,
+    pub lod_threshold: f32
 }
 
 impl Default for Wind {
@@ -88,7 +91,7 @@ impl Default for Wind {
         let direction = Vec2::new(1.0, 0.5).normalize();
         Self {
             direction,
-            strength: 0.5,
+            strength: 1.0,
             noise_scale: 0.02,
             scroll_speed: 0.2,
             micro_strength: 0.1,
@@ -98,11 +101,12 @@ impl Default for Wind {
             round_exponent: 2.0,
             s_curve_speed: 8.0,
             s_curve_strength: 0.1,
-            s_curve_frequency: TAU * 8.0,
-            bop_speed: 20.0,
-            bop_strength: 0.001,
+            s_curve_frequency: PI,
+            bop_speed: 8.0,
+            bop_strength: 0.01,
             twist_strength: 0.1,
             enable_billboarding: false,
+            lod_threshold: 75.0
         }
     }
 }

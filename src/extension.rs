@@ -18,7 +18,8 @@ impl Plugin for ExtendedMaterialWindPlugin {
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
 pub trait WindAffectable<M: Material, R: Material> {
-    fn create_material(base: M, wind: Wind, wind_noise_texture: &Res<WindTexture>) -> R;
+    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
+    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
 }
 
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
@@ -27,14 +28,21 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     fn create_material(
         base: StandardMaterial,
         wind: Wind,
-        wind_noise_texture: &Res<WindTexture>,
+        noise_texture: Handle<Image>,
     ) -> WindAffectedExtendedMaterial {
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
-                noise_texture: wind_noise_texture.0.clone(),
+                noise_texture,
                 wind,
             },
+        }
+    }
+
+    fn update_material(mut materials: ResMut<Assets<WindAffectedExtendedMaterial>>, wind: Wind) {
+        for (_, material) in materials.iter_mut() {
+            let ext = &mut material.extension;
+            ext.wind = wind.clone();
         }
     }
 }
@@ -51,24 +59,28 @@ pub struct WindAffectedExtension {
 }
 
 impl From<&Wind> for WindUniform {
-    fn from(val: &Wind) -> Self {
+    fn from(wind: &Wind) -> Self {
         WindUniform {
-            direction: val.direction,
-            strength: val.strength,
-            noise_scale: val.noise_scale,
-            scroll_speed: val.scroll_speed,
-            bend_exponent: val.bend_exponent,
-            round_exponent: val.round_exponent,
-            micro_strength: val.micro_strength,
-            micro_noise_scale: val.micro_noise_scale,
-            micro_scroll_speed: val.micro_scroll_speed,
-            s_curve_speed: val.s_curve_speed,
-            s_curve_strength: val.s_curve_strength,
-            s_curve_frequency: val.s_curve_frequency,
-            bop_speed: val.bop_speed,
-            bop_strength: val.bop_strength,
-            twist_strength: val.twist_strength,
-            enable_billboarding: val.enable_billboarding as u32,
+            direction: wind.direction,
+            strength: wind.strength,
+            noise_scale: wind.noise_scale,
+            scroll_speed: wind.scroll_speed,
+            bend_exponent: wind.bend_exponent,
+            round_exponent: wind.round_exponent,
+            micro_strength: wind.micro_strength,
+            micro_noise_scale: wind.micro_noise_scale,
+            micro_scroll_speed: wind.micro_scroll_speed,
+            s_curve_speed: wind.s_curve_speed,
+            s_curve_strength: wind.s_curve_strength,
+            s_curve_frequency: wind.s_curve_frequency,
+            bop_speed: wind.bop_speed,
+            bop_strength: wind.bop_strength,
+            twist_strength: wind.twist_strength,
+            enable_billboarding: match wind.enable_billboarding {
+                true => 1,
+                _ => 0,
+            },
+            lod_threshold: wind.lod_threshold,
         }
     }
 }
