@@ -1,7 +1,6 @@
 use bevy::{
     pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
-    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 

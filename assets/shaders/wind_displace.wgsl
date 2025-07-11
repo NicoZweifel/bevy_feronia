@@ -31,7 +31,8 @@ fn calculate_vertex_displacement(
     local_pos: vec3<f32>,
     wind: Wind,
     noise: SampledNoise,
-    instance: InstanceInfo
+    instance: InstanceInfo,
+    dist_to_camera: f32
 ) -> vec3<f32> {
     // 1. Curve and Twist
     let normalized_height = local_pos.y;
@@ -40,16 +41,21 @@ fn calculate_vertex_displacement(
     let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
 
     // 2. Billboarding
-    let standard_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
-    let billboarded_pos = instance.instance_position.xyz + (instance.billboard_matrix * (twisted_local_pos * instance.scale));
-    let base_world_pos = mix(standard_pos, billboarded_pos, f32(wind.enable_billboarding));
+    var base_world_pos= (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+
+    if wind.enable_billboarding == 1u {
+        let billboarded_pos = instance.instance_position.xyz + (instance.billboard_matrix * (twisted_local_pos * instance.scale));
+        base_world_pos= mix(base_world_pos, billboarded_pos, f32(wind.enable_billboarding));
+    }
 
     // 3. Displacement effects
+    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
     let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
+    var total_displacement =mix(mix(main_wind, s_curve, lod_fade),bop,lod_fade );
+   
 
-    let total_displacement = main_wind + s_curve + bop;
 
     return base_world_pos + total_displacement;
 }
@@ -66,27 +72,22 @@ fn displace_vertex_and_calc_normal(
     var out: DisplacedVertex;
     let small_offset = 0.01;
 
-    // CALCULATE POSITIONS
-    let final_pos_xyz = calculate_vertex_displacement(vertex_pos, wind, noise, instance);
+    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
+
+    let final_pos_xyz = calculate_vertex_displacement(vertex_pos, wind, noise, instance, dist_to_camera);
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
-    // CALCULATE NORMALS
 #ifdef VERTEX_NORMALS
-    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
-    let lod_threshold = 75.0;
-
     // Calculate the normal by displacing neighbors
-    let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance);
-    let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance);
+    let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance,dist_to_camera);
+    let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance,dist_to_camera);
     let tangent_x = neighbor_pos_x - final_pos_xyz;
     let tangent_z = neighbor_pos_z - final_pos_xyz;
     let calculated_normal = normalize(cross(tangent_z, tangent_x));
-
-    // Get the original normal
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
     // Smoothly blend between the two normals based on distance to avoid a hard pop/ring.
-    let lod_fade = smoothstep(lod_threshold, lod_threshold - 50.0, dist_to_camera);
+    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
     out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
 #endif
 

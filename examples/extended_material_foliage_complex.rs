@@ -61,7 +61,7 @@ fn scatter_on_keypress(
     let cell_size = 0.2;
     let plant_offset = 0.1;
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     q.iter().for_each(|x| cmd.entity(x).despawn());
 
@@ -77,17 +77,17 @@ fn scatter_on_keypress(
             let x = grid_x * cell_size - grid_world_size / 2.0;
             let z = grid_z * cell_size - grid_world_size / 2.0;
 
-            let x_jitter = rng.gen_range(-plant_offset..plant_offset);
-            let z_jitter = rng.gen_range(-plant_offset..plant_offset);
+            let x_jitter = rng.random_range(-plant_offset..plant_offset);
+            let z_jitter = rng.random_range(-plant_offset..plant_offset);
 
-            let y_rotation = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
+            let y_rotation = rng.random_range(0.0..std::f32::consts::PI * 2.0);
 
             (
                 Mesh3d(prototype.mesh.clone()),
                 MeshMaterial3d(prototype.material.clone()),
                 Transform::from_xyz(x + x_jitter, 0.0, z + z_jitter)
                     .with_rotation(Quat::from_rotation_y(y_rotation))
-                    .with_scale(Vec3::splat(rng.gen_range((1.)..2.))),
+                    .with_scale(Vec3::splat(rng.random_range((1.)..2.))),
                 WindAffectedReady,
             )
         })
