@@ -1,0 +1,2 @@
+**/*.glb filter=lfs diff=lfs merge=lfs -text
+**/brown_mud_leaves_01_nor_dx_4k.png filter=lfs diff=lfs merge=lfs -text
