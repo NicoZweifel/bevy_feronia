@@ -12,6 +12,7 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
             enable_billboarding: true,
+            enable_edge_correction: true,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))

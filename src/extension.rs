@@ -84,6 +84,7 @@ impl From<&Wind> for WindUniform {
                 true => 1,
                 _ => 0,
             },
+            edge_correction_factor: wind.edge_correction_factor,
             lod_threshold: wind.lod_threshold,
         }
     }

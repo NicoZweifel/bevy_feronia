@@ -63,6 +63,7 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
+    pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
 
@@ -85,6 +86,7 @@ pub struct WindUniform {
     pub twist_strength: f32,
     pub enable_billboarding: u32,
     pub enable_edge_correction: u32,
+    pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
 
@@ -110,6 +112,7 @@ impl Default for Wind {
             enable_billboarding: false,
             enable_edge_correction: false,
             lod_threshold: 75.0,
+            edge_correction_factor: 0.02,
         }
     }
 }

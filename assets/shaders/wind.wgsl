@@ -16,6 +16,7 @@ struct Wind {
     twist_strength: f32,
     enable_billboarding: u32,
     enable_edge_correction: u32,
+    edge_correction_factor: f32,
     lod_threshold: f32,
 };
 

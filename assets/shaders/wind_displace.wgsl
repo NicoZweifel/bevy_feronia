@@ -49,13 +49,11 @@ fn calculate_vertex_displacement(
 
     // BILLBOARDING 
     if (wind.enable_billboarding == 1u) {
-        let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
-        let billboard_matrix = calculate_billboard_matrix(billboard_anchor, view.world_position.xyz);
+        let billboard_matrix = calculate_billboard_matrix(instance.instance_position, view.world_position.xyz);
+        let rotated_position = instance.instance_position.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
+        let billboarded_pos = rotated_position + total_world_offset;
 
-        let billboard_base = billboard_anchor.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
-        
-        let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
-        final_world_pos = mix(final_world_pos, billboarded_pos, 1.0);
+        final_world_pos = billboarded_pos;
     }
 
        if (wind.enable_edge_correction == 1u && wind.enable_billboarding == 1u) {
@@ -119,7 +117,7 @@ fn calculate_edge_correction(
 
     let offset_direction = world_right * sign(local_pos.x);
 
-    let final_offset = offset_direction  * 0.02 * ortho_factor;
+    let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
     
     return world_pos + final_offset;
 }
