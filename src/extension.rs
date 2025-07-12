@@ -26,10 +26,12 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     for WindAffectedExtendedMaterial
 {
     fn create_material(
-        base: StandardMaterial,
+        mut base: StandardMaterial,
         wind: Wind,
         noise_texture: Handle<Image>,
     ) -> WindAffectedExtendedMaterial {
+        // TODO do in base
+        base.double_sided = true;
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {

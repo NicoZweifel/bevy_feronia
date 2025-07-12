@@ -13,6 +13,7 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
+            round_exponent: 10.,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))

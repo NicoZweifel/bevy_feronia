@@ -102,7 +102,7 @@ impl Default for Wind {
             micro_noise_scale: 0.5,
             micro_scroll_speed: 0.2,
             bend_exponent: 2.0,
-            round_exponent: 2.0,
+            round_exponent: 0.0,
             s_curve_speed: 8.0,
             s_curve_strength: 0.1,
             s_curve_frequency: PI,

@@ -97,8 +97,10 @@ fn displace_vertex_and_calc_normal(
         let tangent_z = neighbor_pos_z - final_pos_xyz;
         var calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-        let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * 6.2;
-        calculated_normal = normalize(calculated_normal + curve_offset);
+        if (wind.enable_billboarding == 1u) {
+            let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
+            calculated_normal = normalize(calculated_normal + curve_offset);
+        }
 
         if (wind.enable_billboarding == 0u) {
             out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
