@@ -8,7 +8,7 @@
 #import bevy_pbr::forward_io::{Vertex, VertexOutput, FragmentOutput}
 
 #import "shaders/wind.wgsl"::{Wind, BindlessWindIndices}
-#import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo, calculate_billboard_matrix, displace_vertex_and_calc_normal}
+#import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo,  displace_vertex_and_calc_normal}
 #import bevy_pbr::mesh_view_bindings::globals
 #import bevy_pbr::mesh_bindings::mesh
 
@@ -51,7 +51,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.world_from_local = get_world_from_local(vertex.instance_index);
     instance.instance_position = instance.world_from_local[3];
     instance.scale = length(instance.world_from_local[0].xyz);
-    instance.billboard_matrix = calculate_billboard_matrix(instance.instance_position, camera_world_pos);
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.instance_index;
 

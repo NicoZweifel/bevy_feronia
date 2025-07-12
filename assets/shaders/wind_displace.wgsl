@@ -22,7 +22,6 @@ struct InstanceInfo {
     world_from_local: mat4x4<f32>,
     instance_position: vec4<f32>,
     scale: f32,
-    billboard_matrix: mat3x3<f32>,
     wrapped_time: f32,
     instance_index: u32
 }
@@ -34,36 +33,32 @@ fn calculate_vertex_displacement(
     instance: InstanceInfo,
     dist_to_camera: f32
 ) -> vec3<f32> {
-    // 1. Curve and Twist
+    // TWIST/CURVE
     let normalized_height = local_pos.y;
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
-
     let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
-/* 
+
+    // DISPLACEMENT 
     let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
-    var total_displacement =mix(mix(main_wind, s_curve, lod_fade),bop,lod_fade );
-*/
+    let total_world_offset = main_wind + s_curve + bop;
 
-    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold * 2.0, dist_to_camera);
+    var final_world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+    final_world_pos = final_world_pos + total_world_offset;
 
-    // 2. Billboarding
-    var base_world_pos= (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+    // BILLBOARDING 
+    if (wind.enable_billboarding == 1u) {
+        let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
+        let billboard_matrix = calculate_billboard_matrix(billboard_anchor, view.world_position.xyz);
 
-    if wind.enable_billboarding == 1u{
-        let billboarded_pos = instance.instance_position.xyz + (instance.billboard_matrix * (twisted_local_pos * instance.scale));
-        base_world_pos = mix(base_world_pos, billboarded_pos, f32(wind.enable_billboarding));
+        let billboard_base = billboard_anchor.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
+        
+        let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
+        final_world_pos = mix(final_world_pos, billboarded_pos, 1.0);
     }
 
-    // 3. Displacement effects
-    let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
-    let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
-    let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
-
-    let total_displacement = main_wind + s_curve + bop;
-
-    return base_world_pos + total_displacement;
+    return final_world_pos;
 }
 
 fn displace_vertex_and_calc_normal(
@@ -80,24 +75,20 @@ fn displace_vertex_and_calc_normal(
 
     let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
 
-    // CALCULATE POSITION
     let final_pos_xyz = calculate_vertex_displacement(vertex_pos, wind, noise, instance,dist_to_camera);
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
-    // CALCULATE NORMALS
 #ifdef VERTEX_NORMALS
-
-    // Calculate the normal by displacing neighbors
+    // CALC NORMAL 
     let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance,dist_to_camera);
     let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance,dist_to_camera);
     let tangent_x = neighbor_pos_x - final_pos_xyz;
     let tangent_z = neighbor_pos_z - final_pos_xyz;
     let calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-    // Get the original normal
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
-    // Smoothly blend between the two normals based on distance to avoid a hard pop/ring.
+    // BLEND NORMAL 
     let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
     out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
 #endif
@@ -158,16 +149,13 @@ fn calculate_twist(
     local_pos: vec3<f32>,
 ) -> vec3<f32> {
     let twist = (macro_noise * 2.0 - 1.0) * wind.twist_strength;
-    let wind_angle = atan2(wind.direction.y, wind.direction.x);
-    let top_twist_angle = wind_angle + twist;
-
-    let twist_angle = top_twist_angle * c_curve_shape;
+    let twist_angle = twist * c_curve_shape;
 
     let cos_a = cos(twist_angle);
     let sin_a = sin(twist_angle);
 
-    let rotated_x = local_pos.x * cos_a + local_pos.z * sin_a;
-    let rotated_z = -local_pos.x * sin_a + local_pos.z * cos_a;
+    let rotated_x = local_pos.x * cos_a - local_pos.z * sin_a;
+    let rotated_z = local_pos.x * sin_a + local_pos.z * cos_a;
 
     return vec3<f32>(rotated_x, local_pos.y, rotated_z);
 }
@@ -183,3 +171,4 @@ fn calculate_billboard_matrix(
 
     return mat3x3<f32>(new_x, new_y, new_z);
 }
+
