@@ -26,7 +26,6 @@ struct InstanceInfo {
     instance_index: u32
 }
 
-
 fn calculate_vertex_displacement(
     local_pos: vec3<f32>,
     wind: Wind,
@@ -55,9 +54,16 @@ fn calculate_vertex_displacement(
 
     if (wind.enable_billboarding == 1u) {
         let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
-        let billboard_matrix = calculate_billboard_matrix(billboard_anchor, view.world_position.xyz);
-        let billboard_base = billboard_anchor.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
+        
+        let billboard_matrix = calculate_billboard_matrix(
+            billboard_anchor,
+            view.world_position.xyz,
+            instance.world_from_local
+        );
+        
+        let billboard_base = billboard_anchor.xyz + (billboard_matrix * twisted_local_pos);
         let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
+
         final_world_pos = billboarded_pos;
     }
 
@@ -97,7 +103,7 @@ fn displace_vertex_and_calc_normal(
         let tangent_z = neighbor_pos_z - final_pos_xyz;
         var calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-        if (wind.enable_billboarding == 1u) {
+        if (wind.round_exponent > 0.0) {
             let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
             calculated_normal = normalize(calculated_normal + curve_offset);
         }
@@ -105,6 +111,7 @@ fn displace_vertex_and_calc_normal(
         if (wind.enable_billboarding == 0u) {
             let normal_delta = calculated_normal - normal;
             out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
+
         } else {
             out.world_normal = calculated_normal;
         }
@@ -203,18 +210,18 @@ fn calculate_twist(
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
+    world_from_local: mat4x4<f32>
 ) -> mat3x3<f32> {
+    let scale = vec3<f32>(
+        length(world_from_local[0].xyz),
+        length(world_from_local[1].xyz),
+        length(world_from_local[2].xyz)
+    );
+
     let to_camera = camera_world_pos - instance_position.xyz;
     let new_z = normalize(vec3<f32>(to_camera.x, 0.0, to_camera.z));
     let new_y = vec3<f32>(0.0, 1.0, 0.0);
     let new_x = normalize(cross(new_y, new_z));
 
-    return mat3x3<f32>(new_x, new_y, new_z);
-}
-
-fn calculate_rotation_from_matrix(model: mat4x4<f32>) -> mat3x3<f32> {
-    let x_axis = normalize(model[0].xyz);
-    let y_axis = normalize(model[1].xyz);
-    let z_axis = normalize(model[2].xyz);
-    return mat3x3<f32>(x_axis, y_axis, z_axis);
+    return mat3x3<f32>(new_x * scale.x, new_y * scale.y, new_z * scale.z);
 }

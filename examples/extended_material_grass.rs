@@ -60,9 +60,9 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 200;
-    let cell_size = 0.1;
-    let plant_offset = 0.05;
+    let grid_size = 300;
+    let cell_size = 0.05;
+    let plant_offset = 0.025;
 
     let mut rng = rand::rng();
 
@@ -90,7 +90,7 @@ fn scatter_on_keypress(
                 MeshMaterial3d(prototype.material.clone()),
                 Transform::from_xyz(x + x_jitter, 0.0, z + z_jitter)
                     .with_rotation(Quat::from_rotation_y(y_rotation))
-                    .with_scale(Vec3::splat(rng.random_range((1.)..2.))),
+                    .with_scale(Vec3::splat(1.).with_y(rng.random_range((1.)..2.))),
                 WindAffectedReady,
                 NotShadowCaster,
             )
