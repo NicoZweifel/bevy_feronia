@@ -1,4 +1,4 @@
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::PI;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
@@ -62,7 +62,9 @@ pub struct Wind {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: bool,
-    pub lod_threshold: f32
+    pub enable_edge_correction: bool,
+    pub edge_correction_factor: f32,
+    pub lod_threshold: f32,
 }
 
 #[derive(ShaderType, Clone)]
@@ -83,7 +85,9 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub enable_billboarding: u32,
-    pub lod_threshold: f32
+    pub enable_edge_correction: u32,
+    pub edge_correction_factor: f32,
+    pub lod_threshold: f32,
 }
 
 impl Default for Wind {
@@ -94,11 +98,11 @@ impl Default for Wind {
             strength: 1.0,
             noise_scale: 0.02,
             scroll_speed: 0.2,
-            micro_strength: 0.1,
-            micro_noise_scale: 1.0,
-            micro_scroll_speed: 0.1,
+            micro_strength: 0.5,
+            micro_noise_scale: 0.5,
+            micro_scroll_speed: 0.2,
             bend_exponent: 2.0,
-            round_exponent: 2.0,
+            round_exponent: 0.0,
             s_curve_speed: 8.0,
             s_curve_strength: 0.1,
             s_curve_frequency: PI,
@@ -106,7 +110,9 @@ impl Default for Wind {
             bop_strength: 0.01,
             twist_strength: 0.1,
             enable_billboarding: false,
-            lod_threshold: 75.0
+            enable_edge_correction: false,
+            lod_threshold: 50.0,
+            edge_correction_factor: 0.01,
         }
     }
 }

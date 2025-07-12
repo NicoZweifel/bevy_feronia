@@ -83,9 +83,12 @@ pub fn setup(
             image: asset_server.load("skybox.ktx2"),
             brightness: 10000.,
             ..default()
-        }, //Msaa::Off,
-           //ScreenSpaceAmbientOcclusion::default(),
-           //TemporalAntiAliasing::default(),
+        },
+        /*
+        Msaa::Off,
+        bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
+        bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
+        */
     ));
 
     cmd.spawn((

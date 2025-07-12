@@ -10,6 +10,7 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
             strength: 0.5,
+            micro_strength: 0.2,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))
@@ -56,7 +57,7 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 100;
+    let grid_size = 50;
     let cell_size = 0.15;
     let plant_offset = 0.75;
 

@@ -29,7 +29,10 @@ impl<M: Material, W: WindAffectable<M, W> + Material> Plugin for WindPlugin<M, W
             .add_systems(Startup, setup_wind_texture)
             .add_systems(
                 Update,
-                (setup_wind_affected::<M, W>, update_materials::<M, W>.run_if(resource_changed::<Wind>)),
+                (
+                    setup_wind_affected::<M, W>,
+                    update_materials::<M, W>.run_if(resource_changed::<Wind>),
+                ),
             );
     }
 }
@@ -42,10 +45,8 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
     wind_noise_texture: &Res<WindTexture>,
     wind: &Res<Wind>,
 ) -> WindAffectedType<W> {
-    let base = materials.get(material).unwrap();
-
     let new_material = W::create_material(
-        (*base).clone(),
+        (*materials.get(material).unwrap()).clone(),
         (*wind).clone(),
         wind_noise_texture.0.clone(),
     );

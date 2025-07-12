@@ -26,10 +26,13 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     for WindAffectedExtendedMaterial
 {
     fn create_material(
-        base: StandardMaterial,
+        mut base: StandardMaterial,
         wind: Wind,
         noise_texture: Handle<Image>,
     ) -> WindAffectedExtendedMaterial {
+        // TODO do in base
+        base.double_sided = true;
+        base.cull_mode = None;
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
@@ -80,6 +83,11 @@ impl From<&Wind> for WindUniform {
                 true => 1,
                 _ => 0,
             },
+            enable_edge_correction: match wind.enable_edge_correction {
+                true => 1,
+                _ => 0,
+            },
+            edge_correction_factor: wind.edge_correction_factor,
             lod_threshold: wind.lod_threshold,
         }
     }
@@ -95,11 +103,11 @@ const SHADER_MAIN_ASSET_PATH: &str = "shaders/wind_main.wgsl";
 const SHADER_PREPASS_ASSET_PATH: &str = "shaders/wind_prepass.wgsl";
 
 impl MaterialExtension for WindAffectedExtension {
-    fn vertex_shader() -> ShaderRef {
+    fn fragment_shader() -> ShaderRef {
         SHADER_MAIN_ASSET_PATH.into()
     }
 
-    fn fragment_shader() -> ShaderRef {
+    fn vertex_shader() -> ShaderRef {
         SHADER_MAIN_ASSET_PATH.into()
     }
 
