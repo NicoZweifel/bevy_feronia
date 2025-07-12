@@ -10,6 +10,7 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
             strength: 0.5,
+            micro_strength: 0.2,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))

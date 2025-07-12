@@ -15,7 +15,8 @@ struct Wind {
     bop_strength: f32,
     twist_strength: f32,
     enable_billboarding: u32,
-    lod_threshold: f32
+    enable_edge_correction: u32,
+    lod_threshold: f32,
 };
 
 struct WindMaterialUniform {

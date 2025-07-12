@@ -58,6 +58,15 @@ fn calculate_vertex_displacement(
         final_world_pos = mix(final_world_pos, billboarded_pos, 1.0);
     }
 
+       if (wind.enable_edge_correction == 1u && wind.enable_billboarding == 1u) {
+        final_world_pos = calculate_edge_correction(
+            final_world_pos,
+            local_pos,
+            wind
+        );
+    } 
+
+
     return final_world_pos;
 }
 
@@ -94,6 +103,25 @@ fn displace_vertex_and_calc_normal(
 #endif
 
     return out;
+}
+
+fn calculate_edge_correction(
+    world_pos: vec3<f32>,
+    local_pos: vec3<f32>,
+    wind: Wind
+) -> vec3<f32> {
+    let view_vector = normalize(world_pos - view.world_position.xyz);
+    
+    let to_camera_flat = normalize(vec3(view.world_position.x, 0.0, view.world_position.z) - vec3(world_pos.x, 0.0, world_pos.z));
+    let world_right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera_flat));
+
+    let ortho_factor = 1.0 - abs(dot(view_vector, world_right));
+
+    let offset_direction = world_right * sign(local_pos.x);
+
+    let final_offset = offset_direction  * 0.02 * ortho_factor;
+    
+    return world_pos + final_offset;
 }
 
 fn calculate_main_wind_displacement(

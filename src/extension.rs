@@ -80,6 +80,10 @@ impl From<&Wind> for WindUniform {
                 true => 1,
                 _ => 0,
             },
+            enable_edge_correction: match wind.enable_edge_correction {
+                true => 1,
+                _ => 0,
+            },
             lod_threshold: wind.lod_threshold,
         }
     }
