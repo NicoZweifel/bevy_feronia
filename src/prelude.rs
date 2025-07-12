@@ -112,7 +112,7 @@ impl Default for Wind {
             enable_billboarding: false,
             enable_edge_correction: false,
             lod_threshold: 50.0,
-            edge_correction_factor: 0.02,
+            edge_correction_factor: 0.01,
         }
     }
 }
