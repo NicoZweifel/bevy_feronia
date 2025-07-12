@@ -111,7 +111,7 @@ impl Default for Wind {
             twist_strength: 0.1,
             enable_billboarding: false,
             enable_edge_correction: false,
-            lod_threshold: 75.0,
+            lod_threshold: 50.0,
             edge_correction_factor: 0.02,
         }
     }

@@ -57,7 +57,7 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 100;
+    let grid_size = 50;
     let cell_size = 0.15;
     let plant_offset = 0.75;
 
