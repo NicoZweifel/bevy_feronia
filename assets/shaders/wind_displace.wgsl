@@ -41,11 +41,12 @@ fn calculate_vertex_displacement(
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
     var total_world_offset = horizontal_dir * macro_displacement;
 
-    if (dist_to_camera <= wind.lod_threshold) {
+    let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
+    if (lod_fade > 0.0) {
         let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
-        total_world_offset += horizontal_dir * micro_displacement;
+        let micro_wind = horizontal_dir * micro_displacement;
 
-        total_world_offset += calculate_s_curve_displacement(
+        let s_curve = calculate_s_curve_displacement(
             wind,
             c_curve_shape,
             normalized_height,
@@ -53,12 +54,14 @@ fn calculate_vertex_displacement(
             noise.phase_noise.x
         );
 
-        total_world_offset += calculate_bop_displacement(
+        let bop = calculate_bop_displacement(
             wind,
             c_curve_shape,
             instance.wrapped_time,
             noise.phase_noise.y
         );
+
+        total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
     }
 
     var final_world_pos: vec3<f32>;
@@ -101,18 +104,20 @@ fn displace_vertex_and_calc_normal(
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
 #ifdef VERTEX_NORMALS
-    // CALC NORMAL 
-    let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance,dist_to_camera);
-    let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance,dist_to_camera);
-    let tangent_x = neighbor_pos_x - final_pos_xyz;
-    let tangent_z = neighbor_pos_z - final_pos_xyz;
-    let calculated_normal = normalize(cross(tangent_z, tangent_x));
-
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
-
-    // BLEND NORMAL 
     let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
-    out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+
+    if (lod_fade > 0.0) {
+        let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance,dist_to_camera);
+        let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance,dist_to_camera);
+        let tangent_x = neighbor_pos_x - final_pos_xyz;
+        let tangent_z = neighbor_pos_z - final_pos_xyz;
+        let calculated_normal = normalize(cross(tangent_z, tangent_x));
+
+        out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+    } else {
+        out.world_normal = mesh_normal;
+    }
 #endif
 
     return out;
@@ -212,4 +217,3 @@ fn calculate_billboard_matrix(
 
     return mat3x3<f32>(new_x, new_y, new_z);
 }
-
