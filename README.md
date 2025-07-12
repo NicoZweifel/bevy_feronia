@@ -23,7 +23,7 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 `cargo run --example cargo run --example extended_material_grass`
 
-https://github.com/user-attachments/assets/2d3f1cd7-611c-41dc-9993-d52c22cab7c5.mp4
+https://github.com/user-attachments/assets/17459f40-9dc5-4032-82b8-63ab7fa9e16a
 
 ### Foliage
 `cargo run --example cargo run --example extended_material_foliage`
