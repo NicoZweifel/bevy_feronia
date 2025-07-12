@@ -50,7 +50,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let camera_world_pos = view.world_position.xyz;
     instance.world_from_local = get_world_from_local(vertex.instance_index);
     instance.instance_position = instance.world_from_local[3];
-    instance.scale = length(instance.world_from_local[0].xyz);
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.instance_index;
 
@@ -61,10 +60,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var noise: SampledNoise;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
-    
+
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
-    
+
     if (lod_fade > 0.0) {
         let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
         noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
@@ -75,7 +74,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
         let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
         noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-    } 
+    }
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(

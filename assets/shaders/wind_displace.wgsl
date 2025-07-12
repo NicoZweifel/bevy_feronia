@@ -21,7 +21,6 @@ struct DisplacedVertex {
 struct InstanceInfo {
     world_from_local: mat4x4<f32>,
     instance_position: vec4<f32>,
-    scale: f32,
     wrapped_time: f32,
     instance_index: u32
 }
@@ -54,7 +53,7 @@ fn calculate_vertex_displacement(
 
     if (wind.enable_billboarding == 1u) {
         let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
-        
+
         let billboard_matrix = calculate_billboard_matrix(
             billboard_anchor,
             view.world_position.xyz,
