@@ -37,10 +37,29 @@ fn calculate_vertex_displacement(
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
     let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
 
-    let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
-    let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
-    let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
-    let total_world_offset = main_wind + s_curve + bop;
+    let macro_displacement = (noise.macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
+    let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
+    var total_world_offset = horizontal_dir * macro_displacement;
+
+    if (dist_to_camera <= wind.lod_threshold) {
+        let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
+        total_world_offset += horizontal_dir * micro_displacement;
+
+        total_world_offset += calculate_s_curve_displacement(
+            wind,
+            c_curve_shape,
+            normalized_height,
+            instance.wrapped_time,
+            noise.phase_noise.x
+        );
+
+        total_world_offset += calculate_bop_displacement(
+            wind,
+            c_curve_shape,
+            instance.wrapped_time,
+            noise.phase_noise.y
+        );
+    }
 
     var final_world_pos: vec3<f32>;
 
@@ -92,7 +111,7 @@ fn displace_vertex_and_calc_normal(
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
     // BLEND NORMAL 
-    let lod_fade = smoothstep(wind.lod_threshold, wind.lod_threshold - (wind.lod_threshold * 0.5), dist_to_camera);
+    let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
     out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
 #endif
 
