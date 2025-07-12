@@ -33,37 +33,33 @@ fn calculate_vertex_displacement(
     instance: InstanceInfo,
     dist_to_camera: f32
 ) -> vec3<f32> {
-    // TWIST/CURVE
     let normalized_height = local_pos.y;
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
     let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
 
-    // DISPLACEMENT 
     let main_wind = calculate_main_wind_displacement(wind, c_curve_shape, noise.macro_noise, noise.micro_noise);
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
     let total_world_offset = main_wind + s_curve + bop;
 
-    var final_world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
-    final_world_pos = final_world_pos + total_world_offset;
+    var final_world_pos: vec3<f32>;
 
-    // BILLBOARDING 
     if (wind.enable_billboarding == 1u) {
         let billboard_matrix = calculate_billboard_matrix(instance.instance_position, view.world_position.xyz);
         let rotated_position = instance.instance_position.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
-        let billboarded_pos = rotated_position + total_world_offset;
+        final_world_pos = rotated_position + total_world_offset;
 
-        final_world_pos = billboarded_pos;
+        if (wind.enable_edge_correction == 1u) {
+            final_world_pos = calculate_edge_correction(
+                final_world_pos,
+                local_pos,
+                wind
+            );
+        }
+    } else {
+        let world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+        final_world_pos = world_pos + total_world_offset;
     }
-
-       if (wind.enable_edge_correction == 1u && wind.enable_billboarding == 1u) {
-        final_world_pos = calculate_edge_correction(
-            final_world_pos,
-            local_pos,
-            wind
-        );
-    } 
-
 
     return final_world_pos;
 }
