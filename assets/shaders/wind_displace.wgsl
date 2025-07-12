@@ -70,6 +70,12 @@ fn calculate_vertex_displacement(
         let rotated_position = instance.instance_position.xyz + (billboard_matrix * (twisted_local_pos * instance.scale));
         final_world_pos = rotated_position + total_world_offset;
 
+
+    } else {
+        let world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+        final_world_pos = world_pos + total_world_offset;
+    }
+
         if (wind.enable_edge_correction == 1u) {
             final_world_pos = calculate_edge_correction(
                 final_world_pos,
@@ -77,10 +83,6 @@ fn calculate_vertex_displacement(
                 wind
             );
         }
-    } else {
-        let world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
-        final_world_pos = world_pos + total_world_offset;
-    }
 
     return final_world_pos;
 }
@@ -104,7 +106,6 @@ fn displace_vertex_and_calc_normal(
 
 #ifdef VERTEX_NORMALS
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
-
     let lod = lod_fade > 0.0;
 
     if (wind.enable_billboarding == 1u || lod) {
@@ -115,7 +116,13 @@ fn displace_vertex_and_calc_normal(
         let calculated_normal = normalize(cross(tangent_z, tangent_x));
 
         if (wind.enable_billboarding == 0u) {
-            out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+            let normal_rotation_matrix = mat3x3<f32>(
+                normalize(instance.world_from_local[0].xyz),
+                normalize(instance.world_from_local[1].xyz),
+                normalize(instance.world_from_local[2].xyz)
+            );
+            let final_normal = normal_rotation_matrix * calculated_normal;
+            out.world_normal = final_normal;
         } else {
             out.world_normal = calculated_normal;
         }
