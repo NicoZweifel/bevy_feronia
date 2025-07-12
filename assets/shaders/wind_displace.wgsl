@@ -103,7 +103,8 @@ fn displace_vertex_and_calc_normal(
         }
 
         if (wind.enable_billboarding == 0u) {
-            out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+            let normal_delta = calculated_normal - normal;
+            out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
         } else {
             out.world_normal = calculated_normal;
         }

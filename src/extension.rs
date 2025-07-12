@@ -32,6 +32,7 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     ) -> WindAffectedExtendedMaterial {
         // TODO do in base
         base.double_sided = true;
+        base.cull_mode = None;
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
@@ -102,11 +103,11 @@ const SHADER_MAIN_ASSET_PATH: &str = "shaders/wind_main.wgsl";
 const SHADER_PREPASS_ASSET_PATH: &str = "shaders/wind_prepass.wgsl";
 
 impl MaterialExtension for WindAffectedExtension {
-    fn vertex_shader() -> ShaderRef {
+    fn fragment_shader() -> ShaderRef {
         SHADER_MAIN_ASSET_PATH.into()
     }
 
-    fn fragment_shader() -> ShaderRef {
+    fn vertex_shader() -> ShaderRef {
         SHADER_MAIN_ASSET_PATH.into()
     }
 
