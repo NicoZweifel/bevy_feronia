@@ -105,14 +105,20 @@ fn displace_vertex_and_calc_normal(
 #ifdef VERTEX_NORMALS
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
-    if (lod_fade > 0.0) {
+    let lod = lod_fade > 0.0;
+
+    if (wind.enable_billboarding == 1u || lod) {
         let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
         let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
         let tangent_x = neighbor_pos_x - final_pos_xyz;
         let tangent_z = neighbor_pos_z - final_pos_xyz;
         let calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-        out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+        if (wind.enable_billboarding == 0u) {
+            out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
+        } else {
+            out.world_normal = calculated_normal;
+        }
     } else {
         out.world_normal = mesh_normal;
     }
