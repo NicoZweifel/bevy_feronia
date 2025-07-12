@@ -116,13 +116,7 @@ fn displace_vertex_and_calc_normal(
         let calculated_normal = normalize(cross(tangent_z, tangent_x));
 
         if (wind.enable_billboarding == 0u) {
-            let normal_rotation_matrix = mat3x3<f32>(
-                normalize(instance.world_from_local[0].xyz),
-                normalize(instance.world_from_local[1].xyz),
-                normalize(instance.world_from_local[2].xyz)
-            );
-            let final_normal = normal_rotation_matrix * calculated_normal;
-            out.world_normal = final_normal;
+            out.world_normal = mix(mesh_normal, calculated_normal, lod_fade);
         } else {
             out.world_normal = calculated_normal;
         }
