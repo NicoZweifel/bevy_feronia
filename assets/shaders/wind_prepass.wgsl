@@ -80,7 +80,11 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         noise,
         vertex.position,
         instance,
-        dist_to_camera
+        dist_to_camera,
+    #ifdef VERTEX_NORMALS
+        vertex.normal,
+        vertex.uv
+    #endif
     );
 
     out.position = position_world_to_clip(displaced.world_position.xyz);
