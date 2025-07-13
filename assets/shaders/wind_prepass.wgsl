@@ -76,25 +76,18 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     }
 
     // --- DISPLACEMENT ---
-    #ifdef VERTEX_NORMALS
     let displaced = displace_vertex_and_calc_normal(
         wind,
         noise,
         vertex.position,
         instance,
         dist_to_camera,
+    #ifdef VERTEX_NORMALS
         vertex.normal,
         vertex.uv,
-    );
-    #else
-    let displaced = displace_vertex_and_calc_normal(
-        wind,
-        noise,
-        vertex.position,
-        instance,
-        dist_to_camera
-    );
     #endif
+    );
+
     out.position = position_world_to_clip(displaced.world_position.xyz);
     out.world_position = displaced.world_position;
 
