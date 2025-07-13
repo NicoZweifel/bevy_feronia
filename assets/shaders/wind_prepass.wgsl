@@ -1,13 +1,15 @@
 #import bevy_pbr::mesh_view_bindings::view
-#import bevy_pbr::mesh_functions::{get_model_matrix, get_world_from_local}
+#import bevy_pbr::mesh_functions::get_world_from_local
+#import bevy_pbr::mesh_functions::get_model_matrix
 #import bevy_pbr::view_transformations::position_world_to_clip
-#import bevy_pbr::prepass_io::{Vertex, VertexOutput}
+#import bevy_pbr::prepass_io::Vertex
+#import bevy_pbr::prepass_io::VertexOutput
 #import bevy_pbr::prepass_bindings::globals
+#import bevy_render::globals::Globals
+#import bevy_pbr::mesh_bindings::mesh
 
 #import "shaders/wind.wgsl"::{Wind, BindlessWindIndices}
 #import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo, displace_vertex_and_calc_normal}
-#import bevy_render::globals::Globals
-#import bevy_pbr::mesh_bindings::mesh
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
@@ -74,18 +76,25 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     }
 
     // --- DISPLACEMENT ---
+    #ifdef VERTEX_NORMALS
     let displaced = displace_vertex_and_calc_normal(
         wind,
         noise,
         vertex.position,
         instance,
         dist_to_camera,
-    #ifdef VERTEX_NORMALS
         vertex.normal,
-        vertex.uv
-    #endif
+        vertex.uv,
     );
-
+    #else
+    let displaced = displace_vertex_and_calc_normal(
+        wind,
+        noise,
+        vertex.position,
+        instance,
+        dist_to_camera
+    );
+    #endif
     out.position = position_world_to_clip(displaced.world_position.xyz);
     out.world_position = displaced.world_position;
 

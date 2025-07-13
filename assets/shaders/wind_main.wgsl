@@ -1,16 +1,20 @@
 #import bevy_pbr::mesh_view_bindings::view
-#import bevy_pbr::mesh_functions::{get_model_matrix, get_world_from_local}
+#import bevy_pbr::mesh_functions::get_world_from_local
+#import bevy_pbr::mesh_functions::get_model_matrix
 #import bevy_pbr::view_transformations::position_world_to_clip
-#import bevy_pbr::{
-    pbr_fragment::{pbr_input_from_standard_material, pbr_material_from_standard_material},
-    pbr_functions::{alpha_discard, apply_pbr_lighting, main_pass_post_lighting_processing}
-}
-#import bevy_pbr::forward_io::{Vertex, VertexOutput, FragmentOutput}
+#import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
+#import bevy_pbr::pbr_fragment::pbr_material_from_standard_material
+#import bevy_pbr::pbr_functions::alpha_discard
+#import bevy_pbr::pbr_functions::apply_pbr_lighting
+#import bevy_pbr::pbr_functions::main_pass_post_lighting_processing
+#import bevy_pbr::forward_io::Vertex
+#import bevy_pbr::forward_io::VertexOutput
+#import bevy_pbr::forward_io::FragmentOutput
+#import bevy_pbr::mesh_view_bindings::globals
+#import bevy_pbr::mesh_bindings::mesh
 
 #import "shaders/wind.wgsl"::{Wind, BindlessWindIndices}
 #import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo,  displace_vertex_and_calc_normal}
-#import bevy_pbr::mesh_view_bindings::globals
-#import bevy_pbr::mesh_bindings::mesh
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
@@ -60,10 +64,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var noise: SampledNoise;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
-
+    
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
-
+    
     if (lod_fade > 0.0) {
         let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
         noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
@@ -74,7 +78,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
         let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
         noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-    }
+    } 
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(
@@ -106,6 +110,7 @@ fn fragment(
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
     var out: FragmentOutput;
+
     out.color = apply_pbr_lighting(pbr_input);
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 

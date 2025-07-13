@@ -1,8 +1,5 @@
-#import bevy_render::globals
-#import bevy_pbr::{
-    mesh_functions::{get_world_from_local, mesh_normal_local_to_world},
-    mesh_view_bindings::{view,globals}
-};
+#import bevy_pbr::mesh_functions::mesh_normal_local_to_world
+#import bevy_pbr::mesh_view_bindings::view
 
 #import "./shaders/wind.wgsl"::Wind
 
