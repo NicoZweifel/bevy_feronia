@@ -2,14 +2,19 @@
 #import bevy_pbr::mesh_functions::get_world_from_local
 #import bevy_pbr::mesh_functions::get_model_matrix
 #import bevy_pbr::view_transformations::position_world_to_clip
-#import bevy_pbr::prepass_io::Vertex
-#import bevy_pbr::prepass_io::VertexOutput
-#import bevy_pbr::prepass_bindings::globals
-#import bevy_render::globals::Globals
+#import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
+#import bevy_pbr::pbr_fragment::pbr_material_from_standard_material
+#import bevy_pbr::pbr_functions::alpha_discard
+#import bevy_pbr::pbr_functions::apply_pbr_lighting
+#import bevy_pbr::pbr_functions::main_pass_post_lighting_processing
+#import bevy_pbr::forward_io::Vertex
+#import bevy_pbr::forward_io::VertexOutput
+#import bevy_pbr::forward_io::FragmentOutput
+#import bevy_pbr::mesh_view_bindings::globals
 #import bevy_pbr::mesh_bindings::mesh
 
-#import "shaders/wind.wgsl"::{Wind, BindlessWindIndices}
-#import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo, displace_vertex_and_calc_normal}
+#import "embedded://bevy_feronia/wind.wgsl"::{Wind, BindlessWindIndices}
+#import "embedded://bevy_feronia/displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo,  displace_vertex_and_calc_normal}
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
@@ -17,8 +22,6 @@
 #else
 #import bevy_pbr::pbr_bindings::material
 #endif
-
-@group(0) @binding(1) var<uniform> globals: Globals;
 
 #ifdef BINDLESS
 @group(2) @binding(100) var<storage> wind_indices:
@@ -33,6 +36,7 @@
 @group(2) @binding(52) var noise_texture_sampler: sampler;
 
 #endif
+
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
@@ -52,17 +56,17 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.instance_index;
 
+    // --- TEXTURE SAMPLING ---
     let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
     let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
 
-    // --- TEXTURE SAMPLING ---
     var noise: SampledNoise;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
-
+    
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
-
+    
     if (lod_fade > 0.0) {
         let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
         noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
@@ -73,7 +77,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
         let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
         noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-    }
+    } 
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(
@@ -82,20 +86,32 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vertex.position,
         instance,
         dist_to_camera,
-    #ifdef VERTEX_NORMALS
         vertex.normal,
-        vertex.uv,
-    #endif
+        vertex.uv
     );
 
     out.position = position_world_to_clip(displaced.world_position.xyz);
     out.world_position = displaced.world_position;
+    out.world_normal = displaced.world_normal;
 
-    #ifdef VERTEX_NORMALS
-        out.world_normal = displaced.world_normal;
-    #endif
+    out.uv = vertex.uv;
+    out.instance_index = vertex.instance_index;
 
     return out;
 }
 
+@fragment
+fn fragment(
+    in: VertexOutput,
+    @builtin(front_facing) is_front: bool,
+) -> FragmentOutput {
+    var pbr_input = pbr_input_from_standard_material(in, is_front);
+    pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
+    var out: FragmentOutput;
+
+    out.color = apply_pbr_lighting(pbr_input);
+    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
+
+    return out;
+}

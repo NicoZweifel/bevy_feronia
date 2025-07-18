@@ -1,24 +1,42 @@
+use crate::{WindMaterialPlugin, prelude::*};
+use bevy::asset::{load_internal_asset, weak_handle};
 use bevy::{
     pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
-use crate::{WindPlugin, prelude::*};
-
 pub struct ExtendedMaterialPlugin;
+
+const WIND_MAIN_SHADER_HANDLE: Handle<Shader> =
+    weak_handle!("d92c3b99-95cb-4b6b-9aef-998edc557668");
+const WIND_PREPASS_SHADER_HANDLE: Handle<Shader> =
+    weak_handle!("fcb04db3-2018-4100-b8fa-e4bfb623de71");
 
 impl Plugin for ExtendedMaterialPlugin {
     fn build(&self, app: &mut App) {
+        load_internal_asset!(
+            app,
+            WIND_MAIN_SHADER_HANDLE,
+            "main.wgsl",
+            Shader::from_wgsl
+        );
+        load_internal_asset!(
+            app,
+            WIND_PREPASS_SHADER_HANDLE,
+            "prepass.wgsl",
+            Shader::from_wgsl
+        );
+
         app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
-            .add_plugins(WindPlugin::<StandardMaterial, WindAffectedExtendedMaterial>::default());
+            .add_plugins(WindMaterialPlugin::<StandardMaterial, WindAffectedExtendedMaterial>::default());
     }
 }
 
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
-    for WindAffectedExtendedMaterial
+for WindAffectedExtendedMaterial
 {
     fn create_material(
         base: StandardMaterial,
@@ -59,20 +77,18 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     }
 }
 
-const SHADER_MAIN_ASSET_PATH: &str = "shaders/wind_main.wgsl";
-const SHADER_PREPASS_ASSET_PATH: &str = "shaders/wind_prepass.wgsl";
 
 impl MaterialExtension for WindAffectedExtension {
     fn fragment_shader() -> ShaderRef {
-        SHADER_MAIN_ASSET_PATH.into()
+        WIND_MAIN_SHADER_HANDLE.into()
     }
 
     fn vertex_shader() -> ShaderRef {
-        SHADER_MAIN_ASSET_PATH.into()
+        WIND_MAIN_SHADER_HANDLE.into()
     }
 
     fn prepass_vertex_shader() -> ShaderRef {
-        SHADER_PREPASS_ASSET_PATH.into()
+        WIND_PREPASS_SHADER_HANDLE.into()
     }
 
     fn specialize(
@@ -81,9 +97,6 @@ impl MaterialExtension for WindAffectedExtension {
         _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
         _key: bevy::pbr::MaterialExtensionKey<Self>,
     ) -> std::result::Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
-
-
-
         Ok(())
     }
 }

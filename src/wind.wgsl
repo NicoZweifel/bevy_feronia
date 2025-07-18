@@ -1,3 +1,5 @@
+#define_import_path bevy_feronia::wind
+
 struct Wind {
     direction: vec2<f32>,
     strength: f32,

@@ -29,16 +29,25 @@ use bevy::{
 };
 use bytemuck::{Pod, Zeroable};
 
-use crate::{WindPlugin, prelude::*};
+use crate::{WindMaterialPlugin, prelude::*};
 
-const SHADER_ASSET_PATH: &str = "shaders/instancing.wgsl";
+const INSTANCING_SHADER_HANDLE: Handle<Shader> =
+    weak_handle!("1962c799-31ab-4ac9-a0cd-d0a3ef86a532");
 
 pub struct InstancedMaterialPlugin;
 
 impl Plugin for InstancedMaterialPlugin {
     fn build(&self, app: &mut App) {
+
+        load_internal_asset!(
+            app,
+            INSTANCING_SHADER_HANDLE,
+            "instancing.wgsl",
+            Shader::from_wgsl
+        );
+
         app.init_asset::<InstancedWindAffectedMaterial>();
-        app.add_plugins(WindPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default());
+        app.add_plugins(WindMaterialPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default());
         app.add_plugins(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.add_plugins(ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default());
         app.add_plugins(RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default());
@@ -76,6 +85,7 @@ use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlug
 use bevy::render::storage::GpuShaderStorageBuffer;
 use bevy::render::texture::{FallbackImage, GpuImage};
 use std::collections::HashMap;
+use bevy::asset::{load_internal_asset, weak_handle};
 
 struct PreparedInstancedWindAffectedMaterial {
     bind_group: BindGroup,
@@ -91,6 +101,7 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
         source_asset: Self::SourceAsset,
         _asset_id: AssetId<Self::SourceAsset>,
         (render_device, param): &mut SystemParamItem<Self::Param>,
+        _previous_asset: Option<&Self>,
     ) -> std::result::Result<Self, PrepareAssetError<Self::SourceAsset>> {
         match source_asset.as_bind_group(
             &InstancedWindAffectedMaterial::bind_group_layout(render_device),
@@ -113,7 +124,7 @@ impl ExtractComponent for InstancedWindAffectedMeshMaterial {
     type QueryFilter = ();
     type Out = Self;
 
-    fn extract_component(item: QueryItem<'_, Self::QueryData>) -> Option<Self> {
+    fn extract_component(item: QueryItem<'_,'_, Self::QueryData>) -> Option<Self> {
         Some(item.clone())
     }
 }
@@ -153,7 +164,7 @@ impl ExtractComponent for InstanceMaterialData {
     type QueryFilter = ();
     type Out = Self;
 
-    fn extract_component(item: QueryItem<'_, Self::QueryData>) -> Option<Self> {
+    fn extract_component(item: QueryItem<'_,'_, Self::QueryData>) -> Option<Self> {
         Some(InstanceMaterialData(item.0.clone()))
     }
 }
@@ -260,7 +271,7 @@ impl FromWorld for CustomPipeline {
         let material_layout = InstancedWindAffectedMaterial::bind_group_layout(render_device);
 
         CustomPipeline {
-            shader: world.load_asset(SHADER_ASSET_PATH),
+            shader: INSTANCING_SHADER_HANDLE,
             mesh_pipeline: mesh_pipeline.clone(),
             material_layout,
         }
