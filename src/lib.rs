@@ -7,7 +7,6 @@ use noise::{NoiseFn, Perlin};
 
 mod extension;
 mod instancing;
-mod material_instancing;
 pub mod prelude;
 use prelude::*;
 
