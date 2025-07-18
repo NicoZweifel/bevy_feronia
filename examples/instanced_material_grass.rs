@@ -62,9 +62,9 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 1000;
-    let cell_size = 0.05;
-    let plant_offset = 0.025;
+    let grid_size = 500;
+    let cell_size = 0.04;
+    let plant_offset = 0.02;
     let grid_world_size = grid_size as f32 * cell_size;
 
     let mut rng = rand::rng();
@@ -90,8 +90,7 @@ fn scatter_on_keypress(
                     InstanceData {
                         position: Vec3::new(x + x_jitter, 0.0, z + z_jitter),
                         scale: 1.0,
-                        color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0))
-                            .to_f32_array(),
+                        color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
                     }
                 })
