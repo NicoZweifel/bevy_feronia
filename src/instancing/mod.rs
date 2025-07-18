@@ -339,7 +339,6 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         >,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        // A borrow check workaround.
         let mesh_allocator = mesh_allocator.into_inner();
 
         let Some(mesh_instance) = render_mesh_instances.render_mesh_queue_data(item.main_entity())
@@ -377,6 +376,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 };
 
                 pass.set_index_buffer(index_buffer_slice.buffer.slice(..), 0, *index_format);
+                // TODO use draw_indexed_indirect
                 pass.draw_indexed(
                     index_buffer_slice.range.start..(index_buffer_slice.range.start + count),
                     vertex_buffer_slice.range.start as i32,
