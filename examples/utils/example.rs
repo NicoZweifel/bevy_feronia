@@ -84,6 +84,7 @@ pub fn setup(
             brightness: 10000.,
             ..default()
         },
+        NoIndirectDrawing,
         /*
         Msaa::Off,
         bevy::pbr::ScreenSpaceAmbientOcclusion::default(),

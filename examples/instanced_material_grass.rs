@@ -62,9 +62,9 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 100;
-    let cell_size = 0.075;
-    let plant_offset = 0.0375;
+    let grid_size = 1000;
+    let cell_size = 0.05;
+    let plant_offset = 0.025;
     let grid_world_size = grid_size as f32 * cell_size;
 
     let mut rng = rand::rng();
