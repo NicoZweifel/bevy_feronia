@@ -1,6 +1,7 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
+use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping},
     diagnostic::*,
@@ -9,21 +10,22 @@ use bevy::{
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
-use bevy::render::view::Hdr;
-use bevy_feronia::prelude::Wind;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use camera_controller::*;
-use iyes_perf_ui::prelude::*;
 
 #[derive(Component)]
 pub struct Landscape;
+
+#[derive(Resource, Default)]
+pub struct ExamplePluginOptions {
+    pub no_indirect_drawing: bool,
+}
 
 pub struct ExamplePlugin;
 
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
-
+        app.init_resource::<ExamplePluginOptions>()
+            .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup);
     }
@@ -34,6 +36,7 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
+    options: Res<ExamplePluginOptions>,
 ) {
     let diff_texture: Handle<Image> = asset_server.load("textures/brown_mud_leaves_01_diff_4k.jpg");
     let ao_texture: Handle<Image> = asset_server.load("textures/brown_mud_leaves_01_ao_4k.jpg");
@@ -58,27 +61,32 @@ pub fn setup(
         Transform::default(),
     ));
 
-    cmd.spawn((
-        Camera::default(),
-        Hdr,
-        Controller::default(),
-        Camera3d::default(),
-        ColorGrading::default(),
-        Bloom::NATURAL,
-        Tonemapping::TonyMcMapface,
-        Transform::from_xyz(-10., 2., 10.).looking_at(Vec3::ZERO, Vec3::Y),
-        Skybox {
-            image: asset_server.load("skybox.ktx2"),
-            brightness: 10000.,
-            ..default()
-        },
-        NoIndirectDrawing,
-        /*
-        Msaa::Off,
-        bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
-        bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
-        */
-    ));
+    let camera = cmd
+        .spawn((
+            Camera::default(),
+            Hdr,
+            Controller::default(),
+            Camera3d::default(),
+            ColorGrading::default(),
+            Bloom::NATURAL,
+            Tonemapping::TonyMcMapface,
+            Transform::from_xyz(-10., 2., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            Skybox {
+                image: asset_server.load("skybox.ktx2"),
+                brightness: 10000.,
+                ..default()
+            },
+            /*
+            Msaa::Off,
+            bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
+            bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
+            */
+        ))
+        .id();
+
+    if options.no_indirect_drawing {
+        cmd.entity(camera).insert(NoIndirectDrawing);
+    }
 
     cmd.spawn((
         Landscape,
@@ -104,5 +112,4 @@ pub fn setup(
         },
         Transform::from_xyz(-50., 100.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-
 }

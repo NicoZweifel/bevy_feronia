@@ -3,11 +3,11 @@ mod example;
 
 use bevy::prelude::*;
 use bevy::render::view::NoFrustumCulling;
+use bevy_feronia::WindPlugin;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
 use rand::seq::IndexedRandom;
-use bevy_feronia::WindPlugin;
 
 fn main() -> AppExit {
     App::new()
@@ -18,6 +18,9 @@ fn main() -> AppExit {
             round_exponent: 15.,
             edge_correction_factor: 0.001,
             ..default()
+        })
+        .insert_resource(ExamplePluginOptions {
+            no_indirect_drawing: true,
         })
         .add_plugins((ExamplePlugin, WindPlugin, InstancedWindAffectedPlugin))
         .add_systems(Startup, setup)
