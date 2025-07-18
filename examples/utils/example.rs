@@ -9,6 +9,7 @@ use bevy::{
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
+use bevy::render::view::Hdr;
 use bevy_feronia::prelude::Wind;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use camera_controller::*;
@@ -22,18 +23,7 @@ pub struct ExamplePlugin;
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
-            .add_plugins((
-                FrameTimeDiagnosticsPlugin::default(),
-                EntityCountDiagnosticsPlugin,
-                SystemInformationDiagnosticsPlugin,
-                PerfUiPlugin,
-            ))
-            .add_plugins((
-                EguiPlugin {
-                    enable_multipass_for_primary_context: true,
-                },
-                ResourceInspectorPlugin::<Wind>::default(),
-            ))
+
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup);
     }
@@ -69,10 +59,8 @@ pub fn setup(
     ));
 
     cmd.spawn((
-        Camera {
-            hdr: true,
-            ..default()
-        },
+        Camera::default(),
+        Hdr,
         Controller::default(),
         Camera3d::default(),
         ColorGrading::default(),
@@ -117,5 +105,4 @@ pub fn setup(
         Transform::from_xyz(-50., 100.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    cmd.spawn(PerfUiDefaultEntries::default());
 }

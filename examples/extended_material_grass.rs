@@ -7,6 +7,7 @@ use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
 use rand::seq::IndexedRandom;
+use bevy_feronia::WindPlugin;
 
 fn main() -> AppExit {
     App::new()
@@ -18,7 +19,7 @@ fn main() -> AppExit {
             edge_correction_factor: 0.001,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedMaterialPlugin))
+        .add_plugins((ExamplePlugin,WindPlugin, ExtendedWindAffectedPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, (init_grass, scatter_on_keypress))
         .run()

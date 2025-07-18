@@ -2,7 +2,7 @@
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
 #import bevy_pbr::mesh_view_bindings::view
 
-#import "embedded://bevy_feronia/wind.wgsl"::{Wind, BindlessWindIndices}
+#import bevy_feronia::wind::{Wind, BindlessWindIndices}
 
 struct SampledNoise {
     macro_noise: f32,

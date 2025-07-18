@@ -8,9 +8,8 @@
 #import bevy_render::globals::Globals
 #import bevy_pbr::mesh_bindings::mesh
 
-
-#import "embedded://bevy_feronia/wind.wgsl"::{Wind, BindlessWindIndices}
-#import "embedded://bevy_feronia/displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo,  displace_vertex_and_calc_normal}
+#import bevy_feronia::wind::{Wind, BindlessWindIndices}
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal, InstanceInfo, SampledNoise, DisplacedVertex}
 
 
 #ifdef BINDLESS
@@ -23,16 +22,16 @@
 @group(0) @binding(1) var<uniform> globals: Globals;
 
 #ifdef BINDLESS
-@group(2) @binding(100) var<storage> wind_indices:
+@group(3) @binding(100) var<storage> wind_indices:
     array<BindlessWindIndices>;
-@group(2) @binding(101) var<storage> wind_material:
+@group(3) @binding(101) var<storage> wind_material:
     array<Wind>;
 
 #else
 
-@group(2) @binding(50) var<uniform> wind: Wind;
-@group(2) @binding(51) var noise_texture: texture_2d<f32>;
-@group(2) @binding(52) var noise_texture_sampler: sampler;
+@group(3) @binding(50) var<uniform> wind: Wind;
+@group(3) @binding(51) var noise_texture: texture_2d<f32>;
+@group(3) @binding(52) var noise_texture_sampler: sampler;
 
 #endif
 @vertex

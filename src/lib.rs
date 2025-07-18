@@ -1,12 +1,10 @@
-use std::marker::PhantomData;
 use bevy::asset::embedded_asset;
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::load_shader_library;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
-
-
+use std::marker::PhantomData;
 
 mod extension;
 mod instancing;
@@ -17,21 +15,18 @@ pub struct WindPlugin;
 
 impl Plugin for WindPlugin {
     fn build(&self, app: &mut App) {
-
         load_shader_library!(app, "wind.wgsl");
         load_shader_library!(app, "displace.wgsl");
 
         app.init_resource::<Wind>()
-           .register_type::<Wind>();
+            .register_type::<Wind>()
+            .add_systems(Startup, setup_wind_texture);
     }
 }
-
-
 
 pub struct WindMaterialPlugin<M: Material, W: WindAffectable<M, W> + Asset> {
     pub _marker: PhantomData<(M, W)>,
 }
-
 
 impl<M: Material, W: WindAffectable<M, W> + Asset> Default for WindMaterialPlugin<M, W> {
     fn default() -> Self {
@@ -43,16 +38,13 @@ impl<M: Material, W: WindAffectable<M, W> + Asset> Default for WindMaterialPlugi
 
 impl<M: Material, W: WindAffectable<M, W> + Asset> Plugin for WindMaterialPlugin<M, W> {
     fn build(&self, app: &mut App) {
-        app
-            .init_resource::<WindAffectedTypes<W>>()
-            .add_systems(Startup, setup_wind_texture)
-            .add_systems(
-                Update,
-                (
-                    setup_wind_affected::<M, W>,
-                    update_materials::<M, W>.run_if(resource_changed::<Wind>),
-                ),
-            );
+        app.init_resource::<WindAffectedTypes<W>>().add_systems(
+            Update,
+            (
+                setup_wind_affected::<M, W>,
+                update_materials::<M, W>.run_if(resource_changed::<Wind>),
+            ),
+        );
     }
 }
 

@@ -1,19 +1,19 @@
 use crate::{WindMaterialPlugin, prelude::*};
-use bevy::asset::{load_internal_asset, weak_handle};
+use bevy::asset::{load_internal_asset, uuid_handle};
 use bevy::{
     pbr::{ExtendedMaterial, MaterialExtension},
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
 
-pub struct ExtendedMaterialPlugin;
+pub struct ExtendedWindAffectedPlugin;
 
 const WIND_MAIN_SHADER_HANDLE: Handle<Shader> =
-    weak_handle!("d92c3b99-95cb-4b6b-9aef-998edc557668");
+    uuid_handle!("d92c3b99-95cb-4b6b-9aef-998edc557668");
 const WIND_PREPASS_SHADER_HANDLE: Handle<Shader> =
-    weak_handle!("fcb04db3-2018-4100-b8fa-e4bfb623de71");
+    uuid_handle!("fcb04db3-2018-4100-b8fa-e4bfb623de71");
 
-impl Plugin for ExtendedMaterialPlugin {
+impl Plugin for ExtendedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,

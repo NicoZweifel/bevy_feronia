@@ -1,4 +1,3 @@
-
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
     ecs::{
@@ -31,23 +30,17 @@ use bytemuck::{Pod, Zeroable};
 
 use crate::{WindMaterialPlugin, prelude::*};
 
-const INSTANCING_SHADER_HANDLE: Handle<Shader> =
-    weak_handle!("1962c799-31ab-4ac9-a0cd-d0a3ef86a532");
+pub struct InstancedWindAffectedPlugin;
 
-pub struct InstancedMaterialPlugin;
-
-impl Plugin for InstancedMaterialPlugin {
+impl Plugin for InstancedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
-
-        load_internal_asset!(
-            app,
-            INSTANCING_SHADER_HANDLE,
-            "instancing.wgsl",
-            Shader::from_wgsl
-        );
+        embedded_asset!(app, "instancing.wgsl");
 
         app.init_asset::<InstancedWindAffectedMaterial>();
-        app.add_plugins(WindMaterialPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default());
+        app.add_plugins(WindMaterialPlugin::<
+            StandardMaterial,
+            InstancedWindAffectedMaterial,
+        >::default());
         app.add_plugins(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.add_plugins(ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default());
         app.add_plugins(RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default());
@@ -81,11 +74,10 @@ pub struct InstancedWindAffectedMaterial {
 #[derive(Component, Clone, Debug)]
 pub struct InstancedWindAffectedMeshMaterial(pub Handle<InstancedWindAffectedMaterial>);
 
+use bevy::asset::io::embedded::GetAssetServer;
+use bevy::asset::{AssetPath, embedded_asset, embedded_path};
+use bevy::pbr::SetMeshViewBindingArrayBindGroup;
 use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin};
-use bevy::render::storage::GpuShaderStorageBuffer;
-use bevy::render::texture::{FallbackImage, GpuImage};
-use std::collections::HashMap;
-use bevy::asset::{load_internal_asset, weak_handle};
 
 struct PreparedInstancedWindAffectedMaterial {
     bind_group: BindGroup,
@@ -124,7 +116,7 @@ impl ExtractComponent for InstancedWindAffectedMeshMaterial {
     type QueryFilter = ();
     type Out = Self;
 
-    fn extract_component(item: QueryItem<'_,'_, Self::QueryData>) -> Option<Self> {
+    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
         Some(item.clone())
     }
 }
@@ -164,7 +156,7 @@ impl ExtractComponent for InstanceMaterialData {
     type QueryFilter = ();
     type Out = Self;
 
-    fn extract_component(item: QueryItem<'_,'_, Self::QueryData>) -> Option<Self> {
+    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
         Some(InstanceMaterialData(item.0.clone()))
     }
 }
@@ -271,7 +263,9 @@ impl FromWorld for CustomPipeline {
         let material_layout = InstancedWindAffectedMaterial::bind_group_layout(render_device);
 
         CustomPipeline {
-            shader: INSTANCING_SHADER_HANDLE,
+            shader: world.get_resource::<AssetServer>().unwrap().load(
+                AssetPath::from_path_buf(embedded_path!("instancing.wgsl")).with_source("embedded"),
+            ),
             mesh_pipeline: mesh_pipeline.clone(),
             material_layout,
         }
@@ -319,7 +313,8 @@ impl SpecializedMeshPipeline for CustomPipeline {
 type DrawCustom = (
     SetItemPipeline,
     SetMeshViewBindGroup<0>,
-    SetMeshBindGroup<1>,
+    SetMeshViewBindingArrayBindGroup<1>,
+    SetMeshBindGroup<2>,
     DrawMeshInstanced,
 );
 
@@ -373,7 +368,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
 
         pass.set_vertex_buffer(0, vertex_buffer_slice.buffer.slice(..));
         pass.set_vertex_buffer(1, instance_buffer.buffer.slice(..));
-        pass.set_bind_group(2, &prepared_material.bind_group, &[]);
+        pass.set_bind_group(3, &prepared_material.bind_group, &[]);
 
         match &gpu_mesh.buffer_info {
             RenderMeshBufferInfo::Indexed {
