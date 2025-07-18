@@ -52,7 +52,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
 
-
     if (lod_fade > 0.0) {
         let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
         noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
@@ -78,7 +77,14 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     out.clip_position = view.clip_from_world * displaced.world_position;
 
-    out.color = vertex.i_color;
+    let min_height = 0.0;
+    let max_height = 1.0;
+
+    let gradient_factor = saturate((vertex.position.y - min_height) / (max_height - min_height));
+
+    let dark_color = vec4<f32>(vertex.i_color.rgb * 0.01, vertex.i_color.a);
+
+    out.color = mix(dark_color, vertex.i_color, gradient_factor);
 
     return out;
 }
