@@ -1,4 +1,3 @@
-mod standard;
 
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
