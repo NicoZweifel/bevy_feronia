@@ -37,7 +37,6 @@
 
 #endif
 
-
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;

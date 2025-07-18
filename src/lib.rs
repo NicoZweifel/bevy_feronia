@@ -6,14 +6,16 @@ use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
 mod extension;
+mod instancing;
+mod material_instancing;
 pub mod prelude;
 use prelude::*;
 
-pub struct WindPlugin<M: Material, W: WindAffectable<M, W> + Material> {
+pub struct WindPlugin<M: Material, W: WindAffectable<M, W> + Asset> {
     pub _marker: PhantomData<(M, W)>,
 }
 
-impl<M: Material, W: WindAffectable<M, W> + Material> Default for WindPlugin<M, W> {
+impl<M: Material, W: WindAffectable<M, W> + Asset> Default for WindPlugin<M, W> {
     fn default() -> Self {
         Self {
             _marker: Default::default(),
@@ -21,7 +23,7 @@ impl<M: Material, W: WindAffectable<M, W> + Material> Default for WindPlugin<M, 
     }
 }
 
-impl<M: Material, W: WindAffectable<M, W> + Material> Plugin for WindPlugin<M, W> {
+impl<M: Material, W: WindAffectable<M, W> + Asset> Plugin for WindPlugin<M, W> {
     fn build(&self, app: &mut App) {
         app.init_resource::<Wind>()
             .register_type::<Wind>()
@@ -37,13 +39,13 @@ impl<M: Material, W: WindAffectable<M, W> + Material> Plugin for WindPlugin<M, W
     }
 }
 
-fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
-    cmd: &mut Commands,
+fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     materials: &mut ResMut<Assets<M>>,
     extended_materials: &mut ResMut<Assets<W>>,
-    (entity, material, mesh): (Entity, &MeshMaterial3d<M>, &Mesh3d),
+    (material, mesh): (&MeshMaterial3d<M>, &Mesh3d),
     wind_noise_texture: &Res<WindTexture>,
     wind: &Res<Wind>,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) -> WindAffectedType<W> {
     let new_material = W::create_material(
         (*materials.get(material).unwrap()).clone(),
@@ -52,48 +54,43 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Material>(
     );
 
     let material = extended_materials.add(new_material);
-
-    cmd.entity(entity)
-        .remove::<MeshMaterial3d<StandardMaterial>>()
-        .insert((MeshMaterial3d(material.clone()), WindAffectedReady));
+    let mesh = meshes.get(mesh).cloned().unwrap();
+    let mesh = meshes.add(mesh.clone());
 
     WindAffectedType {
-        mesh: mesh.0.clone(),
+        mesh,
         material,
         wind: (*wind).clone(),
     }
 }
 
-fn update_materials<M: Material, W: WindAffectable<M, W> + Material>(
+fn update_materials<M: Material, W: WindAffectable<M, W> + Asset>(
     materials: ResMut<Assets<W>>,
     wind: Res<Wind>,
 ) {
     W::update_material(materials, wind.clone());
 }
 
-fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Material>(
-    mut cmd: Commands,
-    q: Query<
-        (Entity, &MeshMaterial3d<M>, &Mesh3d),
-        (With<WindAffected>, Without<WindAffectedReady>),
-    >,
+fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Asset>(
+    q: Query<(&MeshMaterial3d<M>, &Mesh3d), (With<WindAffected>, Without<WindAffectedReady>)>,
     mut materials: ResMut<Assets<M>>,
     mut extended_materials: ResMut<Assets<W>>,
     mut types: ResMut<WindAffectedTypes<W>>,
     wind_noise_texture: Res<WindTexture>,
     wind: Res<Wind>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     types.values.append(
         &mut q
             .iter()
             .map(|x| {
                 create_material::<M, W>(
-                    &mut cmd,
                     &mut materials,
                     &mut extended_materials,
                     x,
                     &wind_noise_texture,
                     &wind,
+                    &mut meshes,
                 )
             })
             .collect(),

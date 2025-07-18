@@ -6,9 +6,9 @@ use bevy::{
 
 use crate::{WindPlugin, prelude::*};
 
-pub struct ExtendedMaterialWindPlugin;
+pub struct ExtendedMaterialPlugin;
 
-impl Plugin for ExtendedMaterialWindPlugin {
+impl Plugin for ExtendedMaterialPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
             .add_plugins(WindPlugin::<StandardMaterial, WindAffectedExtendedMaterial>::default());
@@ -17,22 +17,14 @@ impl Plugin for ExtendedMaterialWindPlugin {
 
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
-pub trait WindAffectable<M: Material, R: Material> {
-    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
-    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
-}
-
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
     for WindAffectedExtendedMaterial
 {
     fn create_material(
-        mut base: StandardMaterial,
+        base: StandardMaterial,
         wind: Wind,
         noise_texture: Handle<Image>,
     ) -> WindAffectedExtendedMaterial {
-        // TODO do in base
-        base.double_sided = true;
-        base.cull_mode = None;
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
@@ -61,38 +53,6 @@ pub struct WindAffectedExtension {
     pub noise_texture: Handle<Image>,
 }
 
-impl From<&Wind> for WindUniform {
-    fn from(wind: &Wind) -> Self {
-        WindUniform {
-            direction: wind.direction,
-            strength: wind.strength,
-            noise_scale: wind.noise_scale,
-            scroll_speed: wind.scroll_speed,
-            bend_exponent: wind.bend_exponent,
-            round_exponent: wind.round_exponent,
-            micro_strength: wind.micro_strength,
-            micro_noise_scale: wind.micro_noise_scale,
-            micro_scroll_speed: wind.micro_scroll_speed,
-            s_curve_speed: wind.s_curve_speed,
-            s_curve_strength: wind.s_curve_strength,
-            s_curve_frequency: wind.s_curve_frequency,
-            bop_speed: wind.bop_speed,
-            bop_strength: wind.bop_strength,
-            twist_strength: wind.twist_strength,
-            enable_billboarding: match wind.enable_billboarding {
-                true => 1,
-                _ => 0,
-            },
-            enable_edge_correction: match wind.enable_edge_correction {
-                true => 1,
-                _ => 0,
-            },
-            edge_correction_factor: wind.edge_correction_factor,
-            lod_threshold: wind.lod_threshold,
-        }
-    }
-}
-
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
@@ -113,5 +73,17 @@ impl MaterialExtension for WindAffectedExtension {
 
     fn prepass_vertex_shader() -> ShaderRef {
         SHADER_PREPASS_ASSET_PATH.into()
+    }
+
+    fn specialize(
+        _pipeline: &bevy::pbr::MaterialExtensionPipeline,
+        _descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
+        _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
+        _key: bevy::pbr::MaterialExtensionKey<Self>,
+    ) -> std::result::Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+
+
+
+        Ok(())
     }
 }

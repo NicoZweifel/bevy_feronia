@@ -7,7 +7,7 @@ use bevy::{
     image::ImageLoaderSettings,
     pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,
-    render::view::ColorGrading,
+    render::view::{ColorGrading, NoIndirectDrawing},
 };
 use bevy_feronia::prelude::Wind;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};

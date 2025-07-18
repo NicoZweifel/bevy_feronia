@@ -13,7 +13,7 @@ fn main() -> AppExit {
             micro_strength: 0.2,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))
+        .add_plugins((ExamplePlugin, ExtendedMaterialPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, (init_grass, scatter_on_keypress))
         .run()

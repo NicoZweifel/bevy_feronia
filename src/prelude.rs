@@ -5,14 +5,20 @@ use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
 
 pub use crate::extension::*;
+pub use crate::instancing::*;
 
 #[derive(Resource)]
-pub struct WindAffectedTypes<M: Material> {
+pub struct WindAffectedTypes<M: Asset> {
     pub values: Vec<WindAffectedType<M>>,
     pub _marker: PhantomData<M>,
 }
 
-impl<M: Material> Default for WindAffectedTypes<M> {
+pub trait WindAffectable<M: Material, R: Asset> {
+    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
+    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
+}
+
+impl<M: Asset> Default for WindAffectedTypes<M> {
     fn default() -> Self {
         Self {
             values: Default::default(),
@@ -21,13 +27,13 @@ impl<M: Material> Default for WindAffectedTypes<M> {
     }
 }
 
-pub struct WindAffectedType<M: Material> {
+pub struct WindAffectedType<M: Asset> {
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
     pub wind: Wind,
 }
 
-impl<M: Material> WindAffectedTypes<M> {
+impl<M: Asset> WindAffectedTypes<M> {
     pub fn get(&self) -> &Vec<WindAffectedType<M>> {
         &self.values
     }
@@ -113,6 +119,38 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
+        }
+    }
+}
+
+impl From<&Wind> for WindUniform {
+    fn from(wind: &Wind) -> Self {
+        WindUniform {
+            direction: wind.direction,
+            strength: wind.strength,
+            noise_scale: wind.noise_scale,
+            scroll_speed: wind.scroll_speed,
+            bend_exponent: wind.bend_exponent,
+            round_exponent: wind.round_exponent,
+            micro_strength: wind.micro_strength,
+            micro_noise_scale: wind.micro_noise_scale,
+            micro_scroll_speed: wind.micro_scroll_speed,
+            s_curve_speed: wind.s_curve_speed,
+            s_curve_strength: wind.s_curve_strength,
+            s_curve_frequency: wind.s_curve_frequency,
+            bop_speed: wind.bop_speed,
+            bop_strength: wind.bop_strength,
+            twist_strength: wind.twist_strength,
+            enable_billboarding: match wind.enable_billboarding {
+                true => 1,
+                _ => 0,
+            },
+            enable_edge_correction: match wind.enable_edge_correction {
+                true => 1,
+                _ => 0,
+            },
+            edge_correction_factor: wind.edge_correction_factor,
+            lod_threshold: wind.lod_threshold,
         }
     }
 }
