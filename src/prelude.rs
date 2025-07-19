@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
-
+use bytemuck::{Pod, Zeroable};
 pub use crate::extension::*;
 pub use crate::instancing::*;
 
@@ -69,11 +69,13 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
+    pub enable_lod:bool,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
 
-#[derive(ShaderType, Clone)]
+#[repr(C)]
+#[derive(ShaderType, Clone,Pod,Zeroable,Copy)]
 pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,
@@ -90,8 +92,6 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-    pub enable_billboarding: u32,
-    pub enable_edge_correction: u32,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
@@ -119,6 +119,7 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
+            enable_lod:false
         }
     }
 }
@@ -141,14 +142,6 @@ impl From<&Wind> for WindUniform {
             bop_speed: wind.bop_speed,
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
-            enable_billboarding: match wind.enable_billboarding {
-                true => 1,
-                _ => 0,
-            },
-            enable_edge_correction: match wind.enable_edge_correction {
-                true => 1,
-                _ => 0,
-            },
             edge_correction_factor: wind.edge_correction_factor,
             lod_threshold: wind.lod_threshold,
         }

@@ -5,6 +5,8 @@ use bevy::{
     prelude::*,
     render::render_resource::{AsBindGroup, ShaderRef},
 };
+use bitflags::bitflags;
+use bytemuck::{Pod, Zeroable};
 
 pub struct ExtendedWindAffectedPlugin;
 
@@ -15,12 +17,7 @@ const WIND_PREPASS_SHADER_HANDLE: Handle<Shader> =
 
 impl Plugin for ExtendedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
-        load_internal_asset!(
-            app,
-            WIND_MAIN_SHADER_HANDLE,
-            "main.wgsl",
-            Shader::from_wgsl
-        );
+        load_internal_asset!(app, WIND_MAIN_SHADER_HANDLE, "main.wgsl", Shader::from_wgsl);
         load_internal_asset!(
             app,
             WIND_PREPASS_SHADER_HANDLE,
@@ -29,14 +26,17 @@ impl Plugin for ExtendedWindAffectedPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
-            .add_plugins(WindMaterialPlugin::<StandardMaterial, WindAffectedExtendedMaterial>::default());
+            .add_plugins(WindMaterialPlugin::<
+                StandardMaterial,
+                WindAffectedExtendedMaterial,
+            >::default());
     }
 }
 
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
-for WindAffectedExtendedMaterial
+    for WindAffectedExtendedMaterial
 {
     fn create_material(
         base: StandardMaterial,
@@ -61,6 +61,7 @@ for WindAffectedExtendedMaterial
 }
 
 #[derive(Asset, Reflect, AsBindGroup, Debug, Clone)]
+#[bind_group_data(WindAffectedExtensionKey)]
 #[data(50, WindUniform, binding_array(101))]
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
@@ -77,13 +78,12 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     }
 }
 
-
 impl MaterialExtension for WindAffectedExtension {
-    fn fragment_shader() -> ShaderRef {
+    fn vertex_shader() -> ShaderRef {
         WIND_MAIN_SHADER_HANDLE.into()
     }
 
-    fn vertex_shader() -> ShaderRef {
+    fn fragment_shader() -> ShaderRef {
         WIND_MAIN_SHADER_HANDLE.into()
     }
 
@@ -93,10 +93,64 @@ impl MaterialExtension for WindAffectedExtension {
 
     fn specialize(
         _pipeline: &bevy::pbr::MaterialExtensionPipeline,
-        _descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
+        descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
         _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
-        _key: bevy::pbr::MaterialExtensionKey<Self>,
+        key: bevy::pbr::MaterialExtensionKey<Self>,
     ) -> std::result::Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+        let shader_defs = &mut descriptor.vertex.shader_defs;
+
+        if key
+            .bind_group_data
+            .contains(WindAffectedExtensionKey::ENABLE_BILLBOARDING)
+        {
+            shader_defs.push("WIND_BILLBOARDING".into());
+        }
+
+        if key
+            .bind_group_data
+            .contains(WindAffectedExtensionKey::ENABLE_EDGE_CORRECTION)
+        {
+            shader_defs.push("WIND_EDGE_CORRECTION".into());
+        }
+
+        if key
+            .bind_group_data
+            .contains(WindAffectedExtensionKey::ENABLE_LOD)
+        {
+            shader_defs.push("WIND_LOD".into());
+        }
+
         Ok(())
+    }
+}
+
+bitflags! {
+    #[repr(C)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
+    pub struct WindAffectedExtensionKey: u32 {
+        const ENABLE_BILLBOARDING    = 1 << 0; // 0b0000_0001
+        const ENABLE_EDGE_CORRECTION = 1 << 1; // 0b0000_0010
+        const ENABLE_LOD = 1 << 2; // 0b000_00100
+    }
+}
+
+impl From<&WindAffectedExtension> for WindAffectedExtensionKey {
+    fn from(material: &WindAffectedExtension) -> Self {
+        let mut key = WindAffectedExtensionKey::empty();
+
+        key.set(
+            WindAffectedExtensionKey::ENABLE_BILLBOARDING,
+            material.wind.enable_billboarding,
+        );
+        key.set(
+            WindAffectedExtensionKey::ENABLE_EDGE_CORRECTION,
+            material.wind.enable_edge_correction,
+        );
+        key.set(
+            WindAffectedExtensionKey::ENABLE_LOD,
+            material.wind.enable_lod,
+        );
+
+        key
     }
 }

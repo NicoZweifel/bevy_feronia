@@ -78,6 +78,7 @@ use bevy::asset::io::embedded::GetAssetServer;
 use bevy::asset::{AssetPath, embedded_asset, embedded_path};
 use bevy::pbr::SetMeshViewBindingArrayBindGroup;
 use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin};
+use bitflags::bitflags;
 
 struct PreparedInstancedWindAffectedMaterial {
     bind_group: BindGroup,
@@ -306,6 +307,7 @@ impl SpecializedMeshPipeline for CustomPipeline {
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
+
         Ok(descriptor)
     }
 }
@@ -396,3 +398,4 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         RenderCommandResult::Success
     }
 }
+
