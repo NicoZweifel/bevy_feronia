@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
+use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 pub use crate::extension::*;
 pub use crate::instancing::*;
@@ -145,5 +146,16 @@ impl From<&Wind> for WindUniform {
             edge_correction_factor: wind.edge_correction_factor,
             lod_threshold: wind.lod_threshold,
         }
+    }
+}
+
+bitflags! {
+    #[repr(C)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
+    pub struct WindAffectedKey: u32 {
+        // avoid conflict with MeshPipelineKey's lower bits.
+        const ENABLE_BILLBOARDING    = 1 << 24;
+        const ENABLE_EDGE_CORRECTION = 1 << 25;
+        const ENABLE_LOD = 1 << 26;
     }
 }

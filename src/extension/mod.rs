@@ -61,7 +61,7 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
 }
 
 #[derive(Asset, Reflect, AsBindGroup, Debug, Clone)]
-#[bind_group_data(WindAffectedExtensionKey)]
+#[bind_group_data(WindAffectedKey)]
 #[data(50, WindUniform, binding_array(101))]
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
@@ -101,21 +101,21 @@ impl MaterialExtension for WindAffectedExtension {
 
         if key
             .bind_group_data
-            .contains(WindAffectedExtensionKey::ENABLE_BILLBOARDING)
+            .contains(WindAffectedKey::ENABLE_BILLBOARDING)
         {
             shader_defs.push("WIND_BILLBOARDING".into());
         }
 
         if key
             .bind_group_data
-            .contains(WindAffectedExtensionKey::ENABLE_EDGE_CORRECTION)
+            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
         {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
         if key
             .bind_group_data
-            .contains(WindAffectedExtensionKey::ENABLE_LOD)
+            .contains(WindAffectedKey::ENABLE_LOD)
         {
             shader_defs.push("WIND_LOD".into());
         }
@@ -124,30 +124,21 @@ impl MaterialExtension for WindAffectedExtension {
     }
 }
 
-bitflags! {
-    #[repr(C)]
-    #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
-    pub struct WindAffectedExtensionKey: u32 {
-        const ENABLE_BILLBOARDING    = 1 << 0; // 0b0000_0001
-        const ENABLE_EDGE_CORRECTION = 1 << 1; // 0b0000_0010
-        const ENABLE_LOD = 1 << 2; // 0b000_00100
-    }
-}
 
-impl From<&WindAffectedExtension> for WindAffectedExtensionKey {
+impl From<&WindAffectedExtension> for WindAffectedKey {
     fn from(material: &WindAffectedExtension) -> Self {
-        let mut key = WindAffectedExtensionKey::empty();
+        let mut key = WindAffectedKey::empty();
 
         key.set(
-            WindAffectedExtensionKey::ENABLE_BILLBOARDING,
+            WindAffectedKey::ENABLE_BILLBOARDING,
             material.wind.enable_billboarding,
         );
         key.set(
-            WindAffectedExtensionKey::ENABLE_EDGE_CORRECTION,
+            WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.wind.enable_edge_correction,
         );
         key.set(
-            WindAffectedExtensionKey::ENABLE_LOD,
+            WindAffectedKey::ENABLE_LOD,
             material.wind.enable_lod,
         );
 
