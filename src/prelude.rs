@@ -152,10 +152,9 @@ impl From<&Wind> for WindUniform {
 bitflags! {
     #[repr(C)]
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
-    pub struct WindAffectedKey: u32 {
-        // avoid conflict with MeshPipelineKey's lower bits.
-        const ENABLE_BILLBOARDING    = 1 << 24;
-        const ENABLE_EDGE_CORRECTION = 1 << 25;
-        const ENABLE_LOD = 1 << 26;
+    pub struct WindAffectedKey: u64 {
+        const ENABLE_BILLBOARDING    = 1 << 0;
+        const ENABLE_EDGE_CORRECTION = 1 << 1;
+        const ENABLE_LOD = 1 << 2;
     }
 }

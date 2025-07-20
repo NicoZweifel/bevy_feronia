@@ -5,12 +5,11 @@ use bevy::{
         system::{SystemParamItem, lifetimeless::*},
     },
     pbr::{
-        MeshPipeline, MeshPipelineKey, RenderMeshInstances, SetMaterialBindGroup, SetMeshBindGroup,
-        SetMeshViewBindGroup,
+        MeshPipeline, MeshPipelineKey, RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
     },
     prelude::*,
     render::{
-        Render, RenderApp, RenderSet,
+        Render, RenderApp,
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{
             MeshVertexBufferLayoutRef, RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator,
@@ -41,6 +40,8 @@ impl Plugin for InstancedWindAffectedPlugin {
             StandardMaterial,
             InstancedWindAffectedMaterial,
         >::default());
+        app.add_plugins(ExtractComponentPlugin::<InstancePipelineKey>::default())
+            .add_systems(Update, add_instance_key_component);
         app.add_plugins(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.add_plugins(ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default());
         app.add_plugins(RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default());
@@ -50,14 +51,60 @@ impl Plugin for InstancedWindAffectedPlugin {
             .add_systems(
                 Render,
                 (
-                    queue_custom.in_set(RenderSet::QueueMeshes),
-                    prepare_instance_buffers.in_set(RenderSet::PrepareResources),
+                    queue_custom.in_set(RenderSystems::QueueMeshes),
+                    prepare_instance_buffers.in_set(RenderSystems::PrepareResources),
                 ),
             );
     }
 
     fn finish(&self, app: &mut App) {
         app.sub_app_mut(RenderApp).init_resource::<CustomPipeline>();
+    }
+}
+
+fn add_instance_key_component(
+    mut commands: Commands,
+    materials: Res<Assets<InstancedWindAffectedMaterial>>,
+    query: Query<(Entity, &InstancedWindAffectedMeshMaterial), Without<InstancePipelineKey>>,
+) {
+    for (entity, material_handle) in &query {
+        let Some(material) = materials.get(&material_handle.0) else {
+            continue;
+        };
+        let mut key = WindAffectedKey::empty();
+
+        key.set(
+            WindAffectedKey::ENABLE_BILLBOARDING,
+            material.wind.enable_billboarding,
+        );
+        key.set(
+            WindAffectedKey::ENABLE_EDGE_CORRECTION,
+            material.wind.enable_edge_correction,
+        );
+        key.set(WindAffectedKey::ENABLE_LOD, material.wind.enable_lod);
+
+        commands
+            .entity(entity)
+            .insert(InstancePipelineKey(key.bits()));
+    }
+}
+
+#[derive(Component, Clone, Copy, Deref, DerefMut)]
+struct InstancePipelineKey(pub u64);
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct CustomPipelineKey {
+    mesh_key: MeshPipelineKey,
+    wind_key: WindAffectedKey,
+}
+
+impl ExtractComponent for InstancePipelineKey {
+    type QueryData = &'static InstancePipelineKey;
+    type QueryFilter = ();
+    type Out = Self;
+
+    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
+        Some(item.clone())
     }
 }
 
@@ -74,11 +121,10 @@ pub struct InstancedWindAffectedMaterial {
 #[derive(Component, Clone, Debug)]
 pub struct InstancedWindAffectedMeshMaterial(pub Handle<InstancedWindAffectedMaterial>);
 
-use bevy::asset::io::embedded::GetAssetServer;
 use bevy::asset::{AssetPath, embedded_asset, embedded_path};
 use bevy::pbr::SetMeshViewBindingArrayBindGroup;
+use bevy::render::RenderSystems;
 use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssetPlugin};
-use bitflags::bitflags;
 
 struct PreparedInstancedWindAffectedMaterial {
     bind_group: BindGroup,
@@ -179,7 +225,7 @@ fn queue_custom(
     meshes: Res<RenderAssets<RenderMesh>>,
     render_mesh_instances: Res<RenderMeshInstances>,
     material_meshes: Query<
-        (Entity, &MainEntity),
+        (Entity, &MainEntity, &InstancePipelineKey),
         (
             With<InstanceMaterialData>,
             With<InstancedWindAffectedMeshMaterial>,
@@ -200,7 +246,7 @@ fn queue_custom(
 
         let view_key = msaa_key | MeshPipelineKey::from_hdr(view.hdr);
         let rangefinder = view.rangefinder3d();
-        for (entity, main_entity) in &material_meshes {
+        for (entity, main_entity, instance_key) in &material_meshes {
             let Some(mesh_instance) = render_mesh_instances.render_mesh_queue_data(*main_entity)
             else {
                 continue;
@@ -208,8 +254,13 @@ fn queue_custom(
             let Some(mesh) = meshes.get(mesh_instance.mesh_asset_id) else {
                 continue;
             };
-            let key =
-                view_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology());
+
+            let key = CustomPipelineKey {
+                mesh_key: view_key
+                    | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology()),
+                wind_key: WindAffectedKey::from_bits(instance_key.0).unwrap(),
+            };
+
             let pipeline = pipelines
                 .specialize(&pipeline_cache, &custom_pipeline, key, &mesh.layout)
                 .unwrap();
@@ -274,16 +325,32 @@ impl FromWorld for CustomPipeline {
 }
 
 impl SpecializedMeshPipeline for CustomPipeline {
-    type Key = MeshPipelineKey;
+    type Key = CustomPipelineKey;
 
     fn specialize(
         &self,
         key: Self::Key,
         layout: &MeshVertexBufferLayoutRef,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
-        let mut descriptor = self.mesh_pipeline.specialize(key, layout)?;
+        let mut descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout)?;
 
         descriptor.layout.push(self.material_layout.clone());
+
+        let shader_defs = &mut descriptor.vertex.shader_defs;
+
+        if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
+            shader_defs.push("WIND_BILLBOARDING".into());
+        }
+        if key
+            .wind_key
+            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
+        {
+            shader_defs.push("WIND_EDGE_CORRECTION".into());
+        }
+        if key.wind_key.contains(WindAffectedKey::ENABLE_LOD) {
+            shader_defs.push("WIND_LOD".into());
+        }
+
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {
             array_stride: size_of::<InstanceData>() as u64,
@@ -398,4 +465,3 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         RenderCommandResult::Success
     }
 }
-
