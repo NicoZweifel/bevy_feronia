@@ -65,42 +65,64 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    let grid_size = 500;
-    let cell_size = 0.04;
-    let plant_offset = 0.02;
-    let grid_world_size = grid_size as f32 * cell_size;
+    q.iter().for_each(|x| cmd.entity(x).despawn());
+
+    const CHUNK_GRID_SIZE: u32 = 10;
+    const INSTANCES_PER_CHUNK_DIM: u32 = 50;
+    const CELL_SIZE: f32 = 0.04;
+    const PLANT_OFFSET: f32 = 0.02;
 
     let mut rng = rand::rng();
 
-    q.iter().for_each(|x| cmd.entity(x).despawn());
+    let instances_per_chunk = INSTANCES_PER_CHUNK_DIM.pow(2);
+    let chunk_world_size = INSTANCES_PER_CHUNK_DIM as f32 * CELL_SIZE;
+    let total_world_size = CHUNK_GRID_SIZE as f32 * chunk_world_size;
+    let world_half_size = total_world_size / 2.0;
 
     let prototype = prototypes.get().choose(&mut rng).unwrap();
 
-    cmd.spawn((
-        InstancedWindAffectedMeshMaterial(prototype.material.clone()),
-        InstanceMaterialData(
-            (0..grid_size * grid_size)
+    for chunk_z in 0..CHUNK_GRID_SIZE {
+        for chunk_x in 0..CHUNK_GRID_SIZE {
+            let chunk_origin = Vec3::new(
+                chunk_x as f32 * chunk_world_size - world_half_size,
+                0.0,
+                chunk_z as f32 * chunk_world_size - world_half_size,
+            );
+
+            let instance_data = (0..instances_per_chunk)
                 .map(|i| {
-                    let grid_x = (i % grid_size) as f32;
-                    let grid_z = (i / grid_size) as f32;
+                    let local_instance_x = (i % INSTANCES_PER_CHUNK_DIM) as f32;
+                    let local_instance_z = (i / INSTANCES_PER_CHUNK_DIM) as f32;
 
-                    let x = grid_x * cell_size - grid_world_size / 2.0;
-                    let z = grid_z * cell_size - grid_world_size / 2.0;
+                    let pos_in_chunk = Vec3::new(
+                        local_instance_x * CELL_SIZE,
+                        0.0,
+                        local_instance_z * CELL_SIZE,
+                    );
 
-                    let x_jitter = rng.random_range(-plant_offset..plant_offset);
-                    let z_jitter = rng.random_range(-plant_offset..plant_offset);
+                    let jitter = Vec3::new(
+                        rng.random_range(-PLANT_OFFSET..PLANT_OFFSET),
+                        0.0,
+                        rng.random_range(-PLANT_OFFSET..PLANT_OFFSET),
+                    );
 
                     InstanceData {
-                        position: Vec3::new(x + x_jitter, 0.0, z + z_jitter),
+                        position: chunk_origin + pos_in_chunk + jitter,
                         scale: 1.0,
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
                     }
                 })
-                .collect::<Vec<_>>(),
-        ),
-        WindAffectedReady,
-        Mesh3d(prototype.mesh.clone()),
-        NoFrustumCulling,
-    ));
+                .collect::<Vec<_>>();
+
+            cmd.spawn((
+                WindAffected,
+                InstancedWindAffectedMeshMaterial(prototype.material.clone()),
+                InstanceMaterialData(instance_data),
+                WindAffectedReady,
+                Mesh3d(prototype.mesh.clone()),
+                NoFrustumCulling,
+            ));
+        }
+    }
 }
