@@ -2,13 +2,9 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::prelude::*;
 use example::*;
 use rand::{seq::IndexedRandom, Rng};
-use bevy_feronia::components::{WindAffected, WindAffectedReady};
-use bevy_feronia::extension::material::WindAffectedExtendedMaterial;
-use bevy_feronia::extension::plugin::ExtendedWindAffectedPlugin;
-use bevy_feronia::plugin::WindPlugin;
+use bevy_feronia::prelude::*;
 
 fn main() -> AppExit {
     App::new()

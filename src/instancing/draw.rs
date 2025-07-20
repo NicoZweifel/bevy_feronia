@@ -1,19 +1,17 @@
-use super::{components::{InstanceBuffer }, material::PreparedInstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial};
 use bevy::{
     ecs::system::{lifetimeless::*, SystemParamItem},
     pbr::{
         RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup, SetMeshViewBindingArrayBindGroup,
     },
-    prelude::*,
     render::{
         mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo},
         render_asset::RenderAssets,
         render_phase::{
             PhaseItem, RenderCommand, RenderCommandResult, SetItemPipeline, TrackedRenderPass,
         },
-        render_resource::*,
     },
 };
+use crate::prelude::*;
 
 pub(crate) type DrawCustom = (
     SetItemPipeline,

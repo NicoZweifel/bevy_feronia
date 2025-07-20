@@ -3,12 +3,10 @@ mod example;
 
 use bevy::pbr::NotShadowCaster;
 use bevy::prelude::*;
-use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
 use rand::seq::IndexedRandom;
-use bevy_feronia::extension::material::WindAffectedExtendedMaterial;
-use bevy_feronia::extension::plugin::ExtendedWindAffectedPlugin;
+use bevy_feronia::prelude::*;
 
 fn main() -> AppExit {
     App::new()

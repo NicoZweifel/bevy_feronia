@@ -3,7 +3,6 @@ mod example;
 
 use bevy::prelude::*;
 use bevy::render::view::NoFrustumCulling;
-use bevy_feronia::WindPlugin;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;

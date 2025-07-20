@@ -96,3 +96,4 @@ impl SpecializedMeshPipeline for CustomPipeline {
         Ok(descriptor)
     }
 }
+

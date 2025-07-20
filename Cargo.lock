@@ -1101,6 +1101,7 @@ version = "0.1.0"
 dependencies = [
  "bevy 0.17.0-dev",
  "bevy-inspector-egui",
+ "bitflags 2.9.1",
  "bytemuck",
  "iyes_perf_ui",
  "log",

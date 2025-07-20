@@ -5,8 +5,7 @@ use noise::{NoiseFn, Perlin};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::pbr::{Material, MeshMaterial3d};
 use bevy::mesh::{Mesh, Mesh3d};
-use crate::components::{WindAffected, WindAffectedReady};
-use crate::prelude::{Wind, WindAffectable, WindAffectedType, WindAffectedTypes, WindTexture};
+use crate::prelude::*;
 
 fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     materials: &mut ResMut<Assets<M>>,
