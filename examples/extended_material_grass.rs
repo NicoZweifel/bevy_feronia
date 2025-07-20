@@ -7,7 +7,8 @@ use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
 use rand::seq::IndexedRandom;
-use bevy_feronia::WindPlugin;
+use bevy_feronia::extension::material::WindAffectedExtendedMaterial;
+use bevy_feronia::extension::plugin::ExtendedWindAffectedPlugin;
 
 fn main() -> AppExit {
     App::new()
