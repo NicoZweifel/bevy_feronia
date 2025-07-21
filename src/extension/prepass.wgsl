@@ -62,19 +62,20 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
 
-    #ifndef WIND_LOD
-        let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
-        let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
-        let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
-        noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
+    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
 
-        let texture_dimension = 512.0;
-        let phase_coord_x = f32(instance.instance_index % u32(texture_dimension)) / texture_dimension;
-        let phase_coord_y = f32(instance.instance_index / u32(texture_dimension)) / texture_dimension;
-        let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
-        let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
-        noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-    #endif
+#ifndef WIND_LOD
+    let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
+    let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
+    noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
+
+    let texture_dimension = 512.0;
+    let phase_coord_x = f32(instance.instance_index % u32(texture_dimension)) / texture_dimension;
+    let phase_coord_y = f32(instance.instance_index / u32(texture_dimension)) / texture_dimension;
+    let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
+    let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
+    noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
+#endif
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(
@@ -83,18 +84,18 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vertex.position,
         instance,
         dist_to_camera,
-    #ifdef VERTEX_NORMALS
+#ifdef VERTEX_NORMALS
         vertex.normal,
         vertex.uv,
-    #endif
+#endif
     );
 
     out.position = position_world_to_clip(displaced.world_position.xyz);
     out.world_position = displaced.world_position;
 
-    #ifdef VERTEX_NORMALS
-        out.world_normal = displaced.world_normal;
-    #endif
+#ifdef VERTEX_NORMALS
+    out.world_normal = displaced.world_normal;
+#endif
 
     return out;
 }

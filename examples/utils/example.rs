@@ -17,6 +17,8 @@ pub struct Landscape;
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
+    // TODO remove this when using draw_indirect_indexed.
+    // needs to be true for draw_indexed to work if not using chunking
     pub no_indirect_drawing: bool,
 }
 
