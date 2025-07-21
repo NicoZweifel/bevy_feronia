@@ -1,18 +1,13 @@
+use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::marker::PhantomData;
 
-use bevy::prelude::*;
-use bevy::render::render_resource::ShaderType;
-
-pub use crate::extension::*;
-
 #[derive(Resource)]
-pub struct WindAffectedTypes<M: Material> {
+pub struct WindAffectedTypes<M: Asset> {
     pub values: Vec<WindAffectedType<M>>,
     pub _marker: PhantomData<M>,
 }
-
-impl<M: Material> Default for WindAffectedTypes<M> {
+impl<M: Asset> Default for WindAffectedTypes<M> {
     fn default() -> Self {
         Self {
             values: Default::default(),
@@ -21,24 +16,18 @@ impl<M: Material> Default for WindAffectedTypes<M> {
     }
 }
 
-pub struct WindAffectedType<M: Material> {
+#[derive(Clone)]
+pub struct WindAffectedType<M: Asset> {
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
     pub wind: Wind,
 }
 
-impl<M: Material> WindAffectedTypes<M> {
+impl<M: Asset> WindAffectedTypes<M> {
     pub fn get(&self) -> &Vec<WindAffectedType<M>> {
         &self.values
     }
 }
-
-#[derive(Component)]
-pub struct WindAffectedReady;
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct WindAffected;
 
 #[derive(Resource)]
 pub struct WindTexture(pub Handle<Image>);
@@ -63,29 +52,7 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
-    pub edge_correction_factor: f32,
-    pub lod_threshold: f32,
-}
-
-#[derive(ShaderType, Clone)]
-pub struct WindUniform {
-    pub direction: Vec2,
-    pub strength: f32,
-    pub noise_scale: f32,
-    pub scroll_speed: f32,
-    pub bend_exponent: f32,
-    pub round_exponent: f32,
-    pub micro_strength: f32,
-    pub micro_noise_scale: f32,
-    pub micro_scroll_speed: f32,
-    pub s_curve_speed: f32,
-    pub s_curve_strength: f32,
-    pub s_curve_frequency: f32,
-    pub bop_speed: f32,
-    pub bop_strength: f32,
-    pub twist_strength: f32,
-    pub enable_billboarding: u32,
-    pub enable_edge_correction: u32,
+    pub enable_lod: bool,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
@@ -113,6 +80,7 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
+            enable_lod: false,
         }
     }
 }

@@ -1,19 +1,20 @@
 use std::f32::consts::FRAC_PI_2;
 
+use bevy::window::CursorOptions;
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::CursorGrabMode};
-use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
+//use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
 
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        /*app.add_systems(
             PreUpdate,
             (block_mouse_input, block_keyboard_input)
                 .after(EguiPreUpdateSet::ProcessInput)
                 .before(EguiPreUpdateSet::BeginPass),
-        )
-        .add_systems(Update, (enable_cursor, disable_cursor, move_camera));
+        )*/
+        app.add_systems(Update, (enable_cursor, disable_cursor, move_camera));
     }
 }
 
@@ -73,16 +74,16 @@ fn move_camera(
 
 fn disable_cursor(
     btn: Res<ButtonInput<MouseButton>>,
-    mut window_query: Query<&mut Window>,
+    mut q: Query<&mut CursorOptions, With<Window>>,
     controller: Single<&mut Controller>,
 ) {
     if !btn.just_pressed(MouseButton::Left) {
         return;
     };
 
-    for mut window in &mut window_query {
-        window.cursor_options.grab_mode = CursorGrabMode::Locked;
-        window.cursor_options.visible = false;
+    for mut options in &mut q {
+        options.grab_mode = CursorGrabMode::Locked;
+        options.visible = false;
     }
 
     let mut controller = controller.into_inner();
@@ -91,22 +92,22 @@ fn disable_cursor(
 
 fn enable_cursor(
     key: Res<ButtonInput<KeyCode>>,
-    mut window_query: Query<&mut Window>,
+    mut q: Query<&mut CursorOptions, With<Window>>,
     controller: Single<&mut Controller>,
 ) {
     if !key.just_pressed(KeyCode::Escape) {
         return;
     };
 
-    for mut window in &mut window_query {
-        window.cursor_options.grab_mode = CursorGrabMode::None;
-        window.cursor_options.visible = true;
+    for mut options in &mut q {
+        options.grab_mode = CursorGrabMode::None;
+        options.visible = true;
     }
 
     let mut controller = controller.into_inner();
     controller.enabled = false;
 }
-
+/*
 pub fn block_mouse_input(mut mouse: ResMut<ButtonInput<MouseButton>>, mut contexts: EguiContexts) {
     let Some(context) = contexts.try_ctx_mut() else {
         return;
@@ -129,3 +130,5 @@ pub fn block_keyboard_input(
         keyboard_keycode.reset_all();
     }
 }
+
+ */

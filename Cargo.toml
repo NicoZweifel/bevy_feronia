@@ -4,16 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = [
+bevy = {  git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     "bevy_pbr",
 ] }
-bevy-inspector-egui = "0.31.0"
+#bevy-inspector-egui = "0.31.0"
+bytemuck = "1.23.1"
 noise = "0.9.0"
+bitflags = "2.9.1"
 
 [dev-dependencies]
-bevy = {version= "0.16",features = ["file_watcher","jpeg","dynamic_linking"]}
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main",features = ["file_watcher","jpeg","dynamic_linking"]}
+
 bytemuck = "1.23.1"
-iyes_perf_ui = "0.5.0"
+#iyes_perf_ui = "0.5.0"
 # Set max log levels. This helps avoid unwanted low-severity log spam, which can affect performance.
 log = { version = "0.4", features = [
     "max_level_debug",
@@ -54,5 +57,7 @@ codegen-units = 1
 # Do a second optimization pass over the entire program, including dependencies.
 # Slows compile times, marginal improvements.
 lto = "thin"
+
+
 
 

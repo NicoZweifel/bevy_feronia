@@ -18,7 +18,7 @@ fn main() -> AppExit {
             edge_correction_factor: 0.001,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedMaterialWindPlugin))
+        .add_plugins((ExamplePlugin, WindPlugin, ExtendedWindAffectedPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, (init_grass, scatter_on_keypress))
         .run()
@@ -89,7 +89,7 @@ fn scatter_on_keypress(
 
             (
                 Mesh3d(prototype.mesh.clone()),
-                MeshMaterial3d(prototype.material.clone()),
+                WindAffectedExtendedMaterial::component(prototype.material.clone()),
                 Transform::from_xyz(x + x_jitter, 0.0, z + z_jitter)
                     .with_rotation(Quat::from_rotation_y(y_rotation))
                     .with_scale(Vec3::splat(1.).with_y(rng.random_range((1.)..2.))),

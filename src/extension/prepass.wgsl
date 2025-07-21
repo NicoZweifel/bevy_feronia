@@ -8,8 +8,9 @@
 #import bevy_render::globals::Globals
 #import bevy_pbr::mesh_bindings::mesh
 
-#import "shaders/wind.wgsl"::{Wind, BindlessWindIndices}
-#import "shaders/wind_displace.wgsl"::{DisplacedVertex, SampledNoise, InstanceInfo, displace_vertex_and_calc_normal}
+#import bevy_feronia::wind::{Wind, BindlessWindIndices}
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal, InstanceInfo, SampledNoise, DisplacedVertex}
+
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
@@ -21,16 +22,16 @@
 @group(0) @binding(1) var<uniform> globals: Globals;
 
 #ifdef BINDLESS
-@group(2) @binding(100) var<storage> wind_indices:
+@group(3) @binding(100) var<storage> wind_indices:
     array<BindlessWindIndices>;
-@group(2) @binding(101) var<storage> wind_material:
+@group(3) @binding(101) var<storage> wind_material:
     array<Wind>;
 
 #else
 
-@group(2) @binding(50) var<uniform> wind: Wind;
-@group(2) @binding(51) var noise_texture: texture_2d<f32>;
-@group(2) @binding(52) var noise_texture_sampler: sampler;
+@group(3) @binding(50) var<uniform> wind: Wind;
+@group(3) @binding(51) var noise_texture: texture_2d<f32>;
+@group(3) @binding(52) var noise_texture_sampler: sampler;
 
 #endif
 @vertex
@@ -52,8 +53,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.instance_index;
 
-    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
-    let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
 
     // --- TEXTURE SAMPLING ---
     var noise: SampledNoise;
@@ -63,7 +62,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
 
-    if (lod_fade > 0.0) {
+    #ifndef WIND_LOD
+        let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
+        let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
         let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
         noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
 
@@ -73,7 +74,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         let phase_coord = vec2<f32>(phase_coord_x, phase_coord_y);
         let phase_sample = textureSampleLevel(noise_texture, noise_texture_sampler, phase_coord, 0.0);
         noise.phase_noise = vec2(phase_sample.g, phase_sample.b);
-    }
+    #endif
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(

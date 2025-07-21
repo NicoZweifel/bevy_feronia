@@ -1,3 +1,5 @@
+#define_import_path bevy_feronia::wind
+
 struct Wind {
     direction: vec2<f32>,
     strength: f32,
@@ -14,8 +16,6 @@ struct Wind {
     bop_speed: f32,
     bop_strength: f32,
     twist_strength: f32,
-    enable_billboarding: u32,
-    enable_edge_correction: u32,
     edge_correction_factor: f32,
     lod_threshold: f32,
 };

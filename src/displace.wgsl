@@ -1,8 +1,8 @@
+#define_import_path bevy_feronia::displace
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
 #import bevy_pbr::mesh_view_bindings::view
 
-#import "./shaders/wind.wgsl"::Wind
-
+#import bevy_feronia::wind::{Wind, BindlessWindIndices}
 
 struct SampledNoise {
     macro_noise: f32,
@@ -37,18 +37,18 @@ fn calculate_vertex_displacement(
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
     var total_world_offset = horizontal_dir * macro_displacement;
 
-    if (lod_fade > 0.0) {
+    #ifndef WIND_LOD
         let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
         let micro_wind = horizontal_dir * micro_displacement;
         let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
         let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
         total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
-    }
+    #endif
 
     var final_world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
 
-    if (wind.enable_billboarding == 1u) {
+   #ifdef WIND_BILLBOARDING
         let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
 
         let billboard_matrix = calculate_billboard_matrix(
@@ -61,11 +61,30 @@ fn calculate_vertex_displacement(
         let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
         final_world_pos = billboarded_pos;
-    }
+    #endif
 
-    if (wind.enable_edge_correction == 1u) {
+    #ifdef WIND_EDGE_CORRECTION
         final_world_pos = calculate_edge_correction(final_world_pos, local_pos, wind);
-    }
+    #endif
+
+    return final_world_pos;
+}
+
+fn calculate_lod_displacement(
+    local_pos: vec3<f32>,
+    wind: Wind,
+    macro_noise: f32,
+    instance: InstanceInfo
+) -> vec3<f32> {
+    let normalized_height = local_pos.y;
+    let c_curve_shape = pow(normalized_height, wind.bend_exponent);
+
+    let macro_displacement = (macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
+    let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
+    var total_world_offset = horizontal_dir * macro_displacement;
+
+    var final_world_pos = (instance.world_from_local * vec4<f32>(local_pos, 1.0)).xyz;
+    final_world_pos += total_world_offset;
 
     return final_world_pos;
 }
@@ -90,9 +109,8 @@ fn displace_vertex_and_calc_normal(
 
 #ifdef VERTEX_NORMALS
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
-    let lod = lod_fade > 0.0;
 
-    if (wind.enable_billboarding == 1u || lod) {
+    #ifndef WIND_LOD
         let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
         let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
         let tangent_x = neighbor_pos_x - final_pos_xyz;
@@ -104,17 +122,16 @@ fn displace_vertex_and_calc_normal(
             calculated_normal = normalize(calculated_normal + curve_offset);
         }
 
-        if (wind.enable_billboarding == 0u) {
+        #ifdef WIND_BILLBOARDING
+            out.world_normal = calculated_normal;
+        #else
             let normal_delta = calculated_normal - normal;
             out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
+        #endif
 
-        } else {
-            out.world_normal = calculated_normal;
-        }
-
-    } else {
+    #else
         out.world_normal = mesh_normal;
-    }
+    #endif
 #endif
 
     return out;
