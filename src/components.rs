@@ -6,3 +6,4 @@ pub struct WindAffectedReady;
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct WindAffected;
+
