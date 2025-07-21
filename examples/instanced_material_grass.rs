@@ -13,7 +13,8 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
-            strength: 1.0,
+            strength: 0.8,
+            micro_strength: 0.2,
             round_exponent: 15.,
             edge_correction_factor: 0.001,
             ..default()
