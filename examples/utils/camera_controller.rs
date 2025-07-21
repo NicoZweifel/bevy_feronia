@@ -8,6 +8,12 @@ pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
+        /*app.add_systems(
+            PreUpdate,
+            (block_mouse_input, block_keyboard_input)
+                .after(EguiPreUpdateSet::ProcessInput)
+                .before(EguiPreUpdateSet::BeginPass),
+        )*/
         app.add_systems(Update, (enable_cursor, disable_cursor, move_camera));
     }
 }
