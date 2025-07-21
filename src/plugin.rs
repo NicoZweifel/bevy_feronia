@@ -11,6 +11,7 @@ pub struct WindPlugin;
 
 impl Plugin for WindPlugin {
     fn build(&self, app: &mut App) {
+        load_shader_library!(app, "types.wgsl");
         load_shader_library!(app, "wind.wgsl");
         load_shader_library!(app, "displace.wgsl");
 

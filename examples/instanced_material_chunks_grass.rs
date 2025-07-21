@@ -21,7 +21,7 @@ fn main() -> AppExit {
             micro_strength: 0.2,
             round_exponent: 15.,
             edge_correction_factor: 0.001,
-            enable_lod: true,
+            high_quality: false,
             lod_threshold: 10.0,
             ..default()
         })

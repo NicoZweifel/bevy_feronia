@@ -14,7 +14,8 @@
 #import bevy_pbr::mesh_bindings::mesh
 
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
-#import bevy_feronia::displace::{displace_vertex_and_calc_normal, InstanceInfo, SampledNoise, DisplacedVertex}
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal}
+#import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
@@ -57,18 +58,14 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.instance_index = vertex.instance_index;
 
     // --- TEXTURE SAMPLING ---
-
     var noise: SampledNoise;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
-    
+
     let macro_coord = instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, macro_coord, 0.0).r;
-    
-    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
 
-#ifndef WIND_LOD
-    let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
+#ifdef WIND_HIGH_QUALITY
     let micro_coord = instance.instance_position.xz * wind.micro_noise_scale + instance.wrapped_time * wind.micro_scroll_speed;
     noise.micro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, micro_coord, 0.0).r;
 
@@ -86,7 +83,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         noise,
         vertex.position,
         instance,
-        dist_to_camera,
         vertex.normal,
         vertex.uv
     );

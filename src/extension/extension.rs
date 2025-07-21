@@ -64,8 +64,8 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
-        if key.bind_group_data.contains(WindAffectedKey::ENABLE_LOD) {
-            shader_defs.push("WIND_LOD".into());
+        if key.bind_group_data.contains(WindAffectedKey::HIGH_QUALITY) {
+            shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
         Ok(())
@@ -84,7 +84,7 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.wind.enable_edge_correction,
         );
-        key.set(WindAffectedKey::ENABLE_LOD, material.wind.enable_lod);
+        key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
 
         key
     }

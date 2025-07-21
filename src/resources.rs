@@ -52,7 +52,7 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
-    pub enable_lod: bool,
+    pub high_quality: bool,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
@@ -80,7 +80,7 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
-            enable_lod: false,
+            high_quality: true,
         }
     }
 }

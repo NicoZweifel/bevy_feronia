@@ -62,6 +62,6 @@ bitflags! {
     pub struct WindAffectedKey: u64 {
         const ENABLE_BILLBOARDING    = 1 << 0;
         const ENABLE_EDGE_CORRECTION = 1 << 1;
-        const ENABLE_LOD = 1 << 2;
+        const HIGH_QUALITY = 1 << 2;
     }
 }

@@ -38,7 +38,7 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.wind.enable_edge_correction,
         );
-        key.set(WindAffectedKey::ENABLE_LOD, material.wind.enable_lod);
+        key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
 
         commands
             .entity(entity)

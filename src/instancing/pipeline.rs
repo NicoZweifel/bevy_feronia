@@ -59,8 +59,8 @@ impl SpecializedMeshPipeline for CustomPipeline {
         {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
-        if key.wind_key.contains(WindAffectedKey::ENABLE_LOD) {
-            shader_defs.push("WIND_LOD".into());
+        if key.wind_key.contains(WindAffectedKey::HIGH_QUALITY) {
+            shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
         descriptor.vertex.shader = self.shader.clone();
