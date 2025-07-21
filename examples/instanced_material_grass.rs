@@ -77,7 +77,9 @@ fn scatter_on_keypress(
     let prototype = prototypes.get().choose(&mut rng).unwrap();
 
     cmd.spawn((
-        InstancedWindAffectedMeshMaterial(prototype.material.clone()),
+        InstancedWindAffectedMaterial::component(prototype.material.clone()),
+        WindAffectedReady,
+        Mesh3d(prototype.mesh.clone()),
         InstanceMaterialData(
             (0..grid_size * grid_size)
                 .map(|i| {
@@ -99,8 +101,6 @@ fn scatter_on_keypress(
                 })
                 .collect::<Vec<_>>(),
         ),
-        WindAffectedReady,
-        Mesh3d(prototype.mesh.clone()),
         NoFrustumCulling,
     ));
 }

@@ -1,15 +1,14 @@
 use std::f32::consts::FRAC_PI_2;
 
-use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::CursorGrabMode};
 use bevy::window::CursorOptions;
-use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
+use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::CursorGrabMode};
+//use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
 
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-
-app        .add_systems(Update, (enable_cursor, disable_cursor, move_camera));
+        app.add_systems(Update, (enable_cursor, disable_cursor, move_camera));
     }
 }
 
@@ -69,7 +68,7 @@ fn move_camera(
 
 fn disable_cursor(
     btn: Res<ButtonInput<MouseButton>>,
-    mut q: Query<&mut CursorOptions,With<Window>>,
+    mut q: Query<&mut CursorOptions, With<Window>>,
     controller: Single<&mut Controller>,
 ) {
     if !btn.just_pressed(MouseButton::Left) {
@@ -87,7 +86,7 @@ fn disable_cursor(
 
 fn enable_cursor(
     key: Res<ButtonInput<KeyCode>>,
-    mut q: Query<&mut CursorOptions,With<Window>>,
+    mut q: Query<&mut CursorOptions, With<Window>>,
     controller: Single<&mut Controller>,
 ) {
     if !key.just_pressed(KeyCode::Escape) {
@@ -102,7 +101,7 @@ fn enable_cursor(
     let mut controller = controller.into_inner();
     controller.enabled = false;
 }
-
+/*
 pub fn block_mouse_input(mut mouse: ResMut<ButtonInput<MouseButton>>, mut contexts: EguiContexts) {
     let Some(context) = contexts.try_ctx_mut() else {
         return;
@@ -125,3 +124,5 @@ pub fn block_keyboard_input(
         keyboard_keycode.reset_all();
     }
 }
+
+ */

@@ -1,11 +1,10 @@
-use bevy::pbr::Material;
-use bevy::asset::Asset;
-use bevy::app::{App, Plugin, Startup, Update};
-use bevy::prelude::{resource_changed, IntoScheduleConfigs};
-use std::marker::PhantomData;
-use bevy::render::load_shader_library;
 use crate::prelude::*;
 use crate::systems;
+use bevy::asset::Asset;
+use bevy::pbr::Material;
+use bevy::prelude::*;
+use bevy::render::load_shader_library;
+use std::marker::PhantomData;
 
 pub struct WindPlugin;
 
@@ -34,12 +33,11 @@ impl<M: Material, W: WindAffectable<M, W> + Asset> Default for WindMaterialPlugi
 
 impl<M: Material, W: WindAffectable<M, W> + Asset> Plugin for WindMaterialPlugin<M, W> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<WindAffectedTypes<W>>().add_systems(
-            Update,
-            (
-                systems::setup_wind_affected::<M, W>,
-                systems::update_materials::<M, W>.run_if(resource_changed::<Wind>),
-            ),
-        );
+        app.init_resource::<WindAffectedTypes<W>>()
+            .add_systems(
+                Update,
+                (systems::update_materials::<M, W>.run_if(resource_changed::<Wind>),),
+            )
+            .add_systems(PostUpdate, (systems::setup_wind_affected::<M, W>,));
     }
 }

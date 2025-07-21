@@ -1,6 +1,6 @@
+use bevy::prelude::*;
 use std::f32::consts::PI;
 use std::marker::PhantomData;
-use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct WindAffectedTypes<M: Asset> {
@@ -16,6 +16,7 @@ impl<M: Asset> Default for WindAffectedTypes<M> {
     }
 }
 
+#[derive(Clone)]
 pub struct WindAffectedType<M: Asset> {
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
@@ -51,11 +52,10 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
-    pub enable_lod:bool,
+    pub enable_lod: bool,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
-
 
 impl Default for Wind {
     fn default() -> Self {
@@ -80,7 +80,7 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
-            enable_lod:false
+            enable_lod: false,
         }
     }
 }

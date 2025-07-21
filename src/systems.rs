@@ -26,12 +26,9 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     let mesh = meshes.get(mesh).cloned().unwrap();
     let mesh = meshes.add(mesh.clone());
 
-    cmd.entity(entity).despawn();
-    /*
     cmd.entity(entity)
         .remove::<MeshMaterial3d<StandardMaterial>>()
-        .insert(W::create_material_component(material.clone()));
-     */
+        .insert((W::component(material.clone()), WindAffectedReady));
 
     WindAffectedType {
         mesh,
@@ -49,7 +46,10 @@ pub fn update_materials<M: Material, W: WindAffectable<M, W> + Asset>(
 
 pub fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Asset>(
     mut cmd: Commands,
-    q: Query<(Entity,&MeshMaterial3d<M>, &Mesh3d), (With<WindAffected>, Without<WindAffectedReady>)>,
+    q: Query<
+        (Entity, &MeshMaterial3d<M>, &Mesh3d),
+        (With<WindAffected>, Without<WindAffectedReady>),
+    >,
     mut materials: ResMut<Assets<M>>,
     mut extended_materials: ResMut<Assets<W>>,
     mut types: ResMut<WindAffectedTypes<W>>,
