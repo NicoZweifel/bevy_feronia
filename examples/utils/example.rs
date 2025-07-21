@@ -4,7 +4,7 @@ mod camera_controller;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping},
-    diagnostic::*,
+    //diagnostic::*,
     image::ImageLoaderSettings,
     pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,

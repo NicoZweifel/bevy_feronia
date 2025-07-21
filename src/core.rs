@@ -1,4 +1,4 @@
-use crate::resources::{Wind, WindAffectedType};
+use crate::resources::Wind;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
 use bitflags::bitflags;
