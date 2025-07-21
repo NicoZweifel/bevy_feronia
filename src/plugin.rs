@@ -5,6 +5,7 @@ use bevy::pbr::Material;
 use bevy::prelude::*;
 use bevy::render::load_shader_library;
 use std::marker::PhantomData;
+use bevy::render::RenderSystems::Prepare;
 
 pub struct WindPlugin;
 
@@ -38,6 +39,6 @@ impl<M: Material, W: WindAffectable<M, W> + Asset> Plugin for WindMaterialPlugin
                 Update,
                 (systems::update_materials::<M, W>.run_if(resource_changed::<Wind>),),
             )
-            .add_systems(PostUpdate, (systems::setup_wind_affected::<M, W>,));
+            .add_systems(PostUpdate, (systems::setup_wind_affected::<M, W>,).before(Prepare));
     }
 }

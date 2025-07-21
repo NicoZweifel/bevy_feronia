@@ -26,10 +26,12 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     let mesh = meshes.get(mesh).cloned().unwrap();
     let mesh = meshes.add(mesh.clone());
 
-    cmd.entity(entity)
-        .remove::<MeshMaterial3d<StandardMaterial>>()
-        .insert((W::component(material.clone()), WindAffectedReady));
-
+    cmd.entity(entity).despawn();
+    /* TODO
+        cmd.entity(entity)
+            .remove::<MeshMaterial3d<StandardMaterial>>()
+            .insert((W::component(material.clone()), WindAffectedReady));
+    */
     WindAffectedType {
         mesh,
         material,
