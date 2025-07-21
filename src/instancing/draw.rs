@@ -1,17 +1,18 @@
+use crate::prelude::*;
 use bevy::{
-    ecs::system::{lifetimeless::*, SystemParamItem},
+    ecs::system::{SystemParamItem, lifetimeless::*},
     pbr::{
-        RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup, SetMeshViewBindingArrayBindGroup,
+        RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
+        SetMeshViewBindingArrayBindGroup,
     },
     render::{
-        mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo},
+        mesh::{RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator},
         render_asset::RenderAssets,
         render_phase::{
             PhaseItem, RenderCommand, RenderCommandResult, SetItemPipeline, TrackedRenderPass,
         },
     },
 };
-use crate::prelude::*;
 
 pub(crate) type DrawCustom = (
     SetItemPipeline,
@@ -85,6 +86,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 };
 
                 pass.set_index_buffer(index_buffer_slice.buffer.slice(..), 0, *index_format);
+                // TODO use draw_indexed_indirect
                 pass.draw_indexed(
                     index_buffer_slice.range.start..(index_buffer_slice.range.start + count),
                     vertex_buffer_slice.range.start as i32,
@@ -92,10 +94,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 );
             }
             RenderMeshBufferInfo::NonIndexed => {
-                pass.draw(
-                    vertex_buffer_slice.range,
-                    0..instance_buffer.length as u32,
-                );
+                pass.draw(vertex_buffer_slice.range, 0..instance_buffer.length as u32);
             }
         }
         RenderCommandResult::Success

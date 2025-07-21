@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use bevy::render::view::NoFrustumCulling;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -63,51 +64,62 @@ fn scatter_on_keypress(
         return;
     }
 
-    println!("Scattering plants...");
+    println!("Scattering plants in chunks with frustum culling...");
 
-    q.iter().for_each(|x| cmd.entity(x).despawn());
+    q.iter().for_each(|entity| cmd.entity(entity).despawn());
 
-    const CHUNK_GRID_SIZE: u32 = 10;
+    // --- Configuration ---
+    const CHUNK_GRID_SIZE: u32 = 5;
     const INSTANCES_PER_CHUNK_DIM: u32 = 50;
     const CELL_SIZE: f32 = 0.04;
     const PLANT_OFFSET: f32 = 0.02;
+    const PLANT_MAX_HEIGHT: f32 = 2.0;
 
-    let mut rng = rand::rng();
+    let mut rng = rand::thread_rng();
 
-    let instances_per_chunk = INSTANCES_PER_CHUNK_DIM.pow(2);
     let chunk_world_size = INSTANCES_PER_CHUNK_DIM as f32 * CELL_SIZE;
     let total_world_size = CHUNK_GRID_SIZE as f32 * chunk_world_size;
     let world_half_size = total_world_size / 2.0;
 
     let prototype = prototypes.get().choose(&mut rng).unwrap();
 
+    let local_aabb = Aabb {
+        center: Vec3::new(0.0, PLANT_MAX_HEIGHT / 2.0, 0.0).into(),
+        half_extents: Vec3::new(
+            chunk_world_size / 2.0 + PLANT_OFFSET,
+            PLANT_MAX_HEIGHT / 2.0,
+            chunk_world_size / 2.0 + PLANT_OFFSET,
+        )
+        .into(),
+    };
+
     for chunk_z in 0..CHUNK_GRID_SIZE {
         for chunk_x in 0..CHUNK_GRID_SIZE {
-            let chunk_origin = Vec3::new(
-                chunk_x as f32 * chunk_world_size - world_half_size,
+            let chunk_translation = Vec3::new(
+                (chunk_x as f32 * chunk_world_size - world_half_size) + chunk_world_size / 2.0,
                 0.0,
-                chunk_z as f32 * chunk_world_size - world_half_size,
+                (chunk_z as f32 * chunk_world_size - world_half_size) + chunk_world_size / 2.0,
             );
 
-            let instance_data = (0..instances_per_chunk)
+            let instance_data = (0..INSTANCES_PER_CHUNK_DIM.pow(2))
                 .map(|i| {
                     let local_instance_x = (i % INSTANCES_PER_CHUNK_DIM) as f32;
                     let local_instance_z = (i / INSTANCES_PER_CHUNK_DIM) as f32;
 
-                    let pos_in_chunk = Vec3::new(
-                        local_instance_x * CELL_SIZE,
+                    let pos_from_center = Vec3::new(
+                        local_instance_x * CELL_SIZE - chunk_world_size / 2.0,
                         0.0,
-                        local_instance_z * CELL_SIZE,
+                        local_instance_z * CELL_SIZE - chunk_world_size / 2.0,
                     );
 
                     let jitter = Vec3::new(
-                        rng.random_range(-PLANT_OFFSET..PLANT_OFFSET),
+                        rng.gen_range(-PLANT_OFFSET..PLANT_OFFSET),
                         0.0,
-                        rng.random_range(-PLANT_OFFSET..PLANT_OFFSET),
+                        rng.gen_range(-PLANT_OFFSET..PLANT_OFFSET),
                     );
 
                     InstanceData {
-                        position: chunk_origin + pos_in_chunk + jitter,
+                        position: pos_from_center + jitter,
                         scale: 1.0,
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
@@ -121,7 +133,9 @@ fn scatter_on_keypress(
                 InstanceMaterialData(instance_data),
                 WindAffectedReady,
                 Mesh3d(prototype.mesh.clone()),
-                NoFrustumCulling,
+                local_aabb,
+                Transform::from_translation(chunk_translation),
+                GlobalTransform::default(),
             ));
         }
     }
