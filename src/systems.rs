@@ -27,7 +27,7 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     let mesh = meshes.add(mesh.clone());
 
     cmd.entity(entity).despawn();
-    /* TODO
+    /* TODO fix scheduling error
         cmd.entity(entity)
             .remove::<MeshMaterial3d<StandardMaterial>>()
             .insert((W::component(material.clone()), WindAffectedReady));
