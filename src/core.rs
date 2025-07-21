@@ -7,6 +7,7 @@ use crate::resources::Wind;
 pub trait WindAffectable<M: Material, R: Asset> {
     fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
     fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
+    fn create_material_component(material: Handle<R>) -> impl Component;
 }
 
 #[repr(C)]

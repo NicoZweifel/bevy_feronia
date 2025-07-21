@@ -88,6 +88,10 @@ for InstancedWindAffectedMaterial
             material.wind = wind.clone();
         }
     }
+
+    fn create_material_component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
+        InstancedWindAffectedMeshMaterial(material.clone())
+    }
 }
 
 impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
