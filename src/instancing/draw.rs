@@ -86,7 +86,6 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 };
 
                 pass.set_index_buffer(index_buffer_slice.buffer.slice(..), 0, *index_format);
-                // TODO use draw_indexed_indirect
                 pass.draw_indexed(
                     index_buffer_slice.range.start..(index_buffer_slice.range.start + count),
                     vertex_buffer_slice.range.start as i32,

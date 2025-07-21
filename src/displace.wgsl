@@ -56,7 +56,7 @@ fn calculate_vertex_displacement(
             view.world_position.xyz,
             instance.world_from_local
         );
-
+        
         let billboard_base = billboard_anchor.xyz + (billboard_matrix * twisted_local_pos);
         let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
@@ -108,7 +108,7 @@ fn displace_vertex_and_calc_normal(
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
 #ifdef VERTEX_NORMALS
-    let mesh_normal = mesh_normal_local_to_world(normal, 0u);
+    let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
     #ifndef WIND_LOD
         let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
@@ -143,7 +143,7 @@ fn calculate_edge_correction(
     wind: Wind
 ) -> vec3<f32> {
     let view_vector = normalize(world_pos - view.world_position.xyz);
-
+    
     let to_camera_flat = normalize(vec3(view.world_position.x, 0.0, view.world_position.z) - vec3(world_pos.x, 0.0, world_pos.z));
     let world_right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera_flat));
 
@@ -152,7 +152,7 @@ fn calculate_edge_correction(
     let offset_direction = world_right * sign(local_pos.x);
 
     let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
-
+    
     return world_pos + final_offset;
 }
 

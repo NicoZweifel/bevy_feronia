@@ -1,16 +1,17 @@
+use crate::resources::Wind;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use crate::resources::Wind;
 
 pub trait WindAffectable<M: Material, R: Asset> {
     fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
     fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
+    fn component(material: Handle<R>) -> impl Component;
 }
 
 #[repr(C)]
-#[derive(ShaderType, Clone,Pod,Zeroable,Copy)]
+#[derive(ShaderType, Clone, Pod, Zeroable, Copy)]
 pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,

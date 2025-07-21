@@ -1,8 +1,8 @@
-use bevy::pbr::{ExtendedMaterial, StandardMaterial};
+use crate::prelude::*;
 use bevy::asset::{Assets, Handle};
 use bevy::image::Image;
-use bevy::prelude::ResMut;
-use crate::prelude::*;
+use bevy::pbr::{ExtendedMaterial, MeshMaterial3d, StandardMaterial};
+use bevy::prelude::*;
 
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
@@ -28,5 +28,9 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
             let ext = &mut material.extension;
             ext.wind = wind.clone();
         }
+    }
+
+    fn component(material: Handle<WindAffectedExtendedMaterial>) -> impl Component {
+        MeshMaterial3d(material)
     }
 }

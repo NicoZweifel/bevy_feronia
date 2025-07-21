@@ -1,7 +1,6 @@
 #import bevy_pbr::mesh_view_bindings::view
 #import bevy_pbr::mesh_view_bindings::globals
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
-#import bevy_pbr::mesh_bindings::mesh
 
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
 #import bevy_feronia::displace::{displace_vertex_and_calc_normal, InstanceInfo, SampledNoise, DisplacedVertex}
@@ -25,15 +24,6 @@ struct VertexOutput {
     @location(0) color: vec4<f32>,
 };
 
-fn affine3_to_square(m: mat3x4<f32>) -> mat4x4<f32> {
-    return mat4x4<f32>(
-        m[0],
-        m[1],
-        m[2],
-        vec4<f32>(0.0, 0.0, 0.0, 1.0)
-    );
-}
-
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
@@ -41,18 +31,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     // --- INSTANCE ---
     var instance: InstanceInfo;
 
-    let chunk_world_transform = affine3_to_square(mesh[0].world_from_local);
-
-    let final_instance_position = (chunk_world_transform * vec4<f32>(vertex.i_pos_scale.xyz, 1.0)).xyz;
-
-    let instance_world_transform = mat4x4<f32>(
+    instance.world_from_local = mat4x4<f32>(
         vec4<f32>(vertex.i_pos_scale.w, 0.0, 0.0, 0.0),
         vec4<f32>(0.0, vertex.i_pos_scale.w, 0.0, 0.0),
         vec4<f32>(0.0, 0.0, vertex.i_pos_scale.w, 0.0),
-        vec4<f32>(final_instance_position, 1.0)
+        vec4<f32>(vertex.i_pos_scale.xyz, 1.0)
     );
 
-    instance.world_from_local = instance_world_transform;
     instance.instance_position = instance.world_from_local[3];
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.i_index;

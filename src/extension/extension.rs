@@ -1,9 +1,9 @@
-use bevy::pbr::MaterialExtension;
-use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use bevy::asset::{embedded_path, Asset, AssetPath, Handle};
-use bevy::prelude::Reflect;
-use bevy::image::Image;
 use crate::prelude::*;
+use bevy::asset::{Asset, AssetPath, Handle, embedded_path};
+use bevy::image::Image;
+use bevy::pbr::MaterialExtension;
+use bevy::prelude::Reflect;
+use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 
 #[derive(Asset, Reflect, AsBindGroup, Debug, Clone)]
 #[bind_group_data(WindAffectedKey)]

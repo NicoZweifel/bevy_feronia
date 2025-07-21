@@ -1,16 +1,10 @@
-use super::{
-    components::InstanceData, material::InstancedWindAffectedMaterial,
-};
+use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
 use crate::prelude::WindAffectedKey;
 use bevy::{
-    asset::{embedded_path, AssetPath},
+    asset::{AssetPath, embedded_path},
     pbr::{MeshPipeline, MeshPipelineKey},
     prelude::*,
-    render::{
-        mesh::MeshVertexBufferLayoutRef,
-        render_resource::*,
-        renderer::RenderDevice,
-    },
+    render::{mesh::MeshVertexBufferLayoutRef, render_resource::*, renderer::RenderDevice},
 };
 use std::mem::size_of;
 
@@ -59,7 +53,10 @@ impl SpecializedMeshPipeline for CustomPipeline {
         if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
             shader_defs.push("WIND_BILLBOARDING".into());
         }
-        if key.wind_key.contains(WindAffectedKey::ENABLE_EDGE_CORRECTION) {
+        if key
+            .wind_key
+            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
+        {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
         if key.wind_key.contains(WindAffectedKey::ENABLE_LOD) {
@@ -96,4 +93,3 @@ impl SpecializedMeshPipeline for CustomPipeline {
         Ok(descriptor)
     }
 }
-

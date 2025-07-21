@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
 use bevy::{
     asset::*,
     ecs::query::QueryItem,
@@ -11,8 +12,6 @@ use bevy::{
         renderer::RenderDevice,
     },
 };
-use bevy::ecs::system::lifetimeless::SRes;
-use bevy::ecs::system::SystemParamItem;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 #[uniform(50, WindUniform)]
@@ -70,7 +69,7 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
 }
 
 impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
-for InstancedWindAffectedMaterial
+    for InstancedWindAffectedMaterial
 {
     fn create_material(
         _material: StandardMaterial,
@@ -87,6 +86,10 @@ for InstancedWindAffectedMaterial
         for (_, material) in materials.iter_mut() {
             material.wind = wind.clone();
         }
+    }
+
+    fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
+        InstancedWindAffectedMeshMaterial(material.clone())
     }
 }
 

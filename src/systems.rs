@@ -1,16 +1,17 @@
-use bevy::prelude::{default, Commands, Query, Res, ResMut, With, Without};
+use crate::prelude::*;
 use bevy::asset::{Asset, Assets};
 use bevy::image::{Image, ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
-use noise::{NoiseFn, Perlin};
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy::pbr::{Material, MeshMaterial3d};
 use bevy::mesh::{Mesh, Mesh3d};
-use crate::prelude::*;
+use bevy::pbr::{Material, MeshMaterial3d};
+use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use noise::{NoiseFn, Perlin};
 
 fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
+    cmd: &mut Commands,
     materials: &mut ResMut<Assets<M>>,
     extended_materials: &mut ResMut<Assets<W>>,
-    (material, mesh): (&MeshMaterial3d<M>, &Mesh3d),
+    (entity, material, mesh): (Entity, &MeshMaterial3d<M>, &Mesh3d),
     wind_noise_texture: &Res<WindTexture>,
     wind: &Res<Wind>,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -25,6 +26,12 @@ fn create_material<M: Material, W: WindAffectable<M, W> + Asset>(
     let mesh = meshes.get(mesh).cloned().unwrap();
     let mesh = meshes.add(mesh.clone());
 
+    cmd.entity(entity).despawn();
+    /* TODO fix scheduling error
+        cmd.entity(entity)
+            .remove::<MeshMaterial3d<StandardMaterial>>()
+            .insert((W::component(material.clone()), WindAffectedReady));
+    */
     WindAffectedType {
         mesh,
         material,
@@ -40,7 +47,11 @@ pub fn update_materials<M: Material, W: WindAffectable<M, W> + Asset>(
 }
 
 pub fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Asset>(
-    q: Query<(&MeshMaterial3d<M>, &Mesh3d), (With<WindAffected>, Without<WindAffectedReady>)>,
+    mut cmd: Commands,
+    q: Query<
+        (Entity, &MeshMaterial3d<M>, &Mesh3d),
+        (With<WindAffected>, Without<WindAffectedReady>),
+    >,
     mut materials: ResMut<Assets<M>>,
     mut extended_materials: ResMut<Assets<W>>,
     mut types: ResMut<WindAffectedTypes<W>>,
@@ -53,6 +64,7 @@ pub fn setup_wind_affected<M: Material, W: WindAffectable<M, W> + Asset>(
             .iter()
             .map(|x| {
                 create_material::<M, W>(
+                    &mut cmd,
                     &mut materials,
                     &mut extended_materials,
                     x,
