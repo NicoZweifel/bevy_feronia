@@ -39,9 +39,10 @@ https://github.com/user-attachments/assets/4b71415e-63d7-4a5b-b85a-9cb4408abdab
 
 https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
 
-
 ### Manually instanced grass 
 `cargo run --example instanced_material_grass`
+
+https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
 
 
 
