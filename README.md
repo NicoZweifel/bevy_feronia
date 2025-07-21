@@ -12,17 +12,16 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 ### Roadmap
 
+- Chunking
 - Texture-based Scattering.
-- Manual GPU Instancing.
-- Compute Shaders for procedural grass (covering areas and pre-calculated geometry).
-- Performance Improvements (e.g., skip calculations for LODs) / Shortcuts (e.g., procedurally defined geometry instead of calculating neighbor pos)
-
+- Performance Improvements (e.g., LODs) / Shortcuts (e.g., procedurally defined geometry instead of calculating neighbor pos), use chunks and shader flags.
+- Make physics-based entities impact the displacement.
+- Make use of compute shaders
 
 ### Examples
 
 - Press `SPACE` to scatter plants.
 - The `Wind` Resource is configurable in the Inspector Window.
-
 
 #### Grass
 
