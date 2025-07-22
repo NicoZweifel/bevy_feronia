@@ -11,6 +11,8 @@ use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
     pub wind: Wind,
+    // Whether the Extension is controlled externally and isn't automatically updated by the Wind resource.
+    pub controlled: bool,
 
     #[texture(51)]
     #[sampler(52)]

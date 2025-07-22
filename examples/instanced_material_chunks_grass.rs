@@ -2,8 +2,8 @@
 mod example;
 
 use bevy::color::palettes::tailwind::GREEN_500;
-use bevy::prelude::*;
 use bevy::prelude::Visibility::Visible;
+use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::primitives::{Aabb, MeshAabb};
 use bevy::render::render_resource::ShaderType;
@@ -35,7 +35,8 @@ fn main() -> AppExit {
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
+    cmd.spawn(SceneRoot(assets.load("grass_low_lod.glb#Scene0")));
+    //cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
 }
 
 fn init_grass(
@@ -75,10 +76,10 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    const CHUNK_GRID_DIM: u32 = 5;
+    const CHUNK_GRID_DIM: u32 = 10;
     const INSTANCES_PER_CHUNK_DIM: u32 = 100;
-    const CELL_SIZE: f32 = 0.04;
-    const JITTER_AMOUNT: f32 = 0.02;
+    const CELL_SIZE: f32 = 0.1;
+    const JITTER_AMOUNT: f32 = 0.04;
 
     let mut rng = rand::rng();
 
@@ -137,16 +138,13 @@ fn scatter_on_keypress(
                 Transform::default(),
                 Visible,
                 GlobalTransform::default(),
-                ViewVisibility::default()
+                ViewVisibility::default(),
             ));
         }
     }
 }
 
-fn draw_aabbs(
-    mut gizmos: Gizmos,
-    query: Query<&Aabb, With<InstanceMaterialData>>,
-) {
+fn draw_aabbs(mut gizmos: Gizmos, query: Query<&Aabb, With<InstanceMaterialData>>) {
     for aabb in &query {
         let transform = Transform::from_translation(aabb.center.into())
             .with_scale(<Vec3A as Into<Vec3>>::into(aabb.half_extents) * Vec3::splat(2.0));

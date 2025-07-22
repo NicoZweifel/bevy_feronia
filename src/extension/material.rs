@@ -13,18 +13,23 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
         base: StandardMaterial,
         wind: Wind,
         noise_texture: Handle<Image>,
+        controlled: bool,
     ) -> WindAffectedExtendedMaterial {
         ExtendedMaterial {
             base,
             extension: WindAffectedExtension {
                 noise_texture,
                 wind,
+                controlled,
             },
         }
     }
 
     fn update_material(mut materials: ResMut<Assets<WindAffectedExtendedMaterial>>, wind: Wind) {
-        for (_, material) in materials.iter_mut() {
+        for (_, material) in materials
+            .iter_mut()
+            .filter(|(_, x)| !x.extension.controlled)
+        {
             let ext = &mut material.extension;
             ext.wind = wind.clone();
         }

@@ -17,6 +17,8 @@ use bevy::{
 #[uniform(50, WindUniform)]
 pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,
+    // Whether the material is controlled externally and isn't automatically updated by the Wind resource.
+    pub controlled: bool,
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,
@@ -75,15 +77,17 @@ impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
         _material: StandardMaterial,
         wind: Wind,
         noise_texture: Handle<Image>,
+        controlled: bool,
     ) -> InstancedWindAffectedMaterial {
         InstancedWindAffectedMaterial {
             wind,
             noise_texture,
+            controlled,
         }
     }
 
     fn update_material(mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>, wind: Wind) {
-        for (_, material) in materials.iter_mut() {
+        for (_, material) in materials.iter_mut().filter(|(_, x)| !x.controlled) {
             material.wind = wind.clone();
         }
     }
