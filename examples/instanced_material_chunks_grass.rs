@@ -6,7 +6,6 @@ use bevy::prelude::Visibility::Visible;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::primitives::{Aabb, MeshAabb};
-use bevy::render::render_resource::ShaderType;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
@@ -36,7 +35,7 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn(SceneRoot(assets.load("grass_low_lod.glb#Scene0")));
-    //cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
+    cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
 }
 
 fn init_grass(
@@ -59,6 +58,7 @@ fn init_grass(
 fn scatter_on_keypress(
     mut cmd: Commands,
     prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
+    mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q: Query<Entity, With<WindAffected>>,
     meshes: Res<Assets<Mesh>>,
@@ -78,23 +78,47 @@ fn scatter_on_keypress(
 
     const CHUNK_GRID_DIM: u32 = 10;
     const INSTANCES_PER_CHUNK_DIM: u32 = 100;
-    const CELL_SIZE: f32 = 0.1;
-    const JITTER_AMOUNT: f32 = 0.04;
+    const CELL_SIZE: f32 = 0.04;
+    const JITTER_AMOUNT: f32 = 0.02;
 
-    let mut rng = rand::rng();
-
-    let Some(prototype) = prototypes.get().choose(&mut rng) else {
+    let Some(prototype) = prototypes.get().first() else {
         return;
     };
+
+    let Some(high_q_prototype) = prototypes.get().last() else {
+        return;
+    };
+
+    let mut high_q_material = materials.get(&high_q_prototype.material).unwrap().clone();
+
+    high_q_material.wind.high_quality = true;
+    high_q_material.controlled = true;
+
+    let high_q_material = materials.add(high_q_material);
 
     let total_instances_dim = CHUNK_GRID_DIM * INSTANCES_PER_CHUNK_DIM;
     let total_world_dim = total_instances_dim as f32 * CELL_SIZE;
     let center_offset = total_world_dim / 2.0;
+    let mut rng = rand::rng();
 
     for chunk_z in 0..CHUNK_GRID_DIM {
         for chunk_x in 0..CHUNK_GRID_DIM {
+            let is_high_quality = chunk_x > 2 && chunk_x < 8 && chunk_z > 2 && chunk_z < 8;
+
+            let prototype = if is_high_quality {
+                high_q_prototype
+            } else {
+                prototype
+            };
+
+            let density = if is_high_quality { 1.0 } else { 0.3 };
+
             let instances = (0..INSTANCES_PER_CHUNK_DIM * INSTANCES_PER_CHUNK_DIM)
-                .map(|i| {
+                .filter_map(|i| {
+                    if rng.random::<f32>() >= density {
+                        return None; // Skip this instance to reduce density
+                    }
+
                     let local_instance_x = i % INSTANCES_PER_CHUNK_DIM;
                     let local_instance_z = i / INSTANCES_PER_CHUNK_DIM;
 
@@ -107,12 +131,12 @@ fn scatter_on_keypress(
                     let x_jitter = rng.random_range(-JITTER_AMOUNT..JITTER_AMOUNT);
                     let z_jitter = rng.random_range(-JITTER_AMOUNT..JITTER_AMOUNT);
 
-                    InstanceData {
+                    Some(InstanceData {
                         position: Vec3::new(world_x + x_jitter, 0.0, world_z + z_jitter),
                         scale: 1.0,
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
-                    }
+                    })
                 })
                 .collect::<Vec<_>>();
 
@@ -129,7 +153,11 @@ fn scatter_on_keypress(
             }
 
             cmd.spawn((
-                InstancedWindAffectedMaterial::component(prototype.material.clone()),
+                InstancedWindAffectedMaterial::component(if is_high_quality {
+                    high_q_material.clone()
+                } else {
+                    prototype.material.clone()
+                }),
                 Mesh3d(prototype.mesh.clone()),
                 InstanceMaterialData(instances),
                 NoAutomaticBatching,
