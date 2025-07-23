@@ -13,9 +13,9 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 ### Roadmap
 
 - Chunking
-- Texture-based Scattering.
-- Performance Improvements (e.g., LODs) / Shortcuts (e.g., procedurally defined geometry instead of calculating neighbor pos), use chunks and shader flags.
-- Make physics-based entities impact the displacement.
+- Texture-based Scattering
+- Performance Improvements (e.g., LODs) / Shortcuts (e.g., more efficient calculations for procedural geometry)
+- Make physics-based entities impact the displacement
 - Make use of compute shaders
 
 ### Examples
@@ -46,6 +46,12 @@ https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
 
 
 
+
+
+### Credits/Inspirations
+
+- [Graswald](https://gscatter.com/gallery) for their amazing assets.
+- Sucker Punch Productions for their Procedural Grass and Wind simulation in 'Ghost of Tsushima' and [GDC Talks](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
 
 
 
