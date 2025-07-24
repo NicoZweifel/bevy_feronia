@@ -57,6 +57,9 @@ fn init_grass(
     }
 }
 
+// NOTE: The chunking method used is is for demonstration and test purposes.
+// In a productionized version chunks would be managed differently, e.g. by a chunk manager resource.
+// TODO improve example, find or create a usable chunk manager.
 fn scatter_on_keypress(
     mut cmd: Commands,
     prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
