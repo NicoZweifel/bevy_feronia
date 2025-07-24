@@ -1,5 +1,5 @@
 use super::{
-    components::{InstanceBuffer, InstanceMaterialData, InstancePipelineKey},
+    components::{ InstanceMaterialData, InstancePipelineKey},
     draw::DrawCustom,
     material::{InstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial},
     pipeline::{CustomPipeline, CustomPipelineKey},
@@ -14,7 +14,6 @@ use bevy::{
         render_asset::RenderAssets,
         render_phase::{DrawFunctions, PhaseItemExtraIndex, ViewSortedRenderPhases},
         render_resource::*,
-        renderer::{RenderDevice, RenderQueue},
         sync_world::MainEntity,
         view::ExtractedView,
     },
@@ -106,47 +105,4 @@ pub(crate) fn queue_custom(
     }
 }
 
-pub(crate) fn prepare_instance_buffers(
-    mut cmd: Commands,
-    query: Query<(Entity, &InstanceMaterialData, Option<&InstanceBuffer>)>,
-    render_device: Res<RenderDevice>,
-    render_queue: Res<RenderQueue>,
-) {
-    for (entity, instance_data, instance_buffer) in &query {
-        let Some(instance_buffer) = instance_buffer else {
-            create_buffer(&mut cmd, entity, instance_data, &render_device);
-            continue;
-        };
 
-        if instance_data.len() != instance_buffer.length {
-            create_buffer(&mut cmd, entity, instance_data, &render_device);
-            continue;
-        }
-
-        render_queue.write_buffer(
-            &instance_buffer.buffer,
-            0,
-            bytemuck::cast_slice(instance_data.as_slice()),
-        );
-    }
-}
-
-fn create_buffer(
-    cmd: &mut Commands,
-    entity: Entity,
-    instance_data: &InstanceMaterialData,
-    render_device: &Res<RenderDevice>,
-) {
-    let contents = bytemuck::cast_slice(instance_data.as_slice());
-
-    let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
-        label: Some("instance data buffer"),
-        contents,
-        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-    });
-
-    cmd.entity(entity).insert(InstanceBuffer {
-        buffer,
-        length: instance_data.len(),
-    });
-}

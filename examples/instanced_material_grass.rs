@@ -95,7 +95,7 @@ fn scatter_on_keypress(
 
                     InstanceData {
                         position: Vec3::new(x + x_jitter, 0.0, z + z_jitter),
-                        scale: 1.0,
+                        scale: rng.random_range(1. ..3.),
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
                     }

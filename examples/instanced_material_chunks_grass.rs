@@ -2,10 +2,12 @@
 mod example;
 
 use bevy::color::palettes::tailwind::GREEN_500;
+use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::Visibility::Visible;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::primitives::{Aabb, MeshAabb};
+use bevy::tasks::Task;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::Rng;
@@ -76,10 +78,10 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    const CHUNK_GRID_DIM: u32 = 10;
+    const CHUNK_GRID_DIM: u32 = 20;
     const INSTANCES_PER_CHUNK_DIM: u32 = 100;
-    const CELL_SIZE: f32 = 0.04;
-    const JITTER_AMOUNT: f32 = 0.02;
+    const CELL_SIZE: f32 = 0.1;
+    const JITTER_AMOUNT: f32 = 0.05;
 
     let Some(prototype) = prototypes.get().first() else {
         return;
@@ -103,7 +105,7 @@ fn scatter_on_keypress(
 
     for chunk_z in 0..CHUNK_GRID_DIM {
         for chunk_x in 0..CHUNK_GRID_DIM {
-            let is_high_quality = chunk_x > 2 && chunk_x < 8 && chunk_z > 2 && chunk_z < 8;
+            let is_high_quality = chunk_x > 6 && chunk_x < 14 && chunk_z > 6 && chunk_z < 14;
 
             let prototype = if is_high_quality {
                 high_q_prototype
@@ -111,7 +113,7 @@ fn scatter_on_keypress(
                 prototype
             };
 
-            let density = if is_high_quality { 1.0 } else { 0.3 };
+            let density = if is_high_quality { 1.0 } else { 0.2 };
 
             let instances = (0..INSTANCES_PER_CHUNK_DIM * INSTANCES_PER_CHUNK_DIM)
                 .filter_map(|i| {
@@ -133,7 +135,7 @@ fn scatter_on_keypress(
 
                     Some(InstanceData {
                         position: Vec3::new(world_x + x_jitter, 0.0, world_z + z_jitter),
-                        scale: 1.0,
+                        scale: rng.random_range(1. ..3.),
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i,
                     })
@@ -145,8 +147,8 @@ fn scatter_on_keypress(
             let mut min_point = Vec3::MAX;
             let mut max_point = Vec3::MIN;
             for instance in &instances {
-                let instance_min = instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.min());
-                let instance_max = instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.max());
+                let instance_min = instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.min() * instance.scale);
+                let instance_max = instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.max() * instance.scale);
 
                 min_point = min_point.min(instance_min);
                 max_point = max_point.max(instance_max);

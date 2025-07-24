@@ -5,6 +5,7 @@
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
 
+
 fn calculate_vertex_displacement(
     local_pos: vec3<f32>,
     wind: Wind,

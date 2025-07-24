@@ -3,7 +3,6 @@ use crate::systems::*;
 use bevy::asset::Asset;
 use bevy::pbr::Material;
 use bevy::prelude::*;
-use bevy::render::RenderSystems::Prepare;
 use bevy::render::load_shader_library;
 use std::marker::PhantomData;
 
@@ -13,6 +12,8 @@ impl Plugin for WindPlugin {
     fn build(&self, app: &mut App) {
         load_shader_library!(app, "types.wgsl");
         load_shader_library!(app, "wind.wgsl");
+        load_shader_library!(app, "bindings.wgsl");
+        load_shader_library!(app, "noise.wgsl");
         load_shader_library!(app, "displace.wgsl");
 
         app.init_resource::<Wind>()

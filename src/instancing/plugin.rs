@@ -1,7 +1,7 @@
 use super::{draw::DrawCustom, pipeline::CustomPipeline, systems::*};
 use crate::prelude::*;
 use bevy::app::{App, Plugin, Update};
-use bevy::asset::{AssetApp, embedded_asset};
+use bevy::asset::{embedded_asset, AssetApp};
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::IntoScheduleConfigs;
@@ -10,6 +10,7 @@ use bevy::render::render_asset::RenderAssetPlugin;
 use bevy::render::render_phase::AddRenderCommand;
 use bevy::render::render_resource::SpecializedMeshPipelines;
 use bevy::render::{Render, RenderApp, RenderSystems};
+use super::prepare::prepare_instance_buffer;
 
 pub struct InstancedWindAffectedPlugin;
 
@@ -34,7 +35,7 @@ impl Plugin for InstancedWindAffectedPlugin {
                 Render,
                 (
                     queue_custom.in_set(RenderSystems::QueueMeshes),
-                    prepare_instance_buffers.in_set(RenderSystems::PrepareResources),
+                    prepare_instance_buffer.in_set(RenderSystems::PrepareResources),
                 ),
             );
     }
