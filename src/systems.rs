@@ -54,22 +54,17 @@ where
         wind: final_wind,
     };
 
-    // NOTE: replacing materials and scattering new bindless ones with batch_spawn will cause a but with instance_index
-    // TODO
-    cmd.entity(entity).despawn();
-   /* cmd.entity(entity)
+    cmd.entity(entity)
         .remove::<MeshMaterial3d<M>>()
-        .insert(WindAffectedRegistered(wind_type.clone()));*/
+        .insert(WindAffectedRegistered(wind_type.clone()));
 
     wind_type
 }
 
-pub fn update_materials<M, W>(
-    materials: ResMut<Assets<W>>,
-    wind: Res<Wind>,
-) where
+pub fn update_materials<M, W>(materials: ResMut<Assets<W>>, wind: Res<Wind>)
+where
     M: Material,
-    W: WindAffectable<M, W> + Asset
+    W: WindAffectable<M, W> + Asset,
 {
     W::update_material(materials, wind.clone());
 }
@@ -88,7 +83,7 @@ pub fn collect_types<M, W>(
     mut meshes: ResMut<Assets<Mesh>>,
 ) where
     M: Material,
-    W: WindAffectable<M, W> + Asset + Clone
+    W: WindAffectable<M, W> + Asset + Clone,
 {
     types.values.append(
         &mut q
@@ -110,18 +105,16 @@ pub fn collect_types<M, W>(
 
 pub fn insert_material<M, W>(
     mut cmd: Commands,
-    q: Query<
-        (Entity,&WindAffectedRegistered<W>),
-        Without<WindAffectedReady>,
-    >,
+    q: Query<(Entity, &WindAffectedRegistered<W>), Without<WindAffectedReady>>,
 ) where
     M: Material,
-    W: WindAffectable<M, W> + Asset + Clone
+    W: WindAffectable<M, W> + Asset + Clone,
 {
-    for (entity,wind_affected) in &q{
-
-        cmd.entity(entity)
-            .insert((W::component(wind_affected.get().material), WindAffectedReady));
+    for (entity, wind_affected) in &q {
+        cmd.entity(entity).insert((
+            W::component(wind_affected.get().material),
+            WindAffectedReady,
+        ));
     }
 }
 
@@ -134,26 +127,25 @@ pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Imag
 
     for y in 0..texture_size {
         for x in 0..texture_size {
-                       let macro_sample_scale = 5.0;
+            let macro_sample_scale = 5.0;
             let micro_sample_scale = 20.0;
-let point = [
+            let point = [
                 x as f64 / texture_size as f64,
                 y as f64 / texture_size as f64,
             ];
 
-            // Sample both noise patterns
-            let macro_noise_value = macro_perlin.get([point[0] * macro_sample_scale, point[1] * macro_sample_scale]);
-            let micro_noise_value = micro_perlin.get([point[0] * micro_sample_scale, point[1] * micro_sample_scale]);
+            let macro_noise_value =
+                macro_perlin.get([point[0] * macro_sample_scale, point[1] * macro_sample_scale]);
+            let micro_noise_value =
+                micro_perlin.get([point[0] * micro_sample_scale, point[1] * micro_sample_scale]);
 
-            // Normalize to the 0.0-1.0 range and convert to u8
             let macro_byte = ((macro_noise_value * 0.5 + 0.5) * 255.0) as u8;
             let micro_byte = ((micro_noise_value * 0.5 + 0.5) * 255.0) as u8;
 
-            // Push the bytes into the buffer: R, G, B, A
             image_buffer.push(macro_byte); // R channel for macro noise
             image_buffer.push(micro_byte); // G channel for micro noise
-            image_buffer.push(0);          // B channel is unused
-            image_buffer.push(255);        // A channel is unused
+            image_buffer.push(0); // B channel is unused
+            image_buffer.push(255); // A channel is unused
         }
     }
 
