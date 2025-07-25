@@ -10,6 +10,7 @@ use bevy::{
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
+use bevy_feronia::prelude::ChunkCenter;
 use camera_controller::*;
 
 #[derive(Component)]
@@ -73,6 +74,7 @@ pub fn setup(
             Bloom::NATURAL,
             Tonemapping::TonyMcMapface,
             Transform::from_xyz(-10., 2., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            ChunkCenter,
             Skybox {
                 image: asset_server.load("skybox.ktx2"),
                 brightness: 10000.,

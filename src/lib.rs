@@ -5,6 +5,7 @@ pub mod instancing;
 pub mod plugin;
 pub mod resources;
 pub mod systems;
+pub mod chunking;
 
 pub use crate::plugin::{WindMaterialPlugin, WindPlugin};
 
@@ -18,4 +19,5 @@ pub mod prelude {
 
     pub use crate::extension::prelude::*;
     pub use crate::instancing::prelude::*;
+    pub use crate::chunking::*;
 }
