@@ -15,7 +15,7 @@ impl Plugin for ChunkPlugin {
             .add_systems(
                 Update,
                 (
-                    (split, merge).chain(),
+                    split, merge,
                     handle_split.after(split),
                     handle_merge.after(merge),
                     (draw_aabbs, draw_chunks).run_if(resource_exists::<ChunkDebugConfig>)
