@@ -12,11 +12,11 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 ### Roadmap
 
-- Chunking
-- Texture-based Scattering
+- Chunking 
+- Texture-based Scattering on top of meshes
 - Performance Improvements (e.g., LODs) / Shortcuts (e.g., more efficient calculations for procedural geometry)
 - Make physics-based entities impact the displacement
-- Make use of compute shaders
+- Make use of compute shaders (Allow scattering/sampling of foliage on CPU and GPU to get scattering of high-quality assets and procedural geometry)
 
 ### Examples
 

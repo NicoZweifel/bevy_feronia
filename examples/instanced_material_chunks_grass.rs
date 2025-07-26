@@ -1,7 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::{GREEN_500, RED_500};
+use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
@@ -26,6 +26,10 @@ fn main() -> AppExit {
             lod_threshold: 10.0,
             ..default()
         })
+        .insert_resource(ChunkDebugConfig{
+           lod_colors: vec![RED_500.into(), ORANGE_500.into(),YELLOW_500.into()],
+            aabb_color: GREEN_500.into(),
+        })
         .init_resource::<FoliageConfig>()
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
@@ -37,7 +41,7 @@ fn main() -> AppExit {
             ChunkPlugin,
         ))
         .add_systems(Startup, (setup, setup_density_map))
-        .add_systems(Update, (init_grass, draw_aabbs, populate_chunks, draw_chunks))
+        .add_systems(Update, (init_grass, populate_chunks))
         .run()
 }
 
@@ -112,36 +116,9 @@ fn init_grass(
     }
 }
 
-fn draw_aabbs(
-    mut gizmos: Gizmos,
-    query: Query<(&Aabb, &GlobalTransform), With<InstanceMaterialData>>,
-) {
-    for (aabb, tf) in &query {
-        gizmos.cuboid(
-            Transform::from_translation(tf.transform_point(aabb.center.into()))
-                .with_rotation(tf.rotation())
-                .with_scale((aabb.half_extents * 2.0).into()),
-            GREEN_500,
-        );
-    }
-}
 
 
-fn draw_chunks(
-    mut gizmos: Gizmos,
-    query: Query<(&Chunk, &GlobalTransform), With<InstanceMaterialData>>,
-    config: Res<ChunkConfig>,
-) {
-    for (chunk, tf) in &query {
-        gizmos.cuboid(
-            Transform::from_translation(tf.translation())
-                .with_rotation(tf.rotation())
-                .with_scale(Vec3::splat(chunk.size as f32 * config.base_chunk_size)),
-            RED_500,
-        );
-    }
-}
-
+// TODO see below
 #[derive(Resource)]
 pub struct FoliageConfig {
     /// How many instances fit along one dimension of a base (1x1) chunk.
@@ -307,6 +284,7 @@ fn populate_chunks(
     }
 }
 
+// TODO see above
 struct DensityMapSampler {
     image_data: Vec<u8>,
     image_size: u32,
@@ -314,6 +292,7 @@ struct DensityMapSampler {
     center_offset: f32,
 }
 
+// TODO see above
 impl DensityMapSampler {
     /// Creates a new sampler from the density map image and world configuration.
     fn new(image: &Image, total_world_size: f32) -> Self {

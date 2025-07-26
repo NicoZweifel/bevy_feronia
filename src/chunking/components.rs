@@ -3,6 +3,15 @@ use bevy::prelude::*;
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct ChunkCenter;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct CanSplit;
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct CanMerge;
+
 #[derive(Component, Debug, Clone, Copy, Reflect)]
 #[reflect(Component)]
 pub struct Chunk {

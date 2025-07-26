@@ -1,7 +1,7 @@
 use crate::chunking::prelude::*;
 use crate::chunking::systems::prelude::*;
-use bevy::app::{App, Plugin, Startup, Update};
-use bevy::prelude::IntoScheduleConfigs;
+use bevy::prelude::*;
+use crate::chunking::systems::debug::{draw_aabbs, draw_chunks};
 
 pub struct ChunkPlugin;
 
@@ -15,8 +15,10 @@ impl Plugin for ChunkPlugin {
             .add_systems(
                 Update,
                 (
-                    update_chunk_lods,
-                    (apply_splits, apply_merges).after(update_chunk_lods),
+                    (split, merge).chain(),
+                    handle_split.after(split),
+                    handle_merge.after(merge),
+                    (draw_aabbs, draw_chunks).run_if(resource_exists::<ChunkDebugConfig>)
                 ),
             );
     }

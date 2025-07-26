@@ -107,3 +107,9 @@ pub struct ChunkConfig {
     pub world_size_in_chunks: u32,
     pub base_chunk_size: f32,
 }
+
+#[derive(Resource)]
+pub struct ChunkDebugConfig {
+    pub aabb_color: Color,
+    pub lod_colors:Vec<Color>
+}
