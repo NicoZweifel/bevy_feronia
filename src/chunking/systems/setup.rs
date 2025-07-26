@@ -29,3 +29,4 @@ pub fn setup_chunks(mut cmd: Commands, cfg: Res<ChunkConfig>) {
         }
     }
 }
+
