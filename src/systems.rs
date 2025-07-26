@@ -7,60 +7,6 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
-fn create_material<M, W>(
-    cmd: &mut Commands,
-    materials: &mut ResMut<Assets<M>>,
-    extended_materials: &mut ResMut<Assets<W>>,
-    (entity, material, mesh, wind_component): (
-        Entity,
-        &MeshMaterial3d<M>,
-        &Mesh3d,
-        Option<&WindConfig>,
-    ),
-    wind_noise_texture: &Res<WindTexture>,
-    wind: &Res<Wind>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-) -> WindAffectedType<W>
-where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
-{
-    let wind_config = if let Some(wind_component) = wind_component {
-        wind_component
-    } else {
-        &WindConfig::default()
-    };
-
-    let final_wind = if let Some(wind) = &wind_config.wind_override {
-        wind.clone()
-    } else {
-        (*wind).clone()
-    };
-
-    let new_material = W::create_material(
-        (*materials.get(material).unwrap()).clone(),
-        final_wind.clone(),
-        wind_noise_texture.0.clone(),
-        wind_config.wind_override.is_some(),
-    );
-
-    let material = extended_materials.add(new_material);
-    let mesh = meshes.get(mesh).cloned().unwrap();
-    let mesh = meshes.add(mesh.clone());
-
-    let wind_type = WindAffectedType {
-        mesh,
-        material,
-        wind: final_wind,
-    };
-
-    cmd.entity(entity)
-        .remove::<MeshMaterial3d<M>>()
-        .insert(WindAffectedRegistered(wind_type.clone()));
-
-    wind_type
-}
-
 pub fn update_materials<M, W>(materials: ResMut<Assets<W>>, wind: Res<Wind>)
 where
     M: Material,
@@ -71,10 +17,23 @@ where
 
 pub fn collect_types<M, W>(
     mut cmd: Commands,
-    q: Query<
-        (Entity, &MeshMaterial3d<M>, &Mesh3d, Option<&WindConfig>),
+    q_affected: Query<
+        (
+            Entity,
+            Option<&MeshMaterial3d<M>>,
+            Option<&Mesh3d>,
+            Option<&Children>,
+            Option<&WindConfig>,
+        ),
         (With<WindAffected>, Without<WindAffectedRegistered<W>>),
     >,
+    q_children: Query<(
+        Entity,
+        Option<&MeshMaterial3d<M>>,
+        Option<&Mesh3d>,
+        Option<&Children>,
+        Option<&WindConfig>,
+    )>,
     mut materials: ResMut<Assets<M>>,
     mut extended_materials: ResMut<Assets<W>>,
     mut types: ResMut<WindAffectedTypes<W>>,
@@ -86,7 +45,7 @@ pub fn collect_types<M, W>(
     W: WindAffectable<M, W> + Asset + Clone,
 {
     types.values.append(
-        &mut q
+        &mut q_affected
             .iter()
             .map(|x| {
                 create_material::<M, W>(
@@ -97,8 +56,10 @@ pub fn collect_types<M, W>(
                     &wind_noise_texture,
                     &wind,
                     &mut meshes,
+                    &q_children,
                 )
             })
+            .flatten()
             .collect(),
     );
 }
@@ -174,4 +135,94 @@ pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Imag
     let handle = images.add(wind_image);
 
     commands.insert_resource(WindTexture(handle));
+}
+
+fn create_material<M, W>(
+    cmd: &mut Commands,
+    materials: &mut ResMut<Assets<M>>,
+    extended_materials: &mut ResMut<Assets<W>>,
+    (entity, material, mesh, children, wind_component): (
+        Entity,
+        Option<&MeshMaterial3d<M>>,
+        Option<&Mesh3d>,
+        Option<&Children>,
+        Option<&WindConfig>,
+    ),
+    wind_noise_texture: &Res<WindTexture>,
+    wind: &Res<Wind>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    q_children: &Query<(
+        Entity,
+        Option<&MeshMaterial3d<M>>,
+        Option<&Mesh3d>,
+        Option<&Children>,
+        Option<&WindConfig>,
+    )>,
+) -> Vec<WindAffectedType<W>>
+where
+    M: Material,
+    W: WindAffectable<M, W> + Asset + Clone,
+{
+    let mut types: Vec<WindAffectedType<W>> = Vec::new();
+
+    let wind_config = if let Some(wind_component) = wind_component {
+        wind_component
+    } else {
+        &WindConfig::default()
+    };
+
+    let final_wind = if let Some(wind) = &wind_config.wind_override {
+        wind.clone()
+    } else {
+        (*wind).clone()
+    };
+
+    if let Some(children) = children {
+        for child in children.iter() {
+            let Ok(x) = q_children.get(child) else {
+                continue;
+            };
+
+            types.append(&mut create_material::<M, W>(
+                cmd,
+                materials,
+                extended_materials,
+                x,
+                wind_noise_texture,
+                wind,
+                meshes,
+                &q_children,
+            ));
+        }
+    }
+
+    let Some(material) = material else {
+        return types;
+    };
+
+    let Some(mesh) = mesh else { return types };
+
+    let new_material = W::create_material(
+        (*materials.get(material).unwrap()).clone(),
+        final_wind.clone(),
+        wind_noise_texture.0.clone(),
+        wind_config.wind_override.is_some(),
+    );
+
+    let material = extended_materials.add(new_material);
+    let mesh = meshes.get(mesh).cloned().unwrap();
+    let mesh = meshes.add(mesh.clone());
+
+    let wind_type = WindAffectedType {
+        mesh,
+        material,
+        wind: final_wind,
+    };
+
+    cmd.entity(entity)
+        .remove::<MeshMaterial3d<M>>()
+        .insert(WindAffectedRegistered(wind_type.clone()));
+
+    types.push(wind_type);
+    types
 }

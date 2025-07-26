@@ -5,8 +5,8 @@ use bevy::pbr::NotShadowCaster;
 use bevy::prelude::*;
 use bevy_feronia::prelude::*;
 use example::*;
-use rand::seq::IndexedRandom;
 use rand::Rng;
+use rand::seq::IndexedRandom;
 
 fn main() -> AppExit {
     App::new()
@@ -21,29 +21,12 @@ fn main() -> AppExit {
         })
         .add_plugins((ExamplePlugin, WindPlugin, ExtendedWindAffectedPlugin))
         .add_systems(Startup, setup)
-        .add_systems(Update, (init_grass, scatter_on_keypress))
+        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
-}
-
-fn init_grass(
-    mut cmd: Commands,
-    q: Query<
-        Entity,
-        (
-            With<MeshMaterial3d<StandardMaterial>>,
-            With<Mesh3d>,
-            Without<Landscape>,
-            Without<WindAffected>,
-        ),
-    >,
-) {
-    for e in &q {
-        cmd.entity(e).insert(WindAffected);
-    }
+    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
 }
 
 fn scatter_on_keypress(

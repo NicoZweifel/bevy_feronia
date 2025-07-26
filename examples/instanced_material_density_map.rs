@@ -63,13 +63,16 @@ fn main() -> AppExit {
             world_size_in_chunks: 4,
         })
         .add_systems(Startup, (setup, setup_density_map))
-        .add_systems(Update, (init_grass, populate_chunks))
+        .add_systems(Update, populate_chunks)
         .run()
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn(SceneRoot(assets.load("grass_low_lod.glb#Scene0")));
-    cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        WindAffected,
+    ));
+    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
 }
 
 fn setup_density_map(
@@ -119,23 +122,6 @@ fn setup_density_map(
     commands.insert_resource(FoliageDensityMap(handle));
 
     info!("Generated foliage density map.");
-}
-
-fn init_grass(
-    mut cmd: Commands,
-    q: Query<
-        Entity,
-        (
-            With<MeshMaterial3d<StandardMaterial>>,
-            With<Mesh3d>,
-            Without<Landscape>,
-            Without<WindAffected>,
-        ),
-    >,
-) {
-    for e in &q {
-        cmd.entity(e).insert(WindAffected);
-    }
 }
 
 // TODO see below
@@ -216,13 +202,13 @@ fn populate_chunks(
             0.0..0.0
         } else {
             let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-            prev_lod_dist -  chunk_config.get_chunk_world_size(chunk.level)..prev_lod_dist
+            prev_lod_dist - chunk_config.get_chunk_world_size(chunk.level)..prev_lod_dist
         };
 
         let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level) ..current_lod_dist
+            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level)..current_lod_dist
         };
 
         let (prototype, material_handle) = if chunk.level == 0 {

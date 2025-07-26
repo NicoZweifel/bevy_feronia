@@ -22,11 +22,9 @@ where
 #[reflect(Component)]
 pub struct WindAffected;
 
-
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct WindConfig {
     // NOTE: If set, this material type will be manually controlled and not updated automatically with the global wind resource.
     pub wind_override: Option<Wind>,
 }
-

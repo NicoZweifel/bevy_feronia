@@ -1,3 +1,4 @@
+pub mod chunking;
 pub mod components;
 pub mod core;
 pub mod extension;
@@ -5,7 +6,6 @@ pub mod instancing;
 pub mod plugin;
 pub mod resources;
 pub mod systems;
-pub mod chunking;
 
 pub use crate::plugin::{WindMaterialPlugin, WindPlugin};
 

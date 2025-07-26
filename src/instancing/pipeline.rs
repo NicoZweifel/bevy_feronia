@@ -1,7 +1,7 @@
 use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
 use crate::prelude::WindAffectedKey;
 use bevy::{
-    asset::{embedded_path, AssetPath},
+    asset::{AssetPath, embedded_path},
     pbr::{MeshPipeline, MeshPipelineKey},
     prelude::*,
     render::{mesh::MeshVertexBufferLayoutRef, render_resource::*, renderer::RenderDevice},

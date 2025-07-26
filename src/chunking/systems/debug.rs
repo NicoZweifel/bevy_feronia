@@ -18,7 +18,6 @@ pub fn draw_aabbs(
     }
 }
 
-
 pub fn draw_chunks(
     mut gizmos: Gizmos,
     q: Query<(&Chunk, &GlobalTransform), With<InstanceMaterialData>>,

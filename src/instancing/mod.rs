@@ -3,8 +3,8 @@ mod draw;
 mod material;
 mod pipeline;
 mod plugin;
-mod systems;
 mod prepare;
+mod systems;
 
 pub use plugin::*;
 

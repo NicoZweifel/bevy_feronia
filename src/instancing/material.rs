@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::ecs::system::{lifetimeless::SRes, SystemParamItem};
+use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
 use bevy::{
     asset::*,
     ecs::query::QueryItem,
@@ -71,7 +71,7 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
 }
 
 impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
-for InstancedWindAffectedMaterial
+    for InstancedWindAffectedMaterial
 {
     fn create_material(
         _material: StandardMaterial,

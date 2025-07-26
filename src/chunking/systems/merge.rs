@@ -3,7 +3,6 @@ use bevy::ecs::relationship::Relationship;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
-
 pub fn merge(
     cfg: Res<ChunkConfig>,
     q_chunk: Query<(Entity, &Chunk, &ChildOf), With<CanMerge>>,
@@ -17,10 +16,7 @@ pub fn merge(
             continue;
         };
 
-        parents
-            .entry(parent.get())
-            .or_default()
-            .push(entity);
+        parents.entry(parent.get()).or_default().push(entity);
     }
 
     for (parent, children) in parents {
@@ -56,10 +52,11 @@ pub fn handle_merge_check(
             continue;
         }
 
-        ew_merge.write(MergeChunks { siblings: e.children.clone() });
+        ew_merge.write(MergeChunks {
+            siblings: e.children.clone(),
+        });
     }
 }
-
 
 pub fn handle_merge(mut cmd: Commands, mut er_merge: EventReader<MergeChunks>) {
     for e in er_merge.read() {

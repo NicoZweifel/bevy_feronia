@@ -1,9 +1,8 @@
-pub mod systems;
 pub mod components;
 pub mod events;
-pub mod resources;
 pub mod plugin;
-
+pub mod resources;
+pub mod systems;
 
 pub mod prelude {
     pub use crate::chunking::components::*;
@@ -11,5 +10,3 @@ pub mod prelude {
     pub use crate::chunking::plugin::*;
     pub use crate::chunking::resources::*;
 }
-
-

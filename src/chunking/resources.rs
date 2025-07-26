@@ -42,11 +42,14 @@ impl Default for ChunkConfig {
     }
 }
 
-
 impl ChunkConfig {
     /// Calculates the world size (width/depth) of a chunk at a given LOD level.
     pub fn get_chunk_world_size(&self, level: u32) -> f32 {
-        self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar as f32 * self.base_chunk_size
+        self.lods
+            .get(level as usize)
+            .expect("Level out of bounds")
+            .chunk_size_scalar as f32
+            * self.base_chunk_size
     }
 
     pub fn get_total_world_size(&self) -> f32 {
@@ -62,7 +65,10 @@ impl ChunkConfig {
     }
 
     pub fn get_size_scalar(&self, level: u32) -> u32 {
-        self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar
+        self.lods
+            .get(level as usize)
+            .expect("Level out of bounds")
+            .chunk_size_scalar
     }
 
     pub fn get_max_lod_level(&self) -> u32 {
@@ -113,4 +119,3 @@ pub struct ChunkDebugConfig {
     pub aabb_color: Color,
     pub lod_colors: Vec<Color>,
 }
-

@@ -5,9 +5,9 @@ use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::prelude::*;
 use bevy::render::{
-    extract_component::ExtractComponentPlugin, render_asset::RenderAssetPlugin, render_phase::AddRenderCommand, render_resource::SpecializedMeshPipelines,
-    Render, RenderApp,
-    RenderSystems,
+    Render, RenderApp, RenderSystems, extract_component::ExtractComponentPlugin,
+    render_asset::RenderAssetPlugin, render_phase::AddRenderCommand,
+    render_resource::SpecializedMeshPipelines,
 };
 
 pub struct InstancedWindAffectedPlugin;
@@ -24,7 +24,7 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
-            .add_systems(PostUpdate, add_instance_key_component);
+        .add_systems(PostUpdate, add_instance_key_component);
 
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
