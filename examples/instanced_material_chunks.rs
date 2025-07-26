@@ -24,8 +24,8 @@ fn main() -> AppExit {
             lod_threshold: 10.0,
             ..default()
         })
-        .insert_resource(ChunkDebugConfig{
-           lod_colors: vec![RED_500.into(), ORANGE_500.into(),YELLOW_500.into()],
+        .insert_resource(ChunkDebugConfig {
+            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
         })
         .init_resource::<FoliageConfig>()
@@ -65,7 +65,6 @@ fn init_grass(
         cmd.entity(e).insert(WindAffected);
     }
 }
-
 
 
 // TODO see below
@@ -122,7 +121,6 @@ fn populate_chunks(
     let mut rng = rand::rng();
 
     for (entity, chunk, chunk_transform) in &new_chunks_query {
-
         let lod_level = chunk.level as usize;
         let current_lod_config = chunk_config.lods.get(lod_level).unwrap();
         let crossfade_margin: f32 = chunk_config.get_chunk_world_size(chunk.level) * 2.0;
@@ -233,7 +231,7 @@ fn populate_chunks(
             WindAffected,
             WindAffectedReady,
             Aabb::from(local_aabb),
-            VisibilityRange{start_margin,end_margin,use_aabb:false}
+            VisibilityRange { start_margin, end_margin, use_aabb: false }
         ));
     }
 }

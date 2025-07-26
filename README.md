@@ -12,11 +12,12 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 ### Roadmap
 
-- Chunking 
+- Chunking
 - Texture-based Scattering on top of meshes
 - Performance Improvements (e.g., LODs) / Shortcuts (e.g., more efficient calculations for procedural geometry)
 - Make physics-based entities impact the displacement
-- Make use of compute shaders (Allow scattering/sampling of foliage on CPU and GPU to get scattering of high-quality assets and procedural geometry)
+- Make use of compute shaders (Allow scattering/sampling of foliage on CPU and GPU to get scattering of high-quality
+  assets and procedural geometry)
 
 ### Examples
 
@@ -46,6 +47,16 @@ https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
 `cargo run --example instanced_material_grass`
 
 https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
+
+
+### Manually instanced grass split into chunks
+
+`cargo run --example instanced_material_chunks`
+
+### Manually instanced with a cpu-sampled density map
+
+`cargo run --example instanced_density_map`
+
 
 ### Credits/Inspirations
 

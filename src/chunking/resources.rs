@@ -62,7 +62,7 @@ impl ChunkConfig {
     }
 
     pub fn get_size_scalar(&self, level: u32) -> u32 {
-         self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar
+        self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar
     }
 
     pub fn get_max_lod_level(&self) -> u32 {
@@ -111,6 +111,6 @@ pub struct ChunkConfig {
 #[derive(Resource)]
 pub struct ChunkDebugConfig {
     pub aabb_color: Color,
-    pub lod_colors:Vec<Color>
+    pub lod_colors: Vec<Color>,
 }
 

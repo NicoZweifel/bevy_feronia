@@ -1,12 +1,12 @@
+use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::math::Vec3;
 use bevy::prelude::*;
-use crate::prelude::*;
 
 pub fn draw_aabbs(
     mut gizmos: Gizmos,
     q: Query<(&Aabb, &GlobalTransform), With<InstanceMaterialData>>,
-    cfg: Res<ChunkDebugConfig>
+    cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
         gizmos.cuboid(
@@ -23,7 +23,7 @@ pub fn draw_chunks(
     mut gizmos: Gizmos,
     q: Query<(&Chunk, &GlobalTransform), With<InstanceMaterialData>>,
     chunk_cfg: Res<ChunkConfig>,
-    debug_cfg: Res<ChunkDebugConfig>
+    debug_cfg: Res<ChunkDebugConfig>,
 ) {
     for (chunk, tf) in &q {
         gizmos.cuboid(

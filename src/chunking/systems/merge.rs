@@ -1,7 +1,7 @@
+use crate::prelude::*;
 use bevy::ecs::relationship::Relationship;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use crate::prelude::*;
 
 
 pub fn merge(
@@ -24,7 +24,7 @@ pub fn merge(
     }
 
     for (parent, children) in parents {
-        ew_check.write(MergeCheck { parent, children});
+        ew_check.write(MergeCheck { parent, children });
     }
 }
 
@@ -42,7 +42,7 @@ pub fn handle_merge_check(
 
     let center_translation = center.translation();
 
-    for e in er_check.read(){
+    for e in er_check.read() {
         if e.children.len() < 4 {
             continue;
         };

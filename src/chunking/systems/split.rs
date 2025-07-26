@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use bevy::prelude::*;
 use std::num::NonZeroU32;
-use crate::prelude::*;
 
 pub fn split(
     cfg: Res<ChunkConfig>,
@@ -53,28 +53,28 @@ pub fn handle_split(
         );
 
         cmd.entity(parent_entity).with_children(|cmd| {
-           for offset in &child_chunk_data.offsets {
-             let child_entity = cmd.spawn(
-                  (
-                      Chunk {
-                          level: child_chunk_data.level,
-                          size: child_chunk_data.size,
-                      },
-                      Transform::from_translation(*offset),
-                      GlobalTransform::from_translation(*offset),
-                      Visibility::Visible,
-                      ViewVisibility::default(),
-                  )
-              ).id();
+            for offset in &child_chunk_data.offsets {
+                let child_entity = cmd.spawn(
+                    (
+                        Chunk {
+                            level: child_chunk_data.level,
+                            size: child_chunk_data.size,
+                        },
+                        Transform::from_translation(*offset),
+                        GlobalTransform::from_translation(*offset),
+                        Visibility::Visible,
+                        ViewVisibility::default(),
+                    )
+                ).id();
 
-               if child_chunk_data.level > 0 {
-                   cmd.commands().entity(child_entity).insert(CanSplit);
-               }
+                if child_chunk_data.level > 0 {
+                    cmd.commands().entity(child_entity).insert(CanSplit);
+                }
 
-               if child_chunk_data.level < cfg.get_max_lod_level() {
-                   cmd.commands().entity(child_entity).insert(CanMerge);
-               }
-           }
+                if child_chunk_data.level < cfg.get_max_lod_level() {
+                    cmd.commands().entity(child_entity).insert(CanMerge);
+                }
+            }
         });
     }
 }

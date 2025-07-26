@@ -4,8 +4,8 @@ use bevy::prelude::{BufferedEvent, Entity, Event};
 pub struct SplitChunk(pub(crate) Entity);
 
 impl SplitChunk {
-    pub fn get(&self) -> Entity{
-       self.0
+    pub fn get(&self) -> Entity {
+        self.0
     }
 }
 
@@ -14,7 +14,7 @@ pub struct MergeChunks {
     pub(crate) siblings: Vec<Entity>,
 }
 
-#[derive(Event,BufferedEvent)]
+#[derive(Event, BufferedEvent)]
 pub struct MergeCheck {
     pub parent: Entity,
     pub children: Vec<Entity>,
