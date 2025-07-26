@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use std::num::NonZeroU32;
 
 pub struct LodConfig {
-    /// The distance at which a chunk of this level subdivides into its children.
+    /// The distance at which a chunk of this level is merged.
     pub distance: f32,
     /// The size of a chunk at this level, as a multiple of the highest-LOD chunk size.
     pub chunk_size_scalar: u32,

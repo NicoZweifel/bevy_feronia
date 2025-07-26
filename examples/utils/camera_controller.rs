@@ -35,6 +35,8 @@ fn move_camera(
         return;
     };
 
+    let amplify = keyboard_input.pressed(KeyCode::ShiftLeft);
+
     let mut direction = Vec3::ZERO;
 
     if keyboard_input.pressed(KeyCode::KeyW) {
@@ -53,7 +55,9 @@ fn move_camera(
     if direction.length_squared() > 0.0 {
         direction = direction.normalize();
 
-        transform.translation += direction * 10.0 * time.delta_secs();
+        let factor = if amplify { 40.0 } else { 10.0 };
+
+        transform.translation += direction * factor * time.delta_secs();
     }
 
     let delta = accumulated_mouse_motion.delta;

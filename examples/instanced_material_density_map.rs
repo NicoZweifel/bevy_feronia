@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::primitives::{Aabb, MeshAabb};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use bevy::render::view::VisibilityRange;
 use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -26,8 +27,8 @@ fn main() -> AppExit {
             lod_threshold: 10.0,
             ..default()
         })
-        .insert_resource(ChunkDebugConfig{
-           lod_colors: vec![RED_500.into(), ORANGE_500.into(),YELLOW_500.into()],
+        .insert_resource(ChunkDebugConfig {
+            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
         })
         .init_resource::<FoliageConfig>()
@@ -40,6 +41,27 @@ fn main() -> AppExit {
             InstancedWindAffectedPlugin,
             ChunkPlugin,
         ))
+        .insert_resource(ChunkConfig {
+            lods: vec![
+                // Level 0: High
+                LodConfig {
+                    distance: 20.0,
+                    chunk_size_scalar: 1,
+                },
+                // Level 1: Medium
+                LodConfig {
+                    distance: 40.0,
+                    chunk_size_scalar: 2,
+                },
+                // Level 2: Low
+                LodConfig {
+                    distance: f32::MAX,
+                    chunk_size_scalar: 4,
+                },
+            ],
+            base_chunk_size: 4.0,
+            world_size_in_chunks: 4,
+        })
         .add_systems(Startup, (setup, setup_density_map))
         .add_systems(Update, (init_grass, populate_chunks))
         .run()
@@ -116,8 +138,6 @@ fn init_grass(
     }
 }
 
-
-
 // TODO see below
 #[derive(Resource)]
 pub struct FoliageConfig {
@@ -134,9 +154,9 @@ pub struct FoliageConfig {
 impl Default for FoliageConfig {
     fn default() -> Self {
         Self {
-            instances_per_base_chunk_dim: 64,
-            cell_size: 0.125,
-            jitter_amount: 0.0625,
+            instances_per_base_chunk_dim: 32,
+            cell_size: 0.12,
+            jitter_amount: 0.06,
             density_map_size: 1024,
         }
     }
@@ -188,6 +208,24 @@ fn populate_chunks(
     let mut rng = rand::rng();
 
     for (entity, chunk, chunk_transform) in &new_chunks_query {
+        let lod_level = chunk.level as usize;
+        let current_lod_config = chunk_config.lods.get(lod_level).unwrap();
+        let crossfade_margin: f32 = chunk_config.get_chunk_world_size(chunk.level) * 2.0;
+        let current_lod_dist = current_lod_config.distance;
+
+        let start_margin = if lod_level == 0 {
+            0.0..0.0
+        } else {
+            let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
+            (prev_lod_dist - crossfade_margin)..prev_lod_dist
+        };
+
+        let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
+            f32::MAX..f32::MAX
+        } else {
+            (current_lod_dist - crossfade_margin)..current_lod_dist
+        };
+
         let (prototype, material_handle) = if chunk.level == 0 {
             let proto = prototypes.get().last().unwrap();
             (proto, hq_material_handle.clone())
@@ -225,15 +263,13 @@ fn populate_chunks(
                     chunk_corner.z + instance_offset_z + z_jitter,
                 );
 
-                // TODO see above
-                // let sampled_density = sampler.sample(instance_world_pos);
-
-                // TODO explicit logic/resource/system for this
                 let density = match chunk.level {
                     0 => 1.0,
                     1 => 0.5,
                     _ => 0.1,
                 };
+
+                let density = sampler.sample(instance_world_pos) * density;
 
                 if rng.random::<f32>() > density {
                     return None;
@@ -280,6 +316,11 @@ fn populate_chunks(
             WindAffected,
             WindAffectedReady,
             Aabb::from(local_aabb),
+            VisibilityRange {
+                end_margin,
+                start_margin,
+                use_aabb: false,
+            },
         ));
     }
 }
@@ -316,11 +357,7 @@ impl DensityMapSampler {
 
         // Index the raw data buffer to get the density byte.
         let pixel_index = (pixel_y * self.image_size + pixel_x) as usize;
-        let sampled_byte = self
-            .image_data
-            .get(pixel_index)
-            .copied()
-            .unwrap_or(0);
+        let sampled_byte = self.image_data.get(pixel_index).copied().unwrap_or(0);
 
         // Convert the byte back to a 0.0-1.0 float.
         sampled_byte as f32 / 255.0
