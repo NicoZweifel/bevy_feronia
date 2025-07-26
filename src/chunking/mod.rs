@@ -1,5 +1,6 @@
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy::prelude::Visibility::Visible;
+use std::num::NonZeroU32;
 
 pub struct ChunkPlugin;
 
@@ -7,8 +8,16 @@ impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Chunk>()
             .init_resource::<ChunkConfig>()
+            .add_event::<SplitChunk>()
+            .add_event::<MergeChunks>()
             .add_systems(Startup, setup_chunks)
-            .add_systems(Update, update_chunk_lods);
+            .add_systems(
+                Update,
+                (
+                    update_chunk_lods,
+                    (apply_splits, apply_merges).after(update_chunk_lods),
+                ),
+            );
     }
 }
 
@@ -26,6 +35,67 @@ pub struct ChunkConfig {
     /// The size of the world in top-level (Low LOD) chunks.
     pub world_size_in_chunks: u32,
     pub base_chunk_size: f32,
+}
+
+impl ChunkConfig {
+    /// Calculates the world size (width/depth) of a chunk at a given LOD level.
+    pub fn get_chunk_world_size(&self, level: u32) -> f32 {
+        if let Some(lod) = self.lods.get(level as usize) {
+            lod.chunk_size_scalar as f32 * self.base_chunk_size
+        } else {
+            self.lods[self.get_max_lod_level() as usize].chunk_size_scalar as f32 * self.base_chunk_size
+        }
+    }
+
+    /// Calculates the world-space center of a chunk from its grid coordinate and level.
+    pub fn get_center(&self, grid_coord: IVec3, level: u32) -> Vec3 {
+        let world_size = self.get_chunk_world_size(level);
+        let half_size = world_size / 2.0;
+
+        grid_coord.as_vec3() * world_size + Vec3::new(half_size, 0.0, half_size)
+    }
+
+    pub fn get_size_scalar(&self, level: u32) -> u32 {
+        if let Some(lod) = self.lods.get(level as usize) {
+            lod.chunk_size_scalar
+        } else {
+            self.lods[self.get_max_lod_level() as usize].chunk_size_scalar
+        }
+    }
+
+    pub fn get_max_lod_level(&self) -> u32 {
+        (self.lods.len() - 1) as u32
+    }
+
+    pub fn get_lod_config(&self, level: u32) -> &LodConfig {
+        &self.lods[level as usize]
+    }
+
+    /// Calculates the level, size, and world-space offsets for a chunk's children.
+    pub fn calculate_child_data(&self, level: NonZeroU32, size: u32) -> ChildChunkData {
+        let parent_world_size = size as f32 * self.base_chunk_size;
+        let child_level = level.get() - 1;
+        let child_size = self.get_size_scalar(child_level);
+        let offset = parent_world_size / 4.0;
+        let offsets = [
+            Vec3::new(-offset, 0.0, -offset),
+            Vec3::new(offset, 0.0, -offset),
+            Vec3::new(-offset, 0.0, offset),
+            Vec3::new(offset, 0.0, offset),
+        ];
+
+        ChildChunkData {
+            level: child_level,
+            size: child_size,
+            offsets,
+        }
+    }
+}
+
+pub struct ChildChunkData {
+    pub level: u32,
+    pub size: u32,
+    pub offsets: [Vec3; 4],
 }
 
 pub struct LodConfig {
@@ -99,7 +169,7 @@ fn setup_chunks(mut commands: Commands, config: Res<ChunkConfig>) {
                 },
                 Transform::from_xyz(world_x, 0.0, world_z),
                 GlobalTransform::default(),
-                Visible,
+                Visibility::Visible,
                 ViewVisibility::default(),
             ));
         }
@@ -107,58 +177,137 @@ fn setup_chunks(mut commands: Commands, config: Res<ChunkConfig>) {
 }
 
 fn update_chunk_lods(
-    mut commands: Commands,
     config: Res<ChunkConfig>,
     center_query: Query<&GlobalTransform, With<ChunkCenter>>,
     chunk_query: Query<(Entity, &Chunk, &GlobalTransform)>,
+    mut ew_split: EventWriter<SplitChunk>,
+    mut ew_merge: EventWriter<MergeChunks>,
 ) {
     let Ok(center) = center_query.single() else {
         return;
     };
 
-    let translation = center.translation();
+    let center_translation = center.translation();
+    let max_lod_level = (config.lods.len() - 1) as u32;
+    let mut potential_parents: HashMap<IVec3, Vec<Entity>> = HashMap::new();
 
     for (entity, chunk, chunk_transform) in &chunk_query {
-        if chunk.level == 0{
+        if chunk.level > 0 {
+            let dist = center_translation.distance(chunk_transform.translation());
+
+            let child_chunk_data =
+                config.calculate_child_data(NonZeroU32::new(chunk.level).unwrap(), chunk.size);
+            let child_lod_config = config.get_lod_config(child_chunk_data.level);
+
+            if dist < child_lod_config.distance {
+                ew_split.write(SplitChunk(entity));
+            }
+
             continue;
         }
 
-        let child_level = chunk.level - 1;
-        let child_lod_config = &config.lods[child_level as usize];
-        let dist = translation.distance(chunk_transform.translation());
+        if chunk.level < max_lod_level {
+            let parent_level = chunk.level + 1;
+            let parent_world_size = config.get_chunk_world_size(parent_level);
+            let parent_grid_coord = (chunk_transform.translation() / parent_world_size)
+                .floor()
+                .as_ivec3();
 
-        if dist < child_lod_config.distance {
-            let parent_world_size = chunk.size as f32 * config.base_chunk_size;
+            potential_parents
+                .entry(parent_grid_coord)
+                .or_default()
+                .push(entity);
+        }
+    }
 
-            commands.entity(entity).despawn();
+    for (parent_grid_coord, siblings) in potential_parents {
+        if siblings.len() < 4 {
+            continue;
+        };
 
-            let child_lod_config = &config.lods[child_level as usize];
-            let child_size = child_lod_config.chunk_size_scalar;
+        let chunk_level = chunk_query.get(siblings[0]).unwrap().1.level;
+        let merge_dist = config.lods[chunk_level as usize].distance;
 
-            let offset = parent_world_size / 4.0;
-            let child_offsets = [
-                Vec3::new(-offset, 0.0, -offset),
-                Vec3::new(offset, 0.0, -offset),
-                Vec3::new(-offset, 0.0, offset),
-                Vec3::new(offset, 0.0, offset),
-            ];
+        let parent_level = chunk_level + 1;
+        let parent_center = config.get_center(parent_grid_coord, parent_level);
 
-            for i in 0..4 {
-                commands.spawn((
-                    Chunk {
-                        level: child_level,
-                        size: child_size,
-                    },
-                    Transform::from_translation(chunk_transform.translation() + child_offsets[i]),
-                    GlobalTransform::from_translation(chunk_transform.translation() + child_offsets[i]),
-                    Visible,
-                    ViewVisibility::default(),
-                ));
-            }
+        if center_translation.distance(parent_center) <= merge_dist {
+            continue;
         }
 
-        // TODO
-        // Add logic here to check if a set of four child chunks are all out of distance.
-        // If they are, despawn the four children and respawn the parent.
+        ew_merge.write(MergeChunks {
+            siblings,
+            parent_center,
+            parent_level,
+        });
+    }
+}
+
+#[derive(Event, BufferedEvent)]
+struct SplitChunk(Entity);
+
+#[derive(Event, BufferedEvent)]
+struct MergeChunks {
+    siblings: Vec<Entity>,
+    parent_center: Vec3,
+    parent_level: u32,
+}
+
+fn apply_splits(
+    mut commands: Commands,
+    config: Res<ChunkConfig>,
+    mut split_events: EventReader<SplitChunk>,
+    chunk_query: Query<(&Chunk, &GlobalTransform)>,
+) {
+    for event in split_events.read() {
+        let parent_entity = event.0;
+
+        let Ok((parent_chunk, parent_transform)) = chunk_query.get(parent_entity) else {
+            continue;
+        };
+
+        let child_chunk_data = config.calculate_child_data(
+            NonZeroU32::new(parent_chunk.level)
+                .expect("Cannot split chunk at level 0!"),
+            parent_chunk.size,
+        );
+
+        commands.entity(parent_entity).despawn();
+
+       commands.spawn_batch(child_chunk_data.offsets.map(|offset| {
+           (
+               Chunk {
+                   level: child_chunk_data.level,
+                   size: child_chunk_data.size,
+               },
+               Transform::from_translation(parent_transform.translation() + offset),
+               GlobalTransform::from_translation(parent_transform.translation() + offset),
+               Visibility::Visible,
+               ViewVisibility::default(),
+           )
+       }));
+    }
+}
+
+fn apply_merges(
+    mut commands: Commands,
+    config: Res<ChunkConfig>,
+    mut merge_events: EventReader<MergeChunks>,
+) {
+    for event in merge_events.read() {
+        for sibling_entity in &event.siblings {
+            commands.entity(*sibling_entity).despawn();
+        }
+
+        commands.spawn((
+            Chunk {
+                level: event.parent_level,
+                size: config.get_size_scalar(event.parent_level),
+            },
+            Transform::from_translation(event.parent_center),
+            GlobalTransform::from_translation(event.parent_center),
+            Visibility::Visible,
+            ViewVisibility::default(),
+        ));
     }
 }
