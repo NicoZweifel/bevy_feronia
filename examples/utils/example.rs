@@ -1,17 +1,13 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
-use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::render::view::Hdr;
 use bevy::{
-    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping, Skybox},
-    //diagnostic::*,
-    image::ImageLoaderSettings,
+    core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping}, //diagnostic::*,
     pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
-use bevy::math::Affine2;
 use bevy_feronia::prelude::*;
 use camera_controller::*;
 
@@ -43,67 +39,7 @@ pub fn setup(
     asset_server: Res<AssetServer>,
     options: Res<ExamplePluginOptions>,
 ) {
-    let diff_texture: Handle<Image> = asset_server.load_with_settings(
-        "textures/brown_mud_leaves_01_diff_4k.jpg",
-        |settings: &mut ImageLoaderSettings| {
-            settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                address_mode_u: ImageAddressMode::MirrorRepeat,
-                address_mode_v: ImageAddressMode::MirrorRepeat,
-                address_mode_w: ImageAddressMode::MirrorRepeat,
-                ..default()
-            })
-        },
-    );
-    let ao_texture: Handle<Image> = asset_server.load_with_settings(
-        "textures/brown_mud_leaves_01_ao_4k.jpg",
-        |settings: &mut ImageLoaderSettings| {
-            settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                address_mode_u: ImageAddressMode::MirrorRepeat,
-                address_mode_v: ImageAddressMode::MirrorRepeat,
-                address_mode_w: ImageAddressMode::MirrorRepeat,
-                ..default()
-            })
-        },
-    );
-    let normal_texture: Handle<Image> = asset_server.load_with_settings(
-        "textures/brown_mud_leaves_01_nor_dx_4k.png",
-        |settings: &mut ImageLoaderSettings| {
-            settings.is_srgb = false;
-            settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                address_mode_u: ImageAddressMode::MirrorRepeat,
-                address_mode_v: ImageAddressMode::MirrorRepeat,
-                address_mode_w: ImageAddressMode::MirrorRepeat,
-                ..default()
-            })
-        },
-    );
-    let arm_texture: Handle<Image> = asset_server.load_with_settings(
-        "textures/brown_mud_leaves_01_arm_4k.jpg",
-        |settings: &mut ImageLoaderSettings| {
-            settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                address_mode_u: ImageAddressMode::MirrorRepeat,
-                address_mode_v: ImageAddressMode::MirrorRepeat,
-                address_mode_w: ImageAddressMode::MirrorRepeat,
-                ..default()
-            })
-        },
-    );
-
-    cmd.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(250.0, 250.0))),
-        Landscape,
-        MeshMaterial3d(materials.add(StandardMaterial {
-            perceptual_roughness: 0.8,
-            metallic: 0.0,
-            base_color_texture: Some(diff_texture.clone()),
-            metallic_roughness_texture: Some(arm_texture.clone()),
-            occlusion_texture: Some(ao_texture.clone()),
-            normal_map_texture: Some(normal_texture.clone()),
-            uv_transform: Affine2::from_scale(Vec2::new(25., 25.)),
-            ..default()
-        })),
-        Transform::default(),
-    ));
+    cmd.spawn((SceneRoot(asset_server.load("landscape.glb#Scene0")),));
 
     let camera = cmd
         .spawn((
@@ -134,7 +70,6 @@ pub fn setup(
     }
 
     cmd.spawn((
-        Landscape,
         Mesh3d(meshes.add(Sphere::new(3.0).mesh().uv(120, 64))),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Color::srgba(0.5, 0.5, 5.0, 0.5),
