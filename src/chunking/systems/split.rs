@@ -1,6 +1,6 @@
-use bevy::prelude::{Children, Commands, Entity, EventReader, EventWriter, GlobalTransform, Query, Res, Transform, ViewVisibility, Visibility, With, Without};
+use bevy::prelude::*;
 use std::num::NonZeroU32;
-use crate::prelude::{CanMerge, CanSplit, Chunk, ChunkCenter, ChunkConfig, SplitChunk};
+use crate::prelude::*;
 
 pub fn split(
     cfg: Res<ChunkConfig>,
