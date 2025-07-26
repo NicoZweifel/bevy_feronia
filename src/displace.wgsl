@@ -97,7 +97,7 @@ fn displace_vertex_and_calc_normal(
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
 #ifdef VERTEX_NORMALS
-    // TODO use chunk index / 0 instead of instance_index for instanced material
+    // TODO use chunk index / 0 instead of instance_index for instanced material (and try Automatic Batching)
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
 #ifdef WIND_HIGH_QUALITY

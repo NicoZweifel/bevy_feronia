@@ -129,13 +129,13 @@ fn populate_chunks(
             0.0..0.0
         } else {
             let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-            (prev_lod_dist - prev_lod_dist * 0.5)..prev_lod_dist
+            prev_lod_dist -  chunk_config.get_chunk_world_size(chunk.level)..prev_lod_dist
         };
 
         let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            (current_lod_dist - current_lod_dist * 0.5)..current_lod_dist
+            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level) ..current_lod_dist
         };
 
         let (prototype, material_handle) = if chunk.level == 0 {
