@@ -1,5 +1,5 @@
-use std::num::NonZeroU32;
 use bevy::prelude::*;
+use std::num::NonZeroU32;
 
 pub struct LodConfig {
     /// The distance at which a chunk of this level subdivides into its children.
@@ -41,7 +41,6 @@ impl Default for ChunkConfig {
         }
     }
 }
-
 
 
 impl ChunkConfig {

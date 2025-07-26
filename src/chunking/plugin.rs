@@ -1,7 +1,7 @@
-use bevy::app::{App, Plugin, Startup, Update};
-use bevy::prelude::IntoScheduleConfigs;
 use crate::chunking::prelude::*;
 use crate::chunking::systems::prelude::*;
+use bevy::app::{App, Plugin, Startup, Update};
+use bevy::prelude::IntoScheduleConfigs;
 
 pub struct ChunkPlugin;
 

@@ -1,12 +1,12 @@
 use crate::prelude::*;
 use bevy::{
-    ecs::system::{SystemParamItem, lifetimeless::*},
+    ecs::system::{lifetimeless::*, SystemParamItem},
     pbr::{
         RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
         SetMeshViewBindingArrayBindGroup,
     },
     render::{
-        mesh::{RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator},
+        mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo},
         render_asset::RenderAssets,
         render_phase::{
             PhaseItem, RenderCommand, RenderCommandResult, SetItemPipeline, TrackedRenderPass,

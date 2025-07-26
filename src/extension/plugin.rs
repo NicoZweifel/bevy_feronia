@@ -1,5 +1,5 @@
-use crate::WindMaterialPlugin;
 use crate::extension::material::WindAffectedExtendedMaterial;
+use crate::WindMaterialPlugin;
 use bevy::app::{App, Plugin};
 use bevy::asset::embedded_asset;
 use bevy::pbr::{MaterialPlugin, StandardMaterial};

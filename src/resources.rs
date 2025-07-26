@@ -5,14 +5,14 @@ use std::marker::PhantomData;
 #[derive(Resource)]
 pub struct WindAffectedTypes<M>
 where
-    M: Asset + Clone
+    M: Asset + Clone,
 {
     pub values: Vec<WindAffectedType<M>>,
     pub _marker: PhantomData<M>,
 }
 impl<M> Default for WindAffectedTypes<M>
 where
-    M: Asset+ Clone
+    M: Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -23,7 +23,10 @@ where
 }
 
 #[derive(Clone)]
-pub struct WindAffectedType<M> where M: Asset + Clone {
+pub struct WindAffectedType<M>
+where
+    M: Asset + Clone,
+{
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
     pub wind: Wind,

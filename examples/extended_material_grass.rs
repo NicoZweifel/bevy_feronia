@@ -5,8 +5,8 @@ use bevy::pbr::NotShadowCaster;
 use bevy::prelude::*;
 use bevy_feronia::prelude::*;
 use example::*;
-use rand::Rng;
 use rand::seq::IndexedRandom;
+use rand::Rng;
 
 fn main() -> AppExit {
     App::new()

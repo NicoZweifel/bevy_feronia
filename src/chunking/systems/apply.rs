@@ -1,8 +1,8 @@
-use bevy::prelude::{Commands, EventReader, GlobalTransform, Query, Res, Transform, ViewVisibility, Visibility};
-use std::num::NonZeroU32;
 use crate::chunking::components::Chunk;
 use crate::chunking::events::{MergeChunks, SplitChunk};
 use crate::chunking::prelude::ChunkConfig;
+use bevy::prelude::{Commands, EventReader, GlobalTransform, Query, Res, Transform, ViewVisibility, Visibility};
+use std::num::NonZeroU32;
 
 pub fn apply_splits(
     mut commands: Commands,

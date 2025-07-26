@@ -1,10 +1,10 @@
-use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query, Res, With};
-use bevy::platform::collections::HashMap;
-use bevy::math::IVec3;
-use std::num::NonZeroU32;
 use crate::chunking::components::{Chunk, ChunkCenter};
 use crate::chunking::events::{MergeChunks, SplitChunk};
 use crate::chunking::prelude::ChunkConfig;
+use bevy::math::IVec3;
+use bevy::platform::collections::HashMap;
+use bevy::prelude::{Entity, EventWriter, GlobalTransform, Query, Res, With};
+use std::num::NonZeroU32;
 
 pub fn update_chunk_lods(
     config: Res<ChunkConfig>,

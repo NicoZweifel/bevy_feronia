@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::asset::{Asset, AssetPath, Handle, embedded_path};
+use bevy::asset::{embedded_path, Asset, AssetPath, Handle};
 use bevy::image::Image;
 use bevy::pbr::MaterialExtension;
 use bevy::prelude::Reflect;

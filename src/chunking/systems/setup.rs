@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::chunking::prelude::*;
+use bevy::prelude::*;
 
 pub fn setup_chunks(mut commands: Commands, config: Res<ChunkConfig>) {
     let top_lod_level = (config.lods.len() - 1) as u32;

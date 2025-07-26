@@ -3,14 +3,14 @@ mod camera_controller;
 
 use bevy::render::view::Hdr;
 use bevy::{
-    core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping},
+    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping, Skybox},
     //diagnostic::*,
     image::ImageLoaderSettings,
     pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
-use bevy_feronia::chunking::core::ChunkCenter;
+use bevy_feronia::prelude::*;
 use camera_controller::*;
 
 #[derive(Component)]
@@ -102,11 +102,11 @@ pub fn setup(
         })),
         Transform::from_xyz(0., 5.0, 0.0),
     ))
-    .with_child(PointLight {
-        radius: 3.0,
-        color: Color::srgb(0.1, 0.1, 1.0),
-        ..default()
-    });
+        .with_child(PointLight {
+            radius: 3.0,
+            color: Color::srgb(0.1, 0.1, 1.0),
+            ..default()
+        });
 
     cmd.spawn((
         DirectionalLight {

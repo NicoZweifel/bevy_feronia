@@ -7,7 +7,7 @@ use bevy::prelude::*;
 pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
 impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
-    for WindAffectedExtendedMaterial
+for WindAffectedExtendedMaterial
 {
     fn create_material(
         base: StandardMaterial,

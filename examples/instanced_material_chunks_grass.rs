@@ -7,11 +7,11 @@ use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::primitives::{Aabb, MeshAabb};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
-use bevy_feronia::chunking::plugin::ChunkPlugin;
 
 fn main() -> AppExit {
     App::new()
@@ -36,7 +36,7 @@ fn main() -> AppExit {
             InstancedWindAffectedPlugin,
             ChunkPlugin,
         ))
-        .add_systems(Startup, (setup,setup_density_map))
+        .add_systems(Startup, (setup, setup_density_map))
         .add_systems(Update, (init_grass, draw_aabbs, populate_chunks, draw_chunks))
         .run()
 }
@@ -129,10 +129,10 @@ fn draw_aabbs(
 
 fn draw_chunks(
     mut gizmos: Gizmos,
-    query: Query<(&Chunk,&GlobalTransform), With<InstanceMaterialData>>,
-    config:Res<ChunkConfig>
+    query: Query<(&Chunk, &GlobalTransform), With<InstanceMaterialData>>,
+    config: Res<ChunkConfig>,
 ) {
-    for  (chunk,tf) in &query {
+    for (chunk, tf) in &query {
         gizmos.cuboid(
             Transform::from_translation(tf.translation())
                 .with_rotation(tf.rotation())
@@ -211,7 +211,6 @@ fn populate_chunks(
     let mut rng = rand::rng();
 
     for (entity, chunk, chunk_transform) in &new_chunks_query {
-
         let (prototype, material_handle) = if chunk.level == 0 {
             let proto = prototypes.get().last().unwrap();
             (proto, hq_material_handle.clone())
@@ -249,11 +248,11 @@ fn populate_chunks(
                     chunk_corner.z + instance_offset_z + z_jitter,
                 );
 
-               // TODO see above
-               // let sampled_density = sampler.sample(instance_world_pos);
+                // TODO see above
+                // let sampled_density = sampler.sample(instance_world_pos);
 
                 // TODO explicit logic/resource/system for this
-                let density = match chunk.level{
+                let density = match chunk.level {
                     0 => 1.0,
                     1 => 0.5,
                     _ => 0.1,

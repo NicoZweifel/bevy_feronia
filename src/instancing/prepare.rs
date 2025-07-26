@@ -1,7 +1,7 @@
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::{BufferInitDescriptor, BufferUsages};
 use bevy::render::renderer::{RenderDevice, RenderQueue};
-use crate::prelude::*;
 
 pub(crate) fn prepare_instance_buffer(
     mut cmd: Commands,
@@ -11,7 +11,7 @@ pub(crate) fn prepare_instance_buffer(
 ) {
     for (entity, instance_data, instance_buffer) in &query {
         let Some(instance_buffer) = instance_buffer else {
-           create_buffer(&mut cmd, entity, instance_data, &render_device);
+            create_buffer(&mut cmd, entity, instance_data, &render_device);
             continue;
         };
 

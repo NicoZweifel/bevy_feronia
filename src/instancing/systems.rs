@@ -1,5 +1,5 @@
 use super::{
-    components::{ InstanceMaterialData, InstancePipelineKey},
+    components::{InstanceMaterialData, InstancePipelineKey},
     draw::DrawCustom,
     material::{InstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial},
     pipeline::{CustomPipeline, CustomPipelineKey},

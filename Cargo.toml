@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = {  git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
     "bevy_pbr",
 ] }
 #bevy-inspector-egui = "0.31.0"
@@ -13,7 +13,7 @@ noise = "0.9.0"
 bitflags = "2.9.1"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main",features = ["file_watcher","jpeg","dynamic_linking", "embedded_watcher"]}
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher"] }
 
 bytemuck = "1.23.1"
 #iyes_perf_ui = "0.5.0"

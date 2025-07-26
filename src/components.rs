@@ -9,13 +9,13 @@ pub struct WindAffectedRegistered<M>(pub WindAffectedType<M>)
 where
     M: Asset + Clone;
 
-impl <M> WindAffectedRegistered<M>
+impl<M> WindAffectedRegistered<M>
 where
-    M: Asset + Clone
+    M: Asset + Clone,
 {
-   pub fn get(&self) -> WindAffectedType<M>{
-      self.0.clone()
-   }
+    pub fn get(&self) -> WindAffectedType<M> {
+        self.0.clone()
+    }
 }
 
 #[derive(Component, Reflect)]

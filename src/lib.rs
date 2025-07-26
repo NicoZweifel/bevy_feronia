@@ -10,14 +10,13 @@ pub mod chunking;
 pub use crate::plugin::{WindMaterialPlugin, WindPlugin};
 
 pub mod prelude {
-
     pub use crate::plugin::{WindMaterialPlugin, WindPlugin};
 
     pub use crate::components::*;
     pub use crate::core::*;
     pub use crate::resources::*;
 
+    pub use crate::chunking::prelude::*;
     pub use crate::extension::prelude::*;
     pub use crate::instancing::prelude::*;
-    pub use crate::chunking::prelude::*;
 }

@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy_feronia::prelude::*;
 use bevy_feronia::prelude::*;
 use example::*;
-use rand::{Rng, seq::IndexedRandom};
+use rand::{seq::IndexedRandom, Rng};
 
 fn main() -> AppExit {
     App::new()
