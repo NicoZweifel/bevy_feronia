@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
 
 `cargo run --example instanced_material_chunks`
 
-### Manually instanced with a cpu-sampled density map
+### Manually instanced grass with a cpu-sampled density map and chunks
 
 `cargo run --example instanced_density_map`
 
