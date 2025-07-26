@@ -48,7 +48,7 @@ pub fn collect_types<M, W>(
         &mut q_affected
             .iter()
             .map(|x| {
-                create_material::<M, W>(
+                collect_types_recursive::<M, W>(
                     &mut cmd,
                     &mut materials,
                     &mut extended_materials,
@@ -137,7 +137,7 @@ pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Imag
     commands.insert_resource(WindTexture(handle));
 }
 
-fn create_material<M, W>(
+fn collect_types_recursive<M, W>(
     cmd: &mut Commands,
     materials: &mut ResMut<Assets<M>>,
     extended_materials: &mut ResMut<Assets<W>>,
@@ -183,7 +183,7 @@ where
                 continue;
             };
 
-            types.append(&mut create_material::<M, W>(
+            types.append(&mut collect_types_recursive::<M, W>(
                 cmd,
                 materials,
                 extended_materials,
