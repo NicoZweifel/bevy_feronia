@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/81dc0322-95f9-4d61-97d4-30cbbc9e2fdc
 # bevy_feronia
 
 Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/artistic freedom and modularity.
