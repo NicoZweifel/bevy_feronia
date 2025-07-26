@@ -59,7 +59,7 @@ pub fn update_chunk_lods(
         let merge_dist = config.lods[chunk_level as usize].distance;
 
         let parent_level = chunk_level + 1;
-        let parent_center = config.get_center(parent_grid_coord, parent_level);
+        let parent_center = config.get_chunk_world_center(parent_grid_coord, parent_level);
 
         if center_translation.distance(parent_center) <= merge_dist {
             continue;

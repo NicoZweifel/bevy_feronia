@@ -46,11 +46,7 @@ impl Default for ChunkConfig {
 impl ChunkConfig {
     /// Calculates the world size (width/depth) of a chunk at a given LOD level.
     pub fn get_chunk_world_size(&self, level: u32) -> f32 {
-        if let Some(lod) = self.lods.get(level as usize) {
-            lod.chunk_size_scalar as f32 * self.base_chunk_size
-        } else {
-            self.lods[self.get_max_lod_level() as usize].chunk_size_scalar as f32 * self.base_chunk_size
-        }
+        self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar as f32 * self.base_chunk_size
     }
 
     pub fn get_total_world_size(&self) -> f32 {
@@ -58,7 +54,7 @@ impl ChunkConfig {
     }
 
     /// Calculates the world-space center of a chunk from its grid coordinate and level.
-    pub fn get_center(&self, grid_coord: IVec3, level: u32) -> Vec3 {
+    pub fn get_chunk_world_center(&self, grid_coord: IVec3, level: u32) -> Vec3 {
         let world_size = self.get_chunk_world_size(level);
         let half_size = world_size / 2.0;
 
@@ -66,11 +62,7 @@ impl ChunkConfig {
     }
 
     pub fn get_size_scalar(&self, level: u32) -> u32 {
-        if let Some(lod) = self.lods.get(level as usize) {
-            lod.chunk_size_scalar
-        } else {
-            self.lods[self.get_max_lod_level() as usize].chunk_size_scalar
-        }
+         self.lods.get(level as usize).expect("Level out of bounds").chunk_size_scalar
     }
 
     pub fn get_max_lod_level(&self) -> u32 {
