@@ -22,12 +22,12 @@ impl Default for ChunkConfig {
             lods: vec![
                 // Level 0: High
                 LodConfig {
-                    distance: 50.0,
+                    distance: 40.0,
                     chunk_size_scalar: 1,
                 },
                 // Level 1: Medium
                 LodConfig {
-                    distance: 75.0,
+                    distance: 80.0,
                     chunk_size_scalar: 2,
                 },
                 // Level 2: Low

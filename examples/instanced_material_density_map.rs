@@ -210,20 +210,19 @@ fn populate_chunks(
     for (entity, chunk, chunk_transform) in &new_chunks_query {
         let lod_level = chunk.level as usize;
         let current_lod_config = chunk_config.lods.get(lod_level).unwrap();
-        let crossfade_margin: f32 = chunk_config.get_chunk_world_size(chunk.level) * 2.0;
         let current_lod_dist = current_lod_config.distance;
 
         let start_margin = if lod_level == 0 {
             0.0..0.0
         } else {
             let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-            (prev_lod_dist - crossfade_margin)..prev_lod_dist
+            prev_lod_dist..prev_lod_dist + prev_lod_dist * 0.5
         };
 
         let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            (current_lod_dist - crossfade_margin)..current_lod_dist
+            current_lod_dist ..current_lod_dist+ current_lod_dist * 0.5
         };
 
         let (prototype, material_handle) = if chunk.level == 0 {
