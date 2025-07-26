@@ -21,10 +21,7 @@ pub fn split(
 
         let dist = center_translation.distance(chunk_transform.translation());
 
-        let child_chunk_data =
-            cfg.calculate_child_data(NonZeroU32::new(chunk.level).unwrap(), chunk.size);
-
-        let child_lod_config = cfg.get_lod_config(child_chunk_data.level);
+        let child_lod_config = cfg.get_lod_config(chunk.level - 1);
 
         if dist < child_lod_config.distance {
             ew_split.write(SplitChunk(entity));
@@ -32,7 +29,6 @@ pub fn split(
         }
     }
 }
-
 
 pub fn handle_split(
     mut cmd: Commands,
@@ -54,8 +50,8 @@ pub fn handle_split(
 
         cmd.entity(parent_entity).with_children(|cmd| {
             for offset in &child_chunk_data.offsets {
-                let child_entity = cmd.spawn(
-                    (
+                let child_entity = cmd
+                    .spawn((
                         Chunk {
                             level: child_chunk_data.level,
                             size: child_chunk_data.size,
@@ -64,8 +60,8 @@ pub fn handle_split(
                         GlobalTransform::from_translation(*offset),
                         Visibility::Visible,
                         ViewVisibility::default(),
-                    )
-                ).id();
+                    ))
+                    .id();
 
                 if child_chunk_data.level > 0 {
                     cmd.commands().entity(child_entity).insert(CanSplit);
