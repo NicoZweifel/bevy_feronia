@@ -1,3 +1,5 @@
+
+https://github.com/user-attachments/assets/81dc0322-95f9-4d61-97d4-30cbbc9e2fdc
 # bevy_feronia
 
 Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/artistic freedom and modularity.
@@ -12,8 +14,8 @@ Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/
 
 ### Roadmap
 
-- Chunking
-- Texture-based Scattering on top of meshes
+- Chunking of landscape/meshes
+- Texture-based Scattering on top of landscape/meshes
 - Performance Improvements (e.g., LODs) / Shortcuts (e.g., more efficient calculations for procedural geometry)
 - Make physics-based entities impact the displacement
 - Make use of compute shaders (Allow scattering/sampling of foliage on CPU and GPU to get scattering of high-quality
@@ -48,15 +50,17 @@ https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
 
 https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
 
-
 ### Manually instanced grass split into chunks
 
 `cargo run --example instanced_material_chunks`
+
+https://github.com/user-attachments/assets/6c1e64ad-004a-4a38-8034-eb5c25ce7f8a
 
 ### Manually instanced grass with a cpu-sampled density map and chunks
 
 `cargo run --example instanced_density_map`
 
+https://github.com/user-attachments/assets/3141e4ac-24ff-4519-8ba5-afadf8f6a2ad
 
 ### Credits/Inspirations
 
