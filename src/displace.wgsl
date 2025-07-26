@@ -2,25 +2,9 @@
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
 #import bevy_pbr::mesh_view_bindings::view
 
+#import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
 
-struct SampledNoise {
-    macro_noise: f32,
-    micro_noise: f32,
-    phase_noise: vec2<f32>,
-};
-
-struct DisplacedVertex {
-    world_position: vec4<f32>,
-    world_normal: vec3<f32>,
-}
-
-struct InstanceInfo {
-    world_from_local: mat4x4<f32>,
-    instance_position: vec4<f32>,
-    wrapped_time: f32,
-    instance_index: u32
-}
 
 fn calculate_vertex_displacement(
     local_pos: vec3<f32>,
@@ -37,35 +21,35 @@ fn calculate_vertex_displacement(
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
     var total_world_offset = horizontal_dir * macro_displacement;
 
-    #ifndef WIND_LOD
-        let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
-        let micro_wind = horizontal_dir * micro_displacement;
-        let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
-        let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
-        total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
-    #endif
+#ifdef WIND_HIGH_QUALITY
+    let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
+    let micro_wind = horizontal_dir * micro_displacement;
+    let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
+    let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
+    total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
+#endif
 
     var final_world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
 
-   #ifdef WIND_BILLBOARDING
-        let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
+#ifdef WIND_BILLBOARDING
+    let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
 
-        let billboard_matrix = calculate_billboard_matrix(
-            billboard_anchor,
-            view.world_position.xyz,
-            instance.world_from_local
-        );
-        
-        let billboard_base = billboard_anchor.xyz + (billboard_matrix * twisted_local_pos);
-        let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
+    let billboard_matrix = calculate_billboard_matrix(
+        billboard_anchor,
+        view.world_position.xyz,
+        instance.world_from_local
+    );
 
-        final_world_pos = billboarded_pos;
-    #endif
+    let billboard_base = billboard_anchor.xyz + (billboard_matrix * twisted_local_pos);
+    let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
-    #ifdef WIND_EDGE_CORRECTION
-        final_world_pos = calculate_edge_correction(final_world_pos, local_pos, wind);
-    #endif
+    final_world_pos = billboarded_pos;
+#endif
+
+#ifdef WIND_EDGE_CORRECTION
+    final_world_pos = calculate_edge_correction(final_world_pos, local_pos, wind);
+#endif
 
     return final_world_pos;
 }
@@ -94,7 +78,6 @@ fn displace_vertex_and_calc_normal(
     noise: SampledNoise,
     vertex_pos: vec3<f32>,
     instance: InstanceInfo,
-    dist_to_camera: f32,
 #ifdef VERTEX_NORMALS
     normal: vec3<f32>,
     uv: vec2<f32>
@@ -102,36 +85,43 @@ fn displace_vertex_and_calc_normal(
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
     let small_offset = 0.01;
+#ifdef WIND_HIGH_QUALITY
+    let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
     let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
+#else
+    let dist_to_camera:f32 = 0.0;
+    let lod_fade:f32 = 0.0;
+#endif
 
     let final_pos_xyz = calculate_vertex_displacement(vertex_pos, wind, noise, instance, lod_fade);
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
 #ifdef VERTEX_NORMALS
+    // TODO use chunk index / 0 instead of instance_index for instanced material
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
-    #ifndef WIND_LOD
-        let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
-        let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
-        let tangent_x = neighbor_pos_x - final_pos_xyz;
-        let tangent_z = neighbor_pos_z - final_pos_xyz;
-        var calculated_normal = normalize(cross(tangent_z, tangent_x));
+#ifdef WIND_HIGH_QUALITY
+    let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
+    let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
+    let tangent_x = neighbor_pos_x - final_pos_xyz;
+    let tangent_z = neighbor_pos_z - final_pos_xyz;
+    var calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-        if (wind.round_exponent > 0.0) {
-            let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
-            calculated_normal = normalize(calculated_normal + curve_offset);
-        }
+    if (wind.round_exponent > 0.0) {
+        let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
+        calculated_normal = normalize(calculated_normal + curve_offset);
+    }
 
-        #ifdef WIND_BILLBOARDING
-            out.world_normal = calculated_normal;
-        #else
-            let normal_delta = calculated_normal - normal;
-            out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
-        #endif
+#ifdef WIND_BILLBOARDING
+    out.world_normal = calculated_normal;
+#else
+    let normal_delta = calculated_normal - normal;
+    out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
+#endif
 
-    #else
+#else
         out.world_normal = mesh_normal;
-    #endif
+#endif
 #endif
 
     return out;
@@ -143,7 +133,7 @@ fn calculate_edge_correction(
     wind: Wind
 ) -> vec3<f32> {
     let view_vector = normalize(world_pos - view.world_position.xyz);
-    
+
     let to_camera_flat = normalize(vec3(view.world_position.x, 0.0, view.world_position.z) - vec3(world_pos.x, 0.0, world_pos.z));
     let world_right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera_flat));
 
@@ -152,7 +142,7 @@ fn calculate_edge_correction(
     let offset_direction = world_right * sign(local_pos.x);
 
     let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
-    
+
     return world_pos + final_offset;
 }
 

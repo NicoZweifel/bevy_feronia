@@ -5,8 +5,8 @@ use bevy::prelude::*;
 use bevy::render::view::NoFrustumCulling;
 use bevy_feronia::prelude::*;
 use example::*;
-use rand::Rng;
 use rand::seq::IndexedRandom;
+use rand::Rng;
 
 fn main() -> AppExit {
     App::new()
@@ -30,6 +30,7 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn(SceneRoot(assets.load("grass.glb#Scene0")));
+    cmd.spawn(SceneRoot(assets.load("grass_low_lod.glb#Scene0")));
 }
 
 fn init_grass(
@@ -67,41 +68,42 @@ fn scatter_on_keypress(
     println!("Scattering plants...");
 
     let grid_size = 500;
-    let cell_size = 0.04;
-    let plant_offset = 0.02;
+    let cell_size = 0.08;
+    let plant_offset = 0.04;
     let grid_world_size = grid_size as f32 * cell_size;
 
     let mut rng = rand::rng();
 
     q.iter().for_each(|x| cmd.entity(x).despawn());
 
-    let prototype = prototypes.get().choose(&mut rng).unwrap();
+    for prototype in prototypes.get().iter() {
+        cmd.spawn((
+            InstancedWindAffectedMaterial::component(prototype.material.clone()),
+            WindAffected,
+            WindAffectedReady,
+            Mesh3d(prototype.mesh.clone()),
+            InstanceMaterialData(
+                (0..grid_size * grid_size)
+                    .map(|i| {
+                        let grid_x = (i % grid_size) as f32;
+                        let grid_z = (i / grid_size) as f32;
 
-    cmd.spawn((
-        InstancedWindAffectedMaterial::component(prototype.material.clone()),
-        WindAffectedReady,
-        Mesh3d(prototype.mesh.clone()),
-        InstanceMaterialData(
-            (0..grid_size * grid_size)
-                .map(|i| {
-                    let grid_x = (i % grid_size) as f32;
-                    let grid_z = (i / grid_size) as f32;
+                        let x = grid_x * cell_size - grid_world_size / 2.0;
+                        let z = grid_z * cell_size - grid_world_size / 2.0;
 
-                    let x = grid_x * cell_size - grid_world_size / 2.0;
-                    let z = grid_z * cell_size - grid_world_size / 2.0;
+                        let x_jitter = rng.random_range(-plant_offset..plant_offset);
+                        let z_jitter = rng.random_range(-plant_offset..plant_offset);
 
-                    let x_jitter = rng.random_range(-plant_offset..plant_offset);
-                    let z_jitter = rng.random_range(-plant_offset..plant_offset);
-
-                    InstanceData {
-                        position: Vec3::new(x + x_jitter, 0.0, z + z_jitter),
-                        scale: 1.0,
-                        color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
-                        index: i,
-                    }
-                })
-                .collect::<Vec<_>>(),
-        ),
-        NoFrustumCulling,
-    ));
+                        InstanceData {
+                            position: Vec3::new(x + x_jitter, 0.0, z + z_jitter),
+                            scale: 1.,
+                            color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
+                            index: i,
+                        }
+                    })
+                    .collect::<Vec<_>>(),
+            ),
+            NoFrustumCulling,
+        ));
+    }
 }

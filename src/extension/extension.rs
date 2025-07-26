@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::asset::{Asset, AssetPath, Handle, embedded_path};
+use bevy::asset::{embedded_path, Asset, AssetPath, Handle};
 use bevy::image::Image;
 use bevy::pbr::MaterialExtension;
 use bevy::prelude::Reflect;
@@ -11,6 +11,8 @@ use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
     pub wind: Wind,
+    // Whether the Extension is controlled externally and isn't automatically updated by the Wind resource.
+    pub controlled: bool,
 
     #[texture(51)]
     #[sampler(52)]
@@ -64,8 +66,8 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
-        if key.bind_group_data.contains(WindAffectedKey::ENABLE_LOD) {
-            shader_defs.push("WIND_LOD".into());
+        if key.bind_group_data.contains(WindAffectedKey::HIGH_QUALITY) {
+            shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
         Ok(())
@@ -84,7 +86,7 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.wind.enable_edge_correction,
         );
-        key.set(WindAffectedKey::ENABLE_LOD, material.wind.enable_lod);
+        key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
 
         key
     }

@@ -1,12 +1,12 @@
 use crate::prelude::*;
 use bevy::{
-    ecs::system::{SystemParamItem, lifetimeless::*},
+    ecs::system::{lifetimeless::*, SystemParamItem},
     pbr::{
         RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
         SetMeshViewBindingArrayBindGroup,
     },
     render::{
-        mesh::{RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator},
+        mesh::{allocator::MeshAllocator, RenderMesh, RenderMeshBufferInfo},
         render_asset::RenderAssets,
         render_phase::{
             PhaseItem, RenderCommand, RenderCommandResult, SetItemPipeline, TrackedRenderPass,
@@ -86,6 +86,8 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 };
 
                 pass.set_index_buffer(index_buffer_slice.buffer.slice(..), 0, *index_format);
+
+                // TODO use draw_indexed_indirect
                 pass.draw_indexed(
                     index_buffer_slice.range.start..(index_buffer_slice.range.start + count),
                     vertex_buffer_slice.range.start as i32,

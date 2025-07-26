@@ -5,7 +5,7 @@ use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 
 pub trait WindAffectable<M: Material, R: Asset> {
-    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>) -> R;
+    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>, controlled: bool) -> R;
     fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
     fn component(material: Handle<R>) -> impl Component;
 }
@@ -62,6 +62,6 @@ bitflags! {
     pub struct WindAffectedKey: u64 {
         const ENABLE_BILLBOARDING    = 1 << 0;
         const ENABLE_EDGE_CORRECTION = 1 << 1;
-        const ENABLE_LOD = 1 << 2;
+        const HIGH_QUALITY = 1 << 2;
     }
 }

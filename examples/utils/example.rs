@@ -3,13 +3,14 @@ mod camera_controller;
 
 use bevy::render::view::Hdr;
 use bevy::{
-    core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping},
+    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping, Skybox},
     //diagnostic::*,
     image::ImageLoaderSettings,
     pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
+use bevy_feronia::prelude::*;
 use camera_controller::*;
 
 #[derive(Component)]
@@ -17,6 +18,8 @@ pub struct Landscape;
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
+    // TODO remove this when using draw_indirect_indexed.
+    // needs to be true for draw_indexed to work if not using chunking
     pub no_indirect_drawing: bool,
 }
 
@@ -71,6 +74,7 @@ pub fn setup(
             Bloom::NATURAL,
             Tonemapping::TonyMcMapface,
             Transform::from_xyz(-10., 2., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            ChunkCenter,
             Skybox {
                 image: asset_server.load("skybox.ktx2"),
                 brightness: 10000.,
@@ -98,11 +102,11 @@ pub fn setup(
         })),
         Transform::from_xyz(0., 5.0, 0.0),
     ))
-    .with_child(PointLight {
-        radius: 3.0,
-        color: Color::srgb(0.1, 0.1, 1.0),
-        ..default()
-    });
+        .with_child(PointLight {
+            radius: 3.0,
+            color: Color::srgb(0.1, 0.1, 1.0),
+            ..default()
+        });
 
     cmd.spawn((
         DirectionalLight {

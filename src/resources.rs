@@ -3,11 +3,17 @@ use std::f32::consts::PI;
 use std::marker::PhantomData;
 
 #[derive(Resource)]
-pub struct WindAffectedTypes<M: Asset> {
+pub struct WindAffectedTypes<M>
+where
+    M: Asset + Clone,
+{
     pub values: Vec<WindAffectedType<M>>,
     pub _marker: PhantomData<M>,
 }
-impl<M: Asset> Default for WindAffectedTypes<M> {
+impl<M> Default for WindAffectedTypes<M>
+where
+    M: Asset + Clone,
+{
     fn default() -> Self {
         Self {
             values: Default::default(),
@@ -17,13 +23,19 @@ impl<M: Asset> Default for WindAffectedTypes<M> {
 }
 
 #[derive(Clone)]
-pub struct WindAffectedType<M: Asset> {
+pub struct WindAffectedType<M>
+where
+    M: Asset + Clone,
+{
     pub mesh: Handle<Mesh>,
     pub material: Handle<M>,
     pub wind: Wind,
 }
 
-impl<M: Asset> WindAffectedTypes<M> {
+impl<M> WindAffectedTypes<M>
+where
+    M: Asset + Clone,
+{
     pub fn get(&self) -> &Vec<WindAffectedType<M>> {
         &self.values
     }
@@ -52,7 +64,7 @@ pub struct Wind {
     pub twist_strength: f32,
     pub enable_billboarding: bool,
     pub enable_edge_correction: bool,
-    pub enable_lod: bool,
+    pub high_quality: bool,
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
 }
@@ -80,7 +92,7 @@ impl Default for Wind {
             enable_edge_correction: false,
             lod_threshold: 50.0,
             edge_correction_factor: 0.01,
-            enable_lod: false,
+            high_quality: true,
         }
     }
 }

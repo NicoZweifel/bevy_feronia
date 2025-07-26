@@ -1,15 +1,14 @@
+use super::prepare::prepare_instance_buffer;
 use super::{draw::DrawCustom, pipeline::CustomPipeline, systems::*};
 use crate::prelude::*;
-use bevy::app::{App, Plugin, Update};
-use bevy::asset::{AssetApp, embedded_asset};
+use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::Transparent3d;
-use bevy::pbr::StandardMaterial;
-use bevy::prelude::IntoScheduleConfigs;
-use bevy::render::extract_component::ExtractComponentPlugin;
-use bevy::render::render_asset::RenderAssetPlugin;
-use bevy::render::render_phase::AddRenderCommand;
-use bevy::render::render_resource::SpecializedMeshPipelines;
-use bevy::render::{Render, RenderApp, RenderSystems};
+use bevy::prelude::*;
+use bevy::render::{
+    extract_component::ExtractComponentPlugin, render_asset::RenderAssetPlugin, render_phase::AddRenderCommand, render_resource::SpecializedMeshPipelines,
+    Render, RenderApp,
+    RenderSystems,
+};
 
 pub struct InstancedWindAffectedPlugin;
 
@@ -25,7 +24,7 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
-        .add_systems(Update, add_instance_key_component);
+            .add_systems(PostUpdate, add_instance_key_component);
 
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
@@ -34,7 +33,7 @@ impl Plugin for InstancedWindAffectedPlugin {
                 Render,
                 (
                     queue_custom.in_set(RenderSystems::QueueMeshes),
-                    prepare_instance_buffers.in_set(RenderSystems::PrepareResources),
+                    prepare_instance_buffer.in_set(RenderSystems::PrepareResources),
                 ),
             );
     }
