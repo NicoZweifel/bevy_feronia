@@ -19,5 +19,5 @@ pub mod prelude {
 
     pub use crate::extension::prelude::*;
     pub use crate::instancing::prelude::*;
-    pub use crate::chunking::*;
+    pub use crate::chunking::prelude::*;
 }

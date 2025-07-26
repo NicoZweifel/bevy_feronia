@@ -11,6 +11,7 @@ use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
+use bevy_feronia::chunking::plugin::ChunkPlugin;
 
 fn main() -> AppExit {
     App::new()

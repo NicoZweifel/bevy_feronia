@@ -10,7 +10,7 @@ use bevy::{
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
-use bevy_feronia::prelude::ChunkCenter;
+use bevy_feronia::chunking::core::ChunkCenter;
 use camera_controller::*;
 
 #[derive(Component)]
