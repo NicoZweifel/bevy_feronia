@@ -47,13 +47,10 @@ pub fn setup_height_map_pipeline(
 
     let map_resolution = 2048;
 
-    let mut image = Image::new_target_texture(
-        map_resolution,
-        map_resolution,
-        TextureFormat::R32Float,
-    );
+    let mut image =
+        Image::new_target_texture(map_resolution, map_resolution, TextureFormat::R32Float);
 
-    image.texture_descriptor.usage = image.texture_descriptor.usage |TextureUsages::COPY_SRC;
+    image.texture_descriptor.usage = image.texture_descriptor.usage | TextureUsages::COPY_SRC;
 
     let image_handle = images.add(image);
 
@@ -78,7 +75,7 @@ pub fn setup_height_map_pipeline(
             scale: 1.0,
             viewport_origin: Vec2::new(0.5, 0.5),
             scaling_mode: bevy::camera::ScalingMode::Fixed {
-               width: world_size,
+                width: world_size,
                 height: world_size,
             },
         }),
@@ -87,4 +84,3 @@ pub fn setup_height_map_pipeline(
 
     cmd.insert_resource(HeightMapTexture(image_handle));
 }
-

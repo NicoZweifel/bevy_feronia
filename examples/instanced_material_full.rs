@@ -9,8 +9,8 @@ use bevy::render::batching::NoAutomaticBatching;
 use bevy::render::gpu_readback::Readback;
 use bevy::render::primitives::{Aabb, MeshAabb};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
-use bevy::render::view::screenshot::{save_to_disk, Screenshot, ScreenshotCaptured};
 use bevy::render::view::VisibilityRange;
+use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
@@ -61,7 +61,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
 ) {
-    cmd.spawn((SceneRoot(assets.load("landscape_large.glb#Scene0")), Landscape));
+    cmd.spawn((
+        SceneRoot(assets.load("landscape_large.glb#Scene0")),
+        Landscape,
+    ));
     cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
         WindAffected,
@@ -172,8 +175,6 @@ fn populate_chunks(
     height_map_texture: Res<HeightMapTexture>,
     height_map: Option<Res<HeightMap>>,
 ) {
-
-
     let Some(density_image) = images.get(&density_map.0) else {
         info!("Density map image missing");
         return;
@@ -184,7 +185,9 @@ fn populate_chunks(
         commands
             .spawn(Screenshot::image(height_map_texture.0.clone()))
             .observe(
-                |trigger: On<ScreenshotCaptured>, mut images: ResMut<Assets<Image>>,mut cmd:Commands| {
+                |trigger: On<ScreenshotCaptured>,
+                 mut images: ResMut<Assets<Image>>,
+                 mut cmd: Commands| {
                     println!("Height map captured");
                     let mut image = trigger.clone();
                     image.asset_usage = default();
@@ -193,7 +196,6 @@ fn populate_chunks(
             );
         return;
     };
-
 
     let Some(height_map_image) = images.get(&height_map_image.0) else {
         info!("Height map image not found");
@@ -422,10 +424,13 @@ impl<'a> HeightMapSampler<'a> {
             .get(byte_index..byte_index + 4)
         {
             // TODO
-            return (f32::from_le_bytes(pixel_bytes.try_into().unwrap()) / 0.01) - 32.
+            return (f32::from_le_bytes(pixel_bytes.try_into().unwrap()) / 0.01) - 32.;
         }
 
-        println!("Failed to read height map pixel at ({}, {})", pixel_x, pixel_y);
+        println!(
+            "Failed to read height map pixel at ({}, {})",
+            pixel_x, pixel_y
+        );
 
         0.0
     }
