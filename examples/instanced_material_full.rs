@@ -1,14 +1,21 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::camera::visibility::VisibilityRange;
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
+use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
+use bevy::render::gpu_readback::Readback;
 use bevy::render::primitives::{Aabb, MeshAabb};
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
+use bevy::render::view::screenshot::{save_to_disk, Screenshot, ScreenshotCaptured};
+use bevy::render::view::VisibilityRange;
 use bevy_feronia::chunking::plugin::ChunkPlugin;
+use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
 use example::*;
+use noise::{NoiseFn, Perlin};
 use rand::Rng;
 
 fn main() -> AppExit {
@@ -37,22 +44,88 @@ fn main() -> AppExit {
             WindPlugin,
             InstancedWindAffectedPlugin,
             ChunkPlugin,
+            HeightMapPlugin,
         ))
-        .add_systems(Startup, setup)
+        .add_systems(
+            Startup,
+            (setup.after(setup_height_map_pipeline), setup_density_map),
+        )
         .add_systems(Update, populate_chunks)
         .run()
 }
 
-fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn((
-        SceneRoot(assets.load("landscape_flat.glb#Scene0")),
-        Landscape,
-    ));
+fn setup(
+    mut cmd: Commands,
+    assets: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    height_map: Res<HeightMapTexture>,
+) {
+    cmd.spawn((SceneRoot(assets.load("landscape_large.glb#Scene0")), Landscape));
     cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
         WindAffected,
     ));
     cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+
+    cmd.spawn((
+        Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
+        Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color_texture: Some(height_map.0.clone()),
+            unlit: true,
+            ..default()
+        })),
+    ));
+}
+
+fn setup_density_map(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    config: Res<FoliageConfig>,
+) {
+    let size = config.density_map_size;
+    let mut data_buffer = vec![0; (size * size) as usize];
+
+    let perlin = Perlin::new(1);
+    let sample_scale = 5.0;
+
+    for y in 0..size {
+        for x in 0..size {
+            let point = [x as f64 / size as f64, y as f64 / size as f64];
+
+            let noise_value = perlin.get([point[0] * sample_scale, point[1] * sample_scale]);
+
+            let byte_value = ((noise_value * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
+
+            let pixel_index = (y * size + x) as usize;
+            data_buffer[pixel_index] = byte_value;
+        }
+    }
+
+    let mut density_image = Image::new(
+        Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data_buffer,
+        TextureFormat::R8Unorm,
+        default(),
+    );
+
+    density_image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        label: Some("Foliage Density Sampler".into()),
+        address_mode_u: ImageAddressMode::MirrorRepeat,
+        address_mode_v: ImageAddressMode::MirrorRepeat,
+        ..default()
+    });
+
+    let handle = images.add(density_image);
+    commands.insert_resource(FoliageDensityMap(handle));
+
+    info!("Generated foliage density map.");
 }
 
 // TODO see below
@@ -79,10 +152,15 @@ impl Default for FoliageConfig {
     }
 }
 
+#[derive(Resource)]
+struct FoliageDensityMap(Handle<Image>);
+
 fn populate_chunks(
     mut commands: Commands,
-    foliage_config: Res<FoliageConfig>,
     chunk_config: Res<ChunkConfig>,
+    density_map: Res<FoliageDensityMap>,
+    images: Res<Assets<Image>>,
+    foliage_config: Res<FoliageConfig>,
     new_chunks_query: Query<
         (Entity, &Chunk, &GlobalTransform),
         (With<Chunk>, Without<WindAffected>),
@@ -91,7 +169,42 @@ fn populate_chunks(
     mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     meshes: Res<Assets<Mesh>>,
     mut high_q_material_handle: Local<Option<Handle<InstancedWindAffectedMaterial>>>,
+    height_map_texture: Res<HeightMapTexture>,
+    height_map: Option<Res<HeightMap>>,
 ) {
+
+
+    let Some(density_image) = images.get(&density_map.0) else {
+        info!("Density map image missing");
+        return;
+    };
+
+    let Some(height_map_image) = height_map else {
+        info!("Height map image resource missing");
+        commands
+            .spawn(Screenshot::image(height_map_texture.0.clone()))
+            .observe(
+                |trigger: On<ScreenshotCaptured>, mut images: ResMut<Assets<Image>>,mut cmd:Commands| {
+                    println!("Height map captured");
+                    let mut image = trigger.clone();
+                    image.asset_usage = default();
+                    cmd.insert_resource(HeightMap(images.add(image)));
+                },
+            );
+        return;
+    };
+
+
+    let Some(height_map_image) = images.get(&height_map_image.0) else {
+        info!("Height map image not found");
+        return;
+    };
+
+    if height_map_image.data.is_none() || height_map_image.data.as_ref().unwrap().is_empty() {
+        info!("Height map image is empty");
+        return;
+    }
+
     if prototypes.get().is_empty() {
         return;
     }
@@ -105,6 +218,14 @@ fn populate_chunks(
     }
 
     let hq_material_handle = high_q_material_handle.as_ref().unwrap();
+    let top_lod_config = chunk_config.lods.last().unwrap();
+    let total_world_size = chunk_config.world_size_in_chunks as f32
+        * top_lod_config.chunk_size_scalar as f32
+        * chunk_config.base_chunk_size;
+
+    // TODO async cpu sampling & gpu sampling directly to buffer
+    let sampler = DensityMapSampler::new(density_image, total_world_size);
+    let height_sampler = HeightMapSampler::new(height_map_image, total_world_size);
 
     let mut rng = rand::rng();
 
@@ -157,21 +278,26 @@ fn populate_chunks(
                 let z_jitter =
                     rng.random_range(-foliage_config.jitter_amount..foliage_config.jitter_amount);
 
-                let instance_world_pos = Vec3::new(
+                let mut instance_world_pos = Vec3::new(
                     chunk_corner.x + instance_offset_x + x_jitter,
                     0.0,
                     chunk_corner.z + instance_offset_z + z_jitter,
                 );
 
-                // TODO see above
-                // let sampled_density = sampler.sample(instance_world_pos);
+                let height = height_sampler.sample(instance_world_pos);
+                if height.is_infinite() {
+                    return None;
+                }
 
-                // TODO explicit logic/resource/system for this
+                instance_world_pos.y = height;
+
                 let density = match chunk.level {
                     0 => 1.0,
                     1 => 0.5,
                     _ => 0.1,
                 };
+
+                let density = sampler.sample(instance_world_pos) * density;
 
                 if rng.random::<f32>() > density {
                     return None;
@@ -219,10 +345,88 @@ fn populate_chunks(
             WindAffectedReady,
             Aabb::from(local_aabb),
             VisibilityRange {
-                start_margin,
                 end_margin,
+                start_margin,
                 use_aabb: false,
             },
         ));
+    }
+}
+
+// TODO see above
+struct DensityMapSampler<'a> {
+    image_data: &'a Option<Vec<u8>>,
+    image_size: u32,
+    total_world_size: f32,
+    center_offset: f32,
+}
+
+impl<'a> DensityMapSampler<'a> {
+    fn new(image: &'a Image, total_world_size: f32) -> Self {
+        Self {
+            image_data: &image.data,
+            image_size: image.texture_descriptor.size.width,
+            total_world_size,
+            center_offset: total_world_size / 2.0,
+        }
+    }
+
+    fn sample(&self, world_pos: Vec3) -> f32 {
+        let uv_x = ((world_pos.x + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
+        let uv_y = ((world_pos.z + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
+        let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
+        let pixel_y = (uv_y * (self.image_size - 1) as f32).round() as u32;
+        let pixel_index = (pixel_y * self.image_size + pixel_x) as usize;
+
+        let sampled_byte = self
+            .image_data
+            .as_ref()
+            .unwrap()
+            .get(pixel_index)
+            .copied()
+            .unwrap_or(0);
+
+        sampled_byte as f32 / 255.0
+    }
+}
+
+struct HeightMapSampler<'a> {
+    image_data: &'a Option<Vec<u8>>,
+    image_size: u32,
+    total_world_size: f32,
+}
+
+impl<'a> HeightMapSampler<'a> {
+    pub fn new(image: &'a Image, total_world_size: f32) -> Self {
+        Self {
+            image_data: &image.data,
+            image_size: image.texture_descriptor.size.width,
+            total_world_size,
+        }
+    }
+
+    pub fn sample(&self, world_pos: Vec3) -> f32 {
+        let center_offset = self.total_world_size / 2.0;
+        let uv_x = ((world_pos.x + center_offset) / self.total_world_size).clamp(0.0, 1.0);
+        let uv_z = ((world_pos.z + center_offset) / self.total_world_size).clamp(0.0, 1.0);
+
+        let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
+        let pixel_y = (uv_z * (self.image_size - 1) as f32).round() as u32;
+
+        let byte_index = (pixel_y * self.image_size + pixel_x) as usize * 4;
+
+        if let Some(pixel_bytes) = self
+            .image_data
+            .as_ref()
+            .unwrap()
+            .get(byte_index..byte_index + 4)
+        {
+            // TODO
+            return (f32::from_le_bytes(pixel_bytes.try_into().unwrap()) / 0.01) - 32.
+        }
+
+        println!("Failed to read height map pixel at ({}, {})", pixel_x, pixel_y);
+
+        0.0
     }
 }
