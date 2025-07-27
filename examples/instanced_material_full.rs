@@ -3,16 +3,20 @@ mod example;
 
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
+use bevy::render::gpu_readback::Readback;
 use bevy::render::primitives::{Aabb, MeshAabb};
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages};
 use bevy::render::view::VisibilityRange;
+use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
+use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use rand::Rng;
+use rand::{rng, Rng};
 
 fn main() -> AppExit {
     App::new()
@@ -40,36 +44,25 @@ fn main() -> AppExit {
             WindPlugin,
             InstancedWindAffectedPlugin,
             ChunkPlugin,
+            HeightMapPlugin,
         ))
-        .insert_resource(ChunkConfig {
-            lods: vec![
-                // Level 0: High
-                LodConfig {
-                    distance: 40.0,
-                    chunk_size_scalar: 1,
-                },
-                // Level 1: Medium
-                LodConfig {
-                    distance: 80.0,
-                    chunk_size_scalar: 2,
-                },
-                // Level 2: Low
-                LodConfig {
-                    distance: f32::MAX,
-                    chunk_size_scalar: 4,
-                },
-            ],
-            base_chunk_size: 4.0,
-            world_size_in_chunks: 4,
-        })
-        .add_systems(Startup, (setup, setup_density_map))
+        .add_systems(
+            Startup,
+            (setup.after(setup_height_map_pipeline), setup_density_map),
+        )
         .add_systems(Update, populate_chunks)
         .run()
 }
 
-fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
+fn setup(
+    mut cmd: Commands,
+    assets: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    height_map: Res<HeightMapTexture>,
+) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat.glb#Scene0")),
+        SceneRoot(assets.load("landscape_large.glb#Scene0")),
         Landscape,
     ));
     cmd.spawn((
@@ -77,6 +70,16 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         WindAffected,
     ));
     cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+
+    cmd.spawn((
+        Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
+        Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color_texture: Some(height_map.0.clone()),
+            unlit: true,
+            ..default()
+        })),
+    ));
 }
 
 fn setup_density_map(
@@ -144,9 +147,9 @@ pub struct FoliageConfig {
 impl Default for FoliageConfig {
     fn default() -> Self {
         Self {
-            instances_per_base_chunk_dim: 32,
-            cell_size: 0.12,
-            jitter_amount: 0.06,
+            instances_per_base_chunk_dim: 64,
+            cell_size: 0.125,
+            jitter_amount: 0.625,
             density_map_size: 1024,
         }
     }
@@ -169,10 +172,40 @@ fn populate_chunks(
     mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     meshes: Res<Assets<Mesh>>,
     mut high_q_material_handle: Local<Option<Handle<InstancedWindAffectedMaterial>>>,
+    height_map_texture: Res<HeightMapTexture>,
+    height_map: Option<Res<HeightMap>>,
 ) {
     let Some(density_image) = images.get(&density_map.0) else {
+        info!("Density map image missing");
         return;
     };
+
+    let Some(height_map_image) = height_map else {
+        info!("Height map image resource missing");
+        commands
+            .spawn(Screenshot::image(height_map_texture.0.clone()))
+            .observe(
+                |trigger: On<ScreenshotCaptured>,
+                 mut images: ResMut<Assets<Image>>,
+                 mut cmd: Commands| {
+                    println!("Height map captured");
+                    let mut image = trigger.clone();
+                    image.asset_usage = default();
+                    cmd.insert_resource(HeightMap(images.add(image)));
+                },
+            );
+        return;
+    };
+
+    let Some(height_map_image) = images.get(&height_map_image.0) else {
+        info!("Height map image not found");
+        return;
+    };
+
+    if height_map_image.data.is_none() || height_map_image.data.as_ref().unwrap().is_empty() {
+        info!("Height map image is empty");
+        return;
+    }
 
     if prototypes.get().is_empty() {
         return;
@@ -194,6 +227,7 @@ fn populate_chunks(
 
     // TODO async cpu sampling & gpu sampling directly to buffer
     let sampler = DensityMapSampler::new(density_image, total_world_size);
+    let height_sampler = HeightMapSampler::new(height_map_image, total_world_size);
 
     let mut rng = rand::rng();
 
@@ -246,11 +280,18 @@ fn populate_chunks(
                 let z_jitter =
                     rng.random_range(-foliage_config.jitter_amount..foliage_config.jitter_amount);
 
-                let instance_world_pos = Vec3::new(
+                let mut instance_world_pos = Vec3::new(
                     chunk_corner.x + instance_offset_x + x_jitter,
                     0.0,
                     chunk_corner.z + instance_offset_z + z_jitter,
                 );
+
+                let height = height_sampler.sample(instance_world_pos);
+                if height.is_infinite() {
+                    return None;
+                }
+
+                instance_world_pos.y = height - rng.random_range(0.0..0.3);
 
                 let density = match chunk.level {
                     0 => 1.0,
@@ -315,40 +356,82 @@ fn populate_chunks(
 }
 
 // TODO see above
-struct DensityMapSampler {
-    image_data: Vec<u8>,
+struct DensityMapSampler<'a> {
+    image_data: &'a Option<Vec<u8>>,
     image_size: u32,
     total_world_size: f32,
     center_offset: f32,
 }
 
-// TODO see above
-impl DensityMapSampler {
-    /// Creates a new sampler from the density map image and world configuration.
-    fn new(image: &Image, total_world_size: f32) -> Self {
+impl<'a> DensityMapSampler<'a> {
+    fn new(image: &'a Image, total_world_size: f32) -> Self {
         Self {
-            image_data: image.data.clone().unwrap(),
+            image_data: &image.data,
             image_size: image.texture_descriptor.size.width,
             total_world_size,
             center_offset: total_world_size / 2.0,
         }
     }
 
-    /// Takes a world position and returns the density value (0.0 to 1.0) at that point.
     fn sample(&self, world_pos: Vec3) -> f32 {
-        // Convert world position to a normalized [0, 1] UV coordinate.
         let uv_x = ((world_pos.x + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
         let uv_y = ((world_pos.z + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
-
-        // Convert UV coordinate to a pixel coordinate.
         let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
         let pixel_y = (uv_y * (self.image_size - 1) as f32).round() as u32;
-
-        // Index the raw data buffer to get the density byte.
         let pixel_index = (pixel_y * self.image_size + pixel_x) as usize;
-        let sampled_byte = self.image_data.get(pixel_index).copied().unwrap_or(0);
 
-        // Convert the byte back to a 0.0-1.0 float.
+        let sampled_byte = self
+            .image_data
+            .as_ref()
+            .unwrap()
+            .get(pixel_index)
+            .copied()
+            .unwrap_or(0);
+
         sampled_byte as f32 / 255.0
+    }
+}
+
+struct HeightMapSampler<'a> {
+    image_data: &'a Option<Vec<u8>>,
+    image_size: u32,
+    total_world_size: f32,
+}
+
+impl<'a> HeightMapSampler<'a> {
+    pub fn new(image: &'a Image, total_world_size: f32) -> Self {
+        Self {
+            image_data: &image.data,
+            image_size: image.texture_descriptor.size.width,
+            total_world_size,
+        }
+    }
+
+    pub fn sample(&self, world_pos: Vec3) -> f32 {
+        let center_offset = self.total_world_size / 2.0;
+        let uv_x = ((world_pos.x + center_offset) / self.total_world_size).clamp(0.0, 1.0);
+        let uv_z = ((world_pos.z + center_offset) / self.total_world_size).clamp(0.0, 1.0);
+
+        let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
+        let pixel_y = (uv_z * (self.image_size - 1) as f32).round() as u32;
+
+        let byte_index = (pixel_y * self.image_size + pixel_x) as usize * 4;
+
+        if let Some(pixel_bytes) = self
+            .image_data
+            .as_ref()
+            .unwrap()
+            .get(byte_index..byte_index + 4)
+        {
+            // TODO
+            return (f32::from_le_bytes(pixel_bytes.try_into().unwrap()) / 0.01) - 32.;
+        }
+
+        println!(
+            "Failed to read height map pixel at ({}, {})",
+            pixel_x, pixel_y
+        );
+
+        0.0
     }
 }

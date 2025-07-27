@@ -10,17 +10,20 @@ pub fn setup_chunks(mut cmd: Commands, cfg: Res<ChunkConfig>) {
 
     for z in 0..cfg.world_size_in_chunks {
         for x in 0..cfg.world_size_in_chunks {
-            let chunk_world_size = cfg.get_chunk_world_size(top_lod_level);
-
-            let world_x = (x as f32 * chunk_world_size + chunk_world_size / 2.0) - center_offset;
-            let world_z = (z as f32 * chunk_world_size + chunk_world_size / 2.0) - center_offset;
+            // TODO height data
+            let world_pos =
+                cfg.get_chunk_world_center(IVec3::new(x as i32, 0, z as i32), top_lod_level);
 
             cmd.spawn((
                 Chunk {
                     level: top_lod_level,
                     size: top_lod_config.chunk_size_scalar,
                 },
-                Transform::from_xyz(world_x, 0.0, world_z),
+                Transform::from_xyz(
+                    world_pos.x - center_offset,
+                    0.0,
+                    world_pos.z - center_offset,
+                ),
                 GlobalTransform::default(),
                 Visibility::Visible,
                 ViewVisibility::default(),

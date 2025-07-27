@@ -11,9 +11,6 @@ use bevy::{
 use bevy_feronia::prelude::*;
 use camera_controller::*;
 
-#[derive(Component)]
-pub struct Landscape;
-
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
     // TODO remove this when using draw_indirect_indexed.
@@ -39,8 +36,6 @@ pub fn setup(
     asset_server: Res<AssetServer>,
     options: Res<ExamplePluginOptions>,
 ) {
-    cmd.spawn((SceneRoot(asset_server.load("landscape.glb#Scene0")),));
-
     let camera = cmd
         .spawn((
             Camera::default(),
