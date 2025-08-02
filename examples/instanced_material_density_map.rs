@@ -74,7 +74,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
 
 fn scatter_on_keypress(
     mut cmd: Commands,
-    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
+    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
 ) {

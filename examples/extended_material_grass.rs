@@ -5,8 +5,6 @@ use bevy::prelude::*;
 use bevy_feronia::extension::observers::scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
-use rand::Rng;
-use rand::seq::IndexedRandom;
 
 fn main() -> AppExit {
     App::new()
