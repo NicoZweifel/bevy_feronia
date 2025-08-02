@@ -50,10 +50,10 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
         ScatterRoot::default(),
         MapHeight,
-        ChunkConfig::default(),
+        ChunkRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(0.2),
+            DistributionDensity(1.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0

@@ -1,32 +1,52 @@
+use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 
 pub fn setup_chunks(
     mut cmd: Commands,
     images: Res<Assets<Image>>,
+    height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
-    q_cfg: Query<(Entity, &ChunkConfig), Without<ChunkRoot>>,
+    q_cfg: Query<(Entity, &ChunkLodConfig, &Aabb, &GlobalTransform, &ChunkRootSize), (With<ChunkRoot>, Without<BaseChunkSize>)>,
 ) {
-    for (entity, cfg) in &q_cfg {
-        let height_sampler = cfg.get_height_map_sampler(&images, &height_map);
+    let height_map_image = match height_map {
+        None => None,
+        Some(x) => images.get(&x.0),
+    };
+
+    let height_sampler = height_map_cfg.map_or_else(
+        || HeightMapSampler::Default(DefaultSampler),
+        |cfg| {
+            height_map_image.map_or_else(
+                || HeightMapSampler::Default(DefaultSampler),
+                |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
+            )
+        },
+    );
+
+    for (entity, cfg, aabb, gtf, chunk_root_size) in &q_cfg {
+        let world_size = Vec3::from(aabb.half_extents * 2.0);
+
+        let center_offset = Vec3::from(aabb.half_extents);
+
+        let top_chunk_size = world_size / **chunk_root_size as f32;
 
         let top_lod_level = cfg.get_max_lod_level();
         let top_lod_config = cfg.get_lod_config(top_lod_level);
 
-        let total_world_size = cfg.get_total_world_size();
-        let center_offset = total_world_size / 2.0;
+        let base_chunk_size = top_chunk_size / top_lod_config.chunk_size_scalar as f32;
 
-        cmd.entity(entity).insert(ChunkRoot::default());
+        cmd.entity(entity)
+            .insert((ChunkRoot::default(), BaseChunkSize(base_chunk_size)));
 
-        for z in 0..cfg.world_size_in_chunks {
-            for x in 0..cfg.world_size_in_chunks {
-                let mut world_pos =
-                    cfg.get_chunk_world_center(Vec3::new(x as f32, 0.0, z as f32), top_lod_level);
+        for z in 0..**chunk_root_size {
+            for x in 0..**chunk_root_size{
+                let mut world_pos = gtf.translation()+ Vec3::new(x as f32, 0., z as f32) * top_chunk_size  + top_chunk_size / 2.;
 
-                if let Some(sampler) = &height_sampler {
-                    world_pos.y =
-                        sampler.sample(world_pos) + cfg.get_chunk_world_size(top_lod_level) / 2.0;
-                };
+                world_pos.y = height_sampler.sample(
+                    world_pos ,
+                );
 
                 let child_lod_config = cfg.get_lod_config(cfg.get_max_lod_level() - 1);
 
@@ -34,14 +54,9 @@ pub fn setup_chunks(
                     Chunk,
                     ChunkLevel(top_lod_level),
                     ChunkSize(top_lod_config.chunk_size_scalar),
-                    Transform::from_xyz(
-                        world_pos.x - center_offset,
-                        world_pos.y,
-                        world_pos.z - center_offset,
-                    ),
+                    Transform::from_translation(world_pos - Vec3::from(center_offset)),
                     ChildOf(entity),
                     ChunkOf(entity),
-                    CanSplit,
                     SplitDistance(child_lod_config.distance),
                 ));
             }

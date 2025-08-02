@@ -155,8 +155,9 @@ pub fn generate_scatter_points(
     mut cmd: Commands,
     q_root: Query<(
         Entity,
-        Option<&ChunkConfig>,
+        Option<&ChunkLodConfig>,
         Option<&ChunkRoot>,
+        Option<&BaseChunkSize>,
         &ScatterRoot,
         Option<&MapHeight>,
         &Aabb,
@@ -187,17 +188,21 @@ pub fn generate_scatter_points(
         Some(x) => images.get(&x.0),
     };
 
-    let total_world_size = height_map_cfg.map_or_else(|| 0.0, |x| x.world_size);
-
-    let height_sampler = height_map_image.map_or_else(
+    let height_sampler = height_map_cfg.map_or_else(
         || HeightMapSampler::Default(DefaultSampler),
-        |x| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(x, total_world_size)),
+        |cfg| {
+            height_map_image.map_or_else(
+                || HeightMapSampler::Default(DefaultSampler),
+                |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
+            )
+        },
     );
 
     let mut rng = rand::rng();
 
     for e in er_scatter.read() {
-        let Ok((root, chunk_config, child_chunks, layers, map_height, aabb)) = q_root.get(**e)
+        let Ok((root, chunk_config, child_chunks, base_chunk_size, layers, map_height, aabb)) =
+            q_root.get(**e)
         else {
             warn!("ScatterRoot not found!");
             continue;
@@ -220,9 +225,12 @@ pub fn generate_scatter_points(
                 continue;
             };
 
-            let density_sampler = pattern_dist
-                .and_then(|p| images.get(&p.density_map))
-                .map(|density_image| DensityMapSampler::new(density_image, total_world_size));
+            let density_sampler =
+                pattern_dist
+                    .and_then(|p| images.get(&p.density_map))
+                    .map(|density_image| {
+                        DensityMapSampler::new(density_image, Vec3::from(aabb.half_extents * 2.))
+                    });
 
             let scatter_layer_enabled = ScatterLayerEnabled(true);
 
@@ -239,28 +247,39 @@ pub fn generate_scatter_points(
 
             let instances_dim = density_dist.map_or(10., |d| **d);
 
-            if let (Some(chunk_config), Some(child_chunks)) = (chunk_config, child_chunks) {
+            if let (Some(chunk_config), Some(child_chunks), Some(base_chunk_size)) =
+                (chunk_config, child_chunks, base_chunk_size)
+            {
                 for chunk_entity in child_chunks.iter() {
-                    let Ok((chunk_level, chunk_size, chunk_gtf)) = chunk_query.get(chunk_entity)
+                    info!(
+                        "Scattering {} instances in Chunk {}",
+                        (instances_dim as u32).pow(2),
+                        chunk_entity
+                    );
+                    let Ok((chunk_level, chunk_size, chunk_gtf)) =
+                        chunk_query.get(chunk_entity)
                     else {
                         warn!("Chunk not found!");
                         continue;
                     };
 
+                    let size = **base_chunk_size
+                        * Vec3::splat(**chunk_size as f32);
+
                     let chunk_corner = chunk_gtf.translation()
-                        - Vec3::new(
-                            chunk_config.get_chunk_world_size(**chunk_level) / 2.0,
-                            0.0,
-                            chunk_config.get_chunk_world_size(**chunk_level) / 2.0,
-                        );
+                        - size / 2.;
 
                     let results = (0..(instances_dim as u32).pow(2))
                         .filter_map(|i| {
-                            let local_x = i as f32 % instances_dim;
-                            let local_z = i as f32 / instances_dim;
+                            let x = i as f32 % instances_dim;
+                            let z = i as f32 / instances_dim;
 
                             let mut instance_world_pos = chunk_corner
-                                + Vec3::new(local_x, 0.0, local_z)
+                                + Vec3::new(
+                                    x * size.x  / instances_dim,
+                                    0.0,
+                                    z * size.z  / instances_dim,
+                                )
                                 + get_jitter(jitter, &mut rng);
 
                             instance_world_pos.y = match map_height {
@@ -302,7 +321,7 @@ pub fn generate_scatter_points(
                 let size = aabb.half_extents * 2.0;
 
                 info!(
-                    "Scattering {} instances for {}",
+                    "Scattering {} instances in {}",
                     (instances_dim as u32).pow(2),
                     size
                 );
@@ -310,20 +329,19 @@ pub fn generate_scatter_points(
                 let jitter_value = jitter.map_or(0., |x| **x);
 
                 let corner = layer_gtf.translation()
-                    - <Vec3A as Into<Vec3>>::into(aabb.half_extents)
+                    - Vec3::from(aabb.half_extents)
                     + Vec3::splat(jitter_value);
 
                 let results = (0..(instances_dim as u32).pow(2))
                     .filter_map(|i| {
-                        let world_x = i as f32 % instances_dim;
-                        let world_z = i as f32 / instances_dim;
-
+                        let x= i as f32 % instances_dim;
+                        let z = i as f32 / instances_dim;
 
                         let mut instance_world_pos = corner
                             + Vec3::new(
-                                world_x * (size.x - jitter_value* 2.) / instances_dim,
+                                x * (size.x - jitter_value * 2.) / instances_dim,
                                 0.0,
-                                world_z * (size.z - jitter_value * 2.) / instances_dim,
+                                z * (size.z - jitter_value * 2.) / instances_dim,
                             )
                             + get_jitter(jitter, &mut rng);
 

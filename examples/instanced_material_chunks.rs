@@ -48,11 +48,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
+        ChunkRoot::default(),
         ScatterRoot::default(),
-        ChunkConfig::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
             DistributionDensity(10.0),
+            InstanceJitter(0.1),
         )],
     ))
     .observe(scatter_observer);

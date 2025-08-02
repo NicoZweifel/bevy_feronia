@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
 use bevy::pbr::{MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
 
@@ -8,7 +9,7 @@ pub fn scatter_observer(
     prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
 
     q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
 ) {
     crate::observers::scatter_observer::<
         WindAffectedTypes<ExtendedWindAffectedMaterial>,

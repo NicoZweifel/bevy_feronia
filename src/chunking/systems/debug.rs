@@ -21,15 +21,15 @@ pub fn draw_aabbs(
 pub fn draw_chunks(
     mut gizmos: Gizmos,
     q: Query<(&ChunkSize, &ChunkLevel, &GlobalTransform, &ChunkOf), With<Chunk>>,
-    q_chunk_config: Query<&ChunkConfig>,
+    q_chunk_config: Query<&BaseChunkSize, With<ChunkLodConfig>>,
     debug_cfg: Res<ChunkDebugConfig>,
 ) {
     for (chunk_size, chunk_level, tf, root_chunk) in &q {
-        let cfg = q_chunk_config.get(**root_chunk).unwrap();
+        let base_chunk_size = q_chunk_config.get(**root_chunk).unwrap();
         gizmos.cuboid(
             Transform::from_translation(tf.translation())
                 .with_rotation(tf.rotation())
-                .with_scale(Vec3::splat(**chunk_size as f32 * cfg.base_chunk_size)),
+                .with_scale(Vec3::splat(**chunk_size as f32) * **base_chunk_size),
             debug_cfg.lod_colors[**chunk_level as usize],
         );
     }

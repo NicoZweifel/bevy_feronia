@@ -1,7 +1,8 @@
 use crate::prelude::{
-    Chunk, ChunkConfig, ChunkLevel, ChunkOf, ChunkRoot, ExtendedWindAffectedMaterial,
+    Chunk, ChunkLodConfig, ChunkLevel, ChunkOf, ChunkRoot, ExtendedWindAffectedMaterial,
     InstancedWindAffectedMaterial, ScatterResults, WindAffectedType, WindAffectedTypes,
 };
+use bevy::camera::primitives::Aabb;
 use bevy::pbr::StandardMaterial;
 use bevy::prelude::{Commands, GlobalTransform, On, Query, Res, With};
 
@@ -11,7 +12,7 @@ pub fn scatter_observer(
     prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
 
     q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
 ) {
     crate::observers::scatter_observer::<
         WindAffectedTypes<InstancedWindAffectedMaterial>,

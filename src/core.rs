@@ -43,7 +43,7 @@ where
         trigger: On<ScatterResults>,
         prototypes: &P,
         q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-        q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+        q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     );
 
     fn component(material: Handle<A>) -> impl Component;

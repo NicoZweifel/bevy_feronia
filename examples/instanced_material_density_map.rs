@@ -41,7 +41,7 @@ fn main() -> AppExit {
             InstancedWindAffectedPlugin,
             ChunkPlugin::<InstancedWindAffectedMeshMaterial>::default(),
         ))
-        .insert_resource(ChunkConfig {
+        .insert_resource(ChunkLodConfig {
             lods: vec![
                 // Level 0: High
                 LodConfig {
@@ -60,7 +60,7 @@ fn main() -> AppExit {
                 },
             ],
             base_chunk_size: 4.0,
-            world_size_in_chunks: 4,
+            size_in_chunks: 4,
         })
         .add_systems(Startup, (setup, setup_density_map))
         .add_systems(Update, populate_chunks)
@@ -157,7 +157,7 @@ struct FoliageDensityMap(Handle<Image>);
 
 fn populate_chunks(
     mut commands: Commands,
-    chunk_config: Res<ChunkConfig>,
+    chunk_config: Res<ChunkLodConfig>,
     density_map: Res<FoliageDensityMap>,
     images: Res<Assets<Image>>,
     foliage_config: Res<FoliageConfig>,
@@ -188,7 +188,7 @@ fn populate_chunks(
 
     let hq_material_handle = high_q_material_handle.as_ref().unwrap();
     let top_lod_config = chunk_config.lods.last().unwrap();
-    let total_world_size = chunk_config.world_size_in_chunks as f32
+    let total_world_size = chunk_config.size_in_chunks as f32
         * top_lod_config.chunk_size_scalar as f32
         * chunk_config.base_chunk_size;
 

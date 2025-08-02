@@ -1,7 +1,8 @@
 use crate::core::WindAffectable;
 use crate::prelude::*;
 use bevy::asset::Asset;
-use bevy::pbr::{Material, MeshMaterial3d};
+use bevy::camera::primitives::Aabb;
+use bevy::pbr::Material;
 use bevy::prelude::*;
 
 pub fn scatter_observer<T, P, M, A>(
@@ -9,7 +10,7 @@ pub fn scatter_observer<T, P, M, A>(
     cmd: Commands,
     prototypes: &Res<T>,
     q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
 ) where
     T: Resource + ProtoTypes<A, P>,
     P: ProtoType<A>,

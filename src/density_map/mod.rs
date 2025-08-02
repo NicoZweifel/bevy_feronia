@@ -5,12 +5,12 @@ use bevy::math::Vec3;
 pub struct DensityMapSampler<'a> {
     pub image_data: &'a Option<Vec<u8>>,
     pub image_size: u32,
-    pub total_world_size: f32,
-    pub center_offset: f32,
+    pub total_world_size: Vec3,
+    pub center_offset: Vec3,
 }
 
 impl<'a> DensityMapSampler<'a> {
-    pub fn new(image: &'a Image, total_world_size: f32) -> Self {
+    pub fn new(image: &'a Image, total_world_size: Vec3) -> Self {
         Self {
             image_data: &image.data,
             image_size: image.texture_descriptor.size.width,
@@ -22,8 +22,8 @@ impl<'a> DensityMapSampler<'a> {
 
 impl<'a> Sampler for DensityMapSampler<'a> {
     fn sample(&self, world_pos: Vec3) -> f32 {
-        let uv_x = ((world_pos.x + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
-        let uv_y = ((world_pos.z + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
+        let uv_x = ((world_pos.x + self.center_offset.x) / self.total_world_size.x).clamp(0.0, 1.0);
+        let uv_y = ((world_pos.z + self.center_offset.z) / self.total_world_size.z).clamp(0.0, 1.0);
         let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
         let pixel_y = (uv_y * (self.image_size - 1) as f32).round() as u32;
         let pixel_index = (pixel_y * self.image_size + pixel_x) as usize;

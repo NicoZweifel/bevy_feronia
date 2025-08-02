@@ -3,6 +3,7 @@ use bevy::asset::{Assets, Handle};
 use bevy::image::Image;
 use bevy::pbr::{ExtendedMaterial, MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use rand::prelude::IndexedRandom;
 
 pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
@@ -46,7 +47,7 @@ impl
         trigger: On<ScatterResults>,
         prototypes: &WindAffectedTypes<ExtendedWindAffectedMaterial>,
         _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-        _q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+        _q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     ) {
         let mut rng = rand::rng();
         cmd.spawn_batch(

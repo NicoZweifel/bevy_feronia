@@ -28,7 +28,7 @@ pub fn handle_split(
     mut cmd: Commands,
     mut er_split: EventReader<SplitChunk>,
     q_chunk: Query<(&ChunkLevel, &ChunkSize, &ChunkOf), (With<CanSplit>, With<Chunk>)>,
-    q_chunk_config: Query<&ChunkConfig>,
+    q_chunk_config: Query<(&BaseChunkSize, &ChunkLodConfig)>,
 ) {
     for e in er_split.read() {
         let parent_entity = e.get();
@@ -40,11 +40,12 @@ pub fn handle_split(
             continue;
         };
 
-        let cfg = q_chunk_config.get(**root_chunk).unwrap();
+        let (base_chunk_size, cfg) = q_chunk_config.get(**root_chunk).unwrap();
 
         let mut child_chunk_data = cfg.calculate_child_data(
             NonZeroU32::new(**parent_chunk_level).expect("Cannot split chunk at level 0!"),
             **parent_chunk_size,
+            **base_chunk_size,
         );
 
         for offset in &mut child_chunk_data.offsets {
@@ -62,13 +63,12 @@ pub fn handle_split(
             if child_chunk_data.level > 0 {
                 let child_lod_config = cfg.get_lod_config(child_chunk_data.level - 1);
                 cmd.entity(child_entity)
-                    .insert((CanSplit, SplitDistance(child_lod_config.distance)));
+                    .insert(SplitDistance(child_lod_config.distance));
             }
 
             if child_chunk_data.level < cfg.get_max_lod_level() {
-                cmd.entity(child_entity).insert((
-                    CanMerge,
-                    MergeDistance(cfg.get_lod_config(child_chunk_data.level).distance),
+                cmd.entity(child_entity).insert(MergeDistance(
+                    cfg.get_lod_config(child_chunk_data.level).distance,
                 ));
             }
 

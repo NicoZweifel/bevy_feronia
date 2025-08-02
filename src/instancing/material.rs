@@ -110,7 +110,7 @@ impl
         trigger: On<ScatterResults>,
         prototypes: &WindAffectedTypes<InstancedWindAffectedMaterial>,
         q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-        q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+        q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     ) {
         let mut rng = rand::rng();
         let prototype = prototypes.values().choose(&mut rng).unwrap();
@@ -168,24 +168,23 @@ impl
         let lod_level = **chunk_level as usize;
         let current_lod_config = match chunk_config {
             None => &LodConfig::default(),
-            Some(x) => &x.lods[lod_level],
+            Some((x, _)) => &(**x)[lod_level],
         };
 
         let current_lod_dist = current_lod_config.distance;
 
-        if let Some(chunk_config) = chunk_config {
+        if let Some((chunk_config, aabb)) = chunk_config {
             let start_margin = if lod_level == 0 {
                 0.0..0.0
             } else {
-                let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-                prev_lod_dist - chunk_config.get_chunk_world_size(**chunk_level - 1)..prev_lod_dist
+                let prev_lod_dist = (**chunk_config)[lod_level - 1].distance;
+                prev_lod_dist - 2.0..prev_lod_dist
             };
 
             let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
                 f32::MAX..f32::MAX
             } else {
-                current_lod_dist - chunk_config.get_chunk_world_size(**chunk_level)
-                    ..current_lod_dist
+                current_lod_dist - 2.0..current_lod_dist
             };
 
             let chunk_center = chunk_gtf.translation;
@@ -194,8 +193,6 @@ impl
             let local_max = max_point - chunk_center;
 
             let local_aabb = Aabb::from_min_max(local_min, local_max);
-
-            println!("{:?}", local_aabb);
 
             cmd.entity(entity).insert((
                 Aabb::from(local_aabb),
