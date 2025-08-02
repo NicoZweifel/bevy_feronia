@@ -1,8 +1,15 @@
-pub mod generate_layer_scatter_points;
-mod generate_scatter_points_layer_chunk;
-pub mod generate_scatter_points_layer_chunked;
-pub mod generate_scatter_points_root;
+pub mod on_add_chunk;
+pub mod on_add_scatter_layer;
+pub mod on_add_scatter_root;
+pub mod scatter;
+pub mod scatter_chunk;
+pub mod scatter_chunks;
+pub mod scatter_root;
 
-pub use generate_layer_scatter_points::*;
-pub use generate_scatter_points_layer_chunked::*;
-pub use generate_scatter_points_root::*;
+pub use on_add_chunk::*;
+pub use on_add_scatter_layer::*;
+pub use on_add_scatter_root::*;
+pub use scatter::*;
+pub use scatter_chunk::*;
+pub use scatter_chunks::*;
+pub use scatter_root::*;

@@ -81,7 +81,7 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
-pub(super) fn process_instance(
+pub(super) fn create_scatter_result(
     i: u32,
     container: &Container,
     modifiers: &InstanceModifiers,
@@ -114,6 +114,7 @@ pub(super) fn process_instance(
     let final_scale = modifiers
         .scale
         .map_or(1.0, |s| rng.random_range(s.min..s.max));
+
     let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
         Quat::from_rotation_y(rng.random_range(r.min..r.max))
     });
@@ -143,14 +144,14 @@ pub(super) struct Container {
     pub size: Vec3,
 }
 
-pub(super) fn process_instances(
+pub(super) fn create_scatter_results(
     container: Container,
     modifiers: InstanceModifiers,
 ) -> ScatterResults {
     let mut rng = rand::rng();
     ScatterResults {
         data: (0..(container.instances_dim as u32).pow(2))
-            .filter_map(|i| process_instance(i, &container, &modifiers, &mut rng))
+            .filter_map(|i| create_scatter_result(i, &container, &modifiers, &mut rng))
             .collect::<Vec<_>>(),
         layer: container.layer_entity,
         chunk: container.chunk_entity,

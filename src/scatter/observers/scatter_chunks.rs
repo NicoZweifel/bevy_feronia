@@ -9,7 +9,7 @@ type LayerQueryItem<'a> = (
     Option<&'a ScatterLayerEnabled>,
 );
 
-pub fn generate_scatter_points_layer_chunks(
+pub fn scatter_chunks(
     mut trigger: On<Scatter<ScatterLayer>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,

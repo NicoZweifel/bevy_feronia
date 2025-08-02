@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-pub fn generate_scatter_points_root(
+pub fn scatter_root(
     mut trigger: On<Scatter<ScatterRoot>>,
     mut cmd: Commands,
     q_root: Query<&ScatterRoot>,

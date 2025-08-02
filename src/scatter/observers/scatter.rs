@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 
-type LayerQueryItem<'a> = (
+type LayerQueryType<'a> = (
     Entity,
     &'a ScatterLayerOf,
     Option<&'a DistributionDensity>,
@@ -11,31 +11,39 @@ type LayerQueryItem<'a> = (
     Option<&'a InstanceRotationYaw>,
     Option<&'a InstanceScale>,
     Option<&'a InstanceJitter>,
+    &'a GlobalTransform,
 );
 
-pub fn generate_scatter_points_layer_chunk(
-    mut trigger: On<ScatterChunk>,
+pub fn scatter(
+    mut trigger: On<Scatter<ScatterLayer>>,
     mut cmd: Commands,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     images: Res<Assets<Image>>,
-    q_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
-    q_layer: Query<LayerQueryItem, With<ScatterLayer>>,
-    q_chunk: Query<(Entity, &ChunkSize, &GlobalTransform), With<Chunk>>,
+    q_root: Query<(Entity, Option<&MapHeight>, &Aabb), (Without<ChunkRoot>, With<ScatterRoot>)>,
+    q_layer: Query<LayerQueryType, With<ScatterLayer>>,
     mut ew_results: EventWriter<ScatterResults>,
 ) {
     trigger.propagate(false);
 
     let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
 
-    let Ok((layer_entity, scatter_root, density_dist, pattern_dist, rotation, scale, jitter)) =
-        q_layer.get(trigger.scatter_layer)
+    let Ok((
+        layer_entity,
+        scatter_root,
+        density_dist,
+        pattern_dist,
+        rotation,
+        scale,
+        jitter,
+        layer_gtf,
+    )) = q_layer.get(trigger.target())
     else {
         warn!("ScatterLayer not found!");
         return;
     };
 
-    let Ok((root, base_chunk_size, map_height, aabb)) = q_root.get(**scatter_root) else {
+    let Ok((root, map_height, aabb)) = q_root.get(**scatter_root) else {
         warn!("ScatterRoot not found!");
         return;
     };
@@ -44,25 +52,23 @@ pub fn generate_scatter_points_layer_chunk(
 
     let instances_dim = density_dist.map_or(10., |d| **d);
 
+    let size = Vec3::from(aabb.half_extents * 2.0);
+
     info!(
-        "Scattering {} instances in Chunk {}",
+        "Scattering {} instances in ScatterLayer {}",
         (instances_dim as u32).pow(2),
-        trigger.target()
+        layer_entity
     );
 
-    let Ok((chunk_entity, chunk_size, chunk_gtf)) = q_chunk.get(trigger.target()) else {
-        warn!("Chunk not found!");
-        return;
-    };
+    let jitter_value = jitter.map_or(0., |x| **x);
 
-    let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
+    let corner =
+        layer_gtf.translation() - Vec3::from(aabb.half_extents) + Vec3::splat(jitter_value);
 
-    let corner = chunk_gtf.translation() - size / 2.;
-
-    let results = process_instances(
+    let results = create_scatter_results(
         Container {
             layer_entity,
-            chunk_entity: Some(chunk_entity),
+            chunk_entity: None,
             instances_dim,
             corner,
             height: 0.,
@@ -78,12 +84,8 @@ pub fn generate_scatter_points_layer_chunk(
         },
     );
 
-    info!(
-        "Scattered {} instances in Chunk {}",
-        results.data.len(),
-        trigger.target()
-    );
+    info!("Scattered {} instances", results.data.len());
 
-    cmd.trigger_targets(results.clone(), [root, layer_entity, trigger.target()]);
+    cmd.trigger_targets(results.clone(), [root, layer_entity]);
     ew_results.write(results);
 }

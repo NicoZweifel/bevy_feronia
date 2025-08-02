@@ -195,12 +195,12 @@ impl
             let local_aabb = Aabb::from_min_max(local_min, local_max);
 
             cmd.entity(entity).insert((
-                Aabb::from(local_aabb),
-                VisibilityRange {
-                    start_margin,
-                    end_margin,
-                    use_aabb: false,
-                },
+                Aabb::from(local_aabb), /* TODO
+                                                                   ,VisibilityRange {
+                                            start_margin,
+                                            end_margin,
+                                            use_aabb: false,
+                                        }*/
                 ChildOf(trigger.chunk.unwrap()),
             ));
         } else {
