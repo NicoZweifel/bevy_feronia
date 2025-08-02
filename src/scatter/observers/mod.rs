@@ -1,4 +1,5 @@
 pub mod generate_layer_scatter_points;
+mod generate_scatter_points_layer_chunk;
 pub mod generate_scatter_points_layer_chunked;
 pub mod generate_scatter_points_root;
 

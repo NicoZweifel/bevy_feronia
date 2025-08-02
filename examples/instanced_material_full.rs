@@ -67,7 +67,7 @@ fn setup(
         MapHeight,
         children![(
             scatter_layer("Wind affected Grass Layer"),
-            DistributionDensity(300.),
+            DistributionDensity(150.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0

@@ -7,24 +7,27 @@ pub struct Scatter<T> {
     _phantom: PhantomData<T>,
 }
 
-#[derive(Clone, Debug)]
-pub struct ScatterResult {
-    pub global_transform: Transform,
-    pub layer: Entity,
+#[derive(EntityEvent, BufferedEvent, Component, Reflect)]
+pub struct ScatterChunk {
+    pub scatter_layer: Entity,
 }
+
+#[derive(Clone, Debug, Deref)]
+pub struct ScatterResult(pub Transform);
 
 #[derive(EntityEvent, BufferedEvent, Clone, Debug)]
 pub struct ScatterResults {
-    pub results: Vec<ScatterResult>,
+    pub data: Vec<ScatterResult>,
     pub chunk: Option<Entity>,
+    pub layer: Entity,
 }
 
 impl ScatterResults {
     pub fn get(&self) -> &Vec<ScatterResult> {
-        &self.results
+        &self.data
     }
 
     pub fn iter(&self) -> Iter<'_, ScatterResult> {
-        self.results.iter()
+        self.data.iter()
     }
 }

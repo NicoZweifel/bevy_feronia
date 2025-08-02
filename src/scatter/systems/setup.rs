@@ -46,7 +46,7 @@ pub fn setup_layer(
         let chunk_root = root_query.get(root_layer.get()).unwrap();
         if chunk_root.is_some() {
             cmd.entity(layer)
-                .observe(generate_scatter_points_layer_chunked);
+                .observe(generate_scatter_points_layer_chunks);
         } else {
             cmd.entity(layer).observe(generate_scatter_points_layer);
         }

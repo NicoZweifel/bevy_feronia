@@ -52,10 +52,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
 ) {
-    cmd.spawn((
-        SceneRoot(assets.load("foliage_complex.glb#Scene0")),
-        WindAffected,
-    ));
+    cmd.spawn((SceneRoot(assets.load("foliage.glb#Scene0")), WindAffected));
 
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
@@ -64,7 +61,7 @@ fn setup(
         ChunkRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(1.),
+            DistributionDensity(10.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0
@@ -73,7 +70,8 @@ fn setup(
                 min: 0.0,
                 max: std::f32::consts::PI * 2.0
             },
-            InstanceScale { min: 1.0, max: 3.0 },
+            InstanceScale { min: 1.0, max: 5.0 },
+            InstanceJitter(2.0)
         )],
     ))
     .observe(scatter_observer);

@@ -113,12 +113,12 @@ impl
         let prototype = prototypes.values().choose(&mut rng).unwrap();
 
         let instances = trigger
-            .results
+            .data
             .iter()
             .enumerate()
             .map(|(i, res)| InstanceData {
-                position: res.global_transform.translation,
-                scale: res.global_transform.scale.element_sum() / 3.0,
+                position: res.translation,
+                scale: res.scale.element_sum() / 3.0,
                 color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                 index: i as u32,
             })

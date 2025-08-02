@@ -54,17 +54,17 @@ impl
         let mut rng = rand::rng();
         cmd.spawn_batch(
             trigger
-                .results
+                .data
                 .iter()
                 .map(|result| {
                     let prototype = prototypes.values().choose(&mut rng).unwrap();
                     (
                         Mesh3d(prototype.mesh.clone()),
                         ExtendedWindAffectedMaterial::component(prototype.material.clone()),
-                        result.global_transform,
+                        **result,
                         WindAffected,
                         WindAffectedReady,
-                        ChildOf(result.layer),
+                        ChildOf(trigger.layer),
                     )
                 })
                 .collect::<Vec<_>>(),

@@ -80,3 +80,79 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
         Vec3::new(max_x, max_y, max_z),
     )
 }
+
+pub(super) fn process_instance(
+    i: u32,
+    container: &Container,
+    modifiers: &InstanceModifiers,
+    rng: &mut ThreadRng,
+) -> Option<ScatterResult> {
+    let x = i as f32 % container.instances_dim;
+    let z = i as f32 / container.instances_dim;
+
+    let jitter_value = modifiers.jitter.map_or(0., |x| **x);
+
+    let mut instance_world_pos = container.corner
+        + Vec3::new(
+            x * container.size.x / (container.instances_dim - jitter_value * 2.),
+            0.0,
+            z * container.size.z / container.instances_dim,
+        )
+        + get_jitter(modifiers.jitter, rng);
+
+    instance_world_pos.y = match modifiers.map_height {
+        None => container.height,
+        Some(_) => modifiers.height_sampler.sample(instance_world_pos),
+    };
+
+    if let Some(sampler) = &modifiers.density_sampler {
+        if rng.random::<f32>() > sampler.sample(instance_world_pos) {
+            return None;
+        }
+    }
+
+    let final_scale = modifiers
+        .scale
+        .map_or(1.0, |s| rng.random_range(s.min..s.max));
+    let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
+        Quat::from_rotation_y(rng.random_range(r.min..r.max))
+    });
+
+    Some(ScatterResult(Transform {
+        translation: instance_world_pos,
+        rotation: final_rotation,
+        scale: Vec3::splat(final_scale),
+    }))
+}
+
+pub(super) struct InstanceModifiers<'a> {
+    pub map_height: Option<&'a MapHeight>,
+    pub height_sampler: &'a HeightMapSampler<'a>,
+    pub density_sampler: &'a Option<DensityMapSampler<'a>>,
+    pub scale: Option<&'a InstanceScale>,
+    pub rotation: Option<&'a InstanceRotationYaw>,
+    pub jitter: Option<&'a InstanceJitter>,
+}
+
+pub(super) struct Container {
+    pub layer_entity: Entity,
+    pub chunk_entity: Option<Entity>,
+    pub instances_dim: f32,
+    pub corner: Vec3,
+    pub height: f32,
+    pub size: Vec3,
+}
+
+pub(super) fn process_instances(
+    container: Container,
+    modifiers: InstanceModifiers,
+) -> ScatterResults {
+    let mut rng = rand::rng();
+    ScatterResults {
+        data: (0..(container.instances_dim as u32).pow(2))
+            .filter_map(|i| process_instance(i, &container, &modifiers, &mut rng))
+            .collect::<Vec<_>>(),
+        layer: container.layer_entity,
+        chunk: container.chunk_entity,
+    }
+}
