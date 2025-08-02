@@ -8,7 +8,16 @@ pub fn setup_chunks(
     images: Res<Assets<Image>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
-    q_cfg: Query<(Entity, &ChunkLodConfig, &Aabb, &GlobalTransform, &ChunkRootSize), (With<ChunkRoot>, Without<BaseChunkSize>)>,
+    q_cfg: Query<
+        (
+            Entity,
+            &ChunkLodConfig,
+            &Aabb,
+            &GlobalTransform,
+            &ChunkRootSize,
+        ),
+        (With<ChunkRoot>, Without<BaseChunkSize>),
+    >,
 ) {
     let height_map_image = match height_map {
         None => None,
@@ -41,12 +50,12 @@ pub fn setup_chunks(
             .insert((ChunkRoot::default(), BaseChunkSize(base_chunk_size)));
 
         for z in 0..**chunk_root_size {
-            for x in 0..**chunk_root_size{
-                let mut world_pos = gtf.translation()+ Vec3::new(x as f32, 0., z as f32) * top_chunk_size  + top_chunk_size / 2.;
+            for x in 0..**chunk_root_size {
+                let mut world_pos = gtf.translation()
+                    + Vec3::new(x as f32, 0., z as f32) * top_chunk_size
+                    + top_chunk_size / 2.;
 
-                world_pos.y = height_sampler.sample(
-                    world_pos ,
-                );
+                world_pos.y = height_sampler.sample(world_pos);
 
                 let child_lod_config = cfg.get_lod_config(cfg.get_max_lod_level() - 1);
 

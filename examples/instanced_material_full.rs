@@ -8,10 +8,10 @@ use bevy::prelude::*;
 use bevy::render::primitives::MeshAabb;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
+use bevy_feronia::instancing::observers::scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use bevy_feronia::instancing::observers::scatter_observer;
 
 fn main() -> AppExit {
     App::new()
@@ -42,9 +42,7 @@ fn main() -> AppExit {
             ScatterPlugin,
             HeightMapPlugin,
         ))
-        .add_systems(Startup,
-                     (setup_density_map, setup).chain(),
-        )
+        .add_systems(Startup, (setup_density_map, setup).chain())
         .add_systems(Update, scatter_on_keypress)
         .run()
 }
@@ -82,8 +80,9 @@ fn setup(
             InstanceJitter(0.1),
         )],
     ))
-        .observe(scatter_observer);
+    .observe(scatter_observer);
 
+    // Inspect the height map
     cmd.spawn((
         Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),

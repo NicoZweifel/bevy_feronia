@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use std::num::NonZeroU32;
 
-#[derive(Component, Reflect,Deref, DerefMut, Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct ChunkLodConfig(Vec<LodConfig>);
 
@@ -16,7 +16,7 @@ pub struct ChunkRootSize(pub u32);
 
 impl Default for ChunkRootSize {
     fn default() -> Self {
-      Self(8)
+        Self(8)
     }
 }
 
@@ -98,7 +98,7 @@ pub enum LodLevel {
 
 impl Default for ChunkLodConfig {
     fn default() -> Self {
-        Self (
+        Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
                 // Level 0: High
@@ -116,13 +116,12 @@ impl Default for ChunkLodConfig {
                     distance: f32::MAX,
                     chunk_size_scalar: 4,
                 },
-            ])
-        }
+            ],
+        )
     }
-
+}
 
 impl ChunkLodConfig {
-
     pub fn get_size_scalar(&self, level: u32) -> u32 {
         self.0
             .get(level as usize)

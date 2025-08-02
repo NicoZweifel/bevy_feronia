@@ -6,10 +6,10 @@ use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
+use bevy_feronia::instancing::observers::scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use bevy_feronia::instancing::observers::scatter_observer;
 
 fn main() -> AppExit {
     App::new()
@@ -39,9 +39,7 @@ fn main() -> AppExit {
             ChunkPlugin,
             ScatterPlugin,
         ))
-        .add_systems(Startup,
-                     (setup_density_map, setup).chain(),
-        )
+        .add_systems(Startup, (setup_density_map, setup).chain())
         .add_systems(Update, scatter_on_keypress)
         .run()
 }
@@ -72,7 +70,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             InstanceJitter(0.1),
         )],
     ))
-        .observe(scatter_observer);
+    .observe(scatter_observer);
 }
 
 fn scatter_on_keypress(

@@ -14,10 +14,11 @@ pub fn update_chunk_height(
     let height_map = Some(height_map);
 
     for (mut tf, root_chunk) in &mut q_chunk {
-        let height_sampler = q_cfg
-            .get(**root_chunk)
-            .unwrap()
-            .get_height_map_sampler(&images, &height_map, height_map_config.world_size);
+        let height_sampler = q_cfg.get(**root_chunk).unwrap().get_height_map_sampler(
+            &images,
+            &height_map,
+            height_map_config.world_size,
+        );
 
         if let Some(sampler) = &height_sampler {
             tf.translation.y = sampler.sample(tf.translation);

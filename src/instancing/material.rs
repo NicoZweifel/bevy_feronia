@@ -131,10 +131,10 @@ impl
         let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
         for instance in &instances {
-            let instance_min = instance.position
-                + Vec3::from(prototype.aabb.min() * instance.scale);
-            let instance_max = instance.position
-                + Vec3::from(prototype.aabb.max() * instance.scale);
+            let instance_min =
+                instance.position + Vec3::from(prototype.aabb.min() * instance.scale);
+            let instance_max =
+                instance.position + Vec3::from(prototype.aabb.max() * instance.scale);
             min_point = min_point.min(instance_min);
             max_point = max_point.max(instance_max);
         }
@@ -174,7 +174,7 @@ impl
         let current_lod_dist = current_lod_config.distance;
 
         // TODO expose
-         const FADE_BAND: f32 = 2.0;
+        const FADE_BAND: f32 = 2.0;
 
         if let Some((chunk_config, aabb)) = chunk_config {
             let start_margin = if lod_level == 0 {

@@ -3,6 +3,7 @@ mod example;
 
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
@@ -40,7 +41,14 @@ fn main() -> AppExit {
         .run()
 }
 
-fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
+fn setup(
+    mut cmd: Commands,
+    assets: Res<AssetServer>,
+    density_map: Res<DensityMap>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    height_map: Res<HeightMapTexture>,
+) {
     cmd.spawn((
         SceneRoot(assets.load("foliage_complex.glb#Scene0")),
         WindAffected,
@@ -66,6 +74,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         )],
     ))
     .observe(scatter_observer);
+
+    // Inspect the height map
+    cmd.spawn((
+        Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
+        Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color_texture: Some(height_map.0.clone()),
+            unlit: true,
+            ..default()
+        })),
+    ));
 }
 
 fn scatter_on_keypress(

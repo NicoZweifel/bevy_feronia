@@ -256,18 +256,15 @@ pub fn generate_scatter_points(
                         (instances_dim as u32).pow(2),
                         chunk_entity
                     );
-                    let Ok((chunk_level, chunk_size, chunk_gtf)) =
-                        chunk_query.get(chunk_entity)
+                    let Ok((chunk_level, chunk_size, chunk_gtf)) = chunk_query.get(chunk_entity)
                     else {
                         warn!("Chunk not found!");
                         continue;
                     };
 
-                    let size = **base_chunk_size
-                        * Vec3::splat(**chunk_size as f32);
+                    let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
 
-                    let chunk_corner = chunk_gtf.translation()
-                        - size / 2.;
+                    let chunk_corner = chunk_gtf.translation() - size / 2.;
 
                     let results = (0..(instances_dim as u32).pow(2))
                         .filter_map(|i| {
@@ -276,9 +273,9 @@ pub fn generate_scatter_points(
 
                             let mut instance_world_pos = chunk_corner
                                 + Vec3::new(
-                                    x * size.x  / instances_dim,
+                                    x * size.x / instances_dim,
                                     0.0,
-                                    z * size.z  / instances_dim,
+                                    z * size.z / instances_dim,
                                 )
                                 + get_jitter(jitter, &mut rng);
 
@@ -328,13 +325,12 @@ pub fn generate_scatter_points(
 
                 let jitter_value = jitter.map_or(0., |x| **x);
 
-                let corner = layer_gtf.translation()
-                    - Vec3::from(aabb.half_extents)
+                let corner = layer_gtf.translation() - Vec3::from(aabb.half_extents)
                     + Vec3::splat(jitter_value);
 
                 let results = (0..(instances_dim as u32).pow(2))
                     .filter_map(|i| {
-                        let x= i as f32 % instances_dim;
+                        let x = i as f32 % instances_dim;
                         let z = i as f32 / instances_dim;
 
                         let mut instance_world_pos = corner

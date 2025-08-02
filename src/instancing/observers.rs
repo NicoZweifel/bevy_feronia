@@ -1,5 +1,5 @@
 use crate::prelude::{
-    Chunk, ChunkLodConfig, ChunkLevel, ChunkOf, ChunkRoot, ExtendedWindAffectedMaterial,
+    Chunk, ChunkLevel, ChunkLodConfig, ChunkOf, ChunkRoot, ExtendedWindAffectedMaterial,
     InstancedWindAffectedMaterial, ScatterResults, WindAffectedType, WindAffectedTypes,
 };
 use bevy::camera::primitives::Aabb;
