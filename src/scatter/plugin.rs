@@ -1,3 +1,4 @@
+use crate::chunking::systems::prelude::split;
 use crate::scatter::observers::*;
 use crate::scatter::prelude::*;
 use crate::scatter::systems::prelude::*;
@@ -14,6 +15,6 @@ impl Plugin for ScatterPlugin {
             .add_observer(on_add_chunk)
             .add_observer(on_add_scatter_root)
             .add_observer(on_add_scatter_layer)
-            .add_systems(Update, setup_root);
+            .add_systems(Update, (setup_root, on_split_chunk.after(split)));
     }
 }

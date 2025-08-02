@@ -1,7 +1,5 @@
 use crate::prelude::*;
-use crate::scatter::observers::scatter_chunk;
 use bevy::prelude::*;
-use bevy::reflect::List;
 use std::num::NonZeroU32;
 
 pub fn split(

@@ -43,7 +43,6 @@ fn main() -> AppExit {
             HeightMapPlugin,
         ))
         .add_systems(Startup, (setup_density_map, setup).chain())
-        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
@@ -92,29 +91,6 @@ fn setup(
             ..default()
         })),
     ));
-}
-
-fn scatter_on_keypress(
-    mut cmd: Commands,
-    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    q_root: Query<Entity, With<ScatterRoot>>,
-) {
-    if !keyboard_input.just_pressed(KeyCode::Space) {
-        return;
-    };
-
-    if prototypes.get().is_empty() {
-        println!("No plants found to scatter!");
-        return;
-    }
-
-    println!("Scattering plants...");
-
-    cmd.trigger_targets(
-        Scatter::<ScatterRoot>::default(),
-        q_root.iter().collect::<Vec<_>>(),
-    );
 }
 
 fn setup_density_map(
