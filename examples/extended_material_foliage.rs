@@ -38,6 +38,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 max: std::f32::consts::PI * 2.0
             },
             InstanceScale { min: 1., max: 3. },
+            InstanceJitter(0.1)
         )],
     ))
     .observe(scatter_observer);

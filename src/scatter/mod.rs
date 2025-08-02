@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use bevy::render::view::Layer;
 use rand::Rng;
+use rand::rngs::ThreadRng;
 use std::borrow::Cow;
 use std::slice::Iter;
 
@@ -56,12 +57,9 @@ pub struct InstanceScale {
     pub max: f32,
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct InstanceJitter {
-    pub min: f32,
-    pub max: f32,
-}
+pub struct InstanceJitter(pub f32);
 
 #[derive(Clone, Debug)]
 pub struct ScatterResult {
@@ -239,11 +237,6 @@ pub fn generate_scatter_points(
 
             cmd.entity(layer_entity).insert(scatter_layer_enabled);
 
-            let jitter = jitter.map_or_else(
-                || Vec3::ZERO,
-                |x| Vec3::splat(rng.random_range(-x.min..x.max)).with_y(0.),
-            );
-
             let instances_dim = density_dist.map_or(10., |d| **d);
 
             if let (Some(chunk_config), Some(child_chunks)) = (chunk_config, child_chunks) {
@@ -261,15 +254,14 @@ pub fn generate_scatter_points(
                             chunk_config.get_chunk_world_size(**chunk_level) / 2.0,
                         );
 
-                    let results = (0
-                        ..(instances_dim as u32 / **chunk_size)
-                            .pow(2))
+                    let results = (0..(instances_dim as u32).pow(2))
                         .filter_map(|i| {
                             let local_x = i as f32 % instances_dim;
                             let local_z = i as f32 / instances_dim;
 
-                            let mut instance_world_pos =
-                                chunk_corner + Vec3::new(local_x , 0.0, local_z );
+                            let mut instance_world_pos = chunk_corner
+                                + Vec3::new(local_x, 0.0, local_z)
+                                + get_jitter(jitter, &mut rng);
 
                             instance_world_pos.y = match map_height {
                                 None => 0.0,
@@ -315,20 +307,25 @@ pub fn generate_scatter_points(
                     size
                 );
 
-                let corner =
-                    layer_gtf.translation() - <Vec3A as Into<Vec3>>::into(aabb.half_extents);
+                let jitter_value = jitter.map_or(0., |x| **x);
+
+                let corner = layer_gtf.translation()
+                    - <Vec3A as Into<Vec3>>::into(aabb.half_extents)
+                    + Vec3::splat(jitter_value);
 
                 let results = (0..(instances_dim as u32).pow(2))
                     .filter_map(|i| {
                         let world_x = i as f32 % instances_dim;
                         let world_z = i as f32 / instances_dim;
 
+
                         let mut instance_world_pos = corner
                             + Vec3::new(
-                                world_x * size.x / instances_dim + jitter.x,
+                                world_x * (size.x - jitter_value* 2.) / instances_dim,
                                 0.0,
-                                world_z * size.z / instances_dim + jitter.z,
-                            );
+                                world_z * (size.z - jitter_value * 2.) / instances_dim,
+                            )
+                            + get_jitter(jitter, &mut rng);
 
                         instance_world_pos.y = map_height.map_or_else(
                             || layer_gtf.translation().y,
@@ -370,4 +367,11 @@ pub fn generate_scatter_points(
             }
         }
     }
+}
+
+fn get_jitter(jitter: Option<&InstanceJitter>, rng: &mut ThreadRng) -> Vec3 {
+    jitter.map_or_else(
+        || Vec3::ZERO,
+        |x| Vec3::new(rng.random_range(-**x..**x), 0., rng.random_range(-**x..**x)),
+    )
 }

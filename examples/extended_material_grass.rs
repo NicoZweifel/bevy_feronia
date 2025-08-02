@@ -38,7 +38,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(200.0),
+            DistributionDensity(100.0),
+            InstanceJitter(0.1)
         )],
     ))
     .observe(scatter_observer);
