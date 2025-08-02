@@ -132,9 +132,9 @@ impl
 
         for instance in &instances {
             let instance_min = instance.position
-                + <Vec3A as Into<Vec3>>::into(prototype.aabb.min() * instance.scale);
+                + Vec3::from(prototype.aabb.min() * instance.scale);
             let instance_max = instance.position
-                + <Vec3A as Into<Vec3>>::into(prototype.aabb.max() * instance.scale);
+                + Vec3::from(prototype.aabb.max() * instance.scale);
             min_point = min_point.min(instance_min);
             max_point = max_point.max(instance_max);
         }
@@ -173,18 +173,21 @@ impl
 
         let current_lod_dist = current_lod_config.distance;
 
+        // TODO expose
+         const FADE_BAND: f32 = 2.0;
+
         if let Some((chunk_config, aabb)) = chunk_config {
             let start_margin = if lod_level == 0 {
                 0.0..0.0
             } else {
                 let prev_lod_dist = (**chunk_config)[lod_level - 1].distance;
-                prev_lod_dist - 2.0..prev_lod_dist
+                prev_lod_dist - FADE_BAND..prev_lod_dist
             };
 
             let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
                 f32::MAX..f32::MAX
             } else {
-                current_lod_dist - 2.0..current_lod_dist
+                current_lod_dist - FADE_BAND..current_lod_dist
             };
 
             let chunk_center = chunk_gtf.translation;
@@ -196,7 +199,6 @@ impl
 
             cmd.entity(entity).insert((
                 Aabb::from(local_aabb),
-                NoFrustumCulling,
                 VisibilityRange {
                     start_margin,
                     end_margin,
