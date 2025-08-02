@@ -5,18 +5,13 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
-use bevy::render::batching::NoAutomaticBatching;
-use bevy::render::primitives::{Aabb, MeshAabb};
+use bevy::render::primitives::MeshAabb;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy::render::view::VisibilityRange;
-use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
-use bevy_feronia::height_map::cpu_sampler::HeightMapCpuSampler;
-use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use rand::Rng;
+use bevy_feronia::instancing::observers::scatter_observer;
 
 fn main() -> AppExit {
     App::new()
@@ -31,11 +26,11 @@ fn main() -> AppExit {
             lod_threshold: 10.0,
             ..default()
         })
+        .insert_resource(DensityMapConfig { size: 128 })
         .insert_resource(ChunkDebugConfig {
             lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
         })
-        .init_resource::<FoliageConfig>()
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })
@@ -44,13 +39,13 @@ fn main() -> AppExit {
             WindPlugin,
             InstancedWindAffectedPlugin,
             ChunkPlugin,
+            ScatterPlugin,
             HeightMapPlugin,
         ))
-        .add_systems(
-            Startup,
-            (setup.after(setup_height_map_pipeline), setup_density_map),
+        .add_systems(Startup,
+                     (setup_density_map, setup).chain(),
         )
-        .add_systems(Update, populate_chunks.run_if(resource_exists::<HeightMap>))
+        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
@@ -60,29 +55,34 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
+    density_map: Res<DensityMap>,
 ) {
-    cmd.spawn((
-        SceneRoot(assets.load("landscape_large.glb#Scene0")),
-        MapHeight,
-    ));
     cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
         WindAffected,
     ));
+
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        WindAffected,
-        Name::new("Grass Layer"),
-        ScatterLayer { enabled: true },
-        DistributionDensity { density: 10.0 },
-        InstanceRotationYaw {
-            min_max_rad: (0.0, std::f32::consts::PI * 2.0),
-        },
-        InstanceScale {
-            min_max: (0.8, 1.2),
-        },
+        SceneRoot(assets.load("landscape_large.glb#Scene0")),
+        ScatterRoot::default(),
+        ChunkRoot::default(),
+        MapHeight,
+        children![(
+            scatter_layer("Wind affected Grass Layer"),
+            DistributionDensity(300.),
+            DistributionPattern {
+                density_map: density_map.clone(),
+                scale: 1.0
+            },
+            InstanceRotationYaw {
+                min: 0.0,
+                max: std::f32::consts::PI * 2.0
+            },
+            InstanceScale { min: 1.0, max: 3.0 },
+            InstanceJitter(0.1),
+        )],
     ))
-    .observe(|trigger: On<ScatterResults>| for result in trigger.get() {});
+        .observe(scatter_observer);
 
     cmd.spawn((
         Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
@@ -95,27 +95,44 @@ fn setup(
     ));
 }
 
+fn scatter_on_keypress(
+    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    q_root: Query<Entity, With<ScatterRoot>>,
+    mut ew_scatter: EventWriter<Scatter>,
+) {
+    if !keyboard_input.just_pressed(KeyCode::Space) {
+        return;
+    };
+
+    if prototypes.get().is_empty() {
+        println!("No plants found to scatter!");
+        return;
+    }
+
+    println!("Scattering plants...");
+
+    for e in &q_root {
+        ew_scatter.write(Scatter(e));
+    }
+}
+
 fn setup_density_map(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
-    config: Res<FoliageConfig>,
+    config: Res<DensityMapConfig>,
 ) {
-    let size = config.density_map_size;
+    let size = config.size;
     let mut data_buffer = vec![0; (size * size) as usize];
-
     let perlin = Perlin::new(1);
-    let sample_scale = 5.0;
+    let sample_scale = 8.0;
 
     for y in 0..size {
         for x in 0..size {
             let point = [x as f64 / size as f64, y as f64 / size as f64];
-
             let noise_value = perlin.get([point[0] * sample_scale, point[1] * sample_scale]);
-
             let byte_value = ((noise_value * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
-
-            let pixel_index = (y * size + x) as usize;
-            data_buffer[pixel_index] = byte_value;
+            data_buffer[(y * size + x) as usize] = byte_value;
         }
     }
 
@@ -139,206 +156,13 @@ fn setup_density_map(
     });
 
     let handle = images.add(density_image);
-    commands.insert_resource(FoliageDensityMap(handle));
-
-    info!("Generated foliage density map.");
-}
-
-// TODO see below
-#[derive(Resource)]
-pub struct FoliageConfig {
-    /// How many instances fit along one dimension of a base (1x1) chunk.
-    pub instances_per_base_chunk_dim: u32,
-    /// The size of a single instance cell.
-    pub cell_size: f32,
-    /// The random offset applied to each instance.
-    pub jitter_amount: f32,
-    /// Resolution of the density map.
-    pub density_map_size: u32,
-}
-
-impl Default for FoliageConfig {
-    fn default() -> Self {
-        Self {
-            instances_per_base_chunk_dim: 64,
-            cell_size: 0.125,
-            jitter_amount: 0.0625,
-            density_map_size: 1024,
-        }
-    }
+    commands.insert_resource(DensityMap(handle));
 }
 
 #[derive(Resource)]
-struct FoliageDensityMap(Handle<Image>);
-
-fn populate_chunks(
-    mut commands: Commands,
-    density_map: Res<FoliageDensityMap>,
-    images: Res<Assets<Image>>,
-    foliage_config: Res<FoliageConfig>,
-    chunks_query: Query<(Entity, &Chunk, &GlobalTransform), Without<WindAffected>>,
-    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
-    mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
-    meshes: Res<Assets<Mesh>>,
-    mut high_q_material_handle: Local<Option<Handle<InstancedWindAffectedMaterial>>>,
-    height_map: Res<HeightMap>,
-) {
-    let Some(density_image) = images.get(&density_map.0) else {
-        info!("Density map image missing");
-        return;
-    };
-
-    let Some(height_map_image) = images.get(&height_map.0) else {
-        info!("Height map image not found");
-        return;
-    };
-
-    if height_map_image.data.is_none() || height_map_image.data.as_ref().unwrap().is_empty() {
-        info!("Height map image is empty");
-        return;
-    }
-
-    if prototypes.get().is_empty() {
-        return;
-    }
-
-    if high_q_material_handle.is_none() {
-        let high_q_prototype = prototypes.get().last().unwrap();
-        let mut material = materials.get(&high_q_prototype.material).unwrap().clone();
-        material.wind.high_quality = true;
-        material.controlled = true;
-        *high_q_material_handle = Some(materials.add(material));
-    }
-
-    let hq_material_handle = high_q_material_handle.as_ref().unwrap();
-    let total_world_size = chunk_config.get_total_world_size();
-
-    // TODO async cpu sampling & gpu sampling directly to buffer
-    let sampler = DensityMapSampler::new(density_image, total_world_size);
-    let height_sampler = HeightMapCpuSampler::new(height_map_image, total_world_size);
-
-    let mut rng = rand::rng();
-
-    for (entity, chunk, chunk_transform) in &chunks_query {
-        let lod_level = chunk.level as usize;
-        let current_lod_config = chunk_config.lods.get(lod_level).unwrap();
-        let current_lod_dist = current_lod_config.distance;
-
-        let start_margin = if lod_level == 0 {
-            0.0..0.0
-        } else {
-            let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-            prev_lod_dist - chunk_config.get_chunk_world_size(chunk.level - 1)..prev_lod_dist
-        };
-
-        let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
-            f32::MAX..f32::MAX
-        } else {
-            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level)..current_lod_dist
-        };
-
-        let (prototype, material_handle) = if chunk.level != chunk_config.get_max_lod_level() {
-            let proto = prototypes.get().last().unwrap();
-            (proto, hq_material_handle.clone())
-        } else {
-            let proto = prototypes.get().first().unwrap();
-            (proto, proto.material.clone())
-        };
-
-        let base_chunk_world_size =
-            foliage_config.instances_per_base_chunk_dim as f32 * foliage_config.cell_size;
-        let chunk_world_size = chunk.size as f32 * base_chunk_world_size;
-
-        let chunk_center = chunk_transform.translation();
-        let chunk_corner =
-            chunk_center - Vec3::new(chunk_world_size / 2.0, 0.0, chunk_world_size / 2.0);
-
-        let instances_per_dim = foliage_config.instances_per_base_chunk_dim * chunk.size;
-
-        let instances = (0..instances_per_dim.pow(2))
-            .filter_map(|i| {
-                let local_x = i % instances_per_dim;
-                let local_z = i / instances_per_dim;
-
-                let instance_offset_x = local_x as f32 * foliage_config.cell_size;
-                let instance_offset_z = local_z as f32 * foliage_config.cell_size;
-
-                let x_jitter =
-                    rng.random_range(-foliage_config.jitter_amount..foliage_config.jitter_amount);
-                let z_jitter =
-                    rng.random_range(-foliage_config.jitter_amount..foliage_config.jitter_amount);
-
-                let mut instance_world_pos = Vec3::new(
-                    chunk_corner.x + instance_offset_x + x_jitter,
-                    0.0,
-                    chunk_corner.z + instance_offset_z + z_jitter,
-                );
-
-                let height = height_sampler.sample(instance_world_pos);
-                if height.is_infinite() {
-                    return None;
-                }
-
-                instance_world_pos.y = height - rng.random_range(0.0..0.3);
-
-                let density = match chunk.level {
-                    0 => 1.0,
-                    1 => 0.5,
-                    _ => 0.1,
-                };
-
-                let density = sampler.sample(instance_world_pos) * density;
-
-                if rng.random::<f32>() > density {
-                    return None;
-                }
-
-                Some(InstanceData {
-                    position: instance_world_pos,
-                    scale: rng.random_range(1.0..3.0),
-                    color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
-                    index: i,
-                })
-            })
-            .collect::<Vec<_>>();
-
-        if instances.is_empty() {
-            continue;
-        }
-
-        let mesh_handle = prototype.mesh.clone();
-        let mesh_aabb = meshes.get(&mesh_handle).unwrap().compute_aabb().unwrap();
-        let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
-
-        for instance in &instances {
-            let instance_min =
-                instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.min() * instance.scale);
-            let instance_max =
-                instance.position + <Vec3A as Into<Vec3>>::into(mesh_aabb.max() * instance.scale);
-            min_point = min_point.min(instance_min);
-            max_point = max_point.max(instance_max);
-        }
-
-        let chunk_center = chunk_transform.translation();
-
-        let local_min = min_point - chunk_center;
-        let local_max = max_point - chunk_center;
-
-        let local_aabb = Aabb::from_min_max(local_min, local_max);
-
-        commands.entity(entity).insert((
-            InstancedWindAffectedMaterial::component(material_handle),
-            Mesh3d(mesh_handle),
-            InstanceMaterialData(instances),
-            NoAutomaticBatching,
-            WindAffected,
-            WindAffectedReady,
-            Aabb::from(local_aabb),
-            VisibilityRange {
-                end_margin,
-                start_margin,
-                use_aabb: false,
-            },
-        ));
-    }
+pub struct DensityMapConfig {
+    pub size: u32,
 }
+
+#[derive(Resource, Deref, DerefMut)]
+struct DensityMap(Handle<Image>);

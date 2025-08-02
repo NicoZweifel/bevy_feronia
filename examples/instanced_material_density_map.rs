@@ -4,7 +4,6 @@ mod example;
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
-use bevy::render::primitives::{MeshAabb};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::prelude::*;
@@ -21,7 +20,7 @@ fn main() -> AppExit {
             micro_strength: 0.2,
             round_exponent: 15.,
             edge_correction_factor: 0.001,
-            high_quality: false,
+            high_quality: true,
             lod_threshold: 10.0,
             ..default()
         })
