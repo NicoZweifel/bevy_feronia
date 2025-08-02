@@ -95,10 +95,10 @@ fn setup(
 }
 
 fn scatter_on_keypress(
+    mut cmd: Commands,
     prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
-    mut ew_scatter: EventWriter<Scatter>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
@@ -111,17 +111,18 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    for e in &q_root {
-        ew_scatter.write(Scatter(e));
-    }
+    cmd.trigger_targets(
+        Scatter::<ScatterRoot>::default(),
+        q_root.iter().collect::<Vec<_>>(),
+    );
 }
 
 fn setup_density_map(
-    mut commands: Commands,
+    mut cmd: Commands,
     mut images: ResMut<Assets<Image>>,
-    config: Res<DensityMapConfig>,
+    cfg: Res<DensityMapConfig>,
 ) {
-    let size = config.size;
+    let size = cfg.size;
     let mut data_buffer = vec![0; (size * size) as usize];
     let perlin = Perlin::new(1);
     let sample_scale = 8.0;
@@ -155,7 +156,7 @@ fn setup_density_map(
     });
 
     let handle = images.add(density_image);
-    commands.insert_resource(DensityMap(handle));
+    cmd.insert_resource(DensityMap(handle));
 }
 
 #[derive(Resource)]

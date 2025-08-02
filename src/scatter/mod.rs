@@ -3,16 +3,18 @@ use crate::prelude::*;
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
-use bevy::render::view::Layer;
 use rand::Rng;
 use rand::rngs::ThreadRng;
 use std::borrow::Cow;
+use std::marker::PhantomData;
 use std::slice::Iter;
 
-#[derive(BufferedEvent, Event, Component, Reflect, Deref)]
-pub struct Scatter(pub Entity);
+#[derive(EntityEvent, BufferedEvent, Component, Reflect, Deref, Default)]
+pub struct Scatter<T> {
+    _phantom: PhantomData<T>,
+}
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 #[require(Transform, Visibility, GlobalTransform)]
 #[reflect(Component)]
 pub struct ScatterLayer;
@@ -20,12 +22,12 @@ pub struct ScatterLayer;
 #[derive(Component, Debug, Clone, Reflect, Deref)]
 #[reflect(Component)]
 #[relationship(relationship_target = ScatterRoot)]
-pub struct LayerOf(pub Entity);
+pub struct ScatterLayerOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
 #[require(Transform, Visibility, GlobalTransform)]
-#[relationship_target(relationship = LayerOf)]
+#[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 
 #[derive(Component, Reflect, Deref, DerefMut)]
@@ -91,12 +93,10 @@ pub struct ScatterPlugin;
 
 impl Plugin for ScatterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<Scatter>()
+        app.add_event::<Scatter<ScatterRoot>>()
+            .add_event::<Scatter<ScatterLayer>>()
             .add_event::<ScatterResults>()
-            .add_systems(
-                Update,
-                (compute_root_aabb, set_layer_root, generate_scatter_points),
-            );
+            .add_systems(Update, (setup_root, setup_layer));
     }
 }
 
@@ -114,8 +114,8 @@ fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
-fn compute_root_aabb(
-    mut commands: Commands,
+fn setup_root(
+    mut cmd: Commands,
     root_query: Query<Entity, (With<ScatterRoot>, Without<Aabb>)>,
     children_query: Query<&Children>,
     aabb_query: Query<&Aabb>,
@@ -137,34 +137,59 @@ fn compute_root_aabb(
         }
 
         if let Some(aabb) = root_aabb {
-            commands.entity(root_entity).insert(aabb);
+            cmd.entity(root_entity).insert(aabb);
+            cmd.entity(root_entity)
+                .observe(generate_scatter_points_root);
         }
     }
 }
 
-pub fn set_layer_root(
+pub fn setup_layer(
     mut cmd: Commands,
-    layer_query: Query<(Entity, &ChildOf), (With<ScatterLayer>, Without<LayerOf>)>,
+    layer_query: Query<(Entity, &ChildOf), (With<ScatterLayer>, Without<ScatterLayerOf>)>,
+    root_query: Query<Option<&ChunkRoot>, With<ScatterRoot>>,
 ) {
-    for (layer, parent) in &layer_query {
-        cmd.entity(layer).insert(LayerOf(parent.get()));
+    for (layer, root_layer) in &layer_query {
+        cmd.entity(layer).insert(ScatterLayerOf(root_layer.get()));
+
+        let chunk_root = root_query.get(root_layer.get()).unwrap();
+        if chunk_root.is_some() {
+            cmd.entity(layer)
+                .observe(generate_scatter_points_layer_chunked);
+        } else {
+            cmd.entity(layer).observe(generate_scatter_points_layer);
+        }
     }
 }
 
-pub fn generate_scatter_points(
+pub fn generate_scatter_points_root(
+    mut trigger: On<Scatter<ScatterRoot>>,
     mut cmd: Commands,
-    q_root: Query<(
-        Entity,
-        Option<&ChunkLodConfig>,
-        Option<&ChunkRoot>,
-        Option<&BaseChunkSize>,
-        &ScatterRoot,
-        Option<&MapHeight>,
-        &Aabb,
-    )>,
+    q_root: Query<&ScatterRoot>,
+) {
+    let Ok(layers) = q_root.get(trigger.target()) else {
+        warn!("ScatterRoot not found!");
+        return;
+    };
+
+    info!("Scattering root: {:?}", trigger.target());
+
+    trigger.propagate(false);
+
+    cmd.trigger_targets(
+        Scatter::<ScatterLayer>::default(),
+        layers.iter().collect::<Vec<_>>(),
+    );
+}
+
+pub fn generate_scatter_points_layer(
+    mut trigger: On<Scatter<ScatterLayer>>,
+    mut cmd: Commands,
+    q_root: Query<(Entity, Option<&MapHeight>, &Aabb), (Without<ChunkRoot>, With<ScatterRoot>)>,
     layer_query: Query<
         (
             Entity,
+            &ScatterLayerOf,
             Option<&Name>,
             Option<&DistributionDensity>,
             Option<&DistributionPattern>,
@@ -177,209 +202,235 @@ pub fn generate_scatter_points(
         With<ScatterLayer>,
     >,
     height_map_cfg: Option<Res<HeightMapConfig>>,
-    chunk_query: Query<(&ChunkLevel, &ChunkSize, &GlobalTransform), With<Chunk>>,
     height_map: Option<Res<HeightMap>>,
     images: Res<Assets<Image>>,
-    mut er_scatter: EventReader<Scatter>,
     mut ew_results: EventWriter<ScatterResults>,
 ) {
-    let height_map_image = match height_map {
-        None => None,
-        Some(x) => images.get(&x.0),
-    };
+    trigger.propagate(false);
 
-    let height_sampler = height_map_cfg.map_or_else(
-        || HeightMapSampler::Default(DefaultSampler),
-        |cfg| {
-            height_map_image.map_or_else(
-                || HeightMapSampler::Default(DefaultSampler),
-                |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
-            )
-        },
-    );
+    let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
 
     let mut rng = rand::rng();
 
-    for e in er_scatter.read() {
-        let Ok((root, chunk_config, child_chunks, base_chunk_size, layers, map_height, aabb)) =
-            q_root.get(**e)
-        else {
-            warn!("ScatterRoot not found!");
+    let Ok((
+        layer_entity,
+        scatter_root,
+        layer_name,
+        density_dist,
+        pattern_dist,
+        rotation,
+        scale,
+        enabled,
+        jitter,
+        layer_gtf,
+    )) = layer_query.get(trigger.target())
+    else {
+        warn!("ScatterLayer not found!");
+        return;
+    };
+
+    let Ok((root, map_height, aabb)) = q_root.get(**scatter_root) else {
+        warn!("ScatterRoot not found!");
+        return;
+    };
+
+    let density_sampler = get_density_sampler(pattern_dist, &images, *aabb);
+
+    if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
+        return;
+    };
+
+    let instances_dim = density_dist.map_or(10., |d| **d);
+
+    let size = aabb.half_extents * 2.0;
+
+    info!(
+        "Scattering {} instances in ScatterLayer {}",
+        (instances_dim as u32).pow(2),
+        layer_entity
+    );
+
+    let jitter_value = jitter.map_or(0., |x| **x);
+
+    let corner =
+        layer_gtf.translation() - Vec3::from(aabb.half_extents) + Vec3::splat(jitter_value);
+
+    let results = (0..(instances_dim as u32).pow(2))
+        .filter_map(|i| {
+            let x = i as f32 % instances_dim;
+            let z = i as f32 / instances_dim;
+
+            let mut instance_world_pos = corner
+                + Vec3::new(
+                    x * (size.x - jitter_value * 2.) / instances_dim,
+                    0.0,
+                    z * (size.z - jitter_value * 2.) / instances_dim,
+                )
+                + get_jitter(jitter, &mut rng);
+
+            instance_world_pos.y = map_height.map_or_else(
+                || layer_gtf.translation().y,
+                |_| height_sampler.sample(instance_world_pos),
+            );
+
+            if let Some(sampler) = &density_sampler {
+                if rng.random::<f32>() > sampler.sample(instance_world_pos) {
+                    return None;
+                }
+            }
+
+            let final_scale = scale.map_or(1.0, |s| rng.random_range(s.min..s.max));
+
+            let final_rotation = rotation.map_or(Quat::IDENTITY, |r| {
+                Quat::from_rotation_y(rng.random_range(r.min..r.max))
+            });
+
+            Some(ScatterResult {
+                layer: layer_entity,
+                global_transform: Transform {
+                    translation: instance_world_pos,
+                    rotation: final_rotation,
+                    scale: Vec3::splat(final_scale),
+                },
+            })
+        })
+        .collect::<Vec<_>>();
+
+    info!("Scattered {} instances", results.len());
+
+    let results = ScatterResults {
+        results: results.clone(),
+        chunk: None,
+    };
+
+    cmd.trigger_targets(results.clone(), [root, layer_entity]);
+    ew_results.write(results);
+}
+
+pub fn generate_scatter_points_layer_chunked(
+    mut trigger: On<Scatter<ScatterLayer>>,
+    mut cmd: Commands,
+    q_root: Query<(
+        Entity,
+        &ChunkRoot,
+        &BaseChunkSize,
+        Option<&MapHeight>,
+        &Aabb,
+    )>,
+    layer_query: Query<
+        (
+            Entity,
+            &ScatterLayerOf,
+            Option<&Name>,
+            Option<&DistributionDensity>,
+            Option<&DistributionPattern>,
+            Option<&InstanceRotationYaw>,
+            Option<&InstanceScale>,
+            Option<&ScatterLayerEnabled>,
+            Option<&InstanceJitter>,
+        ),
+        With<ScatterLayer>,
+    >,
+    height_map_cfg: Option<Res<HeightMapConfig>>,
+    chunk_query: Query<(&ChunkSize, &GlobalTransform), With<Chunk>>,
+    height_map: Option<Res<HeightMap>>,
+    images: Res<Assets<Image>>,
+    mut ew_results: EventWriter<ScatterResults>,
+) {
+    trigger.propagate(false);
+
+    let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
+
+    let mut rng = rand::rng();
+
+    let Ok((
+        layer_entity,
+        scatter_root,
+        layer_name,
+        density_dist,
+        pattern_dist,
+        rotation,
+        scale,
+        enabled,
+        jitter,
+    )) = layer_query.get(trigger.target())
+    else {
+        warn!("ScatterLayer not found!");
+        return;
+    };
+
+    let Ok((root, child_chunks, base_chunk_size, map_height, aabb)) = q_root.get(**scatter_root)
+    else {
+        warn!("ScatterRoot not found!");
+        return;
+    };
+
+    let density_sampler = get_density_sampler(pattern_dist, &images, *aabb);
+
+    if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
+        return;
+    };
+
+    let instances_dim = density_dist.map_or(10., |d| **d);
+
+    for chunk_entity in child_chunks.iter() {
+        info!(
+            "Scattering {} instances in Chunk {}",
+            (instances_dim as u32).pow(2),
+            chunk_entity
+        );
+        let Ok((chunk_size, chunk_gtf)) = chunk_query.get(chunk_entity) else {
+            warn!("Chunk not found!");
             continue;
         };
 
-        for layer_entity in layers.iter() {
-            let Ok((
-                layer_entity,
-                layer_name,
-                density_dist,
-                pattern_dist,
-                rotation,
-                scale,
-                enabled,
-                jitter,
-                layer_gtf,
-            )) = layer_query.get(layer_entity)
-            else {
-                warn!("ScatterLayer not found!");
-                continue;
-            };
+        let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
 
-            let density_sampler =
-                pattern_dist
-                    .and_then(|p| images.get(&p.density_map))
-                    .map(|density_image| {
-                        DensityMapSampler::new(density_image, Vec3::from(aabb.half_extents * 2.))
-                    });
+        let chunk_corner = chunk_gtf.translation() - size / 2.;
 
-            let scatter_layer_enabled = ScatterLayerEnabled(true);
+        let results = (0..(instances_dim as u32).pow(2))
+            .filter_map(|i| {
+                let x = i as f32 % instances_dim;
+                let z = i as f32 / instances_dim;
 
-            if !**enabled.unwrap_or(&scatter_layer_enabled) {
-                let name = layer_name
-                    .unwrap_or(&Name::new(layer_entity.to_string()))
-                    .to_string();
+                let mut instance_world_pos = chunk_corner
+                    + Vec3::new(x * size.x / instances_dim, 0.0, z * size.z / instances_dim)
+                    + get_jitter(jitter, &mut rng);
 
-                warn!("ScatterLayer {name} is disabled!");
-                continue;
-            }
-
-            cmd.entity(layer_entity).insert(scatter_layer_enabled);
-
-            let instances_dim = density_dist.map_or(10., |d| **d);
-
-            if let (Some(chunk_config), Some(child_chunks), Some(base_chunk_size)) =
-                (chunk_config, child_chunks, base_chunk_size)
-            {
-                for chunk_entity in child_chunks.iter() {
-                    info!(
-                        "Scattering {} instances in Chunk {}",
-                        (instances_dim as u32).pow(2),
-                        chunk_entity
-                    );
-                    let Ok((chunk_level, chunk_size, chunk_gtf)) = chunk_query.get(chunk_entity)
-                    else {
-                        warn!("Chunk not found!");
-                        continue;
-                    };
-
-                    let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
-
-                    let chunk_corner = chunk_gtf.translation() - size / 2.;
-
-                    let results = (0..(instances_dim as u32).pow(2))
-                        .filter_map(|i| {
-                            let x = i as f32 % instances_dim;
-                            let z = i as f32 / instances_dim;
-
-                            let mut instance_world_pos = chunk_corner
-                                + Vec3::new(
-                                    x * size.x / instances_dim,
-                                    0.0,
-                                    z * size.z / instances_dim,
-                                )
-                                + get_jitter(jitter, &mut rng);
-
-                            instance_world_pos.y = match map_height {
-                                None => 0.0,
-                                Some(_) => height_sampler.sample(instance_world_pos),
-                            };
-
-                            if let Some(sampler) = &density_sampler {
-                                if rng.random::<f32>() > sampler.sample(instance_world_pos) {
-                                    return None;
-                                }
-                            }
-
-                            let final_scale = scale.map_or(1.0, |s| rng.random_range(s.min..s.max));
-                            let final_rotation = rotation.map_or(Quat::IDENTITY, |r| {
-                                Quat::from_rotation_y(rng.random_range(r.min..r.max))
-                            });
-
-                            Some(ScatterResult {
-                                layer: layer_entity,
-                                global_transform: Transform {
-                                    translation: instance_world_pos,
-                                    rotation: final_rotation,
-                                    scale: Vec3::splat(final_scale),
-                                },
-                            })
-                        })
-                        .collect::<Vec<_>>();
-
-                    let results = ScatterResults {
-                        results: results.clone(),
-                        chunk: Some(chunk_entity),
-                    };
-
-                    cmd.trigger_targets(results.clone(), [root, layer_entity, chunk_entity]);
-                    ew_results.write(results);
-                }
-            } else {
-                let size = aabb.half_extents * 2.0;
-
-                info!(
-                    "Scattering {} instances in {}",
-                    (instances_dim as u32).pow(2),
-                    size
-                );
-
-                let jitter_value = jitter.map_or(0., |x| **x);
-
-                let corner = layer_gtf.translation() - Vec3::from(aabb.half_extents)
-                    + Vec3::splat(jitter_value);
-
-                let results = (0..(instances_dim as u32).pow(2))
-                    .filter_map(|i| {
-                        let x = i as f32 % instances_dim;
-                        let z = i as f32 / instances_dim;
-
-                        let mut instance_world_pos = corner
-                            + Vec3::new(
-                                x * (size.x - jitter_value * 2.) / instances_dim,
-                                0.0,
-                                z * (size.z - jitter_value * 2.) / instances_dim,
-                            )
-                            + get_jitter(jitter, &mut rng);
-
-                        instance_world_pos.y = map_height.map_or_else(
-                            || layer_gtf.translation().y,
-                            |_| height_sampler.sample(instance_world_pos),
-                        );
-
-                        if let Some(sampler) = &density_sampler {
-                            if rng.random::<f32>() > sampler.sample(instance_world_pos) {
-                                return None;
-                            }
-                        }
-
-                        let final_scale = scale.map_or(1.0, |s| rng.random_range(s.min..s.max));
-
-                        let final_rotation = rotation.map_or(Quat::IDENTITY, |r| {
-                            Quat::from_rotation_y(rng.random_range(r.min..r.max))
-                        });
-
-                        Some(ScatterResult {
-                            layer: layer_entity,
-                            global_transform: Transform {
-                                translation: instance_world_pos,
-                                rotation: final_rotation,
-                                scale: Vec3::splat(final_scale),
-                            },
-                        })
-                    })
-                    .collect::<Vec<_>>();
-
-                info!("Scattered {} instances", results.len());
-
-                let results = ScatterResults {
-                    results: results.clone(),
-                    chunk: None,
+                instance_world_pos.y = match map_height {
+                    None => 0.0,
+                    Some(_) => height_sampler.sample(instance_world_pos),
                 };
 
-                cmd.trigger_targets(results.clone(), [root, layer_entity]);
-                ew_results.write(results);
-            }
-        }
+                if let Some(sampler) = &density_sampler {
+                    if rng.random::<f32>() > sampler.sample(instance_world_pos) {
+                        return None;
+                    }
+                }
+
+                let final_scale = scale.map_or(1.0, |s| rng.random_range(s.min..s.max));
+                let final_rotation = rotation.map_or(Quat::IDENTITY, |r| {
+                    Quat::from_rotation_y(rng.random_range(r.min..r.max))
+                });
+
+                Some(ScatterResult {
+                    layer: layer_entity,
+                    global_transform: Transform {
+                        translation: instance_world_pos,
+                        rotation: final_rotation,
+                        scale: Vec3::splat(final_scale),
+                    },
+                })
+            })
+            .collect::<Vec<_>>();
+
+        let results = ScatterResults {
+            results: results.clone(),
+            chunk: Some(chunk_entity),
+        };
+
+        cmd.trigger_targets(results.clone(), [root, layer_entity, chunk_entity]);
+        ew_results.write(results);
     }
 }
 
@@ -388,4 +439,59 @@ fn get_jitter(jitter: Option<&InstanceJitter>, rng: &mut ThreadRng) -> Vec3 {
         || Vec3::ZERO,
         |x| Vec3::new(rng.random_range(-**x..**x), 0., rng.random_range(-**x..**x)),
     )
+}
+
+pub fn get_height_map_sampler<'a>(
+    images: &'a Res<Assets<Image>>,
+    height_map_cfg: Option<Res<HeightMapConfig>>,
+    height_map: Option<Res<HeightMap>>,
+) -> HeightMapSampler<'a> {
+    let height_map_image = match height_map {
+        None => None,
+        Some(x) => images.get(&x.0),
+    };
+
+    height_map_cfg.map_or_else(
+        || HeightMapSampler::Default(DefaultSampler),
+        |cfg| {
+            height_map_image.map_or_else(
+                || HeightMapSampler::Default(DefaultSampler),
+                |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
+            )
+        },
+    )
+}
+
+pub fn scatter_layer_enabled<'a>(
+    cmd: &'a mut Commands,
+    layer_entity: Entity,
+    layer_name: Option<&Name>,
+    enabled: Option<&ScatterLayerEnabled>,
+) -> bool {
+    let scatter_layer_enabled = ScatterLayerEnabled(true);
+
+    if !**enabled.unwrap_or(&scatter_layer_enabled) {
+        let name = layer_name
+            .unwrap_or(&Name::new(layer_entity.to_string()))
+            .to_string();
+
+        warn!("ScatterLayer {name} is disabled!");
+        return false;
+    }
+
+    cmd.entity(layer_entity).insert(scatter_layer_enabled);
+
+    true
+}
+
+fn get_density_sampler<'a>(
+    pattern_dist: Option<&DistributionPattern>,
+    images: &'a Res<Assets<Image>>,
+    aabb: Aabb,
+) -> Option<DensityMapSampler<'a>> {
+    pattern_dist
+        .and_then(|p| images.get(&p.density_map))
+        .map(|density_image| {
+            DensityMapSampler::new(density_image, Vec3::from(aabb.half_extents * 2.))
+        })
 }

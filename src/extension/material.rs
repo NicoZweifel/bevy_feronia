@@ -46,6 +46,7 @@ impl
         mut cmd: Commands,
         trigger: On<ScatterResults>,
         prototypes: &WindAffectedTypes<ExtendedWindAffectedMaterial>,
+        // TODO use chunks if spawned for chunk
         _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         _q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     ) {
