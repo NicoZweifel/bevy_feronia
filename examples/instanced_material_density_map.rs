@@ -5,7 +5,6 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::instancing::observers::scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -74,10 +73,10 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
 }
 
 fn scatter_on_keypress(
-    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
+    mut cmd: Commands,
+    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
-    mut ew_scatter: EventWriter<Scatter>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
@@ -90,9 +89,10 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    for e in &q_root {
-        ew_scatter.write(Scatter(e));
-    }
+    cmd.trigger_targets(
+        Scatter::<ScatterRoot>::default(),
+        q_root.iter().collect::<Vec<_>>(),
+    );
 }
 
 fn setup_density_map(

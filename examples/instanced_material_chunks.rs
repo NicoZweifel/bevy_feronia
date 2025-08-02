@@ -6,6 +6,9 @@ use bevy::prelude::*;
 use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::instancing::observers::scatter_observer;
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::components::ScatterRoot;
+use bevy_feronia::scatter::events::Scatter;
+use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 
 fn main() -> AppExit {
@@ -52,7 +55,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(10.0),
+            DistributionDensity(5.0),
             InstanceJitter(0.1),
         )],
     ))

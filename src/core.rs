@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::resources::Wind;
+use crate::scatter::events::ScatterResults;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;

@@ -1,5 +1,5 @@
-use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
+use crate::scatter::utils::get_height_map_sampler;
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 

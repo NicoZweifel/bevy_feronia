@@ -10,6 +10,9 @@ use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::extension::observers::scatter_observer;
 use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::components::ScatterRoot;
+use bevy_feronia::scatter::events::Scatter;
+use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 use noise::{NoiseFn, Perlin};
 

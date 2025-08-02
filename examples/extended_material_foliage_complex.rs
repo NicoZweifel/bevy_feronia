@@ -4,6 +4,9 @@ mod example;
 use bevy::prelude::*;
 use bevy_feronia::extension::observers::scatter_observer;
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::components::ScatterRoot;
+use bevy_feronia::scatter::events::Scatter;
+use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 
 fn main() -> AppExit {
@@ -48,10 +51,10 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
 }
 
 fn scatter_on_keypress(
-    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
+    mut cmd: Commands,
+    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    q_root: Query<Entity, With<ScatterRoot>>,
-    mut ew_scatter: EventWriter<Scatter>,
+    q_scatter_root: Query<Entity, With<ScatterRoot>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
@@ -64,7 +67,8 @@ fn scatter_on_keypress(
 
     println!("Scattering plants...");
 
-    for e in &q_root {
-        ew_scatter.write(Scatter(e));
-    }
+    cmd.trigger_targets(
+        Scatter::<ScatterRoot>::default(),
+        q_scatter_root.iter().collect::<Vec<_>>(),
+    );
 }

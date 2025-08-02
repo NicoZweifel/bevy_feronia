@@ -1,12 +1,9 @@
 use crate::prelude::*;
+use crate::scatter::events::ScatterResults;
 use bevy::camera::primitives::Aabb;
 use bevy::camera::visibility::VisibilityRange;
-use bevy::ecs::bundle::NoBundleEffect;
-use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
-use bevy::math::NormedVectorSpace;
 use bevy::render::batching::NoAutomaticBatching;
-use bevy::render::view::NoFrustumCulling;
 use bevy::{
     asset::*,
     ecs::query::QueryItem,

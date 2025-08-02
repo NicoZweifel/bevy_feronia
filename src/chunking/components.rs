@@ -2,7 +2,6 @@ use crate::core::Sampler;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::HeightMap;
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use std::num::NonZeroU32;
 
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]

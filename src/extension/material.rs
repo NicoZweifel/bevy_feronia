@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::scatter::events::ScatterResults;
 use bevy::asset::{Assets, Handle};
 use bevy::image::Image;
 use bevy::pbr::{ExtendedMaterial, MeshMaterial3d, StandardMaterial};

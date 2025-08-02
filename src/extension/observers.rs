@@ -1,6 +1,7 @@
 use crate::prelude::*;
+use crate::scatter::events::ScatterResults;
 use bevy::camera::primitives::Aabb;
-use bevy::pbr::{MeshMaterial3d, StandardMaterial};
+use bevy::pbr::StandardMaterial;
 use bevy::prelude::*;
 
 pub fn scatter_observer(

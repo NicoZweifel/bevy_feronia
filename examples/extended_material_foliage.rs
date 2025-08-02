@@ -4,6 +4,9 @@ mod example;
 use bevy::prelude::*;
 use bevy_feronia::extension::observers::scatter_observer;
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::components::ScatterRoot;
+use bevy_feronia::scatter::events::Scatter;
+use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 
 fn main() -> AppExit {
