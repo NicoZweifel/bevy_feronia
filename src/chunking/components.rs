@@ -27,24 +27,24 @@ pub struct CanSplit;
 #[reflect(Component)]
 pub struct CanMerge;
 
-#[derive(Component, Reflect, Deref, DerefMut, Default,Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Default, Debug)]
 #[reflect(Component)]
 pub struct ChunkLevel(pub u32);
 
-#[derive(Component, Reflect, Deref, DerefMut,Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct ChunkSize(pub u32);
 
-#[derive(Component, Reflect, Deref, DerefMut,Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct MergeDistance(pub f32);
 
-#[derive(Component, Reflect, Deref, DerefMut,Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct SplitDistance(pub f32);
 
 #[derive(Component, Debug, Clone, Reflect)]
-#[require(Transform, Visibility, GlobalTransform)]
+#[require(Transform, Visibility)]
 #[reflect(Component)]
 #[derive(Default)]
 pub struct Chunk;

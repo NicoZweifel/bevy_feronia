@@ -40,7 +40,7 @@ where
     fn update_material(materials: ResMut<Assets<A>>, wind: Wind);
     fn spawn(
         cmd: Commands,
-        results: &ScatterResults,
+        trigger: On<ScatterResults>,
         prototypes: &P,
         q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,

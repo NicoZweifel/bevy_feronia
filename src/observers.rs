@@ -16,5 +16,5 @@ pub fn scatter_observer<T, P, M, A>(
     M: Material,
     A: Asset + Clone + WindAffectable<M, A, T, P>,
 {
-    A::spawn(cmd, trigger.event(), prototypes, q_chunks, q_chunk_config);
+    A::spawn(cmd, trigger, prototypes, q_chunks, q_chunk_config);
 }

@@ -43,15 +43,15 @@ impl
 
     fn spawn(
         mut cmd: Commands,
-        results: &ScatterResults,
+        trigger: On<ScatterResults>,
         prototypes: &WindAffectedTypes<ExtendedWindAffectedMaterial>,
         _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         _q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
     ) {
         let mut rng = rand::rng();
         cmd.spawn_batch(
-            results
-                .get()
+            trigger
+                .results
                 .iter()
                 .map(|result| {
                     let prototype = prototypes.values().choose(&mut rng).unwrap();

@@ -4,18 +4,17 @@ use std::num::NonZeroU32;
 
 pub fn split(
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<
-        (Entity, &GlobalTransform, &SplitDistance),
-        (With<CanSplit>, With<Chunk>),
-    >,
+    q_chunk: Query<(Entity, &GlobalTransform, &SplitDistance), (With<CanSplit>, With<Chunk>)>,
     mut ew_split: EventWriter<SplitChunk>,
 ) {
     let Ok(center) = q_center.single() else {
-        warn!("Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?");
+        warn!(
+            "Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?"
+        );
         return;
     };
 
-    let center= center.translation();
+    let center = center.translation();
 
     for (entity, chunk_transform, split_distance) in &q_chunk {
         let distance = center.distance(chunk_transform.translation());
@@ -35,8 +34,7 @@ pub fn handle_split(
         let parent_entity = e.get();
         info!("Splitting Chunk: {parent_entity}");
 
-        let Ok((parent_chunk_level, parent_chunk_size, root_chunk)) =
-            q_chunk.get(parent_entity)
+        let Ok((parent_chunk_level, parent_chunk_size, root_chunk)) = q_chunk.get(parent_entity)
         else {
             warn!("Couldn't get Chunk for split: {parent_entity}");
             continue;
@@ -68,8 +66,10 @@ pub fn handle_split(
             }
 
             if child_chunk_data.level < cfg.get_max_lod_level() {
-                cmd.entity(child_entity)
-                    .insert((CanMerge, MergeDistance(cfg.get_lod_config(child_chunk_data.level).distance)));
+                cmd.entity(child_entity).insert((
+                    CanMerge,
+                    MergeDistance(cfg.get_lod_config(child_chunk_data.level).distance),
+                ));
             }
 
             cmd.entity(parent_entity).remove::<CanSplit>();

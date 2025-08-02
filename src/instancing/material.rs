@@ -6,6 +6,7 @@ use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
 use bevy::math::NormedVectorSpace;
 use bevy::render::batching::NoAutomaticBatching;
+use bevy::render::view::NoFrustumCulling;
 use bevy::{
     asset::*,
     ecs::query::QueryItem,
@@ -106,7 +107,7 @@ impl
 
     fn spawn(
         mut cmd: Commands,
-        results: &ScatterResults,
+        trigger: On<ScatterResults>,
         prototypes: &WindAffectedTypes<InstancedWindAffectedMaterial>,
         q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
@@ -114,7 +115,8 @@ impl
         let mut rng = rand::rng();
         let prototype = prototypes.values().choose(&mut rng).unwrap();
 
-        let instances = results
+        let instances = trigger
+            .results
             .iter()
             .enumerate()
             .map(|(i, res)| InstanceData {
@@ -148,7 +150,7 @@ impl
             ))
             .id();
 
-        let (chunk_gtf, chunk_root, chunk_level) = match results.chunk {
+        let (chunk_gtf, chunk_root, chunk_level) = match trigger.chunk {
             None => (Transform::default(), None, &ChunkLevel::default()),
             Some(x) => match q_chunks.get(x) {
                 Ok((chunk_gtf, chunk_root, chunk_level)) => {
@@ -193,14 +195,20 @@ impl
 
             let local_aabb = Aabb::from_min_max(local_min, local_max);
 
+            println!("{:?}", local_aabb);
+
             cmd.entity(entity).insert((
                 Aabb::from(local_aabb),
+                NoFrustumCulling,
                 VisibilityRange {
                     start_margin,
                     end_margin,
                     use_aabb: false,
                 },
+                ChildOf(trigger.chunk.unwrap()),
             ));
+        } else {
+            cmd.entity(entity).insert(ChildOf(trigger.target()));
         };
     }
 

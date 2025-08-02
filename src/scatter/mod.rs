@@ -56,9 +56,12 @@ pub struct InstanceScale {
     pub max: f32,
 }
 
-#[derive(Component, Reflect, Deref, DerefMut)]
+#[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct CellSize(f32);
+pub struct InstanceJitter {
+    pub min: f32,
+    pub max: f32,
+}
 
 #[derive(Clone, Debug)]
 pub struct ScatterResult {
@@ -169,6 +172,7 @@ pub fn generate_scatter_points(
             Option<&InstanceRotationYaw>,
             Option<&InstanceScale>,
             Option<&ScatterLayerEnabled>,
+            Option<&InstanceJitter>,
             &GlobalTransform,
         ),
         With<ScatterLayer>,
@@ -185,15 +189,12 @@ pub fn generate_scatter_points(
         Some(x) => images.get(&x.0),
     };
 
-    let total_world_size = match height_map_cfg {
-        None => 0.0,
-        Some(x) => x.world_size,
-    };
+    let total_world_size = height_map_cfg.map_or_else(|| 0.0, |x| x.world_size);
 
-    let height_sampler = match height_map_image {
-        None => HeightMapSampler::Default(DefaultSampler),
-        Some(x) => HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(x, total_world_size)),
-    };
+    let height_sampler = height_map_image.map_or_else(
+        || HeightMapSampler::Default(DefaultSampler),
+        |x| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(x, total_world_size)),
+    );
 
     let mut rng = rand::rng();
 
@@ -213,6 +214,7 @@ pub fn generate_scatter_points(
                 rotation,
                 scale,
                 enabled,
+                jitter,
                 layer_gtf,
             )) = layer_query.get(layer_entity)
             else {
@@ -237,6 +239,13 @@ pub fn generate_scatter_points(
 
             cmd.entity(layer_entity).insert(scatter_layer_enabled);
 
+            let jitter = jitter.map_or_else(
+                || Vec3::ZERO,
+                |x| Vec3::splat(rng.random_range(-x.min..x.max)).with_y(0.),
+            );
+
+            let instances_dim = density_dist.map_or(10., |d| **d);
+
             if let (Some(chunk_config), Some(child_chunks)) = (chunk_config, child_chunks) {
                 for chunk_entity in child_chunks.iter() {
                     let Ok((chunk_level, chunk_size, chunk_gtf)) = chunk_query.get(chunk_entity)
@@ -245,11 +254,6 @@ pub fn generate_scatter_points(
                         continue;
                     };
 
-                    let instances_per_dim =
-                        density_dist.map_or(10, |d| d.sqrt().ceil() as u32) * **chunk_size;
-                    let cell_size =
-                        chunk_config.get_chunk_world_size(**chunk_level) / instances_per_dim as f32;
-                    let jitter_amount = cell_size / 2.0;
                     let chunk_corner = chunk_gtf.translation()
                         - Vec3::new(
                             chunk_config.get_chunk_world_size(**chunk_level) / 2.0,
@@ -257,15 +261,15 @@ pub fn generate_scatter_points(
                             chunk_config.get_chunk_world_size(**chunk_level) / 2.0,
                         );
 
-                    let results = (0..instances_per_dim.pow(2))
-                        .filter_map(|_i| {
-                            let local_x = rng.random_range(0.0..jitter_amount)
-                                * chunk_config.get_chunk_world_size(**chunk_level);
-                            let local_z = rng.random_range(0.0..jitter_amount)
-                                * chunk_config.get_chunk_world_size(**chunk_level);
+                    let results = (0
+                        ..(instances_dim as u32 / **chunk_size)
+                            .pow(2))
+                        .filter_map(|i| {
+                            let local_x = i as f32 % instances_dim;
+                            let local_z = i as f32 / instances_dim;
 
                             let mut instance_world_pos =
-                                chunk_corner + Vec3::new(local_x, 0.0, local_z);
+                                chunk_corner + Vec3::new(local_x , 0.0, local_z );
 
                             instance_world_pos.y = match map_height {
                                 None => 0.0,
@@ -304,23 +308,32 @@ pub fn generate_scatter_points(
                 }
             } else {
                 let size = aabb.half_extents * 2.0;
-                let area = size.x * size.z;
 
-                let num_instances = density_dist.map_or(10, |d| (**d * area).ceil() as u32);
+                info!(
+                    "Scattering {} instances for {}",
+                    (instances_dim as u32).pow(2),
+                    size
+                );
 
-                info!("Scattering {} instances for {}", num_instances, size);
+                let corner =
+                    layer_gtf.translation() - <Vec3A as Into<Vec3>>::into(aabb.half_extents);
 
-                let results = (0..num_instances)
-                    .filter_map(|_| {
-                        let world_x = rng.random_range(aabb.min().x..aabb.max().x);
-                        let world_z = rng.random_range(aabb.min().z..aabb.max().z);
+                let results = (0..(instances_dim as u32).pow(2))
+                    .filter_map(|i| {
+                        let world_x = i as f32 % instances_dim;
+                        let world_z = i as f32 / instances_dim;
 
-                        let mut instance_world_pos = Vec3::new(world_x, 0.0, world_z);
+                        let mut instance_world_pos = corner
+                            + Vec3::new(
+                                world_x * size.x / instances_dim + jitter.x,
+                                0.0,
+                                world_z * size.z / instances_dim + jitter.z,
+                            );
 
-                        instance_world_pos.y = match map_height {
-                            None => layer_gtf.translation().y,
-                            Some(_) => height_sampler.sample(instance_world_pos),
-                        };
+                        instance_world_pos.y = map_height.map_or_else(
+                            || layer_gtf.translation().y,
+                            |_| height_sampler.sample(instance_world_pos),
+                        );
 
                         if let Some(sampler) = &density_sampler {
                             if rng.random::<f32>() > sampler.sample(instance_world_pos) {

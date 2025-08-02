@@ -52,7 +52,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ChunkConfig::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(100.0),
+            DistributionDensity(1000.0),
         )],
     ))
     .observe(scatter_observer);

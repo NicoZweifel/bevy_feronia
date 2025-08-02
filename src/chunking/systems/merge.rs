@@ -20,17 +20,19 @@ pub fn merge(
 
 pub fn handle_merge_check(
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<&MergeDistance , (With<CanMerge>, With<Chunk>)>,
+    q_chunk: Query<&MergeDistance, (With<CanMerge>, With<Chunk>)>,
     q_parent: Query<&GlobalTransform>,
     mut er_check: EventReader<MergeCheck>,
     mut ew_merge: EventWriter<MergeChunks>,
 ) {
     let Ok(center) = q_center.single() else {
-        warn!("Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?");
+        warn!(
+            "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
+        );
         return;
     };
 
-    let center= center.translation();
+    let center = center.translation();
 
     for e in er_check.read() {
         if e.children.len() < 4 {
