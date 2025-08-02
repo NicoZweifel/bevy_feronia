@@ -3,74 +3,76 @@ use bevy::prelude::*;
 use std::num::NonZeroU32;
 
 pub fn split(
-    cfg: Res<ChunkConfig>,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<(Entity, &Chunk, &GlobalTransform), (Without<Children>, With<CanSplit>)>,
+    q_chunk: Query<
+        (Entity, &GlobalTransform, &SplitDistance),
+        (With<CanSplit>, With<Chunk>),
+    >,
     mut ew_split: EventWriter<SplitChunk>,
 ) {
     let Ok(center) = q_center.single() else {
+        warn!("Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?");
         return;
     };
 
-    let center_translation = center.translation();
+    let center= center.translation();
 
-    for (entity, chunk, chunk_transform) in &q_chunk {
-        if chunk.level == 0 {
-            continue;
-        };
-
-        let dist = center_translation.distance(chunk_transform.translation());
-
-        let child_lod_config = cfg.get_lod_config(chunk.level - 1);
-
-        if dist < child_lod_config.distance {
+    for (entity, chunk_transform, split_distance) in &q_chunk {
+        let distance = center.distance(chunk_transform.translation());
+        if distance < **split_distance {
             ew_split.write(SplitChunk(entity));
-            continue;
         }
     }
 }
 
 pub fn handle_split(
     mut cmd: Commands,
-    cfg: Res<ChunkConfig>,
     mut er_split: EventReader<SplitChunk>,
-    q_chunk: Query<&Chunk>,
+    q_chunk: Query<(&ChunkLevel, &ChunkSize, &ChunkOf), (With<CanSplit>, With<Chunk>)>,
+    q_chunk_config: Query<&ChunkConfig>,
 ) {
     for e in er_split.read() {
         let parent_entity = e.get();
+        info!("Splitting Chunk: {parent_entity}");
 
-        let Ok(parent_chunk) = q_chunk.get(parent_entity) else {
+        let Ok((parent_chunk_level, parent_chunk_size, root_chunk)) =
+            q_chunk.get(parent_entity)
+        else {
+            warn!("Couldn't get Chunk for split: {parent_entity}");
             continue;
         };
 
-        let child_chunk_data = cfg.calculate_child_data(
-            NonZeroU32::new(parent_chunk.level).expect("Cannot split chunk at level 0!"),
-            parent_chunk.size,
+        let cfg = q_chunk_config.get(**root_chunk).unwrap();
+
+        let mut child_chunk_data = cfg.calculate_child_data(
+            NonZeroU32::new(**parent_chunk_level).expect("Cannot split chunk at level 0!"),
+            **parent_chunk_size,
         );
 
-        cmd.entity(parent_entity).with_children(|cmd| {
-            for offset in &child_chunk_data.offsets {
-                let child_entity = cmd
-                    .spawn((
-                        Chunk {
-                            level: child_chunk_data.level,
-                            size: child_chunk_data.size,
-                        },
-                        Transform::from_translation(*offset),
-                        GlobalTransform::from_translation(*offset),
-                        Visibility::Visible,
-                        ViewVisibility::default(),
-                    ))
-                    .id();
+        for offset in &mut child_chunk_data.offsets {
+            let child_entity = cmd
+                .spawn((
+                    Chunk,
+                    ChunkSize(child_chunk_data.size),
+                    ChunkLevel(child_chunk_data.level),
+                    Transform::from_translation(*offset),
+                    ChunkOf(**root_chunk),
+                    ChildOf(parent_entity),
+                ))
+                .id();
 
-                if child_chunk_data.level > 0 {
-                    cmd.commands().entity(child_entity).insert(CanSplit);
-                }
-
-                if child_chunk_data.level < cfg.get_max_lod_level() {
-                    cmd.commands().entity(child_entity).insert(CanMerge);
-                }
+            if child_chunk_data.level > 0 {
+                let child_lod_config = cfg.get_lod_config(child_chunk_data.level - 1);
+                cmd.entity(child_entity)
+                    .insert((CanSplit, SplitDistance(child_lod_config.distance)));
             }
-        });
+
+            if child_chunk_data.level < cfg.get_max_lod_level() {
+                cmd.entity(child_entity)
+                    .insert((CanMerge, MergeDistance(cfg.get_lod_config(child_chunk_data.level).distance)));
+            }
+
+            cmd.entity(parent_entity).remove::<CanSplit>();
+        }
     }
 }

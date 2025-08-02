@@ -31,7 +31,7 @@ fn main() -> AppExit {
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
-        Landscape,
+        MapHeight,
     ));
     cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
     cmd.spawn((

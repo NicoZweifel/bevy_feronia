@@ -1,5 +1,11 @@
 use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
+use bevy::camera::visibility::VisibilityRange;
+use bevy::ecs::bundle::NoBundleEffect;
+use bevy::ecs::query::QueryEntityError;
 use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
+use bevy::math::NormedVectorSpace;
+use bevy::render::batching::NoAutomaticBatching;
 use bevy::{
     asset::*,
     ecs::query::QueryItem,
@@ -12,6 +18,7 @@ use bevy::{
         renderer::RenderDevice,
     },
 };
+use rand::prelude::IndexedRandom;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 #[uniform(50, WindUniform)]
@@ -70,11 +77,16 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
     }
 }
 
-impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
-    for InstancedWindAffectedMaterial
+impl
+    WindAffectable<
+        StandardMaterial,
+        InstancedWindAffectedMaterial,
+        WindAffectedTypes<InstancedWindAffectedMaterial>,
+        WindAffectedType<InstancedWindAffectedMaterial>,
+    > for InstancedWindAffectedMaterial
 {
     fn create_material(
-        _material: StandardMaterial,
+        _base: Option<StandardMaterial>,
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
@@ -92,8 +104,108 @@ impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
         }
     }
 
+    fn spawn(
+        mut cmd: Commands,
+        results: &ScatterResults,
+        prototypes: &WindAffectedTypes<InstancedWindAffectedMaterial>,
+        q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
+        q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    ) {
+        let mut rng = rand::rng();
+        let prototype = prototypes.values().choose(&mut rng).unwrap();
+
+        let instances = results
+            .iter()
+            .enumerate()
+            .map(|(i, res)| InstanceData {
+                position: res.global_transform.translation,
+                scale: res.global_transform.scale.element_sum() / 3.0,
+                color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
+                index: i as u32,
+            })
+            .collect::<Vec<_>>();
+
+        let mesh_handle = prototype.mesh.clone();
+        let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
+
+        for instance in &instances {
+            let instance_min = instance.position
+                + <Vec3A as Into<Vec3>>::into(prototype.aabb.min() * instance.scale);
+            let instance_max = instance.position
+                + <Vec3A as Into<Vec3>>::into(prototype.aabb.max() * instance.scale);
+            min_point = min_point.min(instance_min);
+            max_point = max_point.max(instance_max);
+        }
+
+        let entity = cmd
+            .spawn((
+                InstancedWindAffectedMaterial::component(prototype.material.clone()),
+                Mesh3d(mesh_handle),
+                InstanceMaterialData(instances),
+                NoAutomaticBatching,
+                WindAffected,
+                WindAffectedReady,
+            ))
+            .id();
+
+        let (chunk_gtf, chunk_root, chunk_level) = match results.chunk {
+            None => (Transform::default(), None, &ChunkLevel::default()),
+            Some(x) => match q_chunks.get(x) {
+                Ok((chunk_gtf, chunk_root, chunk_level)) => {
+                    (chunk_gtf.compute_transform(), Some(chunk_root), chunk_level)
+                }
+                Err(_) => (Transform::default(), None, &ChunkLevel::default()),
+            },
+        };
+
+        let chunk_config = match chunk_root {
+            None => None,
+            Some(x) => Some(q_chunk_config.get(**x).unwrap()),
+        };
+
+        let lod_level = **chunk_level as usize;
+        let current_lod_config = match chunk_config {
+            None => &LodConfig::default(),
+            Some(x) => &x.lods[lod_level],
+        };
+
+        let current_lod_dist = current_lod_config.distance;
+
+        if let Some(chunk_config) = chunk_config {
+            let start_margin = if lod_level == 0 {
+                0.0..0.0
+            } else {
+                let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
+                prev_lod_dist - chunk_config.get_chunk_world_size(**chunk_level - 1)..prev_lod_dist
+            };
+
+            let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
+                f32::MAX..f32::MAX
+            } else {
+                current_lod_dist - chunk_config.get_chunk_world_size(**chunk_level)
+                    ..current_lod_dist
+            };
+
+            let chunk_center = chunk_gtf.translation;
+
+            let local_min = min_point - chunk_center;
+            let local_max = max_point - chunk_center;
+
+            let local_aabb = Aabb::from_min_max(local_min, local_max);
+
+            cmd.entity(entity).insert((
+                Aabb::from(local_aabb),
+                VisibilityRange {
+                    start_margin,
+                    end_margin,
+                    use_aabb: false,
+                },
+            ));
+        };
+    }
+
     fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
-        InstancedWindAffectedMeshMaterial(material.clone())
+        InstancedWindAffectedMeshMaterial(material)
     }
 }
 

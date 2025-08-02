@@ -1,5 +1,6 @@
 use crate::WindMaterialPlugin;
-use crate::extension::material::WindAffectedExtendedMaterial;
+use crate::extension::material::ExtendedWindAffectedMaterial;
+use crate::prelude::*;
 use bevy::app::{App, Plugin};
 use bevy::asset::embedded_asset;
 use bevy::pbr::{MaterialPlugin, StandardMaterial};
@@ -11,10 +12,10 @@ impl Plugin for ExtendedWindAffectedPlugin {
         embedded_asset!(app, "main.wgsl");
         embedded_asset!(app, "prepass.wgsl");
 
-        app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
+        app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
             .add_plugins(WindMaterialPlugin::<
                 StandardMaterial,
-                WindAffectedExtendedMaterial,
+                ExtendedWindAffectedMaterial,
             >::default());
     }
 }

@@ -5,9 +5,12 @@ pub mod density_map;
 pub mod extension;
 pub mod height_map;
 pub mod instancing;
+mod observers;
 pub mod plugin;
 pub mod resources;
+pub mod scatter;
 pub mod systems;
+mod wind;
 
 pub use crate::plugin::{WindMaterialPlugin, WindPlugin};
 
@@ -23,4 +26,5 @@ pub mod prelude {
     pub use crate::extension::prelude::*;
     pub use crate::height_map::prelude::*;
     pub use crate::instancing::prelude::*;
+    pub use crate::scatter::*;
 }

@@ -39,7 +39,7 @@ fn main() -> AppExit {
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
-            ChunkPlugin,
+            ChunkPlugin::<InstancedWindAffectedMeshMaterial>::default(),
         ))
         .insert_resource(ChunkConfig {
             lods: vec![
@@ -70,7 +70,7 @@ fn main() -> AppExit {
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
-        Landscape,
+        MapHeight,
     ));
     cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
@@ -206,16 +206,18 @@ fn populate_chunks(
             0.0..0.0
         } else {
             let prev_lod_dist = chunk_config.lods[lod_level - 1].distance;
-            prev_lod_dist - chunk_config.get_chunk_world_size(chunk.level)..prev_lod_dist
+            prev_lod_dist - chunk_config.get_chunk_world_size(chunk.level - 1)
+                ..prev_lod_dist + chunk_config.get_chunk_world_size(chunk.level - 1)
         };
 
         let end_margin = if lod_level as u32 == chunk_config.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level)..current_lod_dist
+            current_lod_dist - chunk_config.get_chunk_world_size(chunk.level)
+                ..current_lod_dist + chunk_config.get_chunk_world_size(chunk.level)
         };
 
-        let (prototype, material_handle) = if chunk.level == 0 {
+        let (prototype, material_handle) = if chunk.level != chunk_config.get_max_lod_level() {
             let proto = prototypes.get().last().unwrap();
             (proto, hq_material_handle.clone())
         } else {
@@ -311,44 +313,5 @@ fn populate_chunks(
                 use_aabb: false,
             },
         ));
-    }
-}
-
-// TODO see above
-struct DensityMapSampler {
-    image_data: Vec<u8>,
-    image_size: u32,
-    total_world_size: f32,
-    center_offset: f32,
-}
-
-// TODO see above
-impl DensityMapSampler {
-    /// Creates a new sampler from the density map image and world configuration.
-    fn new(image: &Image, total_world_size: f32) -> Self {
-        Self {
-            image_data: image.data.clone().unwrap(),
-            image_size: image.texture_descriptor.size.width,
-            total_world_size,
-            center_offset: total_world_size / 2.0,
-        }
-    }
-
-    /// Takes a world position and returns the density value (0.0 to 1.0) at that point.
-    fn sample(&self, world_pos: Vec3) -> f32 {
-        // Convert world position to a normalized [0, 1] UV coordinate.
-        let uv_x = ((world_pos.x + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
-        let uv_y = ((world_pos.z + self.center_offset) / self.total_world_size).clamp(0.0, 1.0);
-
-        // Convert UV coordinate to a pixel coordinate.
-        let pixel_x = (uv_x * (self.image_size - 1) as f32).round() as u32;
-        let pixel_y = (uv_y * (self.image_size - 1) as f32).round() as u32;
-
-        // Index the raw data buffer to get the density byte.
-        let pixel_index = (pixel_y * self.image_size + pixel_x) as usize;
-        let sampled_byte = self.image_data.get(pixel_index).copied().unwrap_or(0);
-
-        // Convert the byte back to a 0.0-1.0 float.
-        sampled_byte as f32 / 255.0
     }
 }

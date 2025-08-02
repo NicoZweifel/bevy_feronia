@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct Landscape;
+pub struct MapHeight;
 
 #[derive(Component)]
 pub struct HeightMapped;

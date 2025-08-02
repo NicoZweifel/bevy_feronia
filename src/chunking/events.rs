@@ -11,7 +11,8 @@ impl SplitChunk {
 
 #[derive(Event, BufferedEvent)]
 pub struct MergeChunks {
-    pub(crate) siblings: Vec<Entity>,
+    pub children: Vec<Entity>,
+    pub parent: Entity,
 }
 
 #[derive(Event, BufferedEvent)]

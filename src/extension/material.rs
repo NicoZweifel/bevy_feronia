@@ -3,20 +3,26 @@ use bevy::asset::{Assets, Handle};
 use bevy::image::Image;
 use bevy::pbr::{ExtendedMaterial, MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
+use rand::prelude::IndexedRandom;
 
-pub type WindAffectedExtendedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
+pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
-impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
-    for WindAffectedExtendedMaterial
+impl
+    WindAffectable<
+        StandardMaterial,
+        ExtendedWindAffectedMaterial,
+        WindAffectedTypes<ExtendedWindAffectedMaterial>,
+        WindAffectedType<ExtendedWindAffectedMaterial>,
+    > for ExtendedWindAffectedMaterial
 {
     fn create_material(
-        base: StandardMaterial,
+        base: Option<StandardMaterial>,
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
-    ) -> WindAffectedExtendedMaterial {
+    ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
-            base,
+            base: base.unwrap_or_else(|| StandardMaterial::default()),
             extension: WindAffectedExtension {
                 noise_texture,
                 wind,
@@ -25,7 +31,7 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
         }
     }
 
-    fn update_material(mut materials: ResMut<Assets<WindAffectedExtendedMaterial>>, wind: Wind) {
+    fn update_material(mut materials: ResMut<Assets<ExtendedWindAffectedMaterial>>, wind: Wind) {
         for (_, material) in materials
             .iter_mut()
             .filter(|(_, x)| !x.extension.controlled)
@@ -35,7 +41,34 @@ impl WindAffectable<StandardMaterial, WindAffectedExtendedMaterial>
         }
     }
 
-    fn component(material: Handle<WindAffectedExtendedMaterial>) -> impl Component {
+    fn spawn(
+        mut cmd: Commands,
+        results: &ScatterResults,
+        prototypes: &WindAffectedTypes<ExtendedWindAffectedMaterial>,
+        _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
+        _q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    ) {
+        let mut rng = rand::rng();
+        cmd.spawn_batch(
+            results
+                .get()
+                .iter()
+                .map(|result| {
+                    let prototype = prototypes.values().choose(&mut rng).unwrap();
+                    (
+                        Mesh3d(prototype.mesh.clone()),
+                        ExtendedWindAffectedMaterial::component(prototype.material.clone()),
+                        result.global_transform,
+                        WindAffected,
+                        WindAffectedReady,
+                        ChildOf(result.layer),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        );
+    }
+
+    fn component(material: Handle<ExtendedWindAffectedMaterial>) -> impl Component {
         MeshMaterial3d(material)
     }
 }

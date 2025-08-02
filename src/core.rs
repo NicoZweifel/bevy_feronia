@@ -1,13 +1,52 @@
+use crate::prelude::*;
 use crate::resources::Wind;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 
-pub trait WindAffectable<M: Material, R: Asset> {
-    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>, controlled: bool) -> R;
-    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
-    fn component(material: Handle<R>) -> impl Component;
+pub trait ProtoTypes<T, P>
+where
+    T: Asset + Clone + Send + Sync,
+    P: ProtoType<T>,
+{
+    fn values(&self) -> &Vec<P>;
+}
+
+pub trait ProtoType<T>
+where
+    T: Asset + Clone,
+{
+    fn mesh(&self) -> Handle<Mesh>;
+    fn material(&self) -> Handle<T>;
+    fn wind(&self) -> &Wind;
+    fn aabb(&self) -> &Aabb;
+}
+
+pub trait WindAffectable<M, A, P, T>
+where
+    M: Material,
+    A: Asset + Clone,
+    P: ProtoTypes<A, T>,
+    T: ProtoType<A>,
+{
+    fn create_material(
+        base: Option<M>,
+        wind: Wind,
+        noise_texture: Handle<Image>,
+        controlled: bool,
+    ) -> A;
+    fn update_material(materials: ResMut<Assets<A>>, wind: Wind);
+    fn spawn(
+        cmd: Commands,
+        results: &ScatterResults,
+        prototypes: &P,
+        q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
+        q_chunk_config: Query<&ChunkConfig, With<ChunkRoot>>,
+    );
+
+    fn component(material: Handle<A>) -> impl Component;
 }
 
 #[repr(C)]
@@ -64,4 +103,8 @@ bitflags! {
         const ENABLE_EDGE_CORRECTION = 1 << 1;
         const HIGH_QUALITY = 1 << 2;
     }
+}
+
+pub trait Sampler {
+    fn sample(&self, world_pos: Vec3) -> f32;
 }

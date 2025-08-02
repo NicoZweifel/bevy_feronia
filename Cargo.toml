@@ -11,6 +11,7 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
 bytemuck = "1.23.1"
 noise = "0.9.0"
 bitflags = "2.9.1"
+rand = "0.9.1"
 
 [dev-dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher"] }
@@ -23,7 +24,6 @@ log = { version = "0.4", features = [
     "release_max_level_warn",
 ] }
 noise = "0.9.0"
-rand = "0.9.1"
 tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",

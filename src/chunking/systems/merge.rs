@@ -4,18 +4,12 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
 pub fn merge(
-    cfg: Res<ChunkConfig>,
-    q_chunk: Query<(Entity, &Chunk, &ChildOf), With<CanMerge>>,
+    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>)>,
     mut ew_check: EventWriter<MergeCheck>,
 ) {
-    let max_lod_level = cfg.get_max_lod_level();
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
-    for (entity, chunk, parent) in &q_chunk {
-        if chunk.level >= max_lod_level {
-            continue;
-        };
-
+    for (entity, parent) in &q_chunk {
         parents.entry(parent.get()).or_default().push(entity);
     }
 
@@ -25,43 +19,55 @@ pub fn merge(
 }
 
 pub fn handle_merge_check(
-    cfg: Res<ChunkConfig>,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<(Entity, &Chunk, &ChildOf), With<CanMerge>>,
+    q_chunk: Query<&MergeDistance , (With<CanMerge>, With<Chunk>)>,
     q_parent: Query<&GlobalTransform>,
     mut er_check: EventReader<MergeCheck>,
     mut ew_merge: EventWriter<MergeChunks>,
 ) {
     let Ok(center) = q_center.single() else {
+        warn!("Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?");
         return;
     };
 
-    let center_translation = center.translation();
+    let center= center.translation();
 
     for e in er_check.read() {
         if e.children.len() < 4 {
             continue;
         };
 
-        let chunk_level = q_chunk.get(e.children[0]).unwrap().1.level;
-        let merge_dist = cfg.lods[chunk_level as usize].distance;
+        let children = e.children.clone();
+        let parent = e.parent;
 
-        let parent_translation = q_parent.get(e.parent).unwrap().translation();
+        let first_child = children[0];
 
-        if center_translation.distance(parent_translation) <= merge_dist {
+        let Ok(merge_distance) = q_chunk.get(first_child) else {
+            warn!("Couldn't get MergeDistance for merge!");
+            continue;
+        };
+
+        let parent_translation = q_parent.get(parent).unwrap().translation();
+        let distance = center.distance(parent_translation);
+        if distance < **merge_distance {
             continue;
         }
 
-        ew_merge.write(MergeChunks {
-            siblings: e.children.clone(),
-        });
+        ew_merge.write(MergeChunks { children, parent });
     }
 }
 
 pub fn handle_merge(mut cmd: Commands, mut er_merge: EventReader<MergeChunks>) {
     for e in er_merge.read() {
-        for sibling_entity in &e.siblings {
-            cmd.entity(*sibling_entity).despawn();
+        let children = e.children.clone();
+        let parent = e.parent;
+
+        info!("Merging Chunks: {children:?} into {parent}");
+
+        for child in &e.children {
+            cmd.entity(*child).despawn();
         }
+
+        cmd.entity(e.parent).insert(CanSplit);
     }
 }

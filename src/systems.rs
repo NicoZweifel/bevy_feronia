@@ -4,51 +4,52 @@ use bevy::image::{Image, ImageAddressMode, ImageSampler, ImageSamplerDescriptor}
 use bevy::mesh::{Mesh, Mesh3d};
 use bevy::pbr::{Material, MeshMaterial3d};
 use bevy::prelude::*;
+use bevy::render::primitives::MeshAabb;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<M, W>(materials: ResMut<Assets<W>>, wind: Res<Wind>)
+pub fn update_materials<B, T>(materials: ResMut<Assets<T>>, wind: Res<Wind>)
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
-    W::update_material(materials, wind.clone());
+    T::update_material(materials, wind.clone());
 }
 
-pub fn collect_types<M, W>(
+pub fn collect_types<B, T>(
     mut cmd: Commands,
     q_affected: Query<
         (
             Entity,
-            Option<&MeshMaterial3d<M>>,
+            Option<&MeshMaterial3d<B>>,
             Option<&Mesh3d>,
             Option<&Children>,
             Option<&WindConfig>,
         ),
-        (With<WindAffected>, Without<WindAffectedRegistered<W>>),
+        (With<WindAffected>, Without<WindAffectedRegistered<T>>),
     >,
     q_children: Query<(
         Entity,
-        Option<&MeshMaterial3d<M>>,
+        Option<&MeshMaterial3d<B>>,
         Option<&Mesh3d>,
         Option<&Children>,
         Option<&WindConfig>,
     )>,
-    mut materials: ResMut<Assets<M>>,
-    mut extended_materials: ResMut<Assets<W>>,
-    mut types: ResMut<WindAffectedTypes<W>>,
+    mut materials: ResMut<Assets<B>>,
+    mut extended_materials: ResMut<Assets<T>>,
+    mut types: ResMut<WindAffectedTypes<T>>,
     wind_noise_texture: Res<WindTexture>,
     wind: Res<Wind>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
     types.values.append(
         &mut q_affected
             .iter()
             .map(|x| {
-                collect_types_recursive::<M, W>(
+                collect_types_recursive::<B, T>(
                     &mut cmd,
                     &mut materials,
                     &mut extended_materials,
@@ -64,16 +65,16 @@ pub fn collect_types<M, W>(
     );
 }
 
-pub fn insert_material<M, W>(
+pub fn insert_material<B, T>(
     mut cmd: Commands,
-    q: Query<(Entity, &WindAffectedRegistered<W>), Without<WindAffectedReady>>,
+    q: Query<(Entity, &WindAffectedRegistered<T>), Without<WindAffectedReady>>,
 ) where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
         cmd.entity(entity).insert((
-            W::component(wind_affected.get().material),
+            T::component(wind_affected.get().material),
             WindAffectedReady,
         ));
     }
@@ -137,13 +138,13 @@ pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Imag
     commands.insert_resource(WindTexture(handle));
 }
 
-fn collect_types_recursive<M, W>(
+fn collect_types_recursive<B, T>(
     cmd: &mut Commands,
-    materials: &mut ResMut<Assets<M>>,
-    extended_materials: &mut ResMut<Assets<W>>,
+    materials: &mut ResMut<Assets<B>>,
+    extended_materials: &mut ResMut<Assets<T>>,
     (entity, material, mesh, children, wind_component): (
         Entity,
-        Option<&MeshMaterial3d<M>>,
+        Option<&MeshMaterial3d<B>>,
         Option<&Mesh3d>,
         Option<&Children>,
         Option<&WindConfig>,
@@ -153,17 +154,17 @@ fn collect_types_recursive<M, W>(
     meshes: &mut ResMut<Assets<Mesh>>,
     q_children: &Query<(
         Entity,
-        Option<&MeshMaterial3d<M>>,
+        Option<&MeshMaterial3d<B>>,
         Option<&Mesh3d>,
         Option<&Children>,
         Option<&WindConfig>,
     )>,
-) -> Vec<WindAffectedType<W>>
+) -> Vec<WindAffectedType<T>>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
-    let mut types: Vec<WindAffectedType<W>> = Vec::new();
+    let mut types: Vec<WindAffectedType<T>> = Vec::new();
 
     let wind_config = if let Some(wind_component) = wind_component {
         wind_component
@@ -183,7 +184,7 @@ where
                 continue;
             };
 
-            types.append(&mut collect_types_recursive::<M, W>(
+            types.append(&mut collect_types_recursive::<B, T>(
                 cmd,
                 materials,
                 extended_materials,
@@ -202,8 +203,8 @@ where
 
     let Some(mesh) = mesh else { return types };
 
-    let new_material = W::create_material(
-        (*materials.get(material).unwrap()).clone(),
+    let new_material = T::create_material(
+        Some(materials.get(material).unwrap().clone()),
         final_wind.clone(),
         wind_noise_texture.0.clone(),
         wind_config.wind_override.is_some(),
@@ -212,15 +213,17 @@ where
     let material = extended_materials.add(new_material);
     let mesh = meshes.get(mesh).cloned().unwrap();
     let mesh = meshes.add(mesh.clone());
+    let mesh_aabb = meshes.get(&mesh).unwrap().compute_aabb().unwrap();
 
     let wind_type = WindAffectedType {
         mesh,
         material,
         wind: final_wind,
+        aabb: mesh_aabb,
     };
 
     cmd.entity(entity)
-        .remove::<MeshMaterial3d<M>>()
+        .remove::<MeshMaterial3d<B>>()
         .insert(WindAffectedRegistered(wind_type.clone()));
 
     types.push(wind_type);

@@ -1,10 +1,10 @@
+use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
-use bevy::asset::RenderAssetUsages;
 use bevy::camera::{ImageRenderTarget, RenderTarget};
-use bevy::image::ImageSampler;
 use bevy::prelude::*;
 use bevy::render::render_resource::*;
 use bevy::render::view::NoFrustumCulling;
+use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured};
 
 pub fn setup_materials(mut cmd: Commands, mut materials: ResMut<Assets<HeightMapMaterial>>) {
     let handle = materials.add(HeightMapMaterial {});
@@ -13,11 +13,12 @@ pub fn setup_materials(mut cmd: Commands, mut materials: ResMut<Assets<HeightMap
 
 pub fn create_height_map_ghost(
     mut cmd: Commands,
-    q_landscape: Query<Entity, (With<Landscape>, Without<HeightMapped>)>,
+    q_landscape: Query<Entity, (With<MapHeight>, Without<HeightMapped>)>,
     q_children: Query<&Children>,
     q_mesh: Query<(&Mesh3d, &GlobalTransform)>,
     material: Res<HeightMapMaterialHandle>,
     cfg: Res<HeightMapConfig>,
+    mut next_state: ResMut<NextState<HeightMapState>>,
 ) {
     for landscape_root in &q_landscape {
         for child in q_children.iter_descendants(landscape_root) {
@@ -31,11 +32,43 @@ pub fn create_height_map_ghost(
                 ));
 
                 cmd.entity(landscape_root).insert(HeightMapped);
-
-                info!("Spawned ghost landscape for height map generation.");
+                println!("HeightMapGhost created");
+                next_state.set(HeightMapState::Baking);
             }
         }
     }
+}
+
+pub fn bake_height_map(
+    mut commands: Commands,
+    height_map_texture: Res<HeightMapTexture>,
+    mut next_state: ResMut<NextState<HeightMapState>>,
+    mut counter: Local<u32>,
+) {
+    // Wait a few frames to bake
+    if *counter < 100 {
+        *counter += 1;
+        return;
+    }
+
+    next_state.set(HeightMapState::Saving);
+
+    commands
+        .spawn(Screenshot::image(height_map_texture.0.clone()))
+        .observe(
+            |trigger: On<ScreenshotCaptured>,
+             mut images: ResMut<Assets<Image>>,
+             mut cmd: Commands,
+             mut next_state: ResMut<NextState<HeightMapState>>| {
+                let mut image = trigger.clone();
+                image.asset_usage = default();
+
+                cmd.insert_resource(HeightMap(images.add(image)));
+
+                println!("capture");
+                next_state.set(HeightMapState::Ready);
+            },
+        );
 }
 
 pub fn setup_height_map_pipeline(

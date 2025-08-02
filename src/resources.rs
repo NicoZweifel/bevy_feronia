@@ -1,18 +1,27 @@
+use crate::prelude::*;
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use std::f32::consts::PI;
 use std::marker::PhantomData;
 
 #[derive(Resource)]
-pub struct WindAffectedTypes<M>
+pub struct WindAffectedTypes<T>
 where
-    M: Asset + Clone,
+    T: Asset + Clone,
 {
-    pub values: Vec<WindAffectedType<M>>,
-    pub _marker: PhantomData<M>,
+    pub values: Vec<WindAffectedType<T>>,
+    pub _marker: PhantomData<T>,
 }
-impl<M> Default for WindAffectedTypes<M>
+
+impl<T: Asset + Clone> ProtoTypes<T, WindAffectedType<T>> for WindAffectedTypes<T> {
+    fn values(&self) -> &Vec<WindAffectedType<T>> {
+        &self.values
+    }
+}
+
+impl<T> Default for WindAffectedTypes<T>
 where
-    M: Asset + Clone,
+    T: Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -23,20 +32,39 @@ where
 }
 
 #[derive(Clone)]
-pub struct WindAffectedType<M>
+pub struct WindAffectedType<T>
 where
-    M: Asset + Clone,
+    T: Asset + Clone,
 {
     pub mesh: Handle<Mesh>,
-    pub material: Handle<M>,
+    pub material: Handle<T>,
     pub wind: Wind,
+    pub aabb: Aabb,
 }
 
-impl<M> WindAffectedTypes<M>
+impl<T: Asset + Clone> ProtoType<T> for WindAffectedType<T> {
+    fn mesh(&self) -> Handle<Mesh> {
+        self.mesh.clone()
+    }
+
+    fn material(&self) -> Handle<T> {
+        self.material.clone()
+    }
+
+    fn wind(&self) -> &Wind {
+        &self.wind
+    }
+
+    fn aabb(&self) -> &Aabb {
+        &self.aabb
+    }
+}
+
+impl<T> WindAffectedTypes<T>
 where
-    M: Asset + Clone,
+    T: Asset + Clone,
 {
-    pub fn get(&self) -> &Vec<WindAffectedType<M>> {
+    pub fn get(&self) -> &Vec<WindAffectedType<T>> {
         &self.values
     }
 }

@@ -22,18 +22,18 @@ impl Plugin for WindPlugin {
     }
 }
 
-pub struct WindMaterialPlugin<M, W>
+pub struct WindMaterialPlugin<B, T>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
-    pub _marker: PhantomData<(M, W)>,
+    pub _marker: PhantomData<(B, T)>,
 }
 
-impl<M, W> Default for WindMaterialPlugin<M, W>
+impl<B, T> Default for WindMaterialPlugin<B, T>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -42,18 +42,18 @@ where
     }
 }
 
-impl<M, W> Plugin for WindMaterialPlugin<M, W>
+impl<B, T> Plugin for WindMaterialPlugin<B, T>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
+    B: Material,
+    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<WindAffectedTypes<W>>().add_systems(
+        app.init_resource::<WindAffectedTypes<T>>().add_systems(
             Update,
             (
-                collect_types::<M, W>,
-                insert_material::<M, W>,
-                update_materials::<M, W>.run_if(resource_changed::<Wind>),
+                collect_types::<B, T>,
+                insert_material::<B, T>,
+                update_materials::<B, T>.run_if(resource_changed::<Wind>),
             ),
         );
     }
