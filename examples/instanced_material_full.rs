@@ -79,7 +79,12 @@ fn setup(
             InstanceJitter(0.1),
         )],
     ))
-    .observe(scatter_observer);
+    .observe(
+        scatter_observer::<
+            WindAffectedTypes<InstancedWindAffectedMaterial>,
+            WindAffectedType<InstancedWindAffectedMaterial>,
+        >,
+    );
 
     // Inspect the height map
     cmd.spawn((

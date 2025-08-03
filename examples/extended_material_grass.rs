@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::observers::scatter_observer;
+use bevy_feronia::extension::observers::wind_affected_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -40,7 +40,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceJitter(0.1)
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 }
 
 fn scatter_on_keypress(

@@ -5,7 +5,7 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::instancing::observers::scatter_observer;
+use bevy_feronia::instancing::observers::wind_affected_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
@@ -68,7 +68,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             InstanceJitter(0.1),
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 }
 
 fn setup_density_map(

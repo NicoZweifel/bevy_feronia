@@ -2,11 +2,8 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::observers::scatter_observer;
+use bevy_feronia::extension::observers::wind_affected_scatter_observer;
 use bevy_feronia::prelude::*;
-use bevy_feronia::scatter::components::ScatterRoot;
-use bevy_feronia::scatter::events::Scatter;
-use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 
 fn main() -> AppExit {
@@ -47,7 +44,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceJitter(0.1)
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 }
 
 fn scatter_on_keypress(

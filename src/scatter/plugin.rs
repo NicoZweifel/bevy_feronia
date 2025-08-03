@@ -1,8 +1,8 @@
 use crate::chunking::systems::prelude::split;
+use crate::prelude::*;
 use crate::scatter::observers::*;
 use crate::scatter::systems::prelude::*;
 use bevy::prelude::*;
-use crate::prelude::*;
 
 pub struct ScatterPlugin;
 

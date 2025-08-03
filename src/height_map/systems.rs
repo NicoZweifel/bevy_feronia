@@ -22,19 +22,21 @@ pub fn create_height_map_ghost(
 ) {
     for landscape_root in &q_landscape {
         for child in q_children.iter_descendants(landscape_root) {
-            if let Ok((mesh, transform)) = q_mesh.get(child) {
-                cmd.spawn((
-                    Mesh3d(mesh.0.clone()),
-                    MeshMaterial3d(material.0.clone()),
-                    transform.compute_transform(),
-                    cfg.render_layer.clone(),
-                    NoFrustumCulling,
-                ));
+            let Ok((mesh, transform)) = q_mesh.get(child) else {
+                continue;
+            };
 
-                cmd.entity(landscape_root).insert(HeightMapped);
-                println!("HeightMapGhost created");
-                next_state.set(HeightMapState::Baking);
-            }
+            cmd.spawn((
+                Mesh3d(mesh.0.clone()),
+                MeshMaterial3d(material.0.clone()),
+                transform.compute_transform(),
+                cfg.render_layer.clone(),
+                NoFrustumCulling,
+            ));
+
+            cmd.entity(landscape_root).insert(HeightMapped);
+            println!("HeightMapGhost created");
+            next_state.set(HeightMapState::Baking);
         }
     }
 }

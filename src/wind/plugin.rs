@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::systems::*;
+use super::systems::*;
 use bevy::asset::Asset;
 use bevy::pbr::Material;
 use bevy::prelude::*;

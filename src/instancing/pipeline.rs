@@ -62,6 +62,9 @@ impl SpecializedMeshPipeline for CustomPipeline {
         if key.wind_key.contains(WindAffectedKey::HIGH_QUALITY) {
             shader_defs.push("WIND_HIGH_QUALITY".into());
         }
+        if key.wind_key.contains(WindAffectedKey::FAST_NORMALS) {
+            shader_defs.push("FAST_NORMALS".into());
+        }
 
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {

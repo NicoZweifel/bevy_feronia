@@ -6,6 +6,7 @@ pub mod scatter;
 pub mod scatter_chunk;
 pub mod scatter_chunks;
 pub mod scatter_root;
+pub mod scatter_observer;
 
 pub use on_add_chunk::*;
 pub use on_add_scatter_layer::*;
@@ -15,3 +16,4 @@ pub use scatter::*;
 pub use scatter_chunk::*;
 pub use scatter_chunks::*;
 pub use scatter_root::*;
+pub use scatter_observer::*;

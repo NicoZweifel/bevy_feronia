@@ -75,13 +75,11 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
     }
 }
 
-impl
-    WindAffectable<
-        StandardMaterial,
-        InstancedWindAffectedMaterial,
-        WindAffectedTypes<InstancedWindAffectedMaterial>,
-        WindAffectedType<InstancedWindAffectedMaterial>,
-    > for InstancedWindAffectedMaterial
+impl<T, P> WindAffectable<StandardMaterial, InstancedWindAffectedMaterial, T, P>
+    for InstancedWindAffectedMaterial
+where
+    T: Resource + ProtoTypes<InstancedWindAffectedMaterial, P>,
+    P: ProtoType<InstancedWindAffectedMaterial>,
 {
     fn create_material(
         _base: Option<StandardMaterial>,
@@ -105,12 +103,14 @@ impl
     fn spawn(
         mut cmd: Commands,
         trigger: On<ScatterResults>,
-        prototypes: &WindAffectedTypes<InstancedWindAffectedMaterial>,
+        prototypes: &T,
         q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     ) {
-        let mut rng = rand::rng();
-        let prototype = prototypes.values().choose(&mut rng).unwrap();
+        let Some(prototype) = prototypes.choose() else {
+            warn!("No prototype found!");
+            return
+        };
 
         let instances = trigger
             .data
@@ -124,21 +124,21 @@ impl
             })
             .collect::<Vec<_>>();
 
-        let mesh_handle = prototype.mesh.clone();
+        let mesh_handle = prototype.mesh().clone();
         let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
         for instance in &instances {
             let instance_min =
-                instance.position + Vec3::from(prototype.aabb.min() * instance.scale);
+                instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
             let instance_max =
-                instance.position + Vec3::from(prototype.aabb.max() * instance.scale);
+                instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
             min_point = min_point.min(instance_min);
             max_point = max_point.max(instance_max);
         }
 
         let entity = cmd
             .spawn((
-                InstancedWindAffectedMaterial::component(prototype.material.clone()),
+                InstancedWindAffectedMeshMaterial(prototype.material().clone()),
                 Mesh3d(mesh_handle),
                 InstanceMaterialData(instances),
                 NoAutomaticBatching,

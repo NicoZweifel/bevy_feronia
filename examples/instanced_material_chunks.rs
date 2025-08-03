@@ -3,12 +3,8 @@ mod example;
 
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
-use bevy_feronia::chunking::plugin::ChunkPlugin;
-use bevy_feronia::instancing::observers::scatter_observer;
+use bevy_feronia::instancing::observers::wind_affected_scatter_observer;
 use bevy_feronia::prelude::*;
-use bevy_feronia::scatter::components::ScatterRoot;
-use bevy_feronia::scatter::events::Scatter;
-use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 
 fn main() -> AppExit {
@@ -47,16 +43,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
         WindAffected,
     ));
-    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat.glb#Scene0")),
+        SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
+        Transform::default().with_scale(Vec3::splat(0.5)),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(5.0),
-            InstanceJitter(0.1),
+            DistributionDensity(150.0),
+            InstanceScale { min: 1., max: 1.5 },
+            InstanceJitter(0.1)
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 }

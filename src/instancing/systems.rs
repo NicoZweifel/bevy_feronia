@@ -38,6 +38,7 @@ pub(crate) fn add_instance_key_component(
             material.wind.enable_edge_correction,
         );
         key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
 
         commands
             .entity(entity)

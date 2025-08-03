@@ -1,9 +1,6 @@
-use crate::WindMaterialPlugin;
-use crate::extension::material::ExtendedWindAffectedMaterial;
 use crate::prelude::*;
-use bevy::app::{App, Plugin};
+use bevy::prelude::*;
 use bevy::asset::embedded_asset;
-use bevy::pbr::{MaterialPlugin, StandardMaterial};
 
 pub struct ExtendedWindAffectedPlugin;
 

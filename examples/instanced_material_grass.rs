@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::instancing::observers::scatter_observer;
+use bevy_feronia::instancing::observers::wind_affected_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -43,16 +43,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(150.0),
-            InstanceRotationYaw {
-                min: 0.0,
-                max: std::f32::consts::PI * 2.0
-            },
-            InstanceScale { min: 1., max: 3. },
+            DistributionDensity(100.0),
+            InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(0.1)
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 }
 
 fn scatter_on_keypress(

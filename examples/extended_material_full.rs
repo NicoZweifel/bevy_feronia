@@ -6,13 +6,9 @@ use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::chunking::plugin::ChunkPlugin;
-use bevy_feronia::extension::observers::scatter_observer;
+use bevy_feronia::extension::observers::wind_affected_scatter_observer;
 use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
-use bevy_feronia::scatter::components::ScatterRoot;
-use bevy_feronia::scatter::events::Scatter;
-use bevy_feronia::scatter::plugin::ScatterPlugin;
 use example::*;
 use noise::{NoiseFn, Perlin};
 
@@ -52,6 +48,7 @@ fn setup(
     height_map: Res<HeightMapTexture>,
 ) {
     cmd.spawn((SceneRoot(assets.load("foliage.glb#Scene0")), WindAffected));
+    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
 
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
@@ -60,7 +57,7 @@ fn setup(
         ChunkRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(10.),
+            DistributionDensity(20.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0
@@ -73,7 +70,7 @@ fn setup(
             InstanceJitter(2.0)
         )],
     ))
-    .observe(scatter_observer);
+    .observe(wind_affected_scatter_observer);
 
     // Inspect the height map
     cmd.spawn((

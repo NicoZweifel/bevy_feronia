@@ -1,4 +1,3 @@
-use crate::core::WindAffectable;
 use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
 use bevy::asset::Asset;

@@ -70,6 +70,10 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
+        if key.bind_group_data.contains(WindAffectedKey::FAST_NORMALS) {
+            shader_defs.push("FAST_NORMALS".into());
+        }
+
         Ok(())
     }
 }
@@ -87,6 +91,7 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             material.wind.enable_edge_correction,
         );
         key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
 
         key
     }

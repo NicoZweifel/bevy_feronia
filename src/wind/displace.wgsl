@@ -100,28 +100,37 @@ fn displace_vertex_and_calc_normal(
     // TODO use chunk index / 0 instead of instance_index for instanced material (and try Automatic Batching)
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
-#ifdef WIND_HIGH_QUALITY
-    let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
-    let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
-    let tangent_x = neighbor_pos_x - final_pos_xyz;
-    let tangent_z = neighbor_pos_z - final_pos_xyz;
-    var calculated_normal = normalize(cross(tangent_z, tangent_x));
+    #ifdef FAST_NORMALS
+        // --- OPTIMIZED PATH ---
+        #ifdef WIND_HIGH_QUALITY
+            // TODO
+        #else
+            out.world_normal = mesh_normal;
+        #endif
+    #else
+        #ifdef WIND_HIGH_QUALITY
+            let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
+            let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
+            let tangent_x = neighbor_pos_x - final_pos_xyz;
+            let tangent_z = neighbor_pos_z - final_pos_xyz;
+            var calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-    if (wind.round_exponent > 0.0) {
-        let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
-        calculated_normal = normalize(calculated_normal + curve_offset);
-    }
+            if (wind.round_exponent > 0.0) {
+                let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
+                calculated_normal = normalize(calculated_normal + curve_offset);
+            }
 
-#ifdef WIND_BILLBOARDING
-    out.world_normal = calculated_normal;
-#else
-    let normal_delta = calculated_normal - normal;
-    out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
-#endif
+            #ifdef WIND_BILLBOARDING
+                out.world_normal = calculated_normal;
+            #else
+                let normal_delta = calculated_normal - normal;
+                out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
+            #endif
 
-#else
-        out.world_normal = mesh_normal;
-#endif
+        #else
+                out.world_normal = mesh_normal;
+        #endif
+    #endif
 #endif
 
     return out;

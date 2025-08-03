@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use bevy::asset::{Asset, Assets};
-use bevy::image::{Image, ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
-use bevy::mesh::{Mesh, Mesh3d};
+use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::pbr::{Material, MeshMaterial3d};
 use bevy::prelude::*;
 use bevy::render::primitives::MeshAabb;

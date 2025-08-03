@@ -5,17 +5,14 @@ use bevy::image::Image;
 use bevy::pbr::{ExtendedMaterial, MeshMaterial3d, StandardMaterial};
 use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
-use rand::prelude::IndexedRandom;
 
 pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
-impl
-    WindAffectable<
-        StandardMaterial,
-        ExtendedWindAffectedMaterial,
-        WindAffectedTypes<ExtendedWindAffectedMaterial>,
-        WindAffectedType<ExtendedWindAffectedMaterial>,
-    > for ExtendedWindAffectedMaterial
+impl<T, P> WindAffectable<StandardMaterial, ExtendedWindAffectedMaterial, T, P>
+    for ExtendedWindAffectedMaterial
+where
+    T: Resource + ProtoTypes<ExtendedWindAffectedMaterial, P>,
+    P: ProtoType<ExtendedWindAffectedMaterial>,
 {
     fn create_material(
         base: Option<StandardMaterial>,
@@ -46,21 +43,24 @@ impl
     fn spawn(
         mut cmd: Commands,
         trigger: On<ScatterResults>,
-        prototypes: &WindAffectedTypes<ExtendedWindAffectedMaterial>,
+        prototypes: &T,
         // TODO use chunks if spawned for chunk
         _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
         _q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
     ) {
-        let mut rng = rand::rng();
+        let Some(prototype) = prototypes.choose() else {
+           warn!("No prototype found!");
+           return
+        };
+
         cmd.spawn_batch(
             trigger
                 .data
                 .iter()
                 .map(|result| {
-                    let prototype = prototypes.values().choose(&mut rng).unwrap();
                     (
-                        Mesh3d(prototype.mesh.clone()),
-                        ExtendedWindAffectedMaterial::component(prototype.material.clone()),
+                        Mesh3d(prototype.mesh().clone()),
+                        MeshMaterial3d(prototype.material().clone()),
                         **result,
                         WindAffected,
                         WindAffectedReady,
