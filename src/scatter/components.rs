@@ -1,11 +1,30 @@
-use bevy::asset::Handle;
-use bevy::image::Image;
+use crate::prelude::*;
 use bevy::prelude::*;
+
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+pub struct ScatterItem;
+
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+pub enum ScatterItemType<T>
+where
+    T: Asset + Clone,
+{
+    Handle(Handle<ScatterAsset<T>>),
+    Name(Name),
+}
+
+#[derive(Component, Debug, Clone, Reflect, Deref)]
+#[reflect(Component)]
+#[relationship(relationship_target = ScatterLayer)]
+pub struct ScatterItemOf(pub Entity);
 
 #[derive(Component, Reflect, Default)]
 #[require(Transform, Visibility, GlobalTransform)]
+#[relationship_target(relationship = ScatterItemOf)]
 #[reflect(Component)]
-pub struct ScatterLayer;
+pub struct ScatterLayer(Vec<Entity>);
 
 #[derive(Component, Debug, Clone, Reflect, Deref)]
 #[reflect(Component)]
@@ -14,7 +33,7 @@ pub struct ScatterLayerOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
-#[require(Transform, Visibility, GlobalTransform)]
+#[require(Transform, Visibility, GlobalTransform, LodConfig)]
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 

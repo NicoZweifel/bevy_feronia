@@ -15,7 +15,7 @@ type LayerQueryType<'a> = (
 );
 
 pub fn scatter(
-    mut trigger: On<Scatter<ScatterLayer>>,
+    mut trigger: On<Scatter>,
     mut cmd: Commands,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
@@ -60,10 +60,7 @@ pub fn scatter(
         layer_entity
     );
 
-    let jitter_value = jitter.map_or(0., |x| **x);
-
-    let corner =
-        layer_gtf.translation() - Vec3::from(aabb.half_extents) + Vec3::splat(jitter_value);
+    let corner = -Vec3::from(aabb.half_extents);
 
     let results = create_scatter_results(
         Container {
@@ -73,6 +70,8 @@ pub fn scatter(
             corner,
             height: 0.,
             size,
+            transform: layer_gtf.compute_transform(),
+            root_entity: root,
         },
         InstanceModifiers {
             jitter,

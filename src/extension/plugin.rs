@@ -1,6 +1,7 @@
+use crate::extension::spawn::spawn_extended_wind_affected;
 use crate::prelude::*;
-use bevy::prelude::*;
 use bevy::asset::embedded_asset;
+use bevy::prelude::*;
 
 pub struct ExtendedWindAffectedPlugin;
 
@@ -10,9 +11,17 @@ impl Plugin for ExtendedWindAffectedPlugin {
         embedded_asset!(app, "prepass.wgsl");
 
         app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
+            .add_event::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
             .add_plugins(WindMaterialPlugin::<
                 StandardMaterial,
                 ExtendedWindAffectedMaterial,
-            >::default());
+            >::default())
+            .add_systems(
+                Update,
+                spawn_extended_wind_affected::<
+                    ScatterAssetsNameMap<ExtendedWindAffectedMaterial>,
+                    ScatterAsset<ExtendedWindAffectedMaterial>,
+                >,
+            );
     }
 }

@@ -1,6 +1,5 @@
 use crate::prelude::*;
-use bevy::image::Image;
-use bevy::math::Vec3;
+use bevy::prelude::*;
 
 pub struct HeightMapCpuSampler<'a> {
     image_data: &'a Option<Vec<u8>>,
@@ -39,7 +38,7 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
             return (f32::from_le_bytes(pixel_bytes.try_into().unwrap()) / 0.01) - 32.;
         }
 
-        println!(
+        warn!(
             "Failed to read height map pixel at ({}, {})",
             pixel_x, pixel_y
         );

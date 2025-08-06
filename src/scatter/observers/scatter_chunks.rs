@@ -10,7 +10,7 @@ type LayerQueryItem<'a> = (
 );
 
 pub fn scatter_chunks(
-    mut trigger: On<Scatter<ScatterLayer>>,
+    mut trigger: On<Scatter>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
     q_layer: Query<LayerQueryItem, With<ScatterLayer>>,

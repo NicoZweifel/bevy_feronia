@@ -1,21 +1,27 @@
 use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
-use bevy::asset::Asset;
-use bevy::camera::primitives::Aabb;
-use bevy::pbr::Material;
 use bevy::prelude::*;
 
-pub fn scatter_observer<T, P, M, A>(
+pub fn scatter_observer<TTypes, TType, TIn, TOut>(
     trigger: On<ScatterResults>,
-    cmd: Commands,
-    prototypes: &Res<T>,
-    q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
+    q_layer: Query<&ScatterLayer>,
+    q_items: Query<&ScatterItemType<TOut>, With<ScatterItem>>,
+    mut ew_spawn: EventWriter<SpawnProtoTypes<TOut>>,
 ) where
-    T: Resource + ProtoTypes<A, P>,
-    P: ProtoType<A>,
-    M: Material,
-    A: Asset + Clone + WindAffectable<M, A, T, P>,
+    TTypes: Resource + ProtoTypes<TOut, TType>,
+    TType: ProtoType<TOut> + Asset + Clone,
+    TIn: Material,
+    TOut: Asset + Clone,
 {
-    A::spawn(cmd, trigger, prototypes, q_chunks, q_chunk_config);
+    let Ok(scatter_items) = q_layer.get(trigger.layer) else {
+        warn!("No ScatterLayer found!");
+        return;
+    };
+
+    let items = scatter_items
+        .iter()
+        .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()))
+        .collect::<Vec<_>>();
+
+    ew_spawn.write(SpawnProtoTypes::new(items, SpawnTrigger::from(trigger)));
 }

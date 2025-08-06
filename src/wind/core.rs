@@ -1,33 +1,25 @@
-use bevy::render::primitives::Aabb;
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use crate::prelude::*;
 
-pub trait WindAffectable<M, A, P, T>
+pub trait WindAffectable<TTypes, TType, TIn, TOut>
 where
-    M: Material,
-    A: Asset + Clone,
-    P: ProtoTypes<A, T>,
-    T: ProtoType<A>,
+    TTypes: ProtoTypes<TOut, TType>,
+    TType: ProtoType<TOut> + Asset + Clone,
+    TIn: Material,
+    TOut: Asset + Clone,
 {
     fn create_material(
-        base: Option<M>,
+        base: Option<TIn>,
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
-    ) -> A;
-    fn update_material(materials: ResMut<Assets<A>>, wind: Wind);
-    fn spawn(
-        cmd: Commands,
-        trigger: On<ScatterResults>,
-        prototypes: &P,
-        q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-        q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
-    );
+    ) -> TOut;
+    fn update_material(materials: ResMut<Assets<TOut>>, wind: Wind);
 
-    fn component(material: Handle<A>) -> impl Component;
+    fn component(material: Handle<TOut>) -> impl Component;
 }
 
 #[repr(C)]

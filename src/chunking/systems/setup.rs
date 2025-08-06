@@ -8,10 +8,11 @@ pub fn setup_chunks(
     images: Res<Assets<Image>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
-    q_cfg: Query<
+    q_root: Query<
         (
             Entity,
-            &ChunkLodConfig,
+            &LodConfig,
+            &ChunkSizeScalarConfig,
             &Aabb,
             &GlobalTransform,
             &ChunkRootSize,
@@ -21,17 +22,17 @@ pub fn setup_chunks(
 ) {
     let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
 
-    for (entity, cfg, aabb, gtf, chunk_root_size) in &q_cfg {
+    for (entity, chunk_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
         let world_size = Vec3::from(aabb.half_extents * 2.0);
 
         let center_offset = Vec3::from(aabb.half_extents);
 
-        let top_chunk_size = world_size / **chunk_root_size as f32;
+        let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
 
-        let top_lod_level = cfg.get_max_lod_level();
-        let top_lod_config = cfg.get_lod_config(top_lod_level);
+        let top_lod_level = chunk_cfg.get_max_lod_level();
+        let top_scalar_config = scalar_config.get_scalar_config(top_lod_level);
 
-        let base_chunk_size = top_chunk_size / top_lod_config.chunk_size_scalar as f32;
+        let base_chunk_size = top_chunk_size / **top_scalar_config as f32;
 
         cmd.entity(entity)
             .insert((ChunkRoot::default(), BaseChunkSize(base_chunk_size)));
@@ -39,21 +40,22 @@ pub fn setup_chunks(
         for z in 0..**chunk_root_size {
             for x in 0..**chunk_root_size {
                 let mut world_pos = gtf.translation()
-                    + Vec3::new(x as f32, 0., z as f32) * top_chunk_size
-                    + top_chunk_size / 2.;
+                    + Vec3::new(x as f32, 0., z as f32) * top_chunk_size.with_y(0.)
+                    + top_chunk_size.with_y(0.) / 2.
+                    - Vec3::from(center_offset).with_y(0.);
 
                 world_pos.y = height_sampler.sample(world_pos);
 
-                let child_lod_config = cfg.get_lod_config(cfg.get_max_lod_level() - 1);
+                let child_lod_config = chunk_cfg.get_lod_config(chunk_cfg.get_max_lod_level() - 1);
 
                 cmd.spawn((
                     Chunk,
                     ChunkLevel(top_lod_level),
-                    ChunkSize(top_lod_config.chunk_size_scalar),
-                    Transform::from_translation(world_pos - Vec3::from(center_offset)),
+                    ChunkSize(**top_scalar_config),
+                    Transform::from_translation(world_pos),
                     ChildOf(entity),
                     ChunkOf(entity),
-                    SplitDistance(child_lod_config.distance),
+                    SplitDistance(**child_lod_config),
                 ));
             }
         }

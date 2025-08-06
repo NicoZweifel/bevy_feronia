@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::observers::wind_affected_scatter_observer;
+use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -29,7 +29,18 @@ fn main() -> AppExit {
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+    cmd.spawn((
+        SceneRoot(assets.load("grass.glb#Scene0")),
+        Name::new("Grass"),
+        WindAffected,
+    ));
+
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass"),
+        LodLevel(1),
+        WindAffected,
+    ));
 
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
@@ -37,15 +48,15 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         children![(
             scatter_layer("Wind affected Foliage Layer"),
             DistributionDensity(150.0),
-            InstanceJitter(0.1)
+            InstanceJitter(0.1),
+            children![scatter_item::<ExtendedWindAffectedMaterial>("Grass"),]
         )],
     ))
-    .observe(wind_affected_scatter_observer);
+    .observe(extended_scatter_observer);
 }
 
 fn scatter_on_keypress(
     mut cmd: Commands,
-    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
 ) {
@@ -53,15 +64,5 @@ fn scatter_on_keypress(
         return;
     };
 
-    if prototypes.get().is_empty() {
-        println!("No plants found to scatter!");
-        return;
-    }
-
-    println!("Scattering plants...");
-
-    cmd.trigger_targets(
-        Scatter::<ScatterRoot>::default(),
-        q_root.iter().collect::<Vec<_>>(),
-    );
+    cmd.trigger_targets(Scatter, q_root.iter().collect::<Vec<_>>());
 }

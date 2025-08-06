@@ -10,6 +10,7 @@ pub fn setup_root(
     q_root: Query<Entity, (With<ScatterRoot>, Without<Aabb>)>,
     q_children: Query<&Children>,
     q_aabb: Query<&Aabb>,
+    mut state: ResMut<NextState<ScatterState>>,
 ) {
     for root_entity in &q_root {
         let mut root_aabb: Option<Aabb> = None;
@@ -31,6 +32,8 @@ pub fn setup_root(
 
         if let Some(aabb) = root_aabb {
             cmd.entity(root_entity).insert(aabb);
+
+            state.set(ScatterState::Ready);
         }
     }
 }

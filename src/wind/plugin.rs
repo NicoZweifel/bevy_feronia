@@ -1,9 +1,8 @@
-use crate::prelude::*;
 use super::systems::*;
-use bevy::asset::Asset;
-use bevy::pbr::Material;
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::render::load_shader_library;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub struct WindPlugin;
@@ -22,18 +21,18 @@ impl Plugin for WindPlugin {
     }
 }
 
-pub struct WindMaterialPlugin<B, T>
+pub struct WindMaterialPlugin<TIn, TOut>
 where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    pub _marker: PhantomData<(B, T)>,
+    pub _marker: PhantomData<(TIn, TOut)>,
 }
 
-impl<B, T> Default for WindMaterialPlugin<B, T>
+impl<TIn, TOut> Default for WindMaterialPlugin<TIn, TOut>
 where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -42,19 +41,23 @@ where
     }
 }
 
-impl<B, T> Plugin for WindMaterialPlugin<B, T>
+impl<TIn, TOut> Plugin for WindMaterialPlugin<TIn, TOut>
 where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut:
+        WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<WindAffectedTypes<T>>().add_systems(
-            Update,
-            (
-                collect_types::<B, T>,
-                insert_material::<B, T>,
-                update_materials::<B, T>.run_if(resource_changed::<Wind>),
-            ),
-        );
+        app.init_resource::<ScatterAssets<TOut>>()
+            .init_resource::<ScatterAssetsNameMap<TOut>>()
+            .add_systems(
+                Update,
+                (
+                    collect_types::<TIn, TOut>,
+                    update_name_map::<TOut>.run_if(resource_changed::<ScatterAssets<TOut>>),
+                    insert_material::<TIn, TOut>,
+                    update_materials::<TIn, TOut>.run_if(resource_changed::<Wind>),
+                ),
+            );
     }
 }

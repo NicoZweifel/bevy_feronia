@@ -1,5 +1,6 @@
 use super::prepare::prepare_instance_buffer;
 use super::{draw::DrawCustom, pipeline::CustomPipeline, systems::*};
+use crate::instancing::spawn::spawn_instanced_wind_affected;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::Transparent3d;
@@ -16,7 +17,8 @@ impl Plugin for InstancedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "instancing.wgsl");
 
-        app.init_asset::<InstancedWindAffectedMaterial>();
+        app.init_asset::<InstancedWindAffectedMaterial>()
+            .add_event::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();
         app.add_plugins((
             WindMaterialPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
             ExtractComponentPlugin::<InstancePipelineKey>::default(),
@@ -24,6 +26,13 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
+        .add_systems(
+            Update,
+            spawn_instanced_wind_affected::<
+                ScatterAssetsNameMap<InstancedWindAffectedMaterial>,
+                ScatterAsset<InstancedWindAffectedMaterial>,
+            >,
+        )
         .add_systems(PostUpdate, add_instance_key_component);
 
         app.sub_app_mut(RenderApp)

@@ -5,7 +5,7 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::instancing::observers::wind_affected_scatter_observer;
+use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
@@ -44,18 +44,37 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
     cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        SceneRoot(assets.load("grass.glb#Scene0")),
+        Name::new("Grass"),
         WindAffected,
     ));
-    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass Low LOD"),
+        WindAffected,
+    ));
 
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         ChunkRoot::default(),
+        ChunkRootSize(4),
+        LodConfig(vec![
+            // Level 0: High
+            LodLevel {
+                distance: 30.0,
+                chunk_size_scalar: 1,
+            },
+            // Level 2: Low
+            LodLevel {
+                distance: f32::MAX,
+                chunk_size_scalar: 2,
+            },
+        ]),
         children![(
             scatter_layer("Wind affected Grass Layer"),
-            DistributionDensity(10.),
+            DistributionDensity(15.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0
@@ -65,10 +84,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 max: std::f32::consts::PI * 2.0
             },
             InstanceScale { min: 1.0, max: 1.5 },
-            InstanceJitter(0.1),
+            InstanceJitter(0.05),
+            children![
+                scatter_item::<InstancedWindAffectedMaterial>("Grass"),
+                scatter_item_with_lod::<InstancedWindAffectedMaterial>(
+                    "Grass Low LOD",
+                    LodLevel(1)
+                ),
+            ]
         )],
     ))
-    .observe(wind_affected_scatter_observer);
+    .observe(instanced_scatter_observer);
 }
 
 fn setup_density_map(

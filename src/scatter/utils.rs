@@ -6,10 +6,14 @@ use rand::Rng;
 use rand::prelude::*;
 
 pub fn get_jitter(jitter: Option<&InstanceJitter>, rng: &mut ThreadRng) -> Vec3 {
-    jitter.map_or_else(
-        || Vec3::ZERO,
-        |x| Vec3::new(rng.random_range(-**x..**x), 0., rng.random_range(-**x..**x)),
-    )
+    jitter.map_or_else(|| Vec3::ZERO, |x| create_jitter(x, rng))
+}
+
+fn create_jitter(jitter: &InstanceJitter, rng: &mut ThreadRng) -> Vec3 {
+    let x_range = rng.random_range(-**jitter..**jitter);
+    let z_range = rng.random_range(-**jitter..**jitter);
+
+    Vec3::new(x_range, 0., z_range)
 }
 
 pub fn get_height_map_sampler<'a>(
@@ -24,12 +28,17 @@ pub fn get_height_map_sampler<'a>(
 
     height_map_cfg.map_or_else(
         || HeightMapSampler::Default(DefaultSampler),
-        |cfg| {
-            height_map_image.map_or_else(
-                || HeightMapSampler::Default(DefaultSampler),
-                |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
-            )
-        },
+        |x| create_height_map(height_map_image, x),
+    )
+}
+
+fn create_height_map<'a>(
+    height_map_image: Option<&'a Image>,
+    cfg: Res<HeightMapConfig>,
+) -> HeightMapSampler<'a> {
+    height_map_image.map_or_else(
+        || HeightMapSampler::Default(DefaultSampler),
+        |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
     )
 }
 
@@ -81,6 +90,26 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
+pub(super) struct InstanceModifiers<'a> {
+    pub map_height: Option<&'a MapHeight>,
+    pub height_sampler: &'a HeightMapSampler<'a>,
+    pub density_sampler: &'a Option<DensityMapSampler<'a>>,
+    pub scale: Option<&'a InstanceScale>,
+    pub rotation: Option<&'a InstanceRotationYaw>,
+    pub jitter: Option<&'a InstanceJitter>,
+}
+
+pub(super) struct Container {
+    pub layer_entity: Entity,
+    pub chunk_entity: Option<Entity>,
+    pub root_entity: Entity,
+    pub instances_dim: f32,
+    pub corner: Vec3,
+    pub height: f32,
+    pub size: Vec3,
+    pub transform: Transform,
+}
+
 pub(super) fn create_scatter_result(
     i: u32,
     container: &Container,
@@ -92,7 +121,7 @@ pub(super) fn create_scatter_result(
 
     let jitter_value = modifiers.jitter.map_or(0., |x| **x);
 
-    let mut instance_world_pos = container.corner
+    let mut instance_pos = container.corner
         + Vec3::new(
             x * container.size.x / (container.instances_dim - jitter_value * 2.),
             0.0,
@@ -100,13 +129,20 @@ pub(super) fn create_scatter_result(
         )
         + get_jitter(modifiers.jitter, rng);
 
-    instance_world_pos.y = match modifiers.map_height {
+    instance_pos.x = instance_pos.x.max(-container.size.x / 2.);
+    instance_pos.x = instance_pos.x.min(container.size.x / 2.);
+    instance_pos.z = instance_pos.z.max(-container.size.z / 2.);
+    instance_pos.z = instance_pos.z.min(container.size.z / 2.);
+
+    instance_pos.y = match modifiers.map_height {
         None => container.height,
-        Some(_) => modifiers.height_sampler.sample(instance_world_pos),
+        Some(_) => modifiers
+            .height_sampler
+            .sample(container.transform.translation + instance_pos),
     };
 
     if let Some(sampler) = &modifiers.density_sampler {
-        if rng.random::<f32>() > sampler.sample(instance_world_pos) {
+        if rng.random::<f32>() > sampler.sample(instance_pos) {
             return None;
         }
     }
@@ -120,28 +156,10 @@ pub(super) fn create_scatter_result(
     });
 
     Some(ScatterResult(Transform {
-        translation: instance_world_pos,
+        translation: instance_pos,
         rotation: final_rotation,
         scale: Vec3::splat(final_scale),
     }))
-}
-
-pub(super) struct InstanceModifiers<'a> {
-    pub map_height: Option<&'a MapHeight>,
-    pub height_sampler: &'a HeightMapSampler<'a>,
-    pub density_sampler: &'a Option<DensityMapSampler<'a>>,
-    pub scale: Option<&'a InstanceScale>,
-    pub rotation: Option<&'a InstanceRotationYaw>,
-    pub jitter: Option<&'a InstanceJitter>,
-}
-
-pub(super) struct Container {
-    pub layer_entity: Entity,
-    pub chunk_entity: Option<Entity>,
-    pub instances_dim: f32,
-    pub corner: Vec3,
-    pub height: f32,
-    pub size: Vec3,
 }
 
 pub(super) fn create_scatter_results(
@@ -155,5 +173,6 @@ pub(super) fn create_scatter_results(
             .collect::<Vec<_>>(),
         layer: container.layer_entity,
         chunk: container.chunk_entity,
+        root: container.root_entity,
     }
 }

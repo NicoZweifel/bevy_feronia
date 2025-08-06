@@ -21,7 +21,7 @@ pub fn draw_aabbs(
 pub fn draw_chunks(
     mut gizmos: Gizmos,
     q: Query<(&ChunkSize, &ChunkLevel, &GlobalTransform, &ChunkOf), With<Chunk>>,
-    q_chunk_config: Query<&BaseChunkSize, With<ChunkLodConfig>>,
+    q_chunk_config: Query<&BaseChunkSize, With<LodConfig>>,
     debug_cfg: Res<ChunkDebugConfig>,
 ) {
     for (chunk_size, chunk_level, tf, root_chunk) in &q {

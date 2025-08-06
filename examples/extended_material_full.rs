@@ -6,7 +6,7 @@ use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::extension::observers::wind_affected_scatter_observer;
+use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::height_map::systems::setup_height_map_pipeline;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -47,8 +47,29 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
 ) {
-    cmd.spawn((SceneRoot(assets.load("foliage.glb#Scene0")), WindAffected));
-    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+    cmd.spawn((
+        SceneRoot(assets.load("grass.glb#Scene0")),
+        Name::new("Grass"),
+        WindAffected,
+    ));
+
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass Low Lod"),
+        WindAffected,
+    ));
+
+    cmd.spawn((
+        SceneRoot(assets.load("foliage.glb#Scene0")),
+        WindAffected,
+        Name::new("Foliage"),
+    ));
+
+    cmd.spawn((
+        SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+        WindAffected,
+        Name::new("Foliage Complex"),
+    ));
 
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
@@ -67,10 +88,16 @@ fn setup(
                 max: std::f32::consts::PI * 2.0
             },
             InstanceScale { min: 1.0, max: 5.0 },
-            InstanceJitter(2.0)
+            InstanceJitter(2.0),
+            children![
+                scatter_item::<ExtendedWindAffectedMaterial>("Grass"),
+                scatter_item::<ExtendedWindAffectedMaterial>("Grass Low LOD"),
+                scatter_item::<ExtendedWindAffectedMaterial>("Foliage"),
+                scatter_item::<ExtendedWindAffectedMaterial>("Foliage Complex"),
+            ]
         )],
     ))
-    .observe(wind_affected_scatter_observer);
+    .observe(extended_scatter_observer);
 
     // Inspect the height map
     cmd.spawn((

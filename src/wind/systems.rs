@@ -2,59 +2,125 @@ use crate::prelude::*;
 use bevy::asset::{Asset, Assets};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::pbr::{Material, MeshMaterial3d};
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::primitives::MeshAabb;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<B, T>(materials: ResMut<Assets<T>>, wind: Res<Wind>)
+pub fn update_materials<TIn, TOut>(materials: ResMut<Assets<TOut>>, wind: Res<Wind>)
 where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    T::update_material(materials, wind.clone());
+    TOut::update_material(materials, wind.clone());
 }
 
-pub fn collect_types<B, T>(
+pub fn update_name_map<T: Asset + Clone + std::fmt::Debug>(
+    types: Res<ScatterAssets<T>>,
+    mut name_map: ResMut<ScatterAssetsNameMap<T>>,
+    assets: Res<Assets<ScatterAsset<T>>>,
+) {
+    name_map.clear();
+
+    info!("Updating ScatterAssets name map...");
+
+    types
+        .iter()
+        .filter_map(|handle| {
+            assets
+                .get(handle)
+                .map(|scatter_asset| (scatter_asset, handle))
+        })
+        .filter_map(|(asset, handle)| {
+            asset
+                .name
+                .clone()
+                .map(|name| (name, asset.lod_level, handle.clone()))
+        })
+        .filter_map(|(name, lvl, handle)| {
+            info!("Adding {:?} to name map", (&name, lvl));
+            name_map
+                .get_mut(&name)
+                .map(|x| x.insert(lvl, handle.clone()))
+                .map(|_| (name.clone(), lvl))
+                .or_else(|| {
+                    // Note: returns None even though insertion was successful
+                    name_map.insert(name.clone(), HashMap::from([(lvl, handle.clone())]));
+                    Some((name.clone(), lvl))
+                })
+        })
+        .filter(|_| true)
+        .for_each(|x| {
+            info!("Added {:?} to name map", x);
+        });
+}
+
+pub fn collect_types<TIn, TOut>(
     mut cmd: Commands,
-    q_affected: Query<
+    q_collect: Query<
         (
             Entity,
-            Option<&MeshMaterial3d<B>>,
+            Option<&MeshMaterial3d<TIn>>,
             Option<&Mesh3d>,
             Option<&Children>,
             Option<&WindConfig>,
+            Option<&Name>,
+            Option<&LodLevel>,
         ),
-        (With<WindAffected>, Without<WindAffectedRegistered<T>>),
+        (
+            With<WindAffected>,
+            Without<WindAffectedRegistered<TOut>>,
+            Without<WindAffectedReady>,
+        ),
     >,
-    q_children: Query<(
-        Entity,
-        Option<&MeshMaterial3d<B>>,
-        Option<&Mesh3d>,
-        Option<&Children>,
-        Option<&WindConfig>,
-    )>,
-    mut materials: ResMut<Assets<B>>,
-    mut extended_materials: ResMut<Assets<T>>,
-    mut types: ResMut<WindAffectedTypes<T>>,
+    q_children: Query<
+        (
+            Entity,
+            Option<&MeshMaterial3d<TIn>>,
+            Option<&Mesh3d>,
+            Option<&Children>,
+            Option<&WindConfig>,
+            Option<&Name>,
+            Option<&LodLevel>,
+        ),
+        (
+            Without<WindAffectedRegistered<TOut>>,
+            Without<WindAffectedReady>,
+        ),
+    >,
+    mut materials: ResMut<Assets<TIn>>,
+    mut extended_materials: ResMut<Assets<TOut>>,
+    mut types: ResMut<ScatterAssets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
     wind: Res<Wind>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    types.values.append(
-        &mut q_affected
+    if q_collect.iter().peekable().peek().is_none() {
+        return;
+    };
+
+    info!("Collecting ScatterAssets...");
+
+    (**types).append(
+        &mut q_collect
             .iter()
             .map(|x| {
-                collect_types_recursive::<B, T>(
+                collect_types_recursive::<TIn, TOut>(
+                    x.0,
                     &mut cmd,
                     &mut materials,
                     &mut extended_materials,
                     x,
                     &wind_noise_texture,
                     &wind,
+                    None,
+                    None,
+                    &mut prototype_assets,
                     &mut meshes,
                     &q_children,
                 )
@@ -64,16 +130,18 @@ pub fn collect_types<B, T>(
     );
 }
 
-pub fn insert_material<B, T>(
+pub fn insert_material<TIn, TOut>(
     mut cmd: Commands,
-    q: Query<(Entity, &WindAffectedRegistered<T>), Without<WindAffectedReady>>,
+    q: Query<(Entity, &WindAffectedRegistered<TOut>), Without<WindAffectedReady>>,
 ) where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
+        info!("Replacing Material with WindAffected material...");
+
         cmd.entity(entity).insert((
-            T::component(wind_affected.get().material),
+            TOut::component(wind_affected.get().material),
             WindAffectedReady,
         ));
     }
@@ -137,33 +205,47 @@ pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Imag
     commands.insert_resource(WindTexture(handle));
 }
 
-fn collect_types_recursive<B, T>(
+fn collect_types_recursive<TIn, TOut>(
+    root: Entity,
     cmd: &mut Commands,
-    materials: &mut ResMut<Assets<B>>,
-    extended_materials: &mut ResMut<Assets<T>>,
-    (entity, material, mesh, children, wind_component): (
+    materials: &mut ResMut<Assets<TIn>>,
+    extended_materials: &mut ResMut<Assets<TOut>>,
+    (entity, material, mesh, children, wind_component, name, lod_level): (
         Entity,
-        Option<&MeshMaterial3d<B>>,
+        Option<&MeshMaterial3d<TIn>>,
         Option<&Mesh3d>,
         Option<&Children>,
         Option<&WindConfig>,
+        Option<&Name>,
+        Option<&LodLevel>,
     ),
     wind_noise_texture: &Res<WindTexture>,
     wind: &Res<Wind>,
+    current_name: Option<Name>,
+    current_lod_level: Option<LodLevel>,
+    prototype_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
     meshes: &mut ResMut<Assets<Mesh>>,
-    q_children: &Query<(
-        Entity,
-        Option<&MeshMaterial3d<B>>,
-        Option<&Mesh3d>,
-        Option<&Children>,
-        Option<&WindConfig>,
-    )>,
-) -> Vec<WindAffectedType<T>>
+    q_children: &Query<
+        (
+            Entity,
+            Option<&MeshMaterial3d<TIn>>,
+            Option<&Mesh3d>,
+            Option<&Children>,
+            Option<&WindConfig>,
+            Option<&Name>,
+            Option<&LodLevel>,
+        ),
+        (
+            Without<WindAffectedRegistered<TOut>>,
+            Without<WindAffectedReady>,
+        ),
+    >,
+) -> Vec<Handle<ScatterAsset<TOut>>>
 where
-    B: Material,
-    T: WindAffectable<B, T, WindAffectedTypes<T>, WindAffectedType<T>> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    let mut types: Vec<WindAffectedType<T>> = Vec::new();
+    let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
     let wind_config = if let Some(wind_component) = wind_component {
         wind_component
@@ -177,19 +259,35 @@ where
         (*wind).clone()
     };
 
+    let lod_level = if let Some(lod_level) = lod_level {
+        lod_level.clone()
+    } else {
+        current_lod_level.unwrap_or_else(|| LodLevel::default())
+    };
+
+    let name = if let Some(name) = current_name {
+        Some(name.clone())
+    } else {
+        name.map(|x| x.clone())
+    };
+
     if let Some(children) = children {
         for child in children.iter() {
             let Ok(x) = q_children.get(child) else {
                 continue;
             };
 
-            types.append(&mut collect_types_recursive::<B, T>(
+            types.append(&mut collect_types_recursive::<TIn, TOut>(
+                root,
                 cmd,
                 materials,
                 extended_materials,
                 x,
                 wind_noise_texture,
                 wind,
+                name.clone(),
+                Some(lod_level),
+                prototype_assets,
                 meshes,
                 &q_children,
             ));
@@ -200,9 +298,11 @@ where
         return types;
     };
 
-    let Some(mesh) = mesh else { return types };
+    let Some(mesh) = mesh else {
+        return types;
+    };
 
-    let new_material = T::create_material(
+    let new_material = TOut::create_material(
         Some(materials.get(material).unwrap().clone()),
         final_wind.clone(),
         wind_noise_texture.0.clone(),
@@ -214,17 +314,24 @@ where
     let mesh = meshes.add(mesh.clone());
     let mesh_aabb = meshes.get(&mesh).unwrap().compute_aabb().unwrap();
 
-    let wind_type = WindAffectedType {
+    let asset = ScatterAsset {
         mesh,
         material,
         wind: final_wind,
         aabb: mesh_aabb,
+        name,
+        lod_level,
     };
 
-    cmd.entity(entity)
-        .remove::<MeshMaterial3d<B>>()
-        .insert(WindAffectedRegistered(wind_type.clone()));
+    cmd.entity(entity).remove::<MeshMaterial3d<TIn>>().insert((
+        WindAffectedRegistered(asset.clone()),
+        WindAffected,
+        WindAffectedReady,
+    ));
 
-    types.push(wind_type);
+    cmd.entity(root).insert(WindAffectedReady);
+
+    types.push(prototype_assets.add(asset));
+
     types
 }

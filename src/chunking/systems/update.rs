@@ -7,7 +7,7 @@ use bevy::prelude::*;
 pub fn update_chunk_height(
     images: Res<Assets<Image>>,
     mut q_chunk: Query<(&mut Transform, &ChunkOf), With<ChunkRoot>>,
-    q_cfg: Query<&ChunkLodConfig>,
+    q_cfg: Query<&LodConfig>,
     height_map: Res<HeightMap>,
     height_map_config: Res<HeightMapConfig>,
 ) {

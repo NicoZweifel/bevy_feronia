@@ -1,36 +1,17 @@
 use crate::prelude::*;
-use crate::scatter::events::ScatterResults;
-use bevy::camera::primitives::Aabb;
-use bevy::pbr::StandardMaterial;
+use crate::scatter::observers::scatter_observer;
 use bevy::prelude::*;
 
-pub fn scatter_observer<T, P>(
+pub fn extended_scatter_observer(
     trigger: On<ScatterResults>,
-    cmd: Commands,
-    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
-    q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
-) where
-    T: Resource + ProtoTypes<ExtendedWindAffectedMaterial, P>,
-    P: ProtoType<ExtendedWindAffectedMaterial>,
-{
-    crate::scatter::observers::scatter_observer::<
-        WindAffectedTypes<ExtendedWindAffectedMaterial>,
-        WindAffectedType<ExtendedWindAffectedMaterial>,
-        StandardMaterial,
-        ExtendedWindAffectedMaterial,
-    >(trigger, cmd, &prototypes, q_chunks, q_chunk_config);
-}
-
-pub fn wind_affected_scatter_observer(
-    trigger: On<ScatterResults>,
-    cmd: Commands,
-    prototypes: Res<WindAffectedTypes<ExtendedWindAffectedMaterial>>,
-    q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_chunk_config: Query<(&ChunkLodConfig, &Aabb), With<ChunkRoot>>,
+    q_layer: Query<&ScatterLayer>,
+    q_items: Query<&ScatterItemType<ExtendedWindAffectedMaterial>, With<ScatterItem>>,
+    ew_spawn: EventWriter<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
 ) {
     scatter_observer::<
-        WindAffectedTypes<ExtendedWindAffectedMaterial>,
-        WindAffectedType<ExtendedWindAffectedMaterial>,
-    >(trigger, cmd, prototypes, q_chunks, q_chunk_config);
+        ScatterAssets<ExtendedWindAffectedMaterial>,
+        ScatterAsset<ExtendedWindAffectedMaterial>,
+        StandardMaterial,
+        ExtendedWindAffectedMaterial,
+    >(trigger, q_layer, q_items, ew_spawn);
 }

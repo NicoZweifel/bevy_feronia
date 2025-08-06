@@ -2,10 +2,8 @@ use bevy::prelude::{BufferedEvent, Component, Deref, Entity, EntityEvent, Reflec
 use std::marker::PhantomData;
 use std::slice::Iter;
 
-#[derive(EntityEvent, BufferedEvent, Component, Reflect, Deref, Default)]
-pub struct Scatter<T> {
-    _phantom: PhantomData<T>,
-}
+#[derive(EntityEvent, BufferedEvent, Component, Reflect, Default)]
+pub struct Scatter;
 
 #[derive(EntityEvent, BufferedEvent, Component, Reflect)]
 pub struct ScatterChunk {
@@ -20,6 +18,7 @@ pub struct ScatterResults {
     pub data: Vec<ScatterResult>,
     pub chunk: Option<Entity>,
     pub layer: Entity,
+    pub root: Entity,
 }
 
 impl ScatterResults {

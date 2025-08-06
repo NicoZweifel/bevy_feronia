@@ -5,10 +5,9 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
-use bevy::render::primitives::MeshAabb;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
-use bevy_feronia::instancing::observers::scatter_observer;
+use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
@@ -55,7 +54,22 @@ fn setup(
     density_map: Res<DensityMap>,
 ) {
     cmd.spawn((
+        SceneRoot(assets.load("grass.glb#Scene0")),
+        Name::new("Grass"),
+        WindAffected,
+    ));
+
+    cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass"),
+        LodLevel(1),
+        WindAffected,
+    ));
+
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass"),
+        LodLevel(2),
         WindAffected,
     ));
 
@@ -65,8 +79,8 @@ fn setup(
         ChunkRoot::default(),
         MapHeight,
         children![(
-            scatter_layer("Wind affected Grass Layer"),
-            DistributionDensity(150.),
+            scatter_layer("Grass Layer"),
+            DistributionDensity(20.),
             DistributionPattern {
                 density_map: density_map.clone(),
                 scale: 1.0
@@ -76,15 +90,11 @@ fn setup(
                 max: std::f32::consts::PI * 2.0
             },
             InstanceScale { min: 1.0, max: 3.0 },
-            InstanceJitter(0.1),
-        )],
+            InstanceJitter(0.5),
+            children![scatter_item::<InstancedWindAffectedMaterial>("Grass"),]
+        ),],
     ))
-    .observe(
-        scatter_observer::<
-            WindAffectedTypes<InstancedWindAffectedMaterial>,
-            WindAffectedType<InstancedWindAffectedMaterial>,
-        >,
-    );
+    .observe(instanced_scatter_observer);
 
     // Inspect the height map
     cmd.spawn((

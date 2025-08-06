@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::instancing::observers::wind_affected_scatter_observer;
+use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -32,9 +32,21 @@ fn main() -> AppExit {
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn((SceneRoot(assets.load("grass.glb#Scene0")), WindAffected));
+    cmd.spawn((
+        SceneRoot(assets.load("grass.glb#Scene0")),
+        Name::new("Grass"),
+        WindAffected,
+    ));
     cmd.spawn((
         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass"),
+        LodLevel(1),
+        WindAffected,
+    ));
+    cmd.spawn((
+        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+        Name::new("Grass"),
+        LodLevel(2),
         WindAffected,
     ));
 
@@ -42,18 +54,18 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         children![(
-            scatter_layer("Wind affected Foliage Layer"),
+            scatter_layer("Grass Layer"),
             DistributionDensity(100.0),
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(0.1)
+            InstanceJitter(0.1),
+            children![scatter_item::<InstancedWindAffectedMaterial>("Grass"),]
         )],
     ))
-    .observe(wind_affected_scatter_observer);
+    .observe(instanced_scatter_observer);
 }
 
 fn scatter_on_keypress(
     mut cmd: Commands,
-    prototypes: Res<WindAffectedTypes<InstancedWindAffectedMaterial>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
 ) {
@@ -61,15 +73,5 @@ fn scatter_on_keypress(
         return;
     };
 
-    if prototypes.get().is_empty() {
-        println!("No plants found to scatter!");
-        return;
-    }
-
-    println!("Scattering plants...");
-
-    cmd.trigger_targets(
-        Scatter::<ScatterRoot>::default(),
-        q_root.iter().collect::<Vec<_>>(),
-    );
+    cmd.trigger_targets(Scatter, q_root.iter().collect::<Vec<_>>());
 }

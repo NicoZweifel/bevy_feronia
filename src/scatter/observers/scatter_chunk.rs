@@ -57,7 +57,7 @@ pub fn scatter_chunk(
 
     let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
 
-    let corner = chunk_gtf.translation() - size / 2.;
+    let corner = -size / 2.;
 
     let results = create_scatter_results(
         Container {
@@ -67,6 +67,8 @@ pub fn scatter_chunk(
             corner,
             height: 0.,
             size,
+            transform: chunk_gtf.compute_transform(),
+            root_entity: root,
         },
         InstanceModifiers {
             jitter,

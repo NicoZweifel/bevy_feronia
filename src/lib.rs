@@ -10,8 +10,8 @@ pub mod scatter;
 pub mod wind;
 
 pub mod prelude {
-    pub use crate::core::*;
     pub use crate::chunking::prelude::*;
+    pub use crate::core::*;
     pub use crate::density_map::*;
     pub use crate::extension::prelude::*;
     pub use crate::height_map::prelude::*;
