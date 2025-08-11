@@ -14,6 +14,7 @@ fn main() -> AppExit {
             ..default()
         })
         .add_plugins((
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             ExtendedWindAffectedPlugin,
@@ -26,14 +27,9 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("foliage.glb#Scene0")),
-        WindAffected,
-        Name::new("Foliage"),
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
+        LodConfig(vec![LodLevelDistance::default()]),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
             DistributionDensity(20.0),
@@ -43,7 +39,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             },
             InstanceScale { min: 1., max: 3. },
             InstanceJitter(0.1),
-            children![scatter_item::<ExtendedWindAffectedMaterial>("Foliage"),]
+            WindAffected,
+            children![SceneRoot(assets.load("foliage.glb#Scene0"))]
         )],
     ))
     .observe(extended_scatter_observer);

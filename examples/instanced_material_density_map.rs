@@ -32,6 +32,7 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
+            ScatterAssetPlugin::<StandardMaterial,InstancedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
@@ -67,17 +68,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             },
             InstanceScale { min: 1.0, max: 1.5 },
             InstanceJitter(0.05),
+            WindAffected,
             children![
-                (
-                    SceneRoot(assets.load("grass.glb#Scene0")),
-                    WindAffected,
-                    ScatterSource,
-                ),
+                SceneRoot(assets.load("grass.glb#Scene0")),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LodLevel(1),
-                    ScatterSource,
-                    WindAffected,
                 )
             ]
         )],

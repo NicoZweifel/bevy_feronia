@@ -34,6 +34,7 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
+            ScatterAssetPlugin::<StandardMaterial,InstancedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
@@ -54,26 +55,6 @@ fn setup(
     density_map: Res<DensityMap>,
 ) {
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(1),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(2),
-        WindAffected,
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
         ScatterRoot::default(),
         ChunkRoot::default(),
@@ -91,7 +72,16 @@ fn setup(
             },
             InstanceScale { min: 1.0, max: 3.0 },
             InstanceJitter(0.5),
-            children![scatter_item::<InstancedWindAffectedMaterial>("Grass"),]
+            WindAffected,
+            children![
+                SceneRoot(assets.load("grass.glb#Scene0")),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1),
+                ),
+                SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                LodLevel(2),
+            ],
         ),],
     ))
     .observe(instanced_scatter_observer);

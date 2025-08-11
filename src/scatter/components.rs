@@ -30,11 +30,6 @@ pub struct ScatterItemOf(pub Entity);
 #[reflect(Component)]
 pub struct ScatterLayer(Vec<Entity>);
 
-/// A marker component for a child entity of a `ScatterLayer` that
-/// should be processed as a source of scatterable assets.
-#[derive(Component)]
-pub struct ScatterSource;
-
 /// A marker component to signify that a `ScatterLayer` has already had its
 /// sources discovered and its `ScatterItem's generated.
 #[derive(Component)]

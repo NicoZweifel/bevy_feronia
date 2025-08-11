@@ -36,12 +36,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Wind affected Foliage Layer"),
             DistributionDensity(150.0),
             InstanceJitter(0.1),
+            WindAffected,
             children![
-                (SceneRoot(assets.load("grass.glb#Scene0")), WindAffected,),
+                (SceneRoot(assets.load("grass.glb#Scene0"))),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LodLevel(1),
-                    WindAffected,
                 )
             ]
         )],

@@ -25,6 +25,7 @@ fn main() -> AppExit {
             aabb_color: GREEN_500.into(),
         })
         .add_plugins((
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             ExtendedWindAffectedPlugin,
@@ -48,30 +49,6 @@ fn setup(
     height_map: Res<HeightMapTexture>,
 ) {
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass Low Lod"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("foliage.glb#Scene0")),
-        WindAffected,
-        Name::new("Foliage"),
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("foliage_complex.glb#Scene0")),
-        WindAffected,
-        Name::new("Foliage Complex"),
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
         ScatterRoot::default(),
         MapHeight,
@@ -89,11 +66,12 @@ fn setup(
             },
             InstanceScale { min: 1.0, max: 5.0 },
             InstanceJitter(2.0),
+            WindAffected,
             children![
-                scatter_item::<ExtendedWindAffectedMaterial>("Grass"),
-                scatter_item::<ExtendedWindAffectedMaterial>("Grass Low LOD"),
-                scatter_item::<ExtendedWindAffectedMaterial>("Foliage"),
-                scatter_item::<ExtendedWindAffectedMaterial>("Foliage Complex"),
+                SceneRoot(assets.load("grass.glb#Scene0")),
+                SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                SceneRoot(assets.load("foliage.glb#Scene0")),
+                SceneRoot(assets.load("foliage_complex.glb#Scene0")),
             ]
         )],
     ))
