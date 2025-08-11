@@ -1,7 +1,9 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
+use bevy_feronia::chunking::systems::debug::draw_aabbs;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -20,36 +22,23 @@ fn main() -> AppExit {
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })
+        .insert_resource(ChunkDebugConfig {
+            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
+            aabb_color: GREEN_500.into(),
+        })
         .add_plugins((
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
             ScatterPlugin,
         ))
         .add_systems(Startup, setup)
-        .add_systems(Update, scatter_on_keypress)
+        .add_systems(Update, (scatter_on_keypress, draw_aabbs))
         .run()
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
-    cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(1),
-        WindAffected,
-    ));
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(2),
-        WindAffected,
-    ));
-
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
@@ -58,7 +47,19 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             DistributionDensity(100.0),
             InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(0.1),
-            children![scatter_item::<InstancedWindAffectedMaterial>("Grass"),]
+            children![
+                (
+                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    ScatterSource,
+                    WindAffected
+                ),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1),
+                    ScatterSource,
+                    WindAffected
+                )
+            ]
         )],
     ))
     .observe(instanced_scatter_observer);

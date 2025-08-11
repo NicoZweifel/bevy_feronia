@@ -16,7 +16,7 @@ pub fn spawn_instanced_wind_affected<T, P>(
     P: ProtoType<InstancedWindAffectedMaterial> + Asset + Clone,
 {
     for e in er_spawn.read() {
-        let mut instances = e
+        let instances = e
             .trigger
             .data
             .iter()
@@ -57,8 +57,8 @@ pub fn spawn_instanced_wind_affected<T, P>(
             return;
         };
 
-        for (lod_level,prototype) in prototype {
-            let Some(prototype) = prototype_assets.get(&prototype) else {
+        for (lod_level, prototype) in prototype.iter().filter(|(lvl, _)| ***lvl >= *chunk_level) {
+            let Some(prototype) = prototype_assets.get(prototype) else {
                 warn!("Couldn't get prototype!");
                 return;
             };
@@ -66,16 +66,23 @@ pub fn spawn_instanced_wind_affected<T, P>(
             let mesh_handle = prototype.mesh().clone();
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-            for instance in &mut instances {
-                instance.position = instance.position + chunk_gtf.translation.with_y(0.);
+            let instances = instances
+                .iter()
+                .map(|instance| {
+                    let mut instance = instance.clone();
 
-                let instance_min =
-                    instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
-                let instance_max =
-                    instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
-                min_point = min_point.min(instance_min);
-                max_point = max_point.max(instance_max);
-            }
+                    instance.position = instance.position + chunk_gtf.translation.with_y(0.);
+
+                    let instance_min =
+                        instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
+                    let instance_max =
+                        instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
+                    min_point = min_point.min(instance_min);
+                    max_point = max_point.max(instance_max);
+
+                    instance
+                })
+                .collect::<Vec<_>>();
 
             let entity = cmd
                 .spawn((
@@ -89,8 +96,8 @@ pub fn spawn_instanced_wind_affected<T, P>(
                 .id();
 
             // TODO
-           // let lod_level = *chunk_level as usize;
-            let lod_level = *lod_level as usize;
+            // let lod_level = *chunk_level as usize;
+            let lod_level = **lod_level as usize;
 
             let current_lod_dist = lod_config
                 .get(lod_level)
@@ -124,7 +131,7 @@ pub fn spawn_instanced_wind_affected<T, P>(
                     end_margin,
                     use_aabb: false,
                 },
-                ChildOf(e.trigger.target),
+                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.target)),
             ));
         }
     }

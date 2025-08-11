@@ -30,26 +30,20 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(1),
-        WindAffected,
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
             DistributionDensity(150.0),
             InstanceJitter(0.1),
-            children![scatter_item::<ExtendedWindAffectedMaterial>("Grass"),]
+            children![
+                (SceneRoot(assets.load("grass.glb#Scene0")), WindAffected,),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1),
+                    WindAffected,
+                )
+            ]
         )],
     ))
     .observe(extended_scatter_observer);

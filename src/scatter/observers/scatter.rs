@@ -55,9 +55,10 @@ pub fn scatter(
     let size = Vec3::from(aabb.half_extents * 2.0);
 
     info!(
-        "Scattering {} instances in ScatterLayer {}",
+        "Scattering {} instances in ScatterLayer {} with aabb {:?}",
         (instances_dim as u32).pow(2),
-        layer_entity
+        layer_entity,
+        aabb
     );
 
     let corner = -Vec3::from(aabb.half_extents);

@@ -18,10 +18,11 @@ pub fn scatter_observer<TTypes, TType, TIn, TOut>(
         return;
     };
 
-    let items = scatter_items
-        .iter()
-        .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()))
-        .collect::<Vec<_>>();
-
-    ew_spawn.write(SpawnProtoTypes::new(items, SpawnTrigger::from(trigger)));
+    ew_spawn.write(SpawnProtoTypes::new(
+        scatter_items
+            .iter()
+            .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()))
+            .collect::<Vec<_>>(),
+        SpawnTrigger::from(trigger),
+    ));
 }

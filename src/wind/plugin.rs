@@ -53,8 +53,6 @@ where
             .add_systems(
                 Update,
                 (
-                    collect_types::<TIn, TOut>,
-                    update_name_map::<TOut>.run_if(resource_changed::<ScatterAssets<TOut>>),
                     insert_material::<TIn, TOut>,
                     update_materials::<TIn, TOut>.run_if(resource_changed::<Wind>),
                 ),

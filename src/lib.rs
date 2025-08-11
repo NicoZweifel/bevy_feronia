@@ -7,9 +7,11 @@ pub mod instancing;
 
 pub mod scatter;
 
+pub mod asset;
 pub mod wind;
 
 pub mod prelude {
+    pub use crate::asset::prelude::*;
     pub use crate::chunking::prelude::*;
     pub use crate::core::*;
     pub use crate::density_map::*;

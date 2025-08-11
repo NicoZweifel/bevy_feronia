@@ -104,9 +104,9 @@ impl Default for LodConfig {
         Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
-                50.0.into(),
+                30.0.into(),
                 // Level 1: Medium
-                150.0.into(),
+                90.0.into(),
                 // Level 2: Low
                 LodLevelDistance::default(),
             ],

@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::scatter::observers::scatter_chunk;
 use bevy::prelude::*;
 
 pub fn init(

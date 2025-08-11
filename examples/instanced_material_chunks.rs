@@ -40,26 +40,6 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(1),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass"),
-        LodLevel(2),
-        WindAffected,
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
@@ -68,7 +48,25 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             DistributionDensity(25.0),
             InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(0.5),
-            children![scatter_item::<InstancedWindAffectedMaterial>("Grass"),]
+            children![
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(2),
+                    ScatterSource,
+                    WindAffected,
+                ),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1),
+                    ScatterSource,
+                    WindAffected,
+                ),
+                (
+                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    ScatterSource,
+                    WindAffected,
+                )
+            ]
         )],
     ))
     .observe(instanced_scatter_observer);

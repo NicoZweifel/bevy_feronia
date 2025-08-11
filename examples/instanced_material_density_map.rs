@@ -44,33 +44,15 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
     cmd.spawn((
-        SceneRoot(assets.load("grass.glb#Scene0")),
-        Name::new("Grass"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
-        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-        Name::new("Grass Low LOD"),
-        WindAffected,
-    ));
-
-    cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         ChunkRoot::default(),
         ChunkRootSize(4),
         LodConfig(vec![
             // Level 0: High
-            LodLevel {
-                distance: 30.0,
-                chunk_size_scalar: 1,
-            },
+            30.0.into(),
             // Level 2: Low
-            LodLevel {
-                distance: f32::MAX,
-                chunk_size_scalar: 2,
-            },
+            f32::MAX.into(),
         ]),
         children![(
             scatter_layer("Wind affected Grass Layer"),
@@ -86,11 +68,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             InstanceScale { min: 1.0, max: 1.5 },
             InstanceJitter(0.05),
             children![
-                scatter_item::<InstancedWindAffectedMaterial>("Grass"),
-                scatter_item_with_lod::<InstancedWindAffectedMaterial>(
-                    "Grass Low LOD",
-                    LodLevel(1)
+                (
+                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    WindAffected,
+                    ScatterSource,
                 ),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1),
+                    ScatterSource,
+                    WindAffected,
+                )
             ]
         )],
     ))

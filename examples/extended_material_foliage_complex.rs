@@ -3,6 +3,7 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_feronia::extension::observers::extended_scatter_observer;
+use bevy_feronia::prelude::ScatterAssetPlugin;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -18,6 +19,7 @@ fn main() -> AppExit {
             WindPlugin,
             ExtendedWindAffectedPlugin,
             ScatterPlugin,
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
         ))
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
@@ -42,7 +44,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(10.0),
+            DistributionDensity(50.0),
             InstanceRotationYaw {
                 min: 0.0,
                 max: std::f32::consts::PI * 2.0
