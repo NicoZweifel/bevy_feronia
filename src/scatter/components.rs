@@ -9,15 +9,11 @@ pub struct ScatterItem;
 #[reflect(Component)]
 pub struct ScatterRootReady;
 
-#[derive(Component, Reflect, Debug, Clone)]
+#[derive(Component, Reflect, Debug, Clone, Deref)]
 #[reflect(Component)]
-pub enum ScatterItemType<T>
+pub struct ScatterItemAsset<T>(pub Handle<ScatterAsset<T>>)
 where
-    T: Asset + Clone,
-{
-    Handle(Handle<ScatterAsset<T>>),
-    Name(Name),
-}
+    T: Asset + Clone;
 
 #[derive(Component, Debug, Clone, Reflect, Deref)]
 #[reflect(Component)]

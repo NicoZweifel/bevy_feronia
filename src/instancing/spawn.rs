@@ -1,20 +1,18 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
-use bevy::render::view::VisibilityRange;
+use rand::prelude::IteratorRandom;
+use rand::rng;
 
-pub fn spawn_instanced_wind_affected<T, P>(
+pub fn spawn_instanced_wind_affected(
     mut er_spawn: EventReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
     mut cmd: Commands,
-    prototypes: Res<T>,
-    prototype_assets: Res<Assets<P>>,
+    prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
     q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
-) where
-    T: Resource + ProtoTypes<InstancedWindAffectedMaterial, P>,
-    P: ProtoType<InstancedWindAffectedMaterial> + Asset + Clone,
-{
+) {
     for e in er_spawn.read() {
         let instances = e
             .trigger
@@ -47,21 +45,49 @@ pub fn spawn_instanced_wind_affected<T, P>(
                     )
                 });
 
-        let Ok(lod_config) = q_root.get(e.trigger.root) else {
-            warn!("Couldn't get lod config!");
-            return;
-        };
+        let mut prototypes: Vec<ScatterAsset<InstancedWindAffectedMaterial>> = vec![];
+        for item in e.items.iter() {
+            let prototype = prototype_assets.get(&item.0);
 
-        let Some(prototype) = prototypes.choose(&e.items) else {
-            warn!("Couldn't choose prototype!");
-            return;
-        };
-
-        for (lod_level, prototype) in prototype.iter().filter(|(lvl, _)| ***lvl >= *chunk_level) {
-            let Some(prototype) = prototype_assets.get(prototype) else {
-                warn!("Couldn't get prototype!");
+            let Some(prototype) = prototype else {
+                warn!("Couldn't get ScatterRoot!");
                 return;
             };
+
+            prototypes.push(prototype.clone());
+        }
+
+        let mut name_map =
+            HashMap::<Name, Vec<&ScatterAsset<InstancedWindAffectedMaterial>>>::new();
+
+        prototypes
+            .iter()
+            .filter(|x| *x.lod_level >= *chunk_level)
+            .map(|x| (x.name.clone().unwrap_or(Name::new("")), x))
+            .for_each(|(name, x)| {
+                name_map
+                    .get_mut(&name)
+                    .map(|y| y.push(x))
+                    .map(|_| x)
+                    .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
+            });
+
+        let prototypes = name_map.values().choose(&mut rng());
+
+        let Some(prototypes) = prototypes else {
+            warn!("Couldn't choose Prototypes!");
+            return;
+        };
+
+        info!("Spawning {} prototypes.", prototypes.len());
+
+        let Ok(lod_config) = q_root.get(e.trigger.root) else {
+            warn!("Couldn't get ScatterRoot!");
+            return;
+        };
+
+        for prototype in prototypes {
+            let lod_level = prototype.lod_level;
 
             let mesh_handle = prototype.mesh().clone();
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
@@ -97,7 +123,7 @@ pub fn spawn_instanced_wind_affected<T, P>(
 
             // TODO
             // let lod_level = *chunk_level as usize;
-            let lod_level = **lod_level as usize;
+            let lod_level = *lod_level as usize;
 
             let current_lod_dist = lod_config
                 .get(lod_level)
@@ -126,11 +152,11 @@ pub fn spawn_instanced_wind_affected<T, P>(
             let local_aabb = Aabb::from_min_max(local_min, local_max);
             cmd.entity(entity).insert((
                 Aabb::from(local_aabb),
-                VisibilityRange {
+                /* VisibilityRange {
                     start_margin,
                     end_margin,
                     use_aabb: false,
-                },
+                },*/
                 ChildOf(e.trigger.chunk.unwrap_or(e.trigger.target)),
             ));
         }

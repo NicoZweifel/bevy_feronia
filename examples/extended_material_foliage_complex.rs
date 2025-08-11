@@ -32,7 +32,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(50.0),
+            DistributionDensity(15.0),
             InstanceRotationYaw {
                 min: 0.0,
                 max: std::f32::consts::PI * 2.0
@@ -41,8 +41,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceJitter(0.1),
             WindAffected,
             children![
-                SceneRoot(assets.load("foliage.glb#Scene0")),
                 SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                SceneRoot(assets.load("foliage.glb#Scene0"))
             ]
         )],
     ))

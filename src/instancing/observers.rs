@@ -5,11 +5,10 @@ use bevy::prelude::*;
 pub fn instanced_scatter_observer(
     trigger: On<ScatterResults>,
     q_layer: Query<&ScatterLayer>,
-    q_items: Query<&ScatterItemType<InstancedWindAffectedMaterial>, With<ScatterItem>>,
+    q_items: Query<&ScatterItemAsset<InstancedWindAffectedMaterial>, With<ScatterItem>>,
     ew_spawn: EventWriter<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
 ) {
     scatter_observer::<
-        ScatterAssets<InstancedWindAffectedMaterial>,
         ScatterAsset<InstancedWindAffectedMaterial>,
         StandardMaterial,
         InstancedWindAffectedMaterial,

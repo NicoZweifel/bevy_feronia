@@ -3,47 +3,6 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::primitives::MeshAabb;
 
-pub fn sync_asset_name_map<T: Asset + Clone + std::fmt::Debug>(
-    types: Res<ScatterAssets<T>>,
-    mut name_map: ResMut<ScatterAssetsNameMap<T>>,
-    assets: Res<Assets<ScatterAsset<T>>>,
-) {
-    // TODO invalidate instead of syncing
-    name_map.clear();
-
-    info!("Syncing ScatterAssets name map...");
-
-    types
-        .iter()
-        .filter_map(|handle| {
-            assets
-                .get(handle)
-                .map(|scatter_asset| (scatter_asset, handle))
-        })
-        .filter_map(|(asset, handle)| {
-            asset
-                .name
-                .clone()
-                .map(|name| (name, asset.lod_level, handle.clone()))
-        })
-        .filter_map(|(name, lvl, handle)| {
-            info!("Adding {:?} to name map", (&name, lvl));
-            name_map
-                .get_mut(&name)
-                .map(|x| x.insert(lvl, handle.clone()))
-                .map(|_| (name.clone(), lvl))
-                .or_else(|| {
-                    // Note: returns None even though insertion was successful
-                    name_map.insert(name.clone(), HashMap::from([(lvl, handle.clone())]));
-                    Some((name.clone(), lvl))
-                })
-        })
-        .filter(|_| true)
-        .for_each(|x| {
-            info!("Added {:?} to name map", x);
-        });
-}
-
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootReady>>,
@@ -60,22 +19,25 @@ pub fn collect_assets<TIn, TOut>(
     )>,
     mut materials: ResMut<Assets<TIn>>,
     mut extended_materials: ResMut<Assets<TOut>>,
-    mut types: ResMut<ScatterAssets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
     wind: Res<Wind>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (root, children) in &q_roots {
         info!("Collecting ScatterAssets in root {:?}...", root);
+
+        let mut unprocessed_layer_count = 0;
 
         for layer in children.iter() {
             let Ok(scatter_items) = q_layers.get(layer) else {
                 continue;
             };
+
+            unprocessed_layer_count += 1;
 
             let mut result = scatter_items
                 .iter()
@@ -101,10 +63,11 @@ pub fn collect_assets<TIn, TOut>(
 
             if result.len() > 0 {
                 cmd.entity(layer).insert(ScatterLayerProcessed);
-                cmd.entity(root).insert(ScatterRootReady);
             }
+        }
 
-            (**types).append(&mut result);
+        if unprocessed_layer_count == 0 {
+            cmd.entity(root).insert(ScatterRootReady);
         }
     }
 }
@@ -135,7 +98,7 @@ fn collect_assets_recursive<TIn, TOut>(
 ) -> Vec<Handle<ScatterAsset<TOut>>>
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
@@ -216,21 +179,13 @@ where
         .remove::<MeshMaterial3d<TIn>>()
         .insert((WindAffectedRegistered(asset_handle.clone()), WindAffected));
 
-    let scatter_item = cmd
-        .spawn((
-            ScatterItem,
-            name.clone().map_or_else(
-                || ScatterItemType::<TOut>::Handle(asset_handle.clone()),
-                |x| ScatterItemType::<TOut>::Name(x),
-            ),
-            ChildOf(layer),
-            ScatterItemOf(layer),
-        ))
-        .id();
-
-    if let Some(name) = name {
-        cmd.entity(scatter_item).insert(name);
-    }
+    cmd.spawn((
+        ScatterItem,
+        ScatterItemAsset::<TOut>(asset_handle.clone()),
+        lod_level,
+        ChildOf(layer),
+        ScatterItemOf(layer),
+    ));
 
     types.push(asset_handle);
 

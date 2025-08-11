@@ -28,7 +28,7 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial,InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
@@ -46,7 +46,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(25.0),
+            DistributionDensity(30.0),
             InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(0.5),
             WindAffected,

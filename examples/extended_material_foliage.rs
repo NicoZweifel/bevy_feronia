@@ -31,8 +31,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         LodConfig(vec![LodLevelDistance::default()]),
         children![(
-            scatter_layer("Wind affected Foliage Layer"),
-            DistributionDensity(20.0),
+            scatter_layer("Foliage Layer"),
+            DistributionDensity(15.0),
             InstanceRotationYaw {
                 min: 0.0,
                 max: std::f32::consts::PI * 2.0

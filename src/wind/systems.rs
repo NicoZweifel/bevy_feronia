@@ -9,7 +9,7 @@ use noise::{NoiseFn, Perlin};
 pub fn update_materials<TIn, TOut>(materials: ResMut<Assets<TOut>>, wind: Res<Wind>)
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     TOut::update_material(materials, wind.clone());
 }
@@ -19,7 +19,7 @@ pub fn insert_material<TIn, TOut>(
     q: Query<(Entity, &WindAffectedRegistered<TOut>), Without<WindAffectedReady>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAssets<TOut>, ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
         info!("Replacing Material with WindAffected material...");

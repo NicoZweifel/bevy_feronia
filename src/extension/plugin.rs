@@ -16,12 +16,6 @@ impl Plugin for ExtendedWindAffectedPlugin {
                 StandardMaterial,
                 ExtendedWindAffectedMaterial,
             >::default())
-            .add_systems(
-                Update,
-                spawn_extended_wind_affected::<
-                    ScatterAssetsNameMap<ExtendedWindAffectedMaterial>,
-                    ScatterAsset<ExtendedWindAffectedMaterial>,
-                >,
-            );
+            .add_systems(Update, spawn_extended_wind_affected);
     }
 }

@@ -68,10 +68,9 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
     }
 }
 
-impl<T, P> WindAffectable<T, P, StandardMaterial, InstancedWindAffectedMaterial>
+impl<P> WindAffectable<P, StandardMaterial, InstancedWindAffectedMaterial>
     for InstancedWindAffectedMaterial
 where
-    T: Resource + ProtoTypes<InstancedWindAffectedMaterial, P>,
     P: ProtoType<InstancedWindAffectedMaterial> + Asset + Clone,
 {
     fn create_material(

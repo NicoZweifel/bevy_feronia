@@ -2,13 +2,12 @@ use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
 use bevy::prelude::*;
 
-pub fn scatter_observer<TTypes, TType, TIn, TOut>(
+pub fn scatter_observer<TType, TIn, TOut>(
     trigger: On<ScatterResults>,
     q_layer: Query<&ScatterLayer>,
-    q_items: Query<&ScatterItemType<TOut>, With<ScatterItem>>,
+    q_items: Query<&ScatterItemAsset<TOut>, With<ScatterItem>>,
     mut ew_spawn: EventWriter<SpawnProtoTypes<TOut>>,
 ) where
-    TTypes: Resource + ProtoTypes<TOut, TType>,
     TType: ProtoType<TOut> + Asset + Clone,
     TIn: Material,
     TOut: Asset + Clone,

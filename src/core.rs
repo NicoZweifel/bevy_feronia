@@ -1,16 +1,13 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
-use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use rand::prelude::IteratorRandom;
-use std::borrow::Cow;
 
 #[derive(Event, BufferedEvent, Debug, Clone)]
 pub struct SpawnProtoTypes<T>
 where
     T: Asset + Clone,
 {
-    pub items: Vec<ScatterItemType<T>>,
+    pub items: Vec<ScatterItemAsset<T>>,
     pub trigger: SpawnTrigger,
 }
 
@@ -39,7 +36,7 @@ impl<T> SpawnProtoTypes<T>
 where
     T: Asset + Clone,
 {
-    pub fn new(items: Vec<ScatterItemType<T>>, trigger: SpawnTrigger) -> Self {
+    pub fn new(items: Vec<ScatterItemAsset<T>>, trigger: SpawnTrigger) -> Self {
         Self { items, trigger }
     }
 }
@@ -49,10 +46,7 @@ where
     TOut: Asset + Clone,
     TType: ProtoType<TOut> + Asset + Clone,
 {
-    fn choose(
-        &self,
-        scatter_items: &Vec<ScatterItemType<TOut>>,
-    ) -> Option<HashMap<LodLevel, Handle<TType>>>;
+    // TODO use trait or remove
 }
 
 pub trait ProtoType<T>
@@ -68,13 +62,6 @@ where
 
 pub trait Sampler {
     fn sample(&self, world_pos: Vec3) -> f32;
-}
-
-pub fn scatter_item<T>(name: impl Into<Cow<'static, str>>) -> impl Bundle
-where
-    T: Asset + Clone,
-{
-    (ScatterItem, ScatterItemType::<T>::Name(Name::new(name)))
 }
 
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]

@@ -26,13 +26,7 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
-        .add_systems(
-            Update,
-            spawn_instanced_wind_affected::<
-                ScatterAssetsNameMap<InstancedWindAffectedMaterial>,
-                ScatterAsset<InstancedWindAffectedMaterial>,
-            >,
-        )
+        .add_systems(Update, spawn_instanced_wind_affected)
         .add_systems(PostUpdate, add_instance_key_component);
 
         app.sub_app_mut(RenderApp)

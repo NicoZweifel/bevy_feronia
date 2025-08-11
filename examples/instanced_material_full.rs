@@ -34,7 +34,7 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial,InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,

@@ -4,9 +4,8 @@ use bevy::render::render_resource::ShaderType;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 
-pub trait WindAffectable<TTypes, TType, TIn, TOut>
+pub trait WindAffectable<TType, TIn, TOut>
 where
-    TTypes: ProtoTypes<TOut, TType>,
     TType: ProtoType<TOut> + Asset + Clone,
     TIn: Material,
     TOut: Asset + Clone,

@@ -69,7 +69,10 @@ fn setup(
             WindAffected,
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
-                SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(1)
+                ),
                 SceneRoot(assets.load("foliage.glb#Scene0")),
                 SceneRoot(assets.load("foliage_complex.glb#Scene0")),
             ]

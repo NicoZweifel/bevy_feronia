@@ -4,10 +4,9 @@ use bevy::prelude::*;
 
 pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
-impl<T, P> WindAffectable<T, P, StandardMaterial, ExtendedWindAffectedMaterial>
+impl<P> WindAffectable<P, StandardMaterial, ExtendedWindAffectedMaterial>
     for ExtendedWindAffectedMaterial
 where
-    T: Resource + ProtoTypes<ExtendedWindAffectedMaterial, P>,
     P: ProtoType<ExtendedWindAffectedMaterial> + Asset + Clone,
 {
     fn create_material(

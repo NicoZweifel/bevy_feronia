@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 pub fn draw_aabbs(
     mut gizmos: Gizmos,
-    q: Query<(&Aabb, &GlobalTransform)>,
+    q: Query<(&Aabb, &GlobalTransform), With<Chunk>>,
     cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
