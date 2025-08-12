@@ -13,8 +13,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
     let model_matrix = get_world_from_local(vertex.instance_index);
     let world_position = model_matrix * vec4<f32>(vertex.position, 1.0);
+
     out.clip_position = view.clip_from_world * world_position;
     out.world_y = world_position.y;
+
     return out;
 }
 
@@ -29,11 +31,12 @@ var<uniform> settings: HeightSettings;
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let span = settings.max_height - settings.min_height;
-    
+
     if (span <= 0.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
-    
+
     let normalized_height = (in.world_y - settings.min_height) / span;
+
     return vec4<f32>(normalized_height, 0.0, 0.0, 1.0);
 }
