@@ -1,12 +1,18 @@
 use crate::prelude::*;
-use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::primitives::MeshAabb;
 
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootReady>>,
-    q_layers: Query<&Children, (With<ScatterLayer>, Without<ScatterLayerProcessed>)>,
+    q_layers: Query<
+        &Children,
+        (
+            With<ScatterLayer>,
+            Without<ScatterLayerProcessed>,
+            With<ScatterLayerType<TIn, TOut>>,
+        ),
+    >,
     q_collect: Query<(
         Entity,
         Option<&MeshMaterial3d<TIn>>,
@@ -122,10 +128,6 @@ where
 
     if let Some(children) = children {
         for child in children.iter() {
-            let Ok(x) = q_children.get(child) else {
-                continue;
-            };
-
             types.append(&mut collect_assets_recursive::<TIn, TOut>(
                 root,
                 layer,

@@ -7,5 +7,6 @@ pub fn on_add_chunk(trigger: On<Add, Chunk>, mut cmd: Commands) {
 
     cmd.entity(trigger.target())
         .insert(ChunkInitialize)
-        .observe(scatter_chunk);
+        .observe(scatter_chunk::<StandardMaterial, InstancedWindAffectedMaterial>)
+        .observe(scatter_chunk::<StandardMaterial, ExtendedWindAffectedMaterial>);
 }

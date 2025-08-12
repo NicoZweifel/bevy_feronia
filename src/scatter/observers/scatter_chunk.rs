@@ -13,16 +13,19 @@ type LayerQueryItem<'a> = (
     Option<&'a InstanceJitter>,
 );
 
-pub fn scatter_chunk(
-    mut trigger: On<ScatterChunk>,
+pub fn scatter_chunk<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+>(
+    mut trigger: On<ScatterChunk<TIn, TOut>>,
     mut cmd: Commands,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     images: Res<Assets<Image>>,
     q_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
-    q_layer: Query<LayerQueryItem, With<ScatterLayer>>,
+    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
     q_chunk: Query<(Entity, &ChunkSize, &GlobalTransform), With<Chunk>>,
-    mut ew_results: EventWriter<ScatterResults>,
+    mut ew_results: EventWriter<ScatterResults<TIn, TOut>>,
 ) {
     trigger.propagate(false);
 

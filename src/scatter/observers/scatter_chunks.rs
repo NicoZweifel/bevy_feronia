@@ -9,8 +9,11 @@ type LayerQueryItem<'a> = (
     Option<&'a ScatterLayerEnabled>,
 );
 
-pub fn scatter_chunks(
-    mut trigger: On<Scatter>,
+pub fn scatter_chunks<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+>(
+    mut trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
     q_layer: Query<LayerQueryItem, With<ScatterLayer>>,
@@ -33,9 +36,7 @@ pub fn scatter_chunks(
     };
 
     cmd.trigger_targets(
-        ScatterChunk {
-            scatter_layer: layer_entity,
-        },
+        ScatterChunk::<TIn, TOut>::new(layer_entity),
         child_chunks.iter().collect::<Vec<_>>(),
     );
 }

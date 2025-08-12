@@ -7,6 +7,7 @@ use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::chunking::plugin::ChunkPlugin;
+use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -35,57 +36,30 @@ fn main() -> AppExit {
         })
         .add_plugins((
             ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
+            ExtendedWindAffectedPlugin,
             ChunkPlugin,
-            ScatterPlugin,
+            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
+            ScatterPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
             HeightMapPlugin,
         ))
         .add_systems(Startup, (setup_density_map, setup).chain())
+        .add_systems(
+            Update,
+            setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
+        )
         .run()
 }
 
-fn setup(
+fn setup_height_map_inspection(
     mut cmd: Commands,
-    assets: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
-    density_map: Res<DensityMap>,
 ) {
-    cmd.spawn((
-        SceneRoot(assets.load("landscape_large.glb#Scene0")),
-        ScatterRoot::default(),
-        ChunkRoot::default(),
-        MapHeight,
-        children![(
-            scatter_layer("Grass Layer"),
-            DistributionDensity(20.),
-            DistributionPattern {
-                density_map: density_map.clone(),
-                scale: 1.0
-            },
-            InstanceRotationYaw {
-                min: 0.0,
-                max: std::f32::consts::PI * 2.0
-            },
-            InstanceScale { min: 1.0, max: 3.0 },
-            InstanceJitter(0.5),
-            WindAffected,
-            children![
-                SceneRoot(assets.load("grass.glb#Scene0")),
-                (
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
-                ),
-                SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                LodLevel(2),
-            ],
-        ),],
-    ))
-    .observe(instanced_scatter_observer);
-
     // Inspect the height map
     cmd.spawn((
         Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
@@ -96,6 +70,58 @@ fn setup(
             ..default()
         })),
     ));
+}
+
+fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
+    cmd.spawn((
+        SceneRoot(assets.load("landscape_large.glb#Scene0")),
+        ScatterRoot::default(),
+        ChunkRoot::default(),
+        MapHeight,
+        children![
+            (
+                bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
+                DistributionDensity(50.),
+                DistributionPattern {
+                    density_map: density_map.clone(),
+                    scale: 1.0
+                },
+                InstanceRotationYaw {
+                    min: 0.0,
+                    max: std::f32::consts::PI * 2.0
+                },
+                InstanceScale { min: 1.0, max: 1.5 },
+                InstanceJitter(0.05),
+                WindAffected,
+                children![
+                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    (
+                        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                        LodLevel(1),
+                    ),
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(2),
+                ],
+            ),
+            (
+                bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
+                DistributionDensity(1.0),
+                InstanceRotationYaw {
+                    min: 0.0,
+                    max: std::f32::consts::PI * 2.0
+                },
+                InstanceScale { min: 1., max: 5. },
+                InstanceJitter(0.5),
+                WindAffected,
+                children![
+                    SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                    SceneRoot(assets.load("foliage.glb#Scene0"))
+                ]
+            )
+        ],
+    ))
+    .observe(instanced_scatter_observer)
+    .observe(extended_scatter_observer);
 }
 
 fn setup_density_map(

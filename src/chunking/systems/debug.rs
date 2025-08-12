@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 pub fn draw_aabbs(
     mut gizmos: Gizmos,
-    q: Query<(&Aabb, &GlobalTransform), With<Chunk>>,
+    q: Query<(&Aabb, &GlobalTransform)>,
     cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
@@ -29,7 +29,7 @@ pub fn draw_chunks(
         gizmos.cuboid(
             Transform::from_translation(tf.translation())
                 .with_rotation(tf.rotation())
-                .with_scale(Vec3::splat(**chunk_size as f32) * **base_chunk_size),
+                .with_scale(**chunk_size as f32 * **base_chunk_size),
             debug_cfg.lod_colors[**chunk_level as usize],
         );
     }

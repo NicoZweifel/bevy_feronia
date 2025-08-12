@@ -4,6 +4,7 @@ mod example;
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
+use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -28,12 +29,13 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
             ChunkPlugin,
-            ScatterPlugin,
+            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
+            HeightMapPlugin,
         ))
         .add_systems(Startup, setup)
         .run()
@@ -44,6 +46,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
+        MapHeight,
         children![(
             scatter_layer("Grass Layer"),
             DistributionDensity(30.0),

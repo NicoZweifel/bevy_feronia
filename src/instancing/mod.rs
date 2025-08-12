@@ -5,6 +5,7 @@ pub mod observers;
 pub mod pipeline;
 pub mod plugin;
 pub mod prepare;
+pub mod scatter;
 pub mod spawn;
 pub mod systems;
 

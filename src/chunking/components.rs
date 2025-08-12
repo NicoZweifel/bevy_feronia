@@ -1,6 +1,3 @@
-use crate::core::Sampler;
-use crate::height_map::cpu_sampler::HeightMapCpuSampler;
-use crate::prelude::HeightMap;
 use bevy::prelude::*;
 use std::num::NonZeroU32;
 
@@ -186,21 +183,6 @@ impl LodConfig {
             level: child_level,
             size: child_size_scalar,
             offsets,
-        }
-    }
-
-    pub fn get_height_map_sampler(
-        &self,
-        images: &Res<Assets<Image>>,
-        height_map: &Option<Res<HeightMap>>,
-        total_world_size: f32,
-    ) -> Option<impl Sampler> {
-        match height_map {
-            None => None,
-            Some(x) => match images.get(&x.0) {
-                None => None,
-                Some(img) => Some(HeightMapCpuSampler::new(img, total_world_size)),
-            },
         }
     }
 }

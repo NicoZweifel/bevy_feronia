@@ -12,15 +12,25 @@ where
     _marker: PhantomData<(TIn, TOut)>,
 }
 
+impl<TIn, TOut> ScatterAssetPlugin<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
+{
+    pub fn new() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+
 impl<TIn, TOut> Default for ScatterAssetPlugin<TIn, TOut>
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
 {
     fn default() -> Self {
-        Self {
-            _marker: PhantomData,
-        }
+        Self::new()
     }
 }
 

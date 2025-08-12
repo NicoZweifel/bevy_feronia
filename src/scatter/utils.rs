@@ -21,25 +21,22 @@ pub fn get_height_map_sampler<'a>(
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
 ) -> HeightMapSampler<'a> {
-    let height_map_image = match height_map {
-        None => None,
-        Some(x) => images.get(&x.0),
-    };
-
-    height_map_cfg.map_or_else(
-        || HeightMapSampler::Default(DefaultSampler),
-        |x| create_height_map(height_map_image, x),
-    )
+    height_map
+        .map(|height_map_image| {
+            height_map_cfg
+                .map(|x| create_height_map_sampler(images.get(&height_map_image.0), x))
+                .flatten()
+        })
+        .flatten()
+        .unwrap_or_else(|| HeightMapSampler::Default(DefaultSampler))
 }
 
-fn create_height_map<'a>(
+fn create_height_map_sampler<'a>(
     height_map_image: Option<&'a Image>,
     cfg: Res<HeightMapConfig>,
-) -> HeightMapSampler<'a> {
-    height_map_image.map_or_else(
-        || HeightMapSampler::Default(DefaultSampler),
-        |img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.world_size)),
-    )
+) -> Option<HeightMapSampler<'a>> {
+    height_map_image
+        .map(|img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.into_inner())))
 }
 
 pub fn scatter_layer_enabled<'a>(
@@ -136,9 +133,12 @@ pub(super) fn create_scatter_result(
 
     instance_pos.y = match modifiers.map_height {
         None => container.height,
-        Some(_) => modifiers
-            .height_sampler
-            .sample(container.transform.translation + instance_pos),
+        Some(_) => {
+            modifiers
+                .height_sampler
+                .sample(container.transform.translation + instance_pos)
+                - container.transform.translation.y
+        }
     };
 
     if let Some(sampler) = &modifiers.density_sampler {
@@ -162,17 +162,19 @@ pub(super) fn create_scatter_result(
     }))
 }
 
-pub(super) fn create_scatter_results(
+pub(super) fn create_scatter_results<TIn, TOut>(
     container: Container,
     modifiers: InstanceModifiers,
-) -> ScatterResults {
+) -> ScatterResults<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
     let mut rng = rand::rng();
-    ScatterResults {
-        data: (0..(container.instances_dim as u32).pow(2))
-            .filter_map(|i| create_scatter_result(i, &container, &modifiers, &mut rng))
-            .collect::<Vec<_>>(),
-        layer: container.layer_entity,
-        chunk: container.chunk_entity,
-        root: container.root_entity,
-    }
+
+    let data = (0..(container.instances_dim as u32).pow(2))
+        .filter_map(|i| create_scatter_result(i, &container, &modifiers, &mut rng))
+        .collect::<Vec<_>>();
+
+    ScatterResults::<TIn, TOut>::from(&container).with_data(data)
 }

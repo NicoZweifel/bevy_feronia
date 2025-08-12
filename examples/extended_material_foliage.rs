@@ -3,6 +3,7 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_feronia::extension::observers::extended_scatter_observer;
+use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -18,7 +19,7 @@ fn main() -> AppExit {
             ExamplePlugin,
             WindPlugin,
             ExtendedWindAffectedPlugin,
-            ScatterPlugin,
+            ScatterPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
         ))
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
@@ -55,5 +56,8 @@ fn scatter_on_keypress(
         return;
     };
 
-    cmd.trigger_targets(Scatter, q_root.iter().collect::<Vec<_>>());
+    cmd.trigger_targets(
+        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+        q_root.iter().collect::<Vec<_>>(),
+    );
 }

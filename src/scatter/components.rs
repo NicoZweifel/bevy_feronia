@@ -26,6 +26,27 @@ pub struct ScatterItemOf(pub Entity);
 #[reflect(Component)]
 pub struct ScatterLayer(Vec<Entity>);
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct ScatterLayerType<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+> {
+    _phantom: std::marker::PhantomData<(TIn, TOut)>,
+}
+
+impl<TIn, TOut> Default for ScatterLayerType<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    fn default() -> Self {
+        Self {
+            _phantom: Default::default(),
+        }
+    }
+}
+
 /// A marker component to signify that a `ScatterLayer` has already had its
 /// sources discovered and its `ScatterItem's generated.
 #[derive(Component)]

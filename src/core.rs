@@ -20,8 +20,12 @@ pub struct SpawnTrigger {
     pub data: Vec<ScatterResult>,
 }
 
-impl From<On<'_, ScatterResults>> for SpawnTrigger {
-    fn from(value: On<ScatterResults>) -> Self {
+impl<TIn, TOut> From<On<'_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    fn from(value: On<ScatterResults<TIn, TOut>>) -> Self {
         Self {
             chunk: value.chunk,
             layer: value.layer,
@@ -38,6 +42,20 @@ where
 {
     pub fn new(items: Vec<ScatterItemAsset<T>>, trigger: SpawnTrigger) -> Self {
         Self { items, trigger }
+    }
+
+    pub fn with_items(mut self, items: Vec<ScatterItemAsset<T>>) -> Self {
+        self.items = items;
+        self
+    }
+}
+
+impl<T> From<SpawnTrigger> for SpawnProtoTypes<T>
+where
+    T: Asset + Clone,
+{
+    fn from(value: SpawnTrigger) -> Self {
+        Self::new(Vec::new(), value)
     }
 }
 

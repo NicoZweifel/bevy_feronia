@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-pub fn init(
+pub fn init<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone>(
     mut cmd: Commands,
     q_chunk: Query<(Entity, &ChunkOf), (With<Chunk>, With<ChunkInitialize>)>,
     q_root: Query<&ScatterRoot>,
@@ -13,7 +13,7 @@ pub fn init(
         };
 
         for scatter_layer in layers.iter() {
-            cmd.trigger_targets(ScatterChunk { scatter_layer }, [chunk])
+            cmd.trigger_targets(ScatterChunk::<TIn, TOut>::new(scatter_layer), [chunk])
         }
 
         cmd.entity(chunk).remove::<ChunkInitialize>();

@@ -5,6 +5,7 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500
 use bevy::prelude::*;
 use bevy_feronia::chunking::systems::debug::draw_aabbs;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
+use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -27,11 +28,11 @@ fn main() -> AppExit {
             aabb_color: GREEN_500.into(),
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
-            ScatterPlugin,
+            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
         ))
         .add_systems(Startup, setup)
         .add_systems(Update, (scatter_on_keypress, draw_aabbs))
@@ -69,5 +70,8 @@ fn scatter_on_keypress(
         return;
     };
 
-    cmd.trigger_targets(Scatter, q_root.iter().collect::<Vec<_>>());
+    cmd.trigger_targets(
+        Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
+        q_root.iter().collect::<Vec<_>>(),
+    );
 }

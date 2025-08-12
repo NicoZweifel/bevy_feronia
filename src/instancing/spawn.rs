@@ -10,7 +10,7 @@ pub fn spawn_instanced_wind_affected(
     mut er_spawn: EventReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
     mut cmd: Commands,
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
-    q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
+    q_chunks: Query<(&GlobalTransform, &ChunkLevel), With<Chunk>>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
 ) {
     for e in er_spawn.read() {
@@ -28,22 +28,16 @@ pub fn spawn_instanced_wind_affected(
             })
             .collect::<Vec<_>>();
 
-        // TODO
-        let (chunk_gtf, chunk_root, chunk_level) =
-            e.trigger
-                .chunk
-                .map_or((Transform::default(), None, ChunkLevel::default()), |x| {
-                    q_chunks.get(x).ok().map_or(
-                        (Transform::default(), None, ChunkLevel::default()),
-                        |(chunk_gtf, chunk_root, chunk_level)| {
-                            (
-                                chunk_gtf.compute_transform(),
-                                Some(chunk_root),
-                                chunk_level.clone(),
-                            )
-                        },
-                    )
-                });
+        let (chunk_gtf, chunk_level) = e
+            .trigger
+            .chunk
+            .map(|x| {
+                q_chunks.get(x).ok().map(|(chunk_gtf, chunk_level)| {
+                    (chunk_gtf.compute_transform(), chunk_level.clone())
+                })
+            })
+            .flatten()
+            .unwrap_or_else(|| (Transform::default(), ChunkLevel::default()));
 
         let mut prototypes: Vec<ScatterAsset<InstancedWindAffectedMaterial>> = vec![];
         for item in e.items.iter() {
@@ -97,7 +91,7 @@ pub fn spawn_instanced_wind_affected(
                 .map(|instance| {
                     let mut instance = instance.clone();
 
-                    instance.position = instance.position + chunk_gtf.translation.with_y(0.);
+                    instance.position = instance.position + chunk_gtf.translation;
 
                     let instance_min =
                         instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
@@ -114,7 +108,7 @@ pub fn spawn_instanced_wind_affected(
                 .spawn((
                     InstancedWindAffectedMeshMaterial(prototype.material().clone()),
                     Mesh3d(mesh_handle),
-                    InstanceMaterialData(instances.clone()),
+                    InstanceMaterialData(instances),
                     NoAutomaticBatching,
                     WindAffected,
                     WindAffectedReady,
@@ -157,7 +151,7 @@ pub fn spawn_instanced_wind_affected(
                     end_margin,
                     use_aabb: false,
                 },*/
-                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.target)),
+                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.layer)),
             ));
         }
     }

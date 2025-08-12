@@ -1,14 +1,65 @@
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
+use crate::scatter::utils::combine_aabbs;
 use bevy::camera::{ImageRenderTarget, RenderTarget};
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
 use bevy::render::render_resource::*;
 use bevy::render::view::NoFrustumCulling;
 use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured};
 
-pub fn setup_materials(mut cmd: Commands, mut materials: ResMut<Assets<HeightMapMaterial>>) {
-    let handle = materials.add(HeightMapMaterial {});
+pub fn setup_materials(
+    mut cmd: Commands,
+    mut materials: ResMut<Assets<HeightMapMaterial>>,
+    cfg: Res<HeightMapConfig>,
+) {
+    let handle = materials.add(HeightMapMaterial::from(cfg.into_inner()));
+
     cmd.insert_resource(HeightMapMaterialHandle(handle));
+}
+
+pub fn setup_config(
+    mut cmd: Commands,
+    q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
+    q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
+) {
+    if !q_pending_landscapes.is_empty() {
+        return;
+    }
+
+    let mut total_aabb: Option<Aabb> = None;
+
+    for aabb in &q_processed_landscapes {
+        if let Some(total) = &mut total_aabb {
+            *total = combine_aabbs(total, aabb);
+        } else {
+            total_aabb = Some(*aabb);
+        }
+    }
+
+    let Some(aabb) = total_aabb else {
+        return;
+    };
+
+    let size_x = aabb.max().x - aabb.min().x;
+    let size_z = aabb.max().z - aabb.min().z;
+    let world_size = size_x.max(size_z);
+    let config = HeightMapConfig {
+        world_size,
+        world_height_range: aabb.min().y..aabb.max().y,
+        render_layer: bevy::render::view::RenderLayers::layer(1),
+    };
+
+    info!("HeightMapConfig created from root AABB:");
+    info!("   - World Size: {:.2}", config.world_size);
+    info!("   - Min Height: {:.2}", config.world_height_range.start);
+    info!("   - Max Height: {:.2}", config.world_height_range.end);
+
+    cmd.insert_resource(config);
+}
+
+pub fn finish_setup(mut next_state: ResMut<NextState<HeightMapState>>) {
+    next_state.set(HeightMapState::Loading);
 }
 
 pub fn create_height_map_ghost(

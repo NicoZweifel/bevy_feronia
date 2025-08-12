@@ -9,6 +9,7 @@ use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
+use bevy_feronia::instancing::scatter::scatter_layer;
 
 fn main() -> AppExit {
     App::new()
@@ -32,12 +33,12 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
             ExamplePlugin,
             WindPlugin,
             InstancedWindAffectedPlugin,
             ChunkPlugin,
-            ScatterPlugin,
+            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
         ))
         .add_systems(Startup, (setup_density_map, setup).chain())
         .run()
@@ -49,6 +50,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         ScatterRoot::default(),
         ChunkRoot::default(),
         ChunkRootSize(4),
+        MapHeight,
         LodConfig(vec![
             // Level 0: High
             30.0.into(),

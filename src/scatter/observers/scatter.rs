@@ -14,15 +14,18 @@ type LayerQueryType<'a> = (
     &'a GlobalTransform,
 );
 
-pub fn scatter(
-    mut trigger: On<Scatter>,
+pub fn scatter<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+>(
+    mut trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     images: Res<Assets<Image>>,
     q_root: Query<(Entity, Option<&MapHeight>, &Aabb), (Without<ChunkRoot>, With<ScatterRoot>)>,
-    q_layer: Query<LayerQueryType, With<ScatterLayer>>,
-    mut ew_results: EventWriter<ScatterResults>,
+    q_layer: Query<LayerQueryType, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
+    mut ew_results: EventWriter<ScatterResults<TIn, TOut>>,
 ) {
     trigger.propagate(false);
 
@@ -55,10 +58,9 @@ pub fn scatter(
     let size = Vec3::from(aabb.half_extents * 2.0);
 
     info!(
-        "Scattering {} instances in ScatterLayer {} with aabb {:?}",
+        "Scattering {} instances in ScatterLayer {}",
         (instances_dim as u32).pow(2),
         layer_entity,
-        aabb
     );
 
     let corner = -Vec3::from(aabb.half_extents);

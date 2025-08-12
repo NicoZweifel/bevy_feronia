@@ -10,9 +10,7 @@ pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
     mut er_spawn: EventReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
-    // TODO use chunks if spawned for chunk
-    _q_chunks: Query<(&GlobalTransform, &ChunkOf, &ChunkLevel), With<Chunk>>,
-    q_root: Query<&LodConfig, With<ScatterRoot>>,
+    q_root: Query<(&LodConfig, Option<&BaseChunkSize>), With<ScatterRoot>>,
 ) {
     for e in er_spawn.read() {
         let mut prototypes: Vec<ScatterAsset<ExtendedWindAffectedMaterial>> = vec![];
@@ -40,7 +38,7 @@ pub fn spawn_extended_wind_affected(
                     .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
             });
 
-        let Ok(lod_config) = q_root.get(e.trigger.root) else {
+        let Ok((lod_config, base_chunk_size)) = q_root.get(e.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
@@ -48,7 +46,8 @@ pub fn spawn_extended_wind_affected(
         cmd.spawn_batch(
             e.trigger
                 .data
-                .iter()
+                .clone()
+                .iter_mut()
                 .map(|result| {
                     let prototypes = name_map.values().choose(&mut rng());
 
@@ -87,7 +86,7 @@ pub fn spawn_extended_wind_affected(
                                 **result,
                                 WindAffected,
                                 WindAffectedReady,
-                                ChildOf(e.trigger.layer),
+                                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.layer)),
                                 VisibilityRange {
                                     start_margin: start_margin.clone(),
                                     end_margin: end_margin.clone(),
