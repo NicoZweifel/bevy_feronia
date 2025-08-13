@@ -27,13 +27,7 @@ fn main() -> AppExit {
             lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
         })
-        .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-            ExamplePlugin,
-            WindPlugin,
-            InstancedWindAffectedPlugin,
-            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-        ))
+        .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, (scatter_on_keypress, draw_aabbs))
         .run()

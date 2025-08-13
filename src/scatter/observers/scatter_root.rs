@@ -14,7 +14,7 @@ pub fn scatter_root<
         return;
     };
 
-    info!("Scattering root: {:?}", trigger.target());
+    debug!("Scattering root: {:?}", trigger.target());
 
     trigger.propagate(false);
 

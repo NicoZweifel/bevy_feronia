@@ -5,17 +5,6 @@ use bevy::render::primitives::Aabb;
 use rand::Rng;
 use rand::prelude::*;
 
-pub fn get_jitter(jitter: Option<&InstanceJitter>, rng: &mut ThreadRng) -> Vec3 {
-    jitter.map_or_else(|| Vec3::ZERO, |x| create_jitter(x, rng))
-}
-
-fn create_jitter(jitter: &InstanceJitter, rng: &mut ThreadRng) -> Vec3 {
-    let x_range = rng.random_range(-**jitter..**jitter);
-    let z_range = rng.random_range(-**jitter..**jitter);
-
-    Vec3::new(x_range, 0., z_range)
-}
-
 pub fn get_height_map_sampler<'a>(
     images: &'a Res<Assets<Image>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
@@ -36,7 +25,7 @@ fn create_height_map_sampler<'a>(
     cfg: Res<HeightMapConfig>,
 ) -> Option<HeightMapSampler<'a>> {
     height_map_image
-        .map(|img| HeightMapSampler::CpuHeightMap(HeightMapCpuSampler::new(img, cfg.into_inner())))
+        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg.into_inner())))
 }
 
 pub fn scatter_layer_enabled<'a>(
@@ -107,42 +96,51 @@ pub(super) struct Container {
     pub transform: Transform,
 }
 
+// TODO refactor into async CPU/GPU pipelines
 pub(super) fn create_scatter_result(
-    i: u32,
     container: &Container,
     modifiers: &InstanceModifiers,
     rng: &mut ThreadRng,
 ) -> Option<ScatterResult> {
-    let x = i as f32 % container.instances_dim;
-    let z = i as f32 / container.instances_dim;
+    let instances_dim_f = container.instances_dim;
+    let cell_width = container.size.x / instances_dim_f;
+    let cell_depth = container.size.z / instances_dim_f;
 
-    let jitter_value = modifiers.jitter.map_or(0., |x| **x);
+    let world_corner_pos = container.transform.translation + container.corner;
+    let start_grid_x = (world_corner_pos.x / cell_width).round();
+    let start_grid_z = (world_corner_pos.z / cell_depth).round();
 
-    let mut instance_pos = container.corner
+    let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
+    let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
+
+    let snapped_world_cell_corner = Vec3::new(
+        (start_grid_x + local_cell_x_idx) * cell_width,
+        0.0,
+        (start_grid_z + local_cell_z_idx) * cell_depth,
+    );
+
+    let jitter_strength = modifiers.jitter.map_or(1.0, |j| **j);
+    let margin_x = (cell_width * (1.0 - jitter_strength)) / 2.0;
+    let margin_z = (cell_depth * (1.0 - jitter_strength)) / 2.0;
+
+    let final_world_pos = snapped_world_cell_corner
         + Vec3::new(
-            x * container.size.x / (container.instances_dim - jitter_value * 2.),
+            margin_x + (rng.random::<f32>() * cell_width * jitter_strength),
             0.0,
-            z * container.size.z / container.instances_dim,
-        )
-        + get_jitter(modifiers.jitter, rng);
+            margin_z + (rng.random::<f32>() * cell_depth * jitter_strength),
+        );
 
-    instance_pos.x = instance_pos.x.max(-container.size.x / 2.);
-    instance_pos.x = instance_pos.x.min(container.size.x / 2.);
-    instance_pos.z = instance_pos.z.max(-container.size.z / 2.);
-    instance_pos.z = instance_pos.z.min(container.size.z / 2.);
+    let mut instance_pos = final_world_pos - container.transform.translation;
 
     instance_pos.y = match modifiers.map_height {
         None => container.height,
         Some(_) => {
-            modifiers
-                .height_sampler
-                .sample(container.transform.translation + instance_pos)
-                - container.transform.translation.y
+            modifiers.height_sampler.sample(final_world_pos) - container.transform.translation.y
         }
     };
 
     if let Some(sampler) = &modifiers.density_sampler {
-        if rng.random::<f32>() > sampler.sample(instance_pos) {
+        if rng.random::<f32>() > sampler.sample(final_world_pos) {
             return None;
         }
     }
@@ -173,7 +171,7 @@ where
     let mut rng = rand::rng();
 
     let data = (0..(container.instances_dim as u32).pow(2))
-        .filter_map(|i| create_scatter_result(i, &container, &modifiers, &mut rng))
+        .filter_map(|_| create_scatter_result(&container, &modifiers, &mut rng))
         .collect::<Vec<_>>();
 
     ScatterResults::<TIn, TOut>::from(&container).with_data(data)

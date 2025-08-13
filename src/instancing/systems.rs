@@ -2,7 +2,7 @@ use super::{
     components::{InstanceMaterialData, InstancePipelineKey},
     draw::DrawCustom,
     material::{InstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial},
-    pipeline::{CustomPipeline, CustomPipelineKey},
+    pipeline::{CustomPipelineKey, InstancedWindAffectedPipeline},
 };
 use crate::prelude::*;
 use bevy::{
@@ -49,8 +49,8 @@ pub(crate) fn add_instance_key_component(
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn queue_custom(
     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
-    custom_pipeline: Res<CustomPipeline>,
-    mut pipelines: ResMut<SpecializedMeshPipelines<CustomPipeline>>,
+    custom_pipeline: Res<InstancedWindAffectedPipeline>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<InstancedWindAffectedPipeline>>,
     pipeline_cache: Res<PipelineCache>,
     meshes: Res<RenderAssets<RenderMesh>>,
     render_mesh_instances: Res<RenderMeshInstances>,

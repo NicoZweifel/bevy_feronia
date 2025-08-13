@@ -14,12 +14,12 @@ impl<'a> Sampler for HeightMapSampler<'a> {
     fn sample(&self, world_pos: Vec3) -> f32 {
         match self {
             HeightMapSampler::Default(sampler) => sampler.sample(world_pos),
-            HeightMapSampler::CpuHeightMap(sampler) => sampler.sample(world_pos),
+            HeightMapSampler::Cpu(sampler) => sampler.sample(world_pos),
         }
     }
 }
 
 pub enum HeightMapSampler<'a> {
     Default(DefaultSampler),
-    CpuHeightMap(HeightMapCpuSampler<'a>),
+    Cpu(HeightMapCpuSampler<'a>),
 }

@@ -11,8 +11,22 @@ pub fn spawn_extended_wind_affected(
     mut er_spawn: EventReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
     q_root: Query<(&LodConfig, Option<&BaseChunkSize>), With<ScatterRoot>>,
+    q_chunks: Query<(&GlobalTransform, &ChunkLevel), With<Chunk>>,
 ) {
     for e in er_spawn.read() {
+        debug!("Spawning extended wind affected!");
+
+        let (chunk_gtf, chunk_level) = e
+            .trigger
+            .chunk
+            .map(|x| {
+                q_chunks.get(x).ok().map(|(chunk_gtf, chunk_level)| {
+                    (chunk_gtf.compute_transform(), chunk_level.clone())
+                })
+            })
+            .flatten()
+            .unwrap_or_else(|| (Transform::default(), ChunkLevel::default()));
+
         let mut prototypes: Vec<ScatterAsset<ExtendedWindAffectedMaterial>> = vec![];
         for item in e.items.iter() {
             let prototype = prototype_assets.get(&item.0);
@@ -29,6 +43,7 @@ pub fn spawn_extended_wind_affected(
 
         prototypes
             .iter()
+            .filter(|x| e.trigger.chunk.is_none() || *x.lod_level == *chunk_level)
             .map(|x| (x.name.clone().unwrap_or(Name::new("")), x))
             .for_each(|(name, x)| {
                 name_map
@@ -52,9 +67,10 @@ pub fn spawn_extended_wind_affected(
                     let prototypes = name_map.values().choose(&mut rng());
 
                     let Some(prototypes) = prototypes else {
-                        warn!("Couldn't choose Prototypes!");
                         return vec![];
                     };
+
+                    debug!("Spawning {} prototypes.", prototypes.len());
 
                     prototypes
                         .iter()
@@ -87,11 +103,6 @@ pub fn spawn_extended_wind_affected(
                                 WindAffected,
                                 WindAffectedReady,
                                 ChildOf(e.trigger.chunk.unwrap_or(e.trigger.layer)),
-                                VisibilityRange {
-                                    start_margin: start_margin.clone(),
-                                    end_margin: end_margin.clone(),
-                                    use_aabb: false,
-                                },
                             )
                         })
                         .collect::<Vec<_>>()

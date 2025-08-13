@@ -3,7 +3,7 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_feronia::extension::observers::extended_scatter_observer;
-use bevy_feronia::prelude::ScatterAssetPlugin;
+use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 
@@ -14,13 +14,7 @@ fn main() -> AppExit {
             micro_strength: 0.1,
             ..default()
         })
-        .add_plugins((
-            ExamplePlugin,
-            WindPlugin,
-            ExtendedWindAffectedPlugin,
-            ScatterPlugin,
-            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
-        ))
+        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()
@@ -31,7 +25,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         children![(
-            scatter_layer("Wind affected Foliage Layer"),
+            scatter_layer("Foliage Layer"),
             DistributionDensity(15.0),
             InstanceRotationYaw {
                 min: 0.0,
@@ -40,10 +34,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceScale { min: 1., max: 3. },
             InstanceJitter(0.1),
             WindAffected,
-            children![
-                SceneRoot(assets.load("foliage_complex.glb#Scene0")),
-                SceneRoot(assets.load("foliage.glb#Scene0"))
-            ]
+            children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]
         )],
     ))
     .observe(extended_scatter_observer);
@@ -58,5 +49,8 @@ fn scatter_on_keypress(
         return;
     };
 
-    cmd.trigger_targets(Scatter, q_scatter_root.iter().collect::<Vec<_>>());
+    cmd.trigger_targets(
+        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+        q_scatter_root.iter().collect::<Vec<_>>(),
+    );
 }

@@ -34,7 +34,7 @@ pub fn collect_assets<TIn, TOut>(
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (root, children) in &q_roots {
-        info!("Collecting ScatterAssets in root {:?}...", root);
+        debug!("Collecting ScatterAssets in root {:?}...", root);
 
         let mut unprocessed_layer_count = 0;
 

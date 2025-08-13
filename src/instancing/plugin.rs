@@ -1,5 +1,5 @@
 use super::prepare::prepare_instance_buffer;
-use super::{draw::DrawCustom, pipeline::CustomPipeline, systems::*};
+use super::{draw::DrawCustom, pipeline::InstancedWindAffectedPipeline, systems::*};
 use crate::instancing::spawn::spawn_instanced_wind_affected;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
@@ -31,7 +31,7 @@ impl Plugin for InstancedWindAffectedPlugin {
 
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
-            .init_resource::<SpecializedMeshPipelines<CustomPipeline>>()
+            .init_resource::<SpecializedMeshPipelines<InstancedWindAffectedPipeline>>()
             .add_systems(
                 Render,
                 (
@@ -42,6 +42,18 @@ impl Plugin for InstancedWindAffectedPlugin {
     }
 
     fn finish(&self, app: &mut App) {
-        app.sub_app_mut(RenderApp).init_resource::<CustomPipeline>();
+        app.sub_app_mut(RenderApp)
+            .init_resource::<InstancedWindAffectedPipeline>();
+    }
+}
+
+pub struct InstancedWindAffectedScatterPlugin;
+
+impl Plugin for InstancedWindAffectedScatterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
+            InstancedWindAffectedPlugin,
+        ));
     }
 }

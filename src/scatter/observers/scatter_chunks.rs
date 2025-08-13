@@ -16,7 +16,7 @@ pub fn scatter_chunks<
     mut trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
-    q_layer: Query<LayerQueryItem, With<ScatterLayer>>,
+    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
 ) {
     trigger.propagate(false);
 

@@ -24,7 +24,7 @@ pub fn scatter_chunk<
     images: Res<Assets<Image>>,
     q_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
-    q_chunk: Query<(Entity, &ChunkSize, &GlobalTransform), With<Chunk>>,
+    q_chunk: Query<(Entity, &ChunkSize, &GlobalTransform, &ChunkLevel), With<Chunk>>,
     mut ew_results: EventWriter<ScatterResults<TIn, TOut>>,
 ) {
     trigger.propagate(false);
@@ -45,18 +45,19 @@ pub fn scatter_chunk<
 
     let density_sampler = get_density_sampler(pattern_dist, &images, *aabb);
 
-    let instances_dim = density_dist.map_or(10., |d| **d);
+    let Ok((chunk_entity, chunk_size, chunk_gtf, chunk_level)) = q_chunk.get(trigger.target())
+    else {
+        warn!("Chunk not found!");
+        return;
+    };
 
-    info!(
+    let instances_dim = density_dist.map_or(1., |d| **d) * (**chunk_level as f32 / 2. + 1.);
+
+    debug!(
         "Scattering {} instances in Chunk {}",
         (instances_dim as u32).pow(2),
         trigger.target()
     );
-
-    let Ok((chunk_entity, chunk_size, chunk_gtf)) = q_chunk.get(trigger.target()) else {
-        warn!("Chunk not found!");
-        return;
-    };
 
     let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
 
@@ -83,8 +84,8 @@ pub fn scatter_chunk<
         },
     );
 
-    info!(
-        "Scattered {} instances in Chunk {}",
+    debug!(
+        "Scattered {} instances in Chunk {} at level {chunk_level:?}",
         results.data.len(),
         trigger.target()
     );

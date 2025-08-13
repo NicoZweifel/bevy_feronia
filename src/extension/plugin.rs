@@ -19,3 +19,14 @@ impl Plugin for ExtendedWindAffectedPlugin {
             .add_systems(Update, spawn_extended_wind_affected);
     }
 }
+
+pub struct ExtendedWindAffectedScatterPlugin;
+
+impl Plugin for ExtendedWindAffectedScatterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+            ExtendedWindAffectedPlugin,
+        ));
+    }
+}

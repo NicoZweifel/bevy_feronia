@@ -9,6 +9,11 @@ pub fn on_add_scatter_root<
     trigger: On<Add, ScatterRoot>,
     mut cmd: Commands,
 ) {
-    cmd.entity(trigger.target())
+    let root = trigger.target();
+
+    debug!("Added ScatterRoot {root}.");
+
+    cmd.entity(root)
+        .insert(ScatterObserver)
         .observe(scatter_root::<TIn, TOut>);
 }

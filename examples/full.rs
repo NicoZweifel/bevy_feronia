@@ -22,34 +22,30 @@ fn main() -> AppExit {
             micro_strength: 0.2,
             round_exponent: 15.,
             edge_correction_factor: 0.001,
-            high_quality: false,
+            high_quality: true,
             lod_threshold: 10.0,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
-        .insert_resource(ChunkDebugConfig {
+        /*.insert_resource(ChunkDebugConfig {
             lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
-        })
+        })*/
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })
         .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
-            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
             ExamplePlugin,
-            WindPlugin,
-            InstancedWindAffectedPlugin,
-            ExtendedWindAffectedPlugin,
-            ChunkPlugin,
-            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
-            ScatterPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
-            HeightMapPlugin,
+            InstancedWindAffectedScatterPlugin,
+            ExtendedWindAffectedScatterPlugin,
         ))
         .add_systems(Startup, (setup_density_map, setup).chain())
         .add_systems(
             Update,
-            setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
+            (
+                setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
+                scatter_on_keypress,
+            ),
         )
         .run()
 }
@@ -76,12 +72,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
         ScatterRoot::default(),
-        ChunkRoot::default(),
         MapHeight,
+        ChunkRoot::default(),
         children![
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(50.),
+                DistributionDensity(70.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
@@ -90,8 +86,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
                 },
+                InstanceJitter(1.0),
                 InstanceScale { min: 1.0, max: 1.5 },
-                InstanceJitter(0.05),
                 WindAffected,
                 children![
                     SceneRoot(assets.load("grass.glb#Scene0")),
@@ -99,29 +95,50 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
                         LodLevel(1),
                     ),
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(2),
+                    (
+                        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                        LodLevel(2)
+                    ),
                 ],
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
-                DistributionDensity(1.0),
+                DistributionDensity(5.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
                 },
                 InstanceScale { min: 1., max: 5. },
-                InstanceJitter(0.5),
+                InstanceJitter(1.0),
                 WindAffected,
-                children![
-                    SceneRoot(assets.load("foliage_complex.glb#Scene0")),
-                    SceneRoot(assets.load("foliage.glb#Scene0"))
-                ]
+                children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]
             )
         ],
     ))
     .observe(instanced_scatter_observer)
     .observe(extended_scatter_observer);
+}
+
+fn scatter_on_keypress(
+    mut cmd: Commands,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    q_root: Query<Entity, With<ScatterRoot>>,
+) {
+    if !keyboard_input.just_pressed(KeyCode::Space) {
+        return;
+    };
+
+    let targets = q_root.iter().collect::<Vec<_>>();
+
+    cmd.trigger_targets(
+        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+        targets.clone(),
+    );
+
+    cmd.trigger_targets(
+        Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
+        targets,
+    );
 }
 
 fn setup_density_map(

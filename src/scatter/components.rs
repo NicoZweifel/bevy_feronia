@@ -21,7 +21,7 @@ where
 pub struct ScatterItemOf(pub Entity);
 
 #[derive(Component, Reflect, Default)]
-#[require(Transform, Visibility, GlobalTransform)]
+#[require(Transform, Visibility)]
 #[relationship_target(relationship = ScatterItemOf)]
 #[reflect(Component)]
 pub struct ScatterLayer(Vec<Entity>);
@@ -52,6 +52,9 @@ where
 #[derive(Component)]
 pub struct ScatterLayerProcessed;
 
+#[derive(Component)]
+pub struct ScatterObserver;
+
 #[derive(Component, Debug, Clone, Reflect, Deref)]
 #[reflect(Component)]
 #[relationship(relationship_target = ScatterRoot)]
@@ -59,7 +62,7 @@ pub struct ScatterLayerOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
-#[require(Transform, Visibility, GlobalTransform, LodConfig)]
+#[require(Transform, Visibility, LodConfig)]
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 

@@ -28,15 +28,7 @@ fn main() -> AppExit {
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })
-        .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-            ExamplePlugin,
-            WindPlugin,
-            InstancedWindAffectedPlugin,
-            ChunkPlugin,
-            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-            HeightMapPlugin,
-        ))
+        .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
         .run()
 }

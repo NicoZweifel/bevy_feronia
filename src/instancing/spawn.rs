@@ -3,6 +3,7 @@ use bevy::camera::primitives::Aabb;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
+use bevy::render::view::VisibilityRange;
 use rand::prelude::IteratorRandom;
 use rand::rng;
 
@@ -11,9 +12,11 @@ pub fn spawn_instanced_wind_affected(
     mut cmd: Commands,
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), With<Chunk>>,
-    q_root: Query<&LodConfig, With<ScatterRoot>>,
+    q_root: Query<(&LodConfig, Option<&ChunkLodConfig>), With<ScatterRoot>>,
 ) {
     for e in er_spawn.read() {
+        debug!("Spawning instanced wind affected!");
+
         let instances = e
             .trigger
             .data
@@ -56,7 +59,7 @@ pub fn spawn_instanced_wind_affected(
 
         prototypes
             .iter()
-            .filter(|x| *x.lod_level >= *chunk_level)
+            .filter(|x| e.trigger.chunk.is_none() || *x.lod_level == *chunk_level)
             .map(|x| (x.name.clone().unwrap_or(Name::new("")), x))
             .for_each(|(name, x)| {
                 name_map
@@ -66,23 +69,21 @@ pub fn spawn_instanced_wind_affected(
                     .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
             });
 
+        debug!("Spawning {} prototypes.", prototypes.len());
+
         let prototypes = name_map.values().choose(&mut rng());
 
         let Some(prototypes) = prototypes else {
-            warn!("Couldn't choose Prototypes!");
+            warn!("No prototypes in level {chunk_level:?}!");
             return;
         };
 
-        info!("Spawning {} prototypes.", prototypes.len());
-
-        let Ok(lod_config) = q_root.get(e.trigger.root) else {
+        let Ok((lod_config, chunk_lod_config)) = q_root.get(e.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
 
         for prototype in prototypes {
-            let lod_level = prototype.lod_level;
-
             let mesh_handle = prototype.mesh().clone();
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
@@ -115,24 +116,22 @@ pub fn spawn_instanced_wind_affected(
                 ))
                 .id();
 
-            // TODO
-            // let lod_level = *chunk_level as usize;
-            let lod_level = *lod_level as usize;
+            let lod_level = prototype.lod_level;
+
+            const FADE_BAND: f32 = 10.0;
 
             let current_lod_dist = lod_config
-                .get(lod_level)
+                .get(*lod_level as usize)
                 .map_or(*LodLevelDistance::default(), |x| **x);
 
-            const FADE_BAND: f32 = 2.0;
-
-            let start_margin = if lod_level == 0 {
+            let start_margin = if *lod_level == 0 {
                 0.0..0.0
             } else {
-                let prev_lod_dist = *(**lod_config)[lod_level - 1];
+                let prev_lod_dist = *(**lod_config)[*lod_level as usize - 1];
                 prev_lod_dist - FADE_BAND..prev_lod_dist
             };
 
-            let end_margin = if lod_level as u32 == lod_config.get_max_lod_level() {
+            let end_margin = if *lod_level == lod_config.get_max_lod_level() {
                 f32::MAX..f32::MAX
             } else {
                 current_lod_dist - FADE_BAND..current_lod_dist
@@ -144,14 +143,19 @@ pub fn spawn_instanced_wind_affected(
             let local_max = max_point - chunk_center;
 
             let local_aabb = Aabb::from_min_max(local_min, local_max);
+
+            let parent = e.trigger.chunk.unwrap_or(e.trigger.layer);
+
             cmd.entity(entity).insert((
+                Transform::default(),
+                Visibility::Visible,
                 Aabb::from(local_aabb),
-                /* VisibilityRange {
+                ChildOf(parent),
+                VisibilityRange {
                     start_margin,
                     end_margin,
                     use_aabb: false,
-                },*/
-                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.layer)),
+                },
             ));
         }
     }

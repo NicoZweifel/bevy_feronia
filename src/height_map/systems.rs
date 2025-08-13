@@ -22,8 +22,14 @@ pub fn setup_config(
     mut cmd: Commands,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
     q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
+    mut next_state: ResMut<NextState<HeightMapState>>,
 ) {
     if !q_pending_landscapes.is_empty() {
+        return;
+    }
+
+    if q_processed_landscapes.is_empty() {
+        next_state.set(HeightMapState::Loading);
         return;
     }
 
@@ -50,12 +56,25 @@ pub fn setup_config(
         render_layer: bevy::render::view::RenderLayers::layer(1),
     };
 
-    info!("HeightMapConfig created from root AABB:");
-    info!("   - World Size: {:.2}", config.world_size);
-    info!("   - Min Height: {:.2}", config.world_height_range.start);
-    info!("   - Max Height: {:.2}", config.world_height_range.end);
+    debug!("HeightMapConfig created from root AABB:");
+    debug!("   - World Size: {:.2}", config.world_size);
+    debug!("   - Min Height: {:.2}", config.world_height_range.start);
+    debug!("   - Max Height: {:.2}", config.world_height_range.end);
 
     cmd.insert_resource(config);
+}
+
+pub fn skip_setup(
+    q_landscapes: Query<Entity, With<MapHeight>>,
+    mut next_state: ResMut<NextState<HeightMapState>>,
+) {
+    if !q_landscapes.is_empty() {
+        return;
+    };
+
+    info!("Skipping HeightMap setup");
+
+    next_state.set(HeightMapState::Ready);
 }
 
 pub fn finish_setup(mut next_state: ResMut<NextState<HeightMapState>>) {
@@ -86,7 +105,9 @@ pub fn create_height_map_ghost(
             ));
 
             cmd.entity(landscape_root).insert(HeightMapped);
-            println!("HeightMapGhost created");
+
+            debug!("HeightMapGhost created");
+
             next_state.set(HeightMapState::Baking);
         }
     }

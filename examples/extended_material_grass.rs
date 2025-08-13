@@ -18,13 +18,7 @@ fn main() -> AppExit {
             edge_correction_factor: 0.001,
             ..default()
         })
-        .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
-            ExamplePlugin,
-            WindPlugin,
-            ExtendedWindAffectedPlugin,
-            ScatterPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
-        ))
+        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()
@@ -59,6 +53,8 @@ fn scatter_on_keypress(
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
+
+    println!("Scattering");
 
     cmd.trigger_targets(
         Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),

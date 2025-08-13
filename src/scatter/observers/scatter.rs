@@ -57,7 +57,7 @@ pub fn scatter<
 
     let size = Vec3::from(aabb.half_extents * 2.0);
 
-    info!(
+    debug!(
         "Scattering {} instances in ScatterLayer {}",
         (instances_dim as u32).pow(2),
         layer_entity,
@@ -86,7 +86,7 @@ pub fn scatter<
         },
     );
 
-    info!("Scattered {} instances", results.data.len());
+    debug!("Scattered {} instances", results.data.len());
 
     cmd.trigger_targets(results.clone(), [root, layer_entity]);
     ew_results.write(results);

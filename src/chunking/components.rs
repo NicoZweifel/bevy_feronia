@@ -5,6 +5,84 @@ use std::num::NonZeroU32;
 #[reflect(Component)]
 pub struct LodConfig(pub Vec<LodLevelDistance>);
 
+impl LodConfiguration for LodConfig {
+    fn get_max_lod_level(&self) -> u32 {
+        (self.0.len() - 1) as u32
+    }
+
+    fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
+        &self.0[level as usize]
+    }
+}
+
+pub trait LodConfiguration {
+    fn get_max_lod_level(&self) -> u32;
+    fn get_lod_config(&self, level: u32) -> &LodLevelDistance;
+}
+
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component)]
+pub struct ChunkLodConfig(pub Vec<LodLevelDistance>);
+
+impl Default for ChunkLodConfig {
+    fn default() -> Self {
+        Self(
+            // LODs are ordered from High (0) to Low (n).
+            vec![
+                60.0.into(),
+                // Level 1: Medium
+                180.0.into(),
+                // Level 2: Low
+                LodLevelDistance::default(),
+            ],
+        )
+    }
+}
+
+pub struct ChildChunkData {
+    pub level: u32,
+    pub size: u32,
+    pub offsets: [Vec3; 4],
+}
+
+impl LodConfiguration for ChunkLodConfig {
+    fn get_max_lod_level(&self) -> u32 {
+        (self.0.len() - 1) as u32
+    }
+
+    fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
+        &self.0[level as usize]
+    }
+}
+
+impl ChunkLodConfig {
+    /// Calculates the level, size, and world-space offsets for a chunk's children.
+    pub fn calculate_child_data(
+        &self,
+        level: NonZeroU32,
+        size: u32,
+        base_chunk_size: Vec3,
+        // TODO use this instead of hardcoding 4 offsets
+        child_size_scalar: u32,
+    ) -> ChildChunkData {
+        let parent_world_size = size as f32 * base_chunk_size;
+        let child_level = level.get() - 1;
+        let offset = parent_world_size / 4.0;
+        let offsets = [
+            Vec3::new(-offset.x, 0.0, -offset.z),
+            Vec3::new(offset.x, 0.0, -offset.z),
+            Vec3::new(-offset.x, 0.0, offset.z),
+            Vec3::new(offset.x, 0.0, offset.z),
+        ];
+
+        ChildChunkData {
+            level: child_level,
+            size: child_size_scalar,
+            offsets,
+        }
+    }
+}
+
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct ChunkSizeScalarConfig(pub Vec<ChunkSizeScalar>);
@@ -16,7 +94,7 @@ pub struct ChunkRootSize(pub u32);
 
 impl Default for ChunkRootSize {
     fn default() -> Self {
-        Self(16)
+        Self(8)
     }
 }
 
@@ -71,17 +149,22 @@ pub struct ChunkOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
-#[require(Transform, Visibility, LodConfig, ChunkSizeScalarConfig, ChunkRootSize)]
+#[require(
+    Transform,
+    Visibility,
+    ChunkLodConfig,
+    ChunkSizeScalarConfig,
+    ChunkRootSize
+)]
 #[relationship_target(relationship = ChunkOf)]
 pub struct ChunkRoot(Vec<Entity>);
 
-/// The distance at which a chunk of this level is merged.
+/// The distance until this LOD Level is visible.
 #[derive(Reflect, Debug, Deref, DerefMut)]
 pub struct LodLevelDistance(pub f32);
 
 /// The size of a chunk at this level, as a multiple of the highest-LOD chunk size.
-#[derive(Component, Reflect, Debug, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Reflect, Debug, Deref, DerefMut)]
 pub struct ChunkSizeScalar(pub u32);
 
 impl Default for LodLevelDistance {
@@ -150,45 +233,4 @@ impl ChunkSizeScalarConfig {
     pub fn get_scalar_config(&self, level: u32) -> &ChunkSizeScalar {
         &self.0[level as usize]
     }
-}
-
-impl LodConfig {
-    pub fn get_max_lod_level(&self) -> u32 {
-        (self.0.len() - 1) as u32
-    }
-
-    pub fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
-        &self.0[level as usize]
-    }
-
-    /// Calculates the level, size, and world-space offsets for a chunk's children.
-    pub fn calculate_child_data(
-        &self,
-        level: NonZeroU32,
-        size: u32,
-        base_chunk_size: Vec3,
-        child_size_scalar: u32,
-    ) -> ChildChunkData {
-        let parent_world_size = size as f32 * base_chunk_size;
-        let child_level = level.get() - 1;
-        let offset = parent_world_size / 4.0;
-        let offsets = [
-            Vec3::new(-offset.x, 0.0, -offset.z),
-            Vec3::new(offset.x, 0.0, -offset.z),
-            Vec3::new(-offset.x, 0.0, offset.z),
-            Vec3::new(offset.x, 0.0, offset.z),
-        ];
-
-        ChildChunkData {
-            level: child_level,
-            size: child_size_scalar,
-            offsets,
-        }
-    }
-}
-
-pub struct ChildChunkData {
-    pub level: u32,
-    pub size: u32,
-    pub offsets: [Vec3; 4],
 }

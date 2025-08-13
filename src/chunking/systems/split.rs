@@ -28,11 +28,11 @@ pub fn handle_split(
     mut cmd: Commands,
     mut er_split: EventReader<SplitChunk>,
     q_chunk: Query<(&ChunkLevel, &ChunkSize, &ChunkOf), (With<CanSplit>, With<Chunk>)>,
-    q_chunk_config: Query<(&BaseChunkSize, &LodConfig, &ChunkSizeScalarConfig)>,
+    q_chunk_config: Query<(&BaseChunkSize, &ChunkLodConfig, &ChunkSizeScalarConfig)>,
 ) {
     for e in er_split.read() {
         let parent_entity = e.get();
-        info!("Splitting Chunk: {parent_entity}");
+        debug!("Splitting Chunk: {parent_entity}");
 
         let Ok((parent_chunk_level, parent_chunk_size, root_chunk)) = q_chunk.get(parent_entity)
         else {

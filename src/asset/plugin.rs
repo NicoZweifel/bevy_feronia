@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-pub struct ScatterAssetPlugin<TIn, TOut>
+pub struct ScatterAssetsPlugin<TIn, TOut>
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
@@ -12,10 +12,10 @@ where
     _marker: PhantomData<(TIn, TOut)>,
 }
 
-impl<TIn, TOut> ScatterAssetPlugin<TIn, TOut>
+impl<TIn, TOut> ScatterAssetsPlugin<TIn, TOut>
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     pub fn new() -> Self {
         Self {
@@ -24,20 +24,20 @@ where
     }
 }
 
-impl<TIn, TOut> Default for ScatterAssetPlugin<TIn, TOut>
+impl<TIn, TOut> Default for ScatterAssetsPlugin<TIn, TOut>
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<TOut, TIn> Plugin for ScatterAssetPlugin<TIn, TOut>
+impl<TOut, TIn> Plugin for ScatterAssetsPlugin<TIn, TOut>
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, (collect_assets::<TIn, TOut>,));

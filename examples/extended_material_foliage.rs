@@ -14,13 +14,7 @@ fn main() -> AppExit {
             micro_strength: 0.2,
             ..default()
         })
-        .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
-            ExamplePlugin,
-            WindPlugin,
-            ExtendedWindAffectedPlugin,
-            ScatterPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
-        ))
+        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()

@@ -6,10 +6,10 @@ use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
+use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use bevy_feronia::instancing::scatter::scatter_layer;
 
 fn main() -> AppExit {
     App::new()
@@ -32,14 +32,7 @@ fn main() -> AppExit {
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })
-        .add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-            ExamplePlugin,
-            WindPlugin,
-            InstancedWindAffectedPlugin,
-            ChunkPlugin,
-            ScatterPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-        ))
+        .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .add_systems(Startup, (setup_density_map, setup).chain())
         .run()
 }

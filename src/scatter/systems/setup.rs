@@ -43,7 +43,7 @@ pub fn setup_root_aabb(
             continue;
         };
 
-        info!("Calculated and inserted AABB for ScatterRoot. {aabb:?}");
+        debug!("Calculated and inserted AABB for ScatterRoot. {aabb:?}");
         cmd.entity(root_entity).insert(aabb);
     }
 }

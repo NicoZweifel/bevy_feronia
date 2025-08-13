@@ -4,7 +4,7 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
 pub fn merge(
-    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>)>,
+    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>, Without<ChunkInitialize>)>,
     mut ew_check: EventWriter<MergeCheck>,
 ) {
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
@@ -21,7 +21,7 @@ pub fn merge(
 pub fn handle_merge_check(
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
     q_chunk: Query<&MergeDistance, (With<CanMerge>, With<Chunk>)>,
-    q_parent: Query<&GlobalTransform>,
+    q_parent: Query<(&GlobalTransform, &ChunkSize)>,
     mut er_check: EventReader<MergeCheck>,
     mut ew_merge: EventWriter<MergeChunks>,
 ) {
@@ -35,12 +35,17 @@ pub fn handle_merge_check(
     let center = center.translation();
 
     for e in er_check.read() {
-        if e.children.len() < 4 {
+        let parent = e.parent;
+        let Ok((parent_tf, chunk_size)) = q_parent.get(parent) else {
+            warn!("Couldn't get parent Chunk for merge!");
+            continue;
+        };
+
+        if e.children.len() < **chunk_size as usize {
             continue;
         };
 
         let children = e.children.clone();
-        let parent = e.parent;
 
         let first_child = children[0];
 
@@ -49,8 +54,7 @@ pub fn handle_merge_check(
             continue;
         };
 
-        let parent_translation = q_parent.get(parent).unwrap().translation();
-        let distance = center.distance(parent_translation);
+        let distance = center.distance(parent_tf.translation());
         if distance < **merge_distance {
             continue;
         }
@@ -64,7 +68,7 @@ pub fn handle_merge(mut cmd: Commands, mut er_merge: EventReader<MergeChunks>) {
         let children = e.children.clone();
         let parent = e.parent;
 
-        info!("Merging Chunks: {children:?} into {parent}");
+        debug!("Merging Chunks: {children:?} into {parent}");
 
         for child in &e.children {
             cmd.entity(*child).despawn();

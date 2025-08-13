@@ -11,18 +11,20 @@ pub fn scatter_observer<TIn, TOut>(
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    let Ok(scatter_items) = q_layer.get(trigger.layer) else {
-        warn!("No ScatterLayer found!");
+    let layer = trigger.layer;
+
+    let Ok(scatter_items) = q_layer.get(layer) else {
+        warn!("ScatterLayer {layer} not found!");
         return;
     };
 
     let items = scatter_items
         .iter()
-        .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()))
-        .collect::<Vec<_>>();
+        .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()));
 
     let trigger = SpawnTrigger::from(trigger);
-    let event = SpawnProtoTypes::from(trigger).with_items(items);
+
+    let event = SpawnProtoTypes::from(trigger).with_items(items.collect());
 
     ew_spawn.write(event);
 }

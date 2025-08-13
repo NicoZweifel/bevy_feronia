@@ -3,10 +3,9 @@ use crate::scatter::observers::scatter_chunk;
 use bevy::prelude::*;
 
 pub fn on_add_chunk(trigger: On<Add, Chunk>, mut cmd: Commands) {
-    debug!("Chunk added: {}", trigger.target());
+    let chunk = trigger.target();
 
-    cmd.entity(trigger.target())
-        .insert(ChunkInitialize)
-        .observe(scatter_chunk::<StandardMaterial, InstancedWindAffectedMaterial>)
-        .observe(scatter_chunk::<StandardMaterial, ExtendedWindAffectedMaterial>);
+    debug!("Chunk added: {chunk}.");
+
+    cmd.entity(chunk).insert(ChunkInitialize);
 }

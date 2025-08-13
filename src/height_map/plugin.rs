@@ -15,7 +15,7 @@ impl Plugin for HeightMapPlugin {
             .add_systems(
                 Update,
                 (
-                    setup_config.run_if(
+                    (setup_config, skip_setup).run_if(
                         not(resource_exists::<HeightMapConfig>)
                             .and(in_state(HeightMapState::Setup)),
                     ),

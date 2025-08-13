@@ -15,20 +15,20 @@ pub(crate) struct CustomPipelineKey {
 }
 
 #[derive(Resource)]
-pub(crate) struct CustomPipeline {
+pub(crate) struct InstancedWindAffectedPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
     material_layout: BindGroupLayout,
 }
 
-impl FromWorld for CustomPipeline {
+impl FromWorld for InstancedWindAffectedPipeline {
     fn from_world(world: &mut World) -> Self {
         let mesh_pipeline = world.resource::<MeshPipeline>().clone();
         let render_device = world.resource::<RenderDevice>();
         let material_layout = InstancedWindAffectedMaterial::bind_group_layout(render_device);
         let asset_server = world.resource::<AssetServer>();
 
-        CustomPipeline {
+        InstancedWindAffectedPipeline {
             shader: asset_server.load(
                 AssetPath::from_path_buf(embedded_path!("instancing.wgsl")).with_source("embedded"),
             ),
@@ -38,7 +38,7 @@ impl FromWorld for CustomPipeline {
     }
 }
 
-impl SpecializedMeshPipeline for CustomPipeline {
+impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
     type Key = CustomPipelineKey;
 
     fn specialize(

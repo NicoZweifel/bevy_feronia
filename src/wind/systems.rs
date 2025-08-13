@@ -22,7 +22,7 @@ pub fn insert_material<TIn, TOut>(
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
-        info!("Replacing Material with WindAffected material...");
+        debug!("Replacing Material with WindAffected material...");
 
         cmd.entity(entity).insert((
             TOut::component((**wind_affected).clone()),

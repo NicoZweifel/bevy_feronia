@@ -85,3 +85,10 @@ pub trait Sampler {
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
 #[reflect(Component)]
 pub struct LodLevel(pub u32);
+
+#[derive(Clone, Default)]
+pub struct ThreadSafeImage {
+    /// Raw pixel data.
+    pub pixels: Vec<u8>,
+    pub dimensions: UVec2,
+}
