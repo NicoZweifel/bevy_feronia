@@ -103,7 +103,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
-                DistributionDensity(5.0),
+                DistributionDensity(1.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0

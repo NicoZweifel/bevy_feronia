@@ -27,7 +27,6 @@ impl Plugin for ChunkPlugin {
                         .run_if(in_state(HeightMapState::Ready)),
                 ),
             )
-            .add_observer(on_add_chunk)
             .add_systems(
                 Update,
                 (

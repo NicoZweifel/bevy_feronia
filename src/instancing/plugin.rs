@@ -52,8 +52,8 @@ pub struct InstancedWindAffectedScatterPlugin;
 impl Plugin for InstancedWindAffectedScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
             InstancedWindAffectedPlugin,
+            ScatterAssetPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
         ));
     }
 }

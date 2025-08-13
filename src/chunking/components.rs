@@ -108,10 +108,6 @@ pub struct CanSplit;
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
-pub struct ChunkInitialize;
-
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)]
 pub struct CanMerge;
 
 #[derive(Component, Reflect, Deref, DerefMut, Default, Debug, Clone)]

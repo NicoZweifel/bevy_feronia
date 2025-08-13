@@ -7,7 +7,6 @@ pub mod scatter_chunks;
 pub mod scatter_observer;
 pub mod scatter_root;
 
-pub use crate::chunking::systems::on_add_chunk::*;
 pub use on_add_scatter_item::*;
 pub use on_add_scatter_layer::*;
 pub use on_add_scatter_root::*;

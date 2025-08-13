@@ -4,7 +4,7 @@ use bevy::render::primitives::MeshAabb;
 
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
-    q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootReady>>,
+    q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
         &Children,
         (
@@ -36,16 +36,12 @@ pub fn collect_assets<TIn, TOut>(
     for (root, children) in &q_roots {
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
-        let mut unprocessed_layer_count = 0;
-
         for layer in children.iter() {
             let Ok(scatter_items) = q_layers.get(layer) else {
                 continue;
             };
 
-            unprocessed_layer_count += 1;
-
-            let mut result = scatter_items
+            let result = scatter_items
                 .iter()
                 .map(|x| {
                     collect_assets_recursive::<TIn, TOut>(
@@ -68,12 +64,9 @@ pub fn collect_assets<TIn, TOut>(
                 .collect::<Vec<_>>();
 
             if result.len() > 0 {
+                debug!("Found {} assets in layer {:?}", result.len(), layer);
                 cmd.entity(layer).insert(ScatterLayerProcessed);
             }
-        }
-
-        if unprocessed_layer_count == 0 {
-            cmd.entity(root).insert(ScatterRootReady);
         }
     }
 }
@@ -174,6 +167,11 @@ where
         name: name.clone(),
         lod_level,
     };
+
+    debug!(
+        "Adding asset {:?} lod_level {:?}",
+        asset.name, asset.lod_level
+    );
 
     let asset_handle = prototype_assets.add(asset);
 

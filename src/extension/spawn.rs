@@ -58,6 +58,11 @@ pub fn spawn_extended_wind_affected(
             return;
         };
 
+        debug!(
+            "Spawning {} extended prototypes in level {chunk_level:?}.",
+            prototypes.len()
+        );
+
         cmd.spawn_batch(
             e.trigger
                 .data
@@ -69,8 +74,6 @@ pub fn spawn_extended_wind_affected(
                     let Some(prototypes) = prototypes else {
                         return vec![];
                     };
-
-                    debug!("Spawning {} prototypes.", prototypes.len());
 
                     prototypes
                         .iter()

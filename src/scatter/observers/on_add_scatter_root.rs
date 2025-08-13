@@ -13,7 +13,5 @@ pub fn on_add_scatter_root<
 
     debug!("Added ScatterRoot {root}.");
 
-    cmd.entity(root)
-        .insert(ScatterObserver)
-        .observe(scatter_root::<TIn, TOut>);
+    cmd.entity(root).observe(scatter_root::<TIn, TOut>);
 }

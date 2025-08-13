@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy::prelude::*;
+use std::marker::PhantomData;
 
 #[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
@@ -7,7 +8,7 @@ pub struct ScatterItem;
 
 #[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
-pub struct ScatterRootReady;
+pub struct ScatterRootProcessed;
 
 #[derive(Component, Reflect, Debug, Clone, Deref)]
 #[reflect(Component)]
@@ -28,11 +29,32 @@ pub struct ScatterLayer(Vec<Entity>);
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
+pub struct ChunkInitialize<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+> {
+    _phantom: PhantomData<(TIn, TOut)>,
+}
+
+impl<TIn, TOut> Default for ChunkInitialize<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    fn default() -> Self {
+        Self {
+            _phantom: Default::default(),
+        }
+    }
+}
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct ScatterLayerType<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 > {
-    _phantom: std::marker::PhantomData<(TIn, TOut)>,
+    _phantom: PhantomData<(TIn, TOut)>,
 }
 
 impl<TIn, TOut> Default for ScatterLayerType<TIn, TOut>

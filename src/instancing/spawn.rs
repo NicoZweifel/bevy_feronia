@@ -69,7 +69,10 @@ pub fn spawn_instanced_wind_affected(
                     .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
             });
 
-        debug!("Spawning {} prototypes.", prototypes.len());
+        debug!(
+            "Spawning {} instanced prototypes in level {chunk_level:?}.",
+            prototypes.len()
+        );
 
         let prototypes = name_map.values().choose(&mut rng());
 

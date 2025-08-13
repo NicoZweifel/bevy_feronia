@@ -45,7 +45,8 @@ impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset 
             .add_event::<ScatterResults<TIn, TOut>>()
             .add_observer(on_add_scatter_root::<TIn, TOut>)
             .add_observer(on_add_scatter_layer::<TIn, TOut>)
-            .add_systems(Update, (init::<TIn, TOut>.in_set(ChunkSet::Ready),));
+            .add_observer(init::<TIn, TOut>)
+            .add_systems(Update, chunk_init::<TIn, TOut>.in_set(ChunkSet::Ready));
     }
 }
 
@@ -62,7 +63,10 @@ impl Plugin for ScatterPlugin {
             )
             .add_systems(
                 Update,
-                (transition_to_ready_state.run_if(in_state(ScatterState::Setup)),),
+                (
+                    transition_to_ready_state.run_if(in_state(ScatterState::Setup)),
+                    check_unprocessed_layers,
+                ),
             );
     }
 }
