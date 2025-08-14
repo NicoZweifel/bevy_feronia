@@ -98,6 +98,10 @@ impl Default for ChunkRootSize {
     }
 }
 
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct ChunkInitialize;
+
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct ChunkCenter;

@@ -45,8 +45,8 @@ impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset 
             .add_event::<ScatterResults<TIn, TOut>>()
             .add_observer(on_add_scatter_root::<TIn, TOut>)
             .add_observer(on_add_scatter_layer::<TIn, TOut>)
-            .add_observer(init::<TIn, TOut>)
-            .add_systems(Update, chunk_init::<TIn, TOut>.in_set(ChunkSet::Ready));
+            .add_observer(on_chunk_add::<TIn, TOut>)
+            .add_systems(Update, chunk_init_scatter::<TIn, TOut>.in_set(ChunkSet::Ready));
     }
 }
 

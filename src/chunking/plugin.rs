@@ -27,10 +27,12 @@ impl Plugin for ChunkPlugin {
                         .run_if(in_state(HeightMapState::Ready)),
                 ),
             )
+                       .add_observer(on_add_chunk)
             .add_systems(
                 Update,
                 (
                     setup_chunks,
+                    chunk_init,
                     update_chunk_height.run_if(resource_exists_and_changed::<HeightMap>),
                     (split, handle_split).chain(),
                     (merge, handle_merge_check, handle_merge).chain(),

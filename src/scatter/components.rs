@@ -29,14 +29,14 @@ pub struct ScatterLayer(Vec<Entity>);
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct ChunkInitialize<
+pub struct ChunkInitScatter<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 > {
     _phantom: PhantomData<(TIn, TOut)>,
 }
 
-impl<TIn, TOut> Default for ChunkInitialize<TIn, TOut>
+impl<TIn, TOut> Default for ChunkInitScatter<TIn, TOut>
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,

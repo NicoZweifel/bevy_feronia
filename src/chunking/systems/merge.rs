@@ -4,7 +4,7 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
 pub fn merge(
-    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>)>,
+    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>, Without<ChunkInitialize>)>,
     mut ew_check: EventWriter<MergeCheck>,
 ) {
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();

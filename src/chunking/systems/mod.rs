@@ -3,6 +3,7 @@ pub mod merge;
 pub mod setup;
 pub mod split;
 pub mod update;
+pub mod on_add_chunk;
 
 pub mod prelude {
     pub use crate::chunking::systems::debug::*;
@@ -10,4 +11,5 @@ pub mod prelude {
     pub use crate::chunking::systems::setup::*;
     pub use crate::chunking::systems::split::*;
     pub use crate::chunking::systems::update::*;
+    pub use crate::chunking::systems::on_add_chunk::*;
 }
