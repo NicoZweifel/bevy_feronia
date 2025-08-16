@@ -1,9 +1,7 @@
 use crate::prelude::*;
 use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
 use bevy::{
-    asset::*,
     ecs::query::QueryItem,
-    pbr::StandardMaterial,
     prelude::*,
     render::{
         extract_component::ExtractComponent,
@@ -70,11 +68,13 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
     }
 }
 
-impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
+impl<P> WindAffectable<P, StandardMaterial, InstancedWindAffectedMaterial>
     for InstancedWindAffectedMaterial
+where
+    P: ProtoType<InstancedWindAffectedMaterial> + Asset + Clone,
 {
     fn create_material(
-        _material: StandardMaterial,
+        _base: Option<StandardMaterial>,
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
@@ -93,7 +93,7 @@ impl WindAffectable<StandardMaterial, InstancedWindAffectedMaterial>
     }
 
     fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
-        InstancedWindAffectedMeshMaterial(material.clone())
+        InstancedWindAffectedMeshMaterial(material)
     }
 }
 

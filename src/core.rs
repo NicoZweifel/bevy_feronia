@@ -1,67 +1,94 @@
-use crate::resources::Wind;
+use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy::render::render_resource::ShaderType;
-use bitflags::bitflags;
-use bytemuck::{Pod, Zeroable};
 
-pub trait WindAffectable<M: Material, R: Asset> {
-    fn create_material(base: M, wind: Wind, noise_texture: Handle<Image>, controlled: bool) -> R;
-    fn update_material(materials: ResMut<Assets<R>>, wind: Wind);
-    fn component(material: Handle<R>) -> impl Component;
+#[derive(Event, BufferedEvent, Debug, Clone)]
+pub struct SpawnProtoTypes<T>
+where
+    T: Asset + Clone,
+{
+    pub items: Vec<ScatterItemAsset<T>>,
+    pub trigger: SpawnTrigger,
 }
 
-#[repr(C)]
-#[derive(ShaderType, Clone, Pod, Zeroable, Copy)]
-pub struct WindUniform {
-    pub direction: Vec2,
-    pub strength: f32,
-    pub noise_scale: f32,
-    pub scroll_speed: f32,
-    pub bend_exponent: f32,
-    pub round_exponent: f32,
-    pub micro_strength: f32,
-    pub micro_noise_scale: f32,
-    pub micro_scroll_speed: f32,
-    pub s_curve_speed: f32,
-    pub s_curve_strength: f32,
-    pub s_curve_frequency: f32,
-    pub bop_speed: f32,
-    pub bop_strength: f32,
-    pub twist_strength: f32,
-    pub edge_correction_factor: f32,
-    pub lod_threshold: f32,
+#[derive(Clone, Debug)]
+pub struct SpawnTrigger {
+    pub chunk: Option<Entity>,
+    pub layer: Entity,
+    pub root: Entity,
+    pub target: Entity,
+    pub data: Vec<ScatterResult>,
 }
 
-impl From<&Wind> for WindUniform {
-    fn from(wind: &Wind) -> Self {
-        WindUniform {
-            direction: wind.direction,
-            strength: wind.strength,
-            noise_scale: wind.noise_scale,
-            scroll_speed: wind.scroll_speed,
-            bend_exponent: wind.bend_exponent,
-            round_exponent: wind.round_exponent,
-            micro_strength: wind.micro_strength,
-            micro_noise_scale: wind.micro_noise_scale,
-            micro_scroll_speed: wind.micro_scroll_speed,
-            s_curve_speed: wind.s_curve_speed,
-            s_curve_strength: wind.s_curve_strength,
-            s_curve_frequency: wind.s_curve_frequency,
-            bop_speed: wind.bop_speed,
-            bop_strength: wind.bop_strength,
-            twist_strength: wind.twist_strength,
-            edge_correction_factor: wind.edge_correction_factor,
-            lod_threshold: wind.lod_threshold,
+impl<TIn, TOut> From<On<'_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    fn from(value: On<ScatterResults<TIn, TOut>>) -> Self {
+        Self {
+            chunk: value.chunk,
+            layer: value.layer,
+            target: value.target(),
+            data: value.data.clone(),
+            root: value.root,
         }
     }
 }
 
-bitflags! {
-    #[repr(C)]
-    #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
-    pub struct WindAffectedKey: u64 {
-        const ENABLE_BILLBOARDING    = 1 << 0;
-        const ENABLE_EDGE_CORRECTION = 1 << 1;
-        const HIGH_QUALITY = 1 << 2;
+impl<T> SpawnProtoTypes<T>
+where
+    T: Asset + Clone,
+{
+    pub fn new(items: Vec<ScatterItemAsset<T>>, trigger: SpawnTrigger) -> Self {
+        Self { items, trigger }
     }
+
+    pub fn with_items(mut self, items: Vec<ScatterItemAsset<T>>) -> Self {
+        self.items = items;
+        self
+    }
+}
+
+impl<T> From<SpawnTrigger> for SpawnProtoTypes<T>
+where
+    T: Asset + Clone,
+{
+    fn from(value: SpawnTrigger) -> Self {
+        Self::new(Vec::new(), value)
+    }
+}
+
+pub trait ProtoTypes<TOut, TType>
+where
+    TOut: Asset + Clone,
+    TType: ProtoType<TOut> + Asset + Clone,
+{
+    // TODO use trait or remove
+}
+
+pub trait ProtoType<T>
+where
+    T: Asset + Clone,
+{
+    fn mesh(&self) -> &Handle<Mesh>;
+    fn material(&self) -> &Handle<T>;
+    fn wind(&self) -> Option<&Wind>;
+    fn aabb(&self) -> &Aabb;
+    fn lod(&self) -> &LodLevel;
+}
+
+pub trait Sampler {
+    fn sample(&self, world_pos: Vec3) -> f32;
+}
+
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
+#[reflect(Component)]
+pub struct LodLevel(pub u32);
+
+#[derive(Clone, Default)]
+pub struct ThreadSafeImage {
+    /// Raw pixel data.
+    pub pixels: Vec<u8>,
+    pub dimensions: UVec2,
 }

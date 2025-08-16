@@ -1,31 +1,64 @@
-use crate::chunking::prelude::*;
+use crate::prelude::*;
+use crate::scatter::utils::get_height_map_sampler;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 
-pub fn setup_chunks(mut cmd: Commands, cfg: Res<ChunkConfig>) {
-    let top_lod_level = cfg.get_max_lod_level();
-    let top_lod_config = cfg.get_lod_config(top_lod_level);
+pub fn setup_chunks(
+    mut cmd: Commands,
+    images: Res<Assets<Image>>,
+    height_map_cfg: Option<Res<HeightMapConfig>>,
+    height_map: Option<Res<HeightMap>>,
+    q_root: Query<
+        (
+            Entity,
+            &ChunkLodConfig,
+            &ChunkSizeScalarConfig,
+            &Aabb,
+            &GlobalTransform,
+            &ChunkRootSizeDim,
+        ),
+        (With<ChunkRoot>, Without<BaseChunkSize>),
+    >,
+) {
+    let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
 
-    let total_world_size = cfg.get_total_world_size();
-    let center_offset = total_world_size / 2.0;
+    for (entity, chunk_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
+        let world_size = Vec3::from(aabb.half_extents * 2.0);
 
-    for z in 0..cfg.world_size_in_chunks {
-        for x in 0..cfg.world_size_in_chunks {
-            let chunk_world_size = cfg.get_chunk_world_size(top_lod_level);
+        let center_offset = Vec3::from(aabb.half_extents);
 
-            let world_x = (x as f32 * chunk_world_size + chunk_world_size / 2.0) - center_offset;
-            let world_z = (z as f32 * chunk_world_size + chunk_world_size / 2.0) - center_offset;
+        let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
 
-            cmd.spawn((
-                Chunk {
-                    level: top_lod_level,
-                    size: top_lod_config.chunk_size_scalar,
-                },
-                Transform::from_xyz(world_x, 0.0, world_z),
-                GlobalTransform::default(),
-                Visibility::Visible,
-                ViewVisibility::default(),
-                CanSplit,
-            ));
+        let top_lod_level = chunk_cfg.get_max_lod_level();
+        let top_scalar_config = scalar_config.get_scalar_config(top_lod_level);
+
+        let base_chunk_size = top_chunk_size / **top_scalar_config as f32;
+
+        cmd.entity(entity)
+            .insert((ChunkRoot::default(), BaseChunkSize(base_chunk_size)));
+
+        for z in 0..**chunk_root_size {
+            for x in 0..**chunk_root_size {
+                let mut world_pos = gtf.translation()
+                    + Vec3::new(x as f32, 0., z as f32) * top_chunk_size.with_y(0.)
+                    + top_chunk_size.with_y(0.) / 2.
+                    - Vec3::from(center_offset).with_y(0.);
+
+                world_pos.y = height_sampler.sample(world_pos);
+
+                let child_lod_config = chunk_cfg.get_lod_config(chunk_cfg.get_max_lod_level() - 1);
+
+                cmd.spawn((
+                    Chunk,
+                    ChunkLevel(top_lod_level),
+                    ChunkSize(**top_scalar_config),
+                    Transform::from_translation(world_pos),
+                    ChildOf(entity),
+                    ChunkOf(entity),
+                    SplitDistance(**child_lod_config),
+                    ChunkCoord(IVec2::new(x as i32, z as i32)),
+                ));
+            }
         }
     }
 }

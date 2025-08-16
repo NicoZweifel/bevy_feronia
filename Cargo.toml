@@ -5,12 +5,16 @@ edition = "2024"
 
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
-    "bevy_pbr",
+    "bevy_pbr","bevy_state",
+    "bevy_log",
+    "bevy_gizmos"
 ] }
 #bevy-inspector-egui = "0.31.0"
 bytemuck = "1.23.1"
 noise = "0.9.0"
 bitflags = "2.9.1"
+rand = "0.9.1"
+serde = { version = "1.0.219", features = ["derive"] }
 
 [dev-dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher"] }
@@ -23,7 +27,6 @@ log = { version = "0.4", features = [
     "release_max_level_warn",
 ] }
 noise = "0.9.0"
-rand = "0.9.1"
 tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
@@ -57,7 +60,4 @@ codegen-units = 1
 # Do a second optimization pass over the entire program, including dependencies.
 # Slows compile times, marginal improvements.
 lto = "thin"
-
-
-
 

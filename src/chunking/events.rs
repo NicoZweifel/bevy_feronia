@@ -1,6 +1,6 @@
-use bevy::prelude::{BufferedEvent, Entity, Event};
+use bevy::prelude::*;
 
-#[derive(Event, BufferedEvent)]
+#[derive(Event, BufferedEvent, Deref)]
 pub struct SplitChunk(pub(crate) Entity);
 
 impl SplitChunk {
@@ -11,7 +11,8 @@ impl SplitChunk {
 
 #[derive(Event, BufferedEvent)]
 pub struct MergeChunks {
-    pub(crate) siblings: Vec<Entity>,
+    pub children: Vec<Entity>,
+    pub parent: Entity,
 }
 
 #[derive(Event, BufferedEvent)]

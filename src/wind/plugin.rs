@@ -1,9 +1,8 @@
+use super::systems::*;
 use crate::prelude::*;
-use crate::systems::*;
-use bevy::asset::Asset;
-use bevy::pbr::Material;
 use bevy::prelude::*;
-use bevy::render::load_shader_library;
+use bevy::shader::load_shader_library;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub struct WindPlugin;
@@ -22,18 +21,18 @@ impl Plugin for WindPlugin {
     }
 }
 
-pub struct WindMaterialPlugin<M, W>
+pub struct WindMaterialPlugin<TIn, TOut>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    pub _marker: PhantomData<(M, W)>,
+    pub _marker: PhantomData<(TIn, TOut)>,
 }
 
-impl<M, W> Default for WindMaterialPlugin<M, W>
+impl<TIn, TOut> Default for WindMaterialPlugin<TIn, TOut>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -42,18 +41,17 @@ where
     }
 }
 
-impl<M, W> Plugin for WindMaterialPlugin<M, W>
+impl<TIn, TOut> Plugin for WindMaterialPlugin<TIn, TOut>
 where
-    M: Material,
-    W: WindAffectable<M, W> + Asset + Clone,
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<WindAffectedTypes<W>>().add_systems(
+        app.add_systems(
             Update,
             (
-                collect_types::<M, W>,
-                insert_material::<M, W>,
-                update_materials::<M, W>.run_if(resource_changed::<Wind>),
+                insert_material::<TIn, TOut>,
+                update_materials::<TIn, TOut>.run_if(resource_changed::<Wind>),
             ),
         );
     }

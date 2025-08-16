@@ -1,9 +1,12 @@
 use crate::prelude::*;
-use bevy::asset::{Asset, AssetPath, Handle, embedded_path};
-use bevy::image::Image;
-use bevy::pbr::MaterialExtension;
-use bevy::prelude::Reflect;
-use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::asset::{AssetPath, embedded_path};
+use bevy::mesh::MeshVertexBufferLayoutRef;
+use bevy::pbr::{MaterialExtension, MaterialExtensionKey, MaterialExtensionPipeline};
+use bevy::prelude::*;
+use bevy::render::render_resource::{
+    AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError,
+};
+use bevy::shader::ShaderRef;
 
 #[derive(Asset, Reflect, AsBindGroup, Debug, Clone)]
 #[bind_group_data(WindAffectedKey)]
@@ -45,11 +48,11 @@ impl MaterialExtension for WindAffectedExtension {
     }
 
     fn specialize(
-        _pipeline: &bevy::pbr::MaterialExtensionPipeline,
-        descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
-        _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
-        key: bevy::pbr::MaterialExtensionKey<Self>,
-    ) -> Result<(), bevy::render::render_resource::SpecializedMeshPipelineError> {
+        _pipeline: &MaterialExtensionPipeline,
+        descriptor: &mut RenderPipelineDescriptor,
+        _layout: &MeshVertexBufferLayoutRef,
+        key: MaterialExtensionKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
         let shader_defs = &mut descriptor.vertex.shader_defs;
 
         if key
@@ -70,6 +73,10 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
+        if key.bind_group_data.contains(WindAffectedKey::FAST_NORMALS) {
+            shader_defs.push("FAST_NORMALS".into());
+        }
+
         Ok(())
     }
 }
@@ -87,6 +94,7 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             material.wind.enable_edge_correction,
         );
         key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
 
         key
     }

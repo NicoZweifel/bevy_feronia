@@ -1,8 +1,7 @@
-use crate::WindMaterialPlugin;
-use crate::extension::material::WindAffectedExtendedMaterial;
-use bevy::app::{App, Plugin};
+use crate::extension::spawn::spawn_extended_wind_affected;
+use crate::prelude::*;
 use bevy::asset::embedded_asset;
-use bevy::pbr::{MaterialPlugin, StandardMaterial};
+use bevy::prelude::*;
 
 pub struct ExtendedWindAffectedPlugin;
 
@@ -11,10 +10,23 @@ impl Plugin for ExtendedWindAffectedPlugin {
         embedded_asset!(app, "main.wgsl");
         embedded_asset!(app, "prepass.wgsl");
 
-        app.add_plugins(MaterialPlugin::<WindAffectedExtendedMaterial>::default())
+        app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
+            .add_event::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
             .add_plugins(WindMaterialPlugin::<
                 StandardMaterial,
-                WindAffectedExtendedMaterial,
-            >::default());
+                ExtendedWindAffectedMaterial,
+            >::default())
+            .add_systems(Update, spawn_extended_wind_affected);
+    }
+}
+
+pub struct ExtendedWindAffectedScatterPlugin;
+
+impl Plugin for ExtendedWindAffectedScatterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            ExtendedWindAffectedPlugin,
+            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+        ));
     }
 }

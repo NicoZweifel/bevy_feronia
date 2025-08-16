@@ -1,22 +1,13 @@
-use crate::prelude::{Wind, WindAffectedType};
+use crate::prelude::*;
 use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct WindAffectedReady;
 
-#[derive(Component)]
-pub struct WindAffectedRegistered<M>(pub WindAffectedType<M>)
+#[derive(Component, Deref)]
+pub struct WindAffectedRegistered<M>(pub Handle<M>)
 where
     M: Asset + Clone;
-
-impl<M> WindAffectedRegistered<M>
-where
-    M: Asset + Clone,
-{
-    pub fn get(&self) -> WindAffectedType<M> {
-        self.0.clone()
-    }
-}
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]

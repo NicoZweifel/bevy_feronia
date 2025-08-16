@@ -3,19 +3,21 @@ use bevy::ecs::relationship::Relationship;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
-pub fn merge(
-    cfg: Res<ChunkConfig>,
-    q_chunk: Query<(Entity, &Chunk, &ChildOf), With<CanMerge>>,
+pub fn merge_check(
+    q_chunk: Query<
+        (Entity, &ChildOf),
+        (
+            With<CanMerge>,
+            Without<Merging>,
+            With<Chunk>,
+            Without<ChunkInitialize>,
+        ),
+    >,
     mut ew_check: EventWriter<MergeCheck>,
 ) {
-    let max_lod_level = cfg.get_max_lod_level();
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
-    for (entity, chunk, parent) in &q_chunk {
-        if chunk.level >= max_lod_level {
-            continue;
-        };
-
+    for (entity, parent) in &q_chunk {
         parents.entry(parent.get()).or_default().push(entity);
     }
 
@@ -25,43 +27,87 @@ pub fn merge(
 }
 
 pub fn handle_merge_check(
-    cfg: Res<ChunkConfig>,
+    mut cmd: Commands,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<(Entity, &Chunk, &ChildOf), With<CanMerge>>,
-    q_parent: Query<&GlobalTransform>,
+    q_chunk: Query<(&MergeDistance, &ChunkLevel), (With<CanMerge>, Without<Merging>, With<Chunk>)>,
+    q_parent: Query<(&GlobalTransform, &ChunkSize)>,
     mut er_check: EventReader<MergeCheck>,
-    mut ew_merge: EventWriter<MergeChunks>,
 ) {
     let Ok(center) = q_center.single() else {
+        warn!(
+            "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
+        );
         return;
     };
 
-    let center_translation = center.translation();
+    let center = center.translation();
 
     for e in er_check.read() {
+        let parent = e.parent;
+        let Ok((parent_tf, chunk_size)) = q_parent.get(parent) else {
+            warn!("Couldn't get parent Chunk for merge!");
+            continue;
+        };
+
+        let children = e.children.clone();
+
+        let first_child = children[0];
+
+        let Ok((merge_distance, chunk_level)) = q_chunk.get(first_child) else {
+            warn!("Couldn't get Chunk {first_child} for merge!");
+            continue;
+        };
+
+        // TODO don't hardcode but use ChunkSizeScalarConfig / ChunkRootSizeDim
         if e.children.len() < 4 {
             continue;
         };
 
-        let chunk_level = q_chunk.get(e.children[0]).unwrap().1.level;
-        let merge_dist = cfg.lods[chunk_level as usize].distance;
-
-        let parent_translation = q_parent.get(e.parent).unwrap().translation();
-
-        if center_translation.distance(parent_translation) <= merge_dist {
+        let distance = center.distance(parent_tf.translation());
+        if distance < **merge_distance {
             continue;
         }
 
+        for child in &e.children {
+            cmd.entity(*child).insert(Merging);
+        }
+    }
+}
+
+pub fn merge(
+    q_chunk: Query<(Entity, &ChildOf), (With<Merging>, With<Chunk>)>,
+    mut ew_merge: EventWriter<MergeChunks>,
+) {
+    let mut merge_chunks_map = HashMap::<Entity, Vec<Entity>>::new();
+
+    for (child, parent) in q_chunk {
+        if let Some(children) = merge_chunks_map.get_mut(&parent.0) {
+            children.push(child);
+            continue;
+        }
+
+        merge_chunks_map.insert(parent.0, vec![child]);
+    }
+
+    for (parent, children) in &mut merge_chunks_map {
         ew_merge.write(MergeChunks {
-            siblings: e.children.clone(),
+            children: children.clone(),
+            parent: *parent,
         });
     }
 }
 
 pub fn handle_merge(mut cmd: Commands, mut er_merge: EventReader<MergeChunks>) {
     for e in er_merge.read() {
-        for sibling_entity in &e.siblings {
-            cmd.entity(*sibling_entity).despawn();
+        let children = e.children.clone();
+        let parent = e.parent;
+
+        debug!("Merging Chunks: {children:?} into {parent}");
+
+        for child in &e.children {
+            cmd.entity(*child).despawn();
         }
+
+        cmd.entity(e.parent).insert(CanSplit);
     }
 }

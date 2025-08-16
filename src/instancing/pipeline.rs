@@ -1,10 +1,12 @@
 use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
 use crate::prelude::WindAffectedKey;
+use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::{
     asset::{AssetPath, embedded_path},
+    mesh::VertexBufferLayout,
     pbr::{MeshPipeline, MeshPipelineKey},
     prelude::*,
-    render::{mesh::MeshVertexBufferLayoutRef, render_resource::*, renderer::RenderDevice},
+    render::{render_resource::*, renderer::RenderDevice},
 };
 use std::mem::size_of;
 
@@ -15,20 +17,20 @@ pub(crate) struct CustomPipelineKey {
 }
 
 #[derive(Resource)]
-pub(crate) struct CustomPipeline {
+pub(crate) struct InstancedWindAffectedPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
     material_layout: BindGroupLayout,
 }
 
-impl FromWorld for CustomPipeline {
+impl FromWorld for InstancedWindAffectedPipeline {
     fn from_world(world: &mut World) -> Self {
         let mesh_pipeline = world.resource::<MeshPipeline>().clone();
         let render_device = world.resource::<RenderDevice>();
         let material_layout = InstancedWindAffectedMaterial::bind_group_layout(render_device);
         let asset_server = world.resource::<AssetServer>();
 
-        CustomPipeline {
+        InstancedWindAffectedPipeline {
             shader: asset_server.load(
                 AssetPath::from_path_buf(embedded_path!("instancing.wgsl")).with_source("embedded"),
             ),
@@ -38,7 +40,7 @@ impl FromWorld for CustomPipeline {
     }
 }
 
-impl SpecializedMeshPipeline for CustomPipeline {
+impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
     type Key = CustomPipelineKey;
 
     fn specialize(
@@ -61,6 +63,9 @@ impl SpecializedMeshPipeline for CustomPipeline {
         }
         if key.wind_key.contains(WindAffectedKey::HIGH_QUALITY) {
             shader_defs.push("WIND_HIGH_QUALITY".into());
+        }
+        if key.wind_key.contains(WindAffectedKey::FAST_NORMALS) {
+            shader_defs.push("FAST_NORMALS".into());
         }
 
         descriptor.vertex.shader = self.shader.clone();

@@ -1,10 +1,13 @@
-mod components;
-mod draw;
-mod material;
-mod pipeline;
-mod plugin;
-mod prepare;
-mod systems;
+pub mod components;
+pub mod draw;
+pub mod material;
+pub mod observers;
+pub mod pipeline;
+pub mod plugin;
+pub mod prepare;
+pub mod scatter;
+pub mod spawn;
+pub mod systems;
 
 pub use plugin::*;
 
