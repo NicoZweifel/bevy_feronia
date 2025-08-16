@@ -1,23 +1,61 @@
+use crate::core::LodLevel;
+use bevy::camera::visibility::VisibilityRange;
 use bevy::prelude::*;
-use std::num::NonZeroU32;
 
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct LodConfig(pub Vec<LodLevelDistance>);
 
 impl LodConfiguration for LodConfig {
-    fn get_max_lod_level(&self) -> u32 {
-        (self.0.len() - 1) as u32
-    }
-
-    fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
-        &self.0[level as usize]
+    fn get(&self) -> &Vec<LodLevelDistance> {
+        &self.0
     }
 }
 
 pub trait LodConfiguration {
-    fn get_max_lod_level(&self) -> u32;
-    fn get_lod_config(&self, level: u32) -> &LodLevelDistance;
+    fn get(&self) -> &Vec<LodLevelDistance>;
+
+    fn get_max_lod_level(&self) -> u32 {
+        (self.get().len() - 1) as u32
+    }
+
+    fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
+        &self.get()[level as usize]
+    }
+
+    fn get_visibility_range(&self, lod_level: LodLevel) -> VisibilityRange {
+        let current_lod_dist = self
+            .get()
+            .get(*lod_level as usize)
+            .map(|x| **x)
+            .unwrap_or(*LodLevelDistance::default());
+
+        let fade_band = current_lod_dist * 0.1;
+
+        let start_margin = if *lod_level == 0 {
+            0.0..0.0
+        } else {
+            let prev_lod_dist = self
+                .get()
+                .get(*lod_level as usize - 1)
+                .map(|x| **x)
+                .unwrap_or(*LodLevelDistance::default());
+
+            prev_lod_dist - fade_band..prev_lod_dist
+        };
+
+        let end_margin = if *lod_level == self.get_max_lod_level() {
+            f32::MAX..f32::MAX
+        } else {
+            current_lod_dist - fade_band..current_lod_dist
+        };
+
+        VisibilityRange {
+            start_margin,
+            end_margin,
+            use_aabb: true,
+        }
+    }
 }
 
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
@@ -31,55 +69,18 @@ impl Default for ChunkLodConfig {
             vec![
                 60.0.into(),
                 // Level 1: Medium
-                180.0.into(),
+                120.0.into(),
                 // Level 2: Low
+                180.0.into(),
                 LodLevelDistance::default(),
             ],
         )
     }
 }
 
-pub struct ChildChunkData {
-    pub level: u32,
-    pub size: u32,
-    pub offsets: [Vec3; 4],
-}
-
 impl LodConfiguration for ChunkLodConfig {
-    fn get_max_lod_level(&self) -> u32 {
-        (self.0.len() - 1) as u32
-    }
-
-    fn get_lod_config(&self, level: u32) -> &LodLevelDistance {
-        &self.0[level as usize]
-    }
-}
-
-impl ChunkLodConfig {
-    /// Calculates the level, size, and world-space offsets for a chunk's children.
-    pub fn calculate_child_data(
-        &self,
-        level: NonZeroU32,
-        size: u32,
-        base_chunk_size: Vec3,
-        // TODO use this instead of hardcoding 4 offsets
-        child_size_scalar: u32,
-    ) -> ChildChunkData {
-        let parent_world_size = size as f32 * base_chunk_size;
-        let child_level = level.get() - 1;
-        let offset = parent_world_size / 4.0;
-        let offsets = [
-            Vec3::new(-offset.x, 0.0, -offset.z),
-            Vec3::new(offset.x, 0.0, -offset.z),
-            Vec3::new(-offset.x, 0.0, offset.z),
-            Vec3::new(offset.x, 0.0, offset.z),
-        ];
-
-        ChildChunkData {
-            level: child_level,
-            size: child_size_scalar,
-            offsets,
-        }
+    fn get(&self) -> &Vec<LodLevelDistance> {
+        &self.0
     }
 }
 
@@ -87,16 +88,21 @@ impl ChunkLodConfig {
 #[reflect(Component)]
 pub struct ChunkSizeScalarConfig(pub Vec<ChunkSizeScalar>);
 
-/// The size of the `ChunkRoot` in top-level (Low LOD) chunks.
+/// The size of a `ChunkRoot` dimension in top-level (Low LOD) chunks.
+/// TODO use/sync with ChunkSizeScalar
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
-pub struct ChunkRootSize(pub u32);
+pub struct ChunkRootSizeDim(pub u32);
 
-impl Default for ChunkRootSize {
+impl Default for ChunkRootSizeDim {
     fn default() -> Self {
-        Self(8)
+        Self(2)
     }
 }
+
+#[derive(Component, Reflect, Deref, DerefMut, Debug, Hash)]
+#[reflect(Component)]
+pub struct ChunkCoord(pub IVec2);
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
@@ -131,6 +137,10 @@ pub struct BaseChunkSize(pub Vec3);
 #[reflect(Component)]
 pub struct MergeDistance(pub f32);
 
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component)]
+pub struct Merging;
+
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[require(CanSplit)]
 #[reflect(Component)]
@@ -154,7 +164,7 @@ pub struct ChunkOf(pub Entity);
     Visibility,
     ChunkLodConfig,
     ChunkSizeScalarConfig,
-    ChunkRootSize
+    ChunkRootSizeDim
 )]
 #[relationship_target(relationship = ChunkOf)]
 pub struct ChunkRoot(Vec<Entity>);
@@ -184,19 +194,13 @@ impl Default for LodConfig {
         Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
-                30.0.into(),
+                50.0.into(),
                 // Level 1: Medium
-                90.0.into(),
+                100.0.into(),
                 // Level 2: Low
                 LodLevelDistance::default(),
             ],
         )
-    }
-}
-
-impl Default for ChunkSizeScalar {
-    fn default() -> Self {
-        4.into()
     }
 }
 
@@ -215,7 +219,9 @@ impl Default for ChunkSizeScalarConfig {
                 // Level 1: Medium
                 2.into(),
                 // Level 2: Low
-                ChunkSizeScalar::default(),
+                4.into(),
+                // Root NOTE: interacts with chunk root size dim at the moment TODO
+                8.into(),
             ],
         )
     }

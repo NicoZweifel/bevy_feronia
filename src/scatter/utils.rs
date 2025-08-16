@@ -1,7 +1,7 @@
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use rand::Rng;
 use rand::prelude::*;
 
@@ -50,18 +50,6 @@ pub fn scatter_layer_enabled<'a>(
     true
 }
 
-pub fn get_density_sampler<'a>(
-    pattern_dist: Option<&DistributionPattern>,
-    images: &'a Res<Assets<Image>>,
-    aabb: Aabb,
-) -> Option<DensityMapSampler<'a>> {
-    pattern_dist
-        .and_then(|p| images.get(&p.density_map))
-        .map(|density_image| {
-            DensityMapSampler::new(density_image, Vec3::from(aabb.half_extents * 2.))
-        })
-}
-
 pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     let min_x = aabb1.min().x.min(aabb2.min().x);
     let min_y = aabb1.min().y.min(aabb2.min().y);
@@ -76,7 +64,7 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
-pub(super) struct InstanceModifiers<'a> {
+pub struct InstanceModifiers<'a> {
     pub map_height: Option<&'a MapHeight>,
     pub height_sampler: &'a HeightMapSampler<'a>,
     pub density_sampler: &'a Option<DensityMapSampler<'a>>,
@@ -85,7 +73,8 @@ pub(super) struct InstanceModifiers<'a> {
     pub jitter: Option<&'a InstanceJitter>,
 }
 
-pub(super) struct Container {
+#[derive(Clone)]
+pub struct Container {
     pub layer_entity: Entity,
     pub chunk_entity: Option<Entity>,
     pub root_entity: Entity,
@@ -93,6 +82,7 @@ pub(super) struct Container {
     pub corner: Vec3,
     pub height: f32,
     pub size: Vec3,
+    pub root_size: Vec3,
     pub transform: Transform,
 }
 
@@ -107,28 +97,32 @@ pub(super) fn create_scatter_result(
     let cell_depth = container.size.z / instances_dim_f;
 
     let world_corner_pos = container.transform.translation + container.corner;
-    let start_grid_x = (world_corner_pos.x / cell_width).round();
-    let start_grid_z = (world_corner_pos.z / cell_depth).round();
 
     let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
     let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
 
-    let snapped_world_cell_corner = Vec3::new(
-        (start_grid_x + local_cell_x_idx) * cell_width,
+    let snapped_world_cell_corner = world_corner_pos
+        + Vec3::new(
+            local_cell_x_idx * cell_width,
+            0.0,
+            local_cell_z_idx * cell_depth,
+        );
+
+    let cell_center_world_pos =
+        snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
+
+    let jitter_strength = modifiers.jitter.map_or(1.0, |j| **j).clamp(0.0, 1.0);
+
+    let max_offset_x = (cell_width * jitter_strength) / 2.0;
+    let max_offset_z = (cell_depth * jitter_strength) / 2.0;
+
+    let random_offset = Vec3::new(
+        rng.random_range(-max_offset_x..max_offset_x),
         0.0,
-        (start_grid_z + local_cell_z_idx) * cell_depth,
+        rng.random_range(-max_offset_z..max_offset_z),
     );
 
-    let jitter_strength = modifiers.jitter.map_or(1.0, |j| **j);
-    let margin_x = (cell_width * (1.0 - jitter_strength)) / 2.0;
-    let margin_z = (cell_depth * (1.0 - jitter_strength)) / 2.0;
-
-    let final_world_pos = snapped_world_cell_corner
-        + Vec3::new(
-            margin_x + (rng.random::<f32>() * cell_width * jitter_strength),
-            0.0,
-            margin_z + (rng.random::<f32>() * cell_depth * jitter_strength),
-        );
+    let final_world_pos = cell_center_world_pos + random_offset;
 
     let mut instance_pos = final_world_pos - container.transform.translation;
 

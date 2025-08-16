@@ -1,10 +1,10 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
+use bevy::prelude::light_consts::lux::DIRECT_SUNLIGHT;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping}, //diagnostic::*,
-    pbr::light_consts::lux::DIRECT_SUNLIGHT,
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };

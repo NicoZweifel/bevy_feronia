@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use bevy::camera::primitives::MeshAabb;
 use bevy::prelude::*;
-use bevy::render::primitives::MeshAabb;
 
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,

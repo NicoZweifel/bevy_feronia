@@ -3,8 +3,16 @@ use bevy::ecs::relationship::Relationship;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 
-pub fn merge(
-    q_chunk: Query<(Entity, &ChildOf), (With<CanMerge>, With<Chunk>, Without<ChunkInitialize>)>,
+pub fn merge_check(
+    q_chunk: Query<
+        (Entity, &ChildOf),
+        (
+            With<CanMerge>,
+            Without<Merging>,
+            With<Chunk>,
+            Without<ChunkInitialize>,
+        ),
+    >,
     mut ew_check: EventWriter<MergeCheck>,
 ) {
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
@@ -19,11 +27,11 @@ pub fn merge(
 }
 
 pub fn handle_merge_check(
+    mut cmd: Commands,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<&MergeDistance, (With<CanMerge>, With<Chunk>)>,
+    q_chunk: Query<(&MergeDistance, &ChunkLevel), (With<CanMerge>, Without<Merging>, With<Chunk>)>,
     q_parent: Query<(&GlobalTransform, &ChunkSize)>,
     mut er_check: EventReader<MergeCheck>,
-    mut ew_merge: EventWriter<MergeChunks>,
 ) {
     let Ok(center) = q_center.single() else {
         warn!(
@@ -41,16 +49,17 @@ pub fn handle_merge_check(
             continue;
         };
 
-        if e.children.len() < **chunk_size as usize {
-            continue;
-        };
-
         let children = e.children.clone();
 
         let first_child = children[0];
 
-        let Ok(merge_distance) = q_chunk.get(first_child) else {
-            warn!("Couldn't get MergeDistance for merge!");
+        let Ok((merge_distance, chunk_level)) = q_chunk.get(first_child) else {
+            warn!("Couldn't get Chunk {first_child} for merge!");
+            continue;
+        };
+
+        // TODO don't hardcode but use ChunkSizeScalarConfig / ChunkRootSizeDim
+        if e.children.len() < 4 {
             continue;
         };
 
@@ -59,7 +68,32 @@ pub fn handle_merge_check(
             continue;
         }
 
-        ew_merge.write(MergeChunks { children, parent });
+        for child in &e.children {
+            cmd.entity(*child).insert(Merging);
+        }
+    }
+}
+
+pub fn merge(
+    q_chunk: Query<(Entity, &ChildOf), (With<Merging>, With<Chunk>)>,
+    mut ew_merge: EventWriter<MergeChunks>,
+) {
+    let mut merge_chunks_map = HashMap::<Entity, Vec<Entity>>::new();
+
+    for (child, parent) in q_chunk {
+        if let Some(children) = merge_chunks_map.get_mut(&parent.0) {
+            children.push(child);
+            continue;
+        }
+
+        merge_chunks_map.insert(parent.0, vec![child]);
+    }
+
+    for (parent, children) in &mut merge_chunks_map {
+        ew_merge.write(MergeChunks {
+            children: children.clone(),
+            parent: *parent,
+        });
     }
 }
 

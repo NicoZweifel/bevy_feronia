@@ -1,6 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use bevy::color::palettes::css::WHITE;
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
@@ -22,7 +23,12 @@ fn main() -> AppExit {
             ..default()
         })
         .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
+            lod_colors: vec![
+                RED_500.into(),
+                ORANGE_500.into(),
+                YELLOW_500.into(),
+                WHITE.into(),
+            ],
             aabb_color: GREEN_500.into(),
         })
         .insert_resource(ExamplePluginOptions {
@@ -41,13 +47,15 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         MapHeight,
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(30.0),
+            DistributionDensity(50.0),
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(0.5),
+            InstanceJitter(1.),
             WindAffected,
             children![
-                SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                LodLevel(2),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LodLevel(2)
+                ),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LodLevel(1),

@@ -1,5 +1,8 @@
 use crate::prelude::*;
 use crate::scatter::observers::*;
+use crate::scatter::systems::handle_scatter_requests::{
+    handle_finished_scatter_tasks, handle_scatter_requests,
+};
 use crate::scatter::systems::prelude::*;
 use bevy::prelude::*;
 use std::marker::PhantomData;
@@ -46,7 +49,17 @@ impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset 
             .add_observer(on_add_scatter_root::<TIn, TOut>)
             .add_observer(on_add_scatter_layer::<TIn, TOut>)
             .add_observer(on_chunk_add::<TIn, TOut>)
-            .add_systems(Update, chunk_init_scatter::<TIn, TOut>.in_set(ChunkSet::Ready));
+            .add_systems(
+                Update,
+                chunk_init_scatter::<TIn, TOut>.in_set(ChunkSet::Ready),
+            )
+            .add_systems(
+                Update,
+                (
+                    handle_scatter_requests::<TIn, TOut>,
+                    handle_finished_scatter_tasks::<TIn, TOut>,
+                ),
+            );
     }
 }
 

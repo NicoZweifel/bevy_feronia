@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::scatter::utils::get_height_map_sampler;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 
 pub fn setup_chunks(
     mut cmd: Commands,
@@ -11,11 +11,11 @@ pub fn setup_chunks(
     q_root: Query<
         (
             Entity,
-            &LodConfig,
+            &ChunkLodConfig,
             &ChunkSizeScalarConfig,
             &Aabb,
             &GlobalTransform,
-            &ChunkRootSize,
+            &ChunkRootSizeDim,
         ),
         (With<ChunkRoot>, Without<BaseChunkSize>),
     >,
@@ -56,6 +56,7 @@ pub fn setup_chunks(
                     ChildOf(entity),
                     ChunkOf(entity),
                     SplitDistance(**child_lod_config),
+                    ChunkCoord(IVec2::new(x as i32, z as i32)),
                 ));
             }
         }

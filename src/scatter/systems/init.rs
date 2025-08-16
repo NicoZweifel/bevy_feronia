@@ -2,7 +2,10 @@ use crate::prelude::*;
 use crate::scatter::observers::scatter_chunk;
 use bevy::prelude::*;
 
-pub fn on_chunk_add<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone>(
+pub fn on_chunk_add<
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+>(
     trigger: On<Add, Chunk>,
     mut cmd: Commands,
 ) {

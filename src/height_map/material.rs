@@ -5,6 +5,7 @@ use bevy::pbr::{MaterialPipeline, MaterialPipelineKey};
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::render::render_resource::*;
+use bevy::shader::ShaderRef;
 
 #[repr(C)]
 #[derive(Clone, ShaderType, Debug)]

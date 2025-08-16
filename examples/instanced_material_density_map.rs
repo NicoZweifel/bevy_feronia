@@ -1,7 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
+use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
@@ -21,12 +21,12 @@ fn main() -> AppExit {
             round_exponent: 15.,
             edge_correction_factor: 0.001,
             high_quality: true,
-            lod_threshold: 10.0,
+            lod_threshold: 10.,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
         .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
+            lod_colors: vec![RED_500.into(), ORANGE_500.into()],
             aabb_color: GREEN_500.into(),
         })
         .insert_resource(ExamplePluginOptions {
@@ -42,7 +42,9 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         ChunkRoot::default(),
-        ChunkRootSize(4),
+        ChunkRootSizeDim(4),
+        ChunkLodConfig(vec![30.0.into(), f32::MAX.into()]),
+        ChunkSizeScalarConfig(vec![1.into(), 2.into()]),
         MapHeight,
         LodConfig(vec![
             // Level 0: High
@@ -55,14 +57,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             DistributionDensity(15.),
             DistributionPattern {
                 density_map: density_map.clone(),
-                scale: 1.0
+                scale: 1.
             },
             InstanceRotationYaw {
-                min: 0.0,
-                max: std::f32::consts::PI * 2.0
+                min: 0.,
+                max: std::f32::consts::PI * 2.
             },
-            InstanceScale { min: 1.0, max: 1.5 },
-            InstanceJitter(0.05),
+            InstanceScale { min: 1., max: 1.5 },
+            InstanceJitter(1.),
             WindAffected,
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

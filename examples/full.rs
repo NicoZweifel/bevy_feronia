@@ -1,12 +1,10 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::chunking::plugin::ChunkPlugin;
 use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
@@ -28,7 +26,12 @@ fn main() -> AppExit {
         })
         .insert_resource(DensityMapConfig { size: 128 })
         /*.insert_resource(ChunkDebugConfig {
-            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
+            lod_colors: vec![
+                RED_500.into(),
+                ORANGE_500.into(),
+                YELLOW_500.into(),
+                WHITE.into(),
+            ],
             aabb_color: GREEN_500.into(),
         })*/
         .insert_resource(ExamplePluginOptions {
@@ -77,7 +80,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         children![
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(70.),
+                DistributionDensity(100.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
@@ -103,7 +106,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
-                DistributionDensity(1.0),
+                DistributionDensity(2.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0

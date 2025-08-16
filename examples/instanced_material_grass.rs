@@ -39,9 +39,9 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(100.0),
+            DistributionDensity(100.),
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(0.1),
+            InstanceJitter(1.),
             WindAffected,
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

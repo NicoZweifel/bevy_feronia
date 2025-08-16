@@ -9,14 +9,16 @@ pub fn scatter_root<
     mut cmd: Commands,
     q_root: Query<&ScatterRoot>,
 ) {
-    let Ok(layers) = q_root.get(trigger.target()) else {
+    trigger.propagate(false);
+
+    let root = trigger.target();
+
+    let Ok(layers) = q_root.get(root) else {
         warn!("ScatterRoot not found!");
         return;
     };
 
-    debug!("Scattering root: {:?}", trigger.target());
-
-    trigger.propagate(false);
+    debug!("Scattering root: {root}");
 
     cmd.trigger_targets(
         Scatter::<TIn, TOut>::new(),

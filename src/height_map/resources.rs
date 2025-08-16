@@ -1,9 +1,9 @@
 use crate::prelude::HeightMapMaterial;
+use bevy::camera::visibility::RenderLayers;
 use bevy::prelude::*;
-use bevy::render::view::RenderLayers;
 use std::ops::Range;
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct HeightMapConfig {
     pub world_size: f32,
     pub render_layer: RenderLayers,

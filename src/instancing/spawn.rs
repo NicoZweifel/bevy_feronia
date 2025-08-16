@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
+use bevy::camera::visibility::VisibilityRange;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
-use bevy::render::view::VisibilityRange;
 use rand::prelude::IteratorRandom;
 use rand::rng;
 
@@ -11,7 +11,7 @@ pub fn spawn_instanced_wind_affected(
     mut er_spawn: EventReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
     mut cmd: Commands,
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
-    q_chunks: Query<(&GlobalTransform, &ChunkLevel), With<Chunk>>,
+    q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
     q_root: Query<(&LodConfig, Option<&ChunkLodConfig>), With<ScatterRoot>>,
 ) {
     for e in er_spawn.read() {
@@ -31,16 +31,17 @@ pub fn spawn_instanced_wind_affected(
             })
             .collect::<Vec<_>>();
 
-        let (chunk_gtf, chunk_level) = e
-            .trigger
-            .chunk
-            .map(|x| {
-                q_chunks.get(x).ok().map(|(chunk_gtf, chunk_level)| {
-                    (chunk_gtf.compute_transform(), chunk_level.clone())
-                })
-            })
-            .flatten()
-            .unwrap_or_else(|| (Transform::default(), ChunkLevel::default()));
+        let mut chunk_gtf = Transform::default();
+        let mut chunk_level = ChunkLevel::default();
+
+        if let Some(chunk) = e.trigger.chunk {
+            let Ok((gtf, level)) = q_chunks.get(chunk) else {
+                continue;
+            };
+
+            chunk_gtf = gtf.compute_transform();
+            chunk_level = level.clone();
+        }
 
         let mut prototypes: Vec<ScatterAsset<InstancedWindAffectedMaterial>> = vec![];
         for item in e.items.iter() {
@@ -121,24 +122,7 @@ pub fn spawn_instanced_wind_affected(
 
             let lod_level = prototype.lod_level;
 
-            const FADE_BAND: f32 = 10.0;
-
-            let current_lod_dist = lod_config
-                .get(*lod_level as usize)
-                .map_or(*LodLevelDistance::default(), |x| **x);
-
-            let start_margin = if *lod_level == 0 {
-                0.0..0.0
-            } else {
-                let prev_lod_dist = *(**lod_config)[*lod_level as usize - 1];
-                prev_lod_dist - FADE_BAND..prev_lod_dist
-            };
-
-            let end_margin = if *lod_level == lod_config.get_max_lod_level() {
-                f32::MAX..f32::MAX
-            } else {
-                current_lod_dist - FADE_BAND..current_lod_dist
-            };
+            let visibility_range = lod_config.get_visibility_range(lod_level);
 
             let chunk_center = chunk_gtf.translation;
 
@@ -154,11 +138,7 @@ pub fn spawn_instanced_wind_affected(
                 Visibility::Visible,
                 Aabb::from(local_aabb),
                 ChildOf(parent),
-                VisibilityRange {
-                    start_margin,
-                    end_margin,
-                    use_aabb: false,
-                },
+                visibility_range,
             ));
         }
     }

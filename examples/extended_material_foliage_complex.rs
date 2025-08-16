@@ -26,13 +26,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Foliage Layer"),
-            DistributionDensity(15.0),
+            DistributionDensity(15.),
             InstanceRotationYaw {
-                min: 0.0,
-                max: std::f32::consts::PI * 2.0
+                min: 0.,
+                max: std::f32::consts::PI * 2.
             },
             InstanceScale { min: 1., max: 3. },
-            InstanceJitter(0.1),
+            InstanceJitter(1.),
             WindAffected,
             children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]
         )],

@@ -1,11 +1,11 @@
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
+use bevy::camera::primitives::Aabb;
+use bevy::camera::visibility::{NoFrustumCulling, RenderLayers};
 use bevy::camera::{ImageRenderTarget, RenderTarget};
 use bevy::prelude::*;
-use bevy::render::primitives::Aabb;
 use bevy::render::render_resource::*;
-use bevy::render::view::NoFrustumCulling;
 use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured};
 
 pub fn setup_materials(
@@ -53,7 +53,7 @@ pub fn setup_config(
     let config = HeightMapConfig {
         world_size,
         world_height_range: aabb.min().y..aabb.max().y,
-        render_layer: bevy::render::view::RenderLayers::layer(1),
+        render_layer: RenderLayers::layer(1),
     };
 
     debug!("HeightMapConfig created from root AABB:");

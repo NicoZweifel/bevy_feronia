@@ -1,9 +1,7 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::ecs::relationship::Relationship;
+use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use bevy::reflect::List;
-use bevy::render::primitives::Aabb;
 
 pub fn transition_to_ready_state(
     q_pending_roots: Query<Entity, (With<ScatterRoot>, Without<Aabb>)>,

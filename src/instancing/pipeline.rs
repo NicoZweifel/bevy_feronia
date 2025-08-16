@@ -1,10 +1,12 @@
 use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
 use crate::prelude::WindAffectedKey;
+use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::{
     asset::{AssetPath, embedded_path},
+    mesh::VertexBufferLayout,
     pbr::{MeshPipeline, MeshPipelineKey},
     prelude::*,
-    render::{mesh::MeshVertexBufferLayoutRef, render_resource::*, renderer::RenderDevice},
+    render::{render_resource::*, renderer::RenderDevice},
 };
 use std::mem::size_of;
 

@@ -1,6 +1,63 @@
 use crate::prelude::*;
+use crate::scatter::utils::Container;
 use bevy::prelude::*;
+use bevy::render::render_resource::Buffer;
+use bevy::tasks::Task;
 use std::marker::PhantomData;
+
+#[derive(Component)]
+pub struct ScatterRequest<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    pub target_entity: Entity,
+    pub layer_entity: Entity,
+    pub chunk_entity: Option<Entity>,
+    _phantom: PhantomData<(TIn, TOut)>,
+}
+
+impl<TIn, TOut> ScatterRequest<TIn, TOut>
+where
+    TIn: Material,
+    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+{
+    pub fn new(target_entity: Entity, layer_entity: Entity, chunk_entity: Option<Entity>) -> Self {
+        Self {
+            target_entity,
+            layer_entity,
+            chunk_entity,
+            _phantom: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ScatterTaskData {
+    pub container: Container,
+    pub map_height: Option<MapHeight>,
+    pub scale: Option<InstanceScale>,
+    pub rotation: Option<InstanceRotationYaw>,
+    pub jitter: Option<InstanceJitter>,
+    pub height_map_image: Option<Image>,
+    pub height_map_config: Option<HeightMapConfig>,
+    pub density_map_image: Option<Image>,
+}
+
+#[derive(Component)]
+pub struct GpuScatterJobInProgress;
+
+#[derive(Component)]
+pub struct GpuScatterResult {
+    pub instance_buffer: Buffer,
+    pub instance_count: u32,
+}
+
+#[derive(Component)]
+pub struct CpuScatterTask<T>(pub Task<T>);
+
+#[derive(Component)]
+pub struct CpuScatterResult<T>(pub T);
 
 #[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
@@ -103,20 +160,20 @@ pub struct DistributionPattern {
     pub scale: f32,
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct InstanceRotationYaw {
     pub min: f32,
     pub max: f32,
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct InstanceScale {
     pub min: f32,
     pub max: f32,
 }
 
-#[derive(Component, Reflect, Deref, DerefMut)]
+#[derive(Component, Reflect, Deref, DerefMut, Clone)]
 #[reflect(Component)]
 pub struct InstanceJitter(pub f32);

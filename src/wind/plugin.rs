@@ -1,7 +1,7 @@
 use super::systems::*;
 use crate::prelude::*;
 use bevy::prelude::*;
-use bevy::render::load_shader_library;
+use bevy::shader::load_shader_library;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 

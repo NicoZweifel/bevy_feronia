@@ -1,8 +1,7 @@
-use crate::core::*;
 use crate::prelude::*;
+use bevy::camera::visibility::VisibilityRange;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy::render::view::VisibilityRange;
 use rand::prelude::IteratorRandom;
 use rand::rng;
 
@@ -10,22 +9,21 @@ pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
     mut er_spawn: EventReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
-    q_root: Query<(&LodConfig, Option<&BaseChunkSize>), With<ScatterRoot>>,
-    q_chunks: Query<(&GlobalTransform, &ChunkLevel), With<Chunk>>,
+    q_root: Query<(&LodConfig, Option<&ChunkLodConfig>), With<ScatterRoot>>,
+    q_chunks: Query<&ChunkLevel, (With<Chunk>, Without<Merging>)>,
 ) {
     for e in er_spawn.read() {
         debug!("Spawning extended wind affected!");
 
-        let (chunk_gtf, chunk_level) = e
-            .trigger
-            .chunk
-            .map(|x| {
-                q_chunks.get(x).ok().map(|(chunk_gtf, chunk_level)| {
-                    (chunk_gtf.compute_transform(), chunk_level.clone())
-                })
-            })
-            .flatten()
-            .unwrap_or_else(|| (Transform::default(), ChunkLevel::default()));
+        let mut chunk_level = ChunkLevel::default();
+
+        if let Some(chunk) = e.trigger.chunk {
+            let Ok(level) = q_chunks.get(chunk) else {
+                continue;
+            };
+
+            chunk_level = level.clone();
+        }
 
         let mut prototypes: Vec<ScatterAsset<ExtendedWindAffectedMaterial>> = vec![];
         for item in e.items.iter() {
@@ -53,7 +51,7 @@ pub fn spawn_extended_wind_affected(
                     .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
             });
 
-        let Ok((lod_config, base_chunk_size)) = q_root.get(e.trigger.root) else {
+        let Ok((lod_config, chunk_lod_config)) = q_root.get(e.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
@@ -68,7 +66,7 @@ pub fn spawn_extended_wind_affected(
                 .data
                 .clone()
                 .iter_mut()
-                .map(|result| {
+                .map(|scatter_result| {
                     let prototypes = name_map.values().choose(&mut rng());
 
                     let Some(prototypes) = prototypes else {
@@ -78,34 +76,19 @@ pub fn spawn_extended_wind_affected(
                     prototypes
                         .iter()
                         .map(|prototype| {
-                            let lod_level = prototype.lod_level;
+                            let parent = e.trigger.chunk.unwrap_or(e.trigger.layer);
 
-                            const FADE_BAND: f32 = 2.0;
-
-                            let current_lod_dist = lod_config
-                                .get(*lod_level as usize)
-                                .map_or(*LodLevelDistance::default(), |x| **x);
-
-                            let start_margin = if *lod_level == 0 {
-                                0.0..0.0
-                            } else {
-                                let prev_lod_dist = *(**lod_config)[*lod_level as usize - 1];
-                                prev_lod_dist - FADE_BAND..prev_lod_dist
-                            };
-
-                            let end_margin = if *lod_level == lod_config.get_max_lod_level() {
-                                f32::MAX..f32::MAX
-                            } else {
-                                current_lod_dist - FADE_BAND..current_lod_dist
-                            };
+                            let visibility_range =
+                                lod_config.get_visibility_range(prototype.lod_level);
 
                             (
+                                **scatter_result,
                                 Mesh3d(prototype.mesh().clone()),
                                 MeshMaterial3d(prototype.material().clone()),
-                                **result,
                                 WindAffected,
                                 WindAffectedReady,
-                                ChildOf(e.trigger.chunk.unwrap_or(e.trigger.layer)),
+                                ChildOf(parent),
+                                visibility_range,
                             )
                         })
                         .collect::<Vec<_>>()
