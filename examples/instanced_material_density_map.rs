@@ -70,7 +70,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
+                    LevelOfDetail(1),
                 )
             ]
         )],

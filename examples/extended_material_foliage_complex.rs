@@ -24,6 +24,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
+        LodConfig(vec![10.0.into(), 20.0.into(), 40.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(15.),
@@ -37,7 +38,11 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             children![
                 SceneRoot(assets.load("foliage_complex.glb#Scene0")),
                 (
-                    LodLevel(1),
+                    LevelOfDetail(1),
+                    SceneRoot(assets.load("foliage_complex_medium_lod.glb#Scene0")),
+                ),
+                (
+                    LevelOfDetail(2),
                     SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
                 )
             ]

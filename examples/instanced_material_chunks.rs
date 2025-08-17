@@ -54,11 +54,11 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             children![
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(2)
+                    LevelOfDetail(2)
                 ),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
+                    LevelOfDetail(1),
                 ),
                 (SceneRoot(assets.load("grass.glb#Scene0")),)
             ]

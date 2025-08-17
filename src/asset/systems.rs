@@ -21,7 +21,7 @@ pub fn collect_assets<TIn, TOut>(
             Option<&Children>,
             Option<&WindConfig>,
             Option<&Name>,
-            Option<&LodLevel>,
+            Option<&LevelOfDetail>,
             Option<&WindAffected>,
         ),
         Without<ScatterLayerChildProcessed>,
@@ -82,7 +82,7 @@ fn collect_assets_recursive<TIn, TOut>(
     wind_noise_texture: &Res<WindTexture>,
     wind: &Res<Wind>,
     current_name: Option<Name>,
-    current_lod_level: Option<LodLevel>,
+    current_lod_level: Option<LevelOfDetail>,
     prototype_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
     meshes: &mut ResMut<Assets<Mesh>>,
     q_children: &Query<
@@ -93,7 +93,7 @@ fn collect_assets_recursive<TIn, TOut>(
             Option<&Children>,
             Option<&WindConfig>,
             Option<&Name>,
-            Option<&LodLevel>,
+            Option<&LevelOfDetail>,
             Option<&WindAffected>,
         ),
         Without<ScatterLayerChildProcessed>,
@@ -106,7 +106,7 @@ where
     let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
     // TODO only add displacement/wind affected materials if wind affected
-    let Ok((entity, material, mesh, children, wind_component, name, lod_level, _wind_affected)) =
+    let Ok((entity, material, mesh, children, wind_component, name, lod, _wind_affected)) =
         q_children.get(entity)
     else {
         return types;
@@ -116,7 +116,7 @@ where
         .and_then(|x| x.wind_override.clone().map(|x| (x.clone(), true)))
         .unwrap_or_else(|| ((*wind).clone(), false));
 
-    let lod_level = lod_level.map_or(current_lod_level.unwrap_or_default(), |x| *x);
+    let lod = lod.map_or(current_lod_level.unwrap_or_default(), |x| *x);
 
     let name = current_name.map_or(name.cloned(), Some);
 
@@ -131,7 +131,7 @@ where
                 wind_noise_texture,
                 wind,
                 name.clone(),
-                Some(lod_level),
+                Some(lod),
                 prototype_assets,
                 meshes,
                 q_children,
@@ -169,7 +169,7 @@ where
         wind: Some(final_wind),
         aabb: mesh_aabb,
         name: name.clone(),
-        lod_level,
+        lod_level: lod,
     };
 
     debug!(
@@ -179,21 +179,21 @@ where
 
     let asset_handle = prototype_assets.add(asset);
 
+    // TODO do this in a separate system (some assets might not ever be scattered and just need to be affected by wind).
     cmd.entity(entity)
         .remove::<MeshMaterial3d<TIn>>()
-        .insert((WindAffectedRegistered(asset_handle.clone()), WindAffected));
+        .insert((WindAffectedRegistered(asset_handle.clone()), WindAffected, ScatterLayerChildProcessed));
 
     cmd.spawn((
         ScatterItem,
         ScatterItemAsset::<TOut>(asset_handle.clone()),
-        lod_level,
+        lod,
         ChildOf(layer),
         ScatterItemOf(layer),
+        ScatterLayerChildProcessed
     ));
 
     types.push(asset_handle);
-
-    cmd.entity(entity).insert(ScatterLayerChildProcessed);
 
     types
 }

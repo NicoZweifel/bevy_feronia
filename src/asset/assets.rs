@@ -1,4 +1,4 @@
-use crate::core::{LodLevel, ProtoType};
+use crate::core::{LevelOfDetail, ProtoType};
 use crate::prelude::Wind;
 use bevy::asset::{Asset, Handle};
 use bevy::camera::primitives::Aabb;
@@ -14,7 +14,7 @@ where
     pub material: Handle<T>,
     pub wind: Option<Wind>,
     pub aabb: Aabb,
-    pub lod_level: LodLevel,
+    pub lod_level: LevelOfDetail,
     pub name: Option<Name>,
 }
 
@@ -35,7 +35,7 @@ impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
         &self.aabb
     }
 
-    fn lod(&self) -> &LodLevel {
+    fn lod(&self) -> &LevelOfDetail {
         &self.lod_level
     }
 }
