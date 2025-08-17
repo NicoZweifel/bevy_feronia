@@ -1,6 +1,7 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
+use bevy::image::{ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::light_consts::lux::DIRECT_SUNLIGHT;
 use bevy::render::view::Hdr;
 use bevy::{
@@ -25,7 +26,8 @@ impl Plugin for ExamplePlugin {
         app.init_resource::<ExamplePluginOptions>()
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
             .add_plugins(CameraControllerPlugin)
-            .add_systems(Startup, setup);
+            .add_systems(Startup, setup)
+            .add_systems(Update, anistropic_filtering);
     }
 }
 
@@ -87,4 +89,32 @@ pub fn setup(
         },
         Transform::from_xyz(-50., 100.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+}
+
+fn anistropic_filtering(
+    mut ev_asset: EventReader<AssetEvent<Image>>,
+    mut image_assets: ResMut<Assets<Image>>,
+) {
+    for ev in ev_asset.read() {
+        let AssetEvent::LoadedWithDependencies { id } = ev else {
+            continue;
+        };
+
+        let Some(image) = image_assets.get_mut(*id) else {
+            continue;
+        };
+
+        image.sampler = match &image.sampler {
+            ImageSampler::Default => ImageSampler::Descriptor(ImageSamplerDescriptor {
+                anisotropy_clamp: 16,
+                ..ImageSamplerDescriptor::linear()
+            }),
+            ImageSampler::Descriptor(image_sampler_descriptor) => {
+                ImageSampler::Descriptor(ImageSamplerDescriptor {
+                    anisotropy_clamp: 16,
+                    ..image_sampler_descriptor.clone()
+                })
+            }
+        };
+    }
 }

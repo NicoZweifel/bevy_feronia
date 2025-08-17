@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
-use bevy::math::Vec3;
 use bevy::prelude::*;
 
 pub fn draw_aabbs(

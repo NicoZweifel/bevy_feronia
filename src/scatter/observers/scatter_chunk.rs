@@ -1,6 +1,4 @@
 use crate::prelude::*;
-use crate::scatter::utils::*;
-use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 
 pub fn scatter_chunk<

@@ -29,8 +29,8 @@ pub fn merge_check(
 pub fn handle_merge_check(
     mut cmd: Commands,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<(&MergeDistance, &ChunkLevel), (With<CanMerge>, Without<Merging>, With<Chunk>)>,
-    q_parent: Query<(&GlobalTransform, &ChunkSize)>,
+    q_chunk: Query<&MergeDistance, (With<CanMerge>, Without<Merging>, With<Chunk>)>,
+    q_parent: Query<&GlobalTransform, With<Chunk>>,
     mut er_check: EventReader<MergeCheck>,
 ) {
     let Ok(center) = q_center.single() else {
@@ -44,7 +44,7 @@ pub fn handle_merge_check(
 
     for e in er_check.read() {
         let parent = e.parent;
-        let Ok((parent_tf, chunk_size)) = q_parent.get(parent) else {
+        let Ok(parent_tf) = q_parent.get(parent) else {
             warn!("Couldn't get parent Chunk for merge!");
             continue;
         };
@@ -53,8 +53,8 @@ pub fn handle_merge_check(
 
         let first_child = children[0];
 
-        let Ok((merge_distance, chunk_level)) = q_chunk.get(first_child) else {
-            warn!("Couldn't get Chunk {first_child} for merge!");
+        let Ok(merge_distance) = q_chunk.get(first_child) else {
+            warn!("Couldn't get Chunk {first_child} in level for merge!");
             continue;
         };
 

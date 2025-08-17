@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
-use bevy::camera::visibility::VisibilityRange;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
@@ -12,7 +11,7 @@ pub fn spawn_instanced_wind_affected(
     mut cmd: Commands,
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
-    q_root: Query<(&LodConfig, Option<&ChunkLodConfig>), With<ScatterRoot>>,
+    q_root: Query<&LodConfig, With<ScatterRoot>>,
 ) {
     for e in er_spawn.read() {
         debug!("Spawning instanced wind affected!");
@@ -82,7 +81,7 @@ pub fn spawn_instanced_wind_affected(
             return;
         };
 
-        let Ok((lod_config, chunk_lod_config)) = q_root.get(e.trigger.root) else {
+        let Ok(lod_config) = q_root.get(e.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
@@ -94,9 +93,9 @@ pub fn spawn_instanced_wind_affected(
             let instances = instances
                 .iter()
                 .map(|instance| {
-                    let mut instance = instance.clone();
+                    let mut instance = *instance;
 
-                    instance.position = instance.position + chunk_gtf.translation;
+                    instance.position += chunk_gtf.translation;
 
                     let instance_min =
                         instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
@@ -136,7 +135,7 @@ pub fn spawn_instanced_wind_affected(
             cmd.entity(entity).insert((
                 Transform::default(),
                 Visibility::Visible,
-                Aabb::from(local_aabb),
+                local_aabb,
                 ChildOf(parent),
                 visibility_range,
             ));

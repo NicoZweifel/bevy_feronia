@@ -43,9 +43,8 @@ pub fn collect_assets<TIn, TOut>(
 
             let result = scatter_items
                 .iter()
-                .map(|x| {
+                .flat_map(|x| {
                     collect_assets_recursive::<TIn, TOut>(
-                        root,
                         layer,
                         x,
                         &mut cmd,
@@ -60,19 +59,20 @@ pub fn collect_assets<TIn, TOut>(
                         &q_collect,
                     )
                 })
-                .flatten()
                 .collect::<Vec<_>>();
 
-            if result.len() > 0 {
-                debug!("Found {} assets in layer {:?}", result.len(), layer);
-                cmd.entity(layer).insert(ScatterLayerProcessed);
-            }
+            if result.is_empty() {
+                continue;
+            };
+
+            debug!("Found {} assets in layer {:?}", result.len(), layer);
+
+            cmd.entity(layer).insert(ScatterLayerProcessed);
         }
     }
 }
 
 fn collect_assets_recursive<TIn, TOut>(
-    root: Entity,
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
@@ -101,28 +101,24 @@ where
 {
     let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
-    let Ok((entity, material, mesh, children, wind_component, name, lod_level, wind_affected)) =
+    // TODO only add displacement/wind affected materials if wind affected
+    let Ok((entity, material, mesh, children, wind_component, name, lod_level, _wind_affected)) =
         q_children.get(entity)
     else {
         return types;
     };
 
     let (final_wind, controlled) = wind_component
-        .map(|x| x.wind_override.clone().map(|x| (x.clone(), true)))
-        .flatten()
+        .and_then(|x| x.wind_override.clone().map(|x| (x.clone(), true)))
         .unwrap_or_else(|| ((*wind).clone(), false));
 
-    let lod_level = lod_level.map_or(
-        current_lod_level.unwrap_or_else(|| LodLevel::default()),
-        |x| x.clone(),
-    );
+    let lod_level = lod_level.map_or(current_lod_level.unwrap_or_default(), |x| *x);
 
-    let name = current_name.map_or_else(|| name.map(|x| x.clone()), |x| Some(x.clone()));
+    let name = current_name.map_or(name.cloned(), Some);
 
     if let Some(children) = children {
         for child in children.iter() {
             types.append(&mut collect_assets_recursive::<TIn, TOut>(
-                root,
                 layer,
                 child,
                 cmd,
@@ -134,7 +130,7 @@ where
                 Some(lod_level),
                 prototype_assets,
                 meshes,
-                &q_children,
+                q_children,
             ));
         }
     }

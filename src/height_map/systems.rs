@@ -157,7 +157,7 @@ pub fn setup_height_map_pipeline(
     let mut image =
         Image::new_target_texture(map_resolution, map_resolution, TextureFormat::R32Float);
 
-    image.texture_descriptor.usage = image.texture_descriptor.usage | TextureUsages::COPY_SRC;
+    image.texture_descriptor.usage |= TextureUsages::COPY_SRC;
 
     let image_handle = images.add(image);
 

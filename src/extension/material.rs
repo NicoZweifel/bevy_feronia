@@ -16,7 +16,7 @@ where
         controlled: bool,
     ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
-            base: base.unwrap_or_else(|| StandardMaterial::default()),
+            base: base.unwrap_or_default(),
             extension: WindAffectedExtension {
                 noise_texture,
                 wind,

@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use bevy::prelude::*;
-use std::num::NonZeroU32;
 
 pub fn split(
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,

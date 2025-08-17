@@ -158,14 +158,13 @@ where
     let height_sampler = task_data
         .height_map_config
         .as_ref()
-        .map(|cfg| {
+        .and_then(|cfg| {
             task_data
                 .height_map_image
                 .as_ref()
                 .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
         })
-        .flatten()
-        .unwrap_or_else(|| HeightMapSampler::Default(DefaultSampler));
+        .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
     create_scatter_results(
         task_data.container,

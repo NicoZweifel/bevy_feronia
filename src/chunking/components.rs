@@ -183,9 +183,9 @@ impl Default for LodLevelDistance {
     }
 }
 
-impl Into<LodLevelDistance> for f32 {
-    fn into(self) -> LodLevelDistance {
-        LodLevelDistance(self)
+impl From<f32> for LodLevelDistance {
+    fn from(val: f32) -> Self {
+        LodLevelDistance(val)
     }
 }
 
@@ -204,9 +204,9 @@ impl Default for LodConfig {
     }
 }
 
-impl Into<ChunkSizeScalar> for u32 {
-    fn into(self) -> ChunkSizeScalar {
-        ChunkSizeScalar(self)
+impl From<u32> for ChunkSizeScalar {
+    fn from(val: u32) -> Self {
+        ChunkSizeScalar(val)
     }
 }
 

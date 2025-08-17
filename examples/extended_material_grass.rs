@@ -29,7 +29,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         children![(
-            scatter_layer("Wind affected Foliage Layer"),
+            scatter_layer("Foliage Layer"),
             DistributionDensity(70.),
             InstanceJitter(1.),
             WindAffected,

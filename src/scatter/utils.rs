@@ -11,13 +11,11 @@ pub fn get_height_map_sampler<'a>(
     height_map: Option<Res<HeightMap>>,
 ) -> HeightMapSampler<'a> {
     height_map
-        .map(|height_map_image| {
+        .and_then(|height_map_image| {
             height_map_cfg
-                .map(|x| create_height_map_sampler(images.get(&height_map_image.0), x))
-                .flatten()
+                .and_then(|x| create_height_map_sampler(images.get(&height_map_image.0), x))
         })
-        .flatten()
-        .unwrap_or_else(|| HeightMapSampler::Default(DefaultSampler))
+        .unwrap_or(HeightMapSampler::Default(DefaultSampler))
 }
 
 fn create_height_map_sampler<'a>(
@@ -28,8 +26,8 @@ fn create_height_map_sampler<'a>(
         .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg.into_inner())))
 }
 
-pub fn scatter_layer_enabled<'a>(
-    cmd: &'a mut Commands,
+pub fn scatter_layer_enabled(
+    cmd: &mut Commands,
     layer_entity: Entity,
     layer_name: Option<&Name>,
     enabled: Option<&ScatterLayerEnabled>,
