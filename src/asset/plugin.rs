@@ -1,7 +1,6 @@
 use crate::asset::systems::*;
 use crate::prelude::*;
 use bevy::prelude::*;
-use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub struct ScatterAssetsPlugin<TIn, TOut>

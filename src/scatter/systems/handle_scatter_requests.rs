@@ -38,8 +38,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
     // NOTE: handle 2 per frame. TODO optimize / compute shaders for instanced procedural material
     for (entity, request) in requests.iter().take(2) {
-        cmd.entity(entity).remove::<ScatterRequest<TIn, TOut>>();
-
         let Ok((
             scatter_root_ref,
             density_dist,
@@ -75,7 +73,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
             };
 
             let Ok((chunk_size, chunk_gtf, chunk_level)) = q_chunk.get(chunk_entity) else {
-                warn!("Chunk not found!");
                 continue;
             };
 
@@ -135,6 +132,8 @@ pub fn handle_scatter_requests<TIn, TOut>(
             continue;
         };
 
+        cmd.entity(entity).remove::<ScatterRequest<TIn, TOut>>();
+
         let task = AsyncComputeTaskPool::get()
             .spawn(async move { create_scatter_results_from_task_data::<TIn, TOut>(data) });
 
@@ -158,14 +157,13 @@ where
     let height_sampler = task_data
         .height_map_config
         .as_ref()
-        .map(|cfg| {
+        .and_then(|cfg| {
             task_data
                 .height_map_image
                 .as_ref()
                 .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
         })
-        .flatten()
-        .unwrap_or_else(|| HeightMapSampler::Default(DefaultSampler));
+        .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
     create_scatter_results(
         task_data.container,

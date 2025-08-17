@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use bevy::camera::visibility::VisibilityRange;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
@@ -9,7 +8,7 @@ pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
     mut er_spawn: EventReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
-    q_root: Query<(&LodConfig, Option<&ChunkLodConfig>), With<ScatterRoot>>,
+    q_root: Query<&LodConfig, With<ScatterRoot>>,
     q_chunks: Query<&ChunkLevel, (With<Chunk>, Without<Merging>)>,
 ) {
     for e in er_spawn.read() {
@@ -51,7 +50,7 @@ pub fn spawn_extended_wind_affected(
                     .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
             });
 
-        let Ok((lod_config, chunk_lod_config)) = q_root.get(e.trigger.root) else {
+        let Ok(lod_config) = q_root.get(e.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
@@ -66,7 +65,7 @@ pub fn spawn_extended_wind_affected(
                 .data
                 .clone()
                 .iter_mut()
-                .map(|scatter_result| {
+                .flat_map(|scatter_result| {
                     let prototypes = name_map.values().choose(&mut rng());
 
                     let Some(prototypes) = prototypes else {
@@ -93,7 +92,6 @@ pub fn spawn_extended_wind_affected(
                         })
                         .collect::<Vec<_>>()
                 })
-                .flatten()
                 .collect::<Vec<_>>(),
         );
     }

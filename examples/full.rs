@@ -90,7 +90,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                     max: std::f32::consts::PI * 2.0
                 },
                 InstanceJitter(1.0),
-                InstanceScale { min: 1.0, max: 1.5 },
+                InstanceScale { min: 2.0, max: 5.0 },
                 WindAffected,
                 children![
                     SceneRoot(assets.load("grass.glb#Scene0")),
@@ -111,7 +111,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
                 },
-                InstanceScale { min: 1., max: 5. },
+                InstanceScale { min: 3., max: 10. },
                 InstanceJitter(1.0),
                 WindAffected,
                 children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]

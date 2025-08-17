@@ -85,8 +85,7 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
         // --- 6. Denormalize the Value Back to World Height ---
         // Uses the height range to convert the [0.0, 1.0] value back to world units.
         let span = self.world_height_range.end - self.world_height_range.start;
-        let world_height = normalized_height * span + self.world_height_range.start;
 
-        world_height
+        normalized_height * span + self.world_height_range.start
     }
 }

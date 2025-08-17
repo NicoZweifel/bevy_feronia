@@ -20,7 +20,7 @@ pub fn scatter_observer<TIn, TOut>(
 
     let items = scatter_items
         .iter()
-        .filter_map(|x| q_items.get(x).ok().map(|x| x.clone()));
+        .filter_map(|x| q_items.get(x).ok().cloned());
 
     let trigger = SpawnTrigger::from(trigger);
 

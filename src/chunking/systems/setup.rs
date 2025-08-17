@@ -42,7 +42,7 @@ pub fn setup_chunks(
                 let mut world_pos = gtf.translation()
                     + Vec3::new(x as f32, 0., z as f32) * top_chunk_size.with_y(0.)
                     + top_chunk_size.with_y(0.) / 2.
-                    - Vec3::from(center_offset).with_y(0.);
+                    - center_offset.with_y(0.);
 
                 world_pos.y = height_sampler.sample(world_pos);
 
