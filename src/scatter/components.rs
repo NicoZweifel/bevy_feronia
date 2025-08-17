@@ -132,6 +132,9 @@ where
 pub struct ScatterLayerProcessed;
 
 #[derive(Component)]
+pub struct ScatterLayerChildProcessed;
+
+#[derive(Component)]
 pub struct ScatterObserver;
 
 #[derive(Component, Debug, Clone, Reflect, Deref)]

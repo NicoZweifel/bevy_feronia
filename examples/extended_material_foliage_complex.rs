@@ -34,7 +34,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceScale { min: 1., max: 3. },
             InstanceJitter(1.),
             WindAffected,
-            children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]
+            children![
+                SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                (
+                    LodLevel(1),
+                    SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
+                )
+            ]
         )],
     ))
     .observe(extended_scatter_observer);

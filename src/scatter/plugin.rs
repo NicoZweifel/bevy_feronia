@@ -78,7 +78,7 @@ impl Plugin for ScatterPlugin {
                 Update,
                 (
                     transition_to_ready_state.run_if(in_state(ScatterState::Setup)),
-                    check_unprocessed_layers,
+                    (check_unprocessed_layers, check_unprocessed_items),
                 ),
             );
     }

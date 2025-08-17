@@ -13,16 +13,19 @@ pub fn collect_assets<TIn, TOut>(
             With<ScatterLayerType<TIn, TOut>>,
         ),
     >,
-    q_collect: Query<(
-        Entity,
-        Option<&MeshMaterial3d<TIn>>,
-        Option<&Mesh3d>,
-        Option<&Children>,
-        Option<&WindConfig>,
-        Option<&Name>,
-        Option<&LodLevel>,
-        Option<&WindAffected>,
-    )>,
+    q_collect: Query<
+        (
+            Entity,
+            Option<&MeshMaterial3d<TIn>>,
+            Option<&Mesh3d>,
+            Option<&Children>,
+            Option<&WindConfig>,
+            Option<&Name>,
+            Option<&LodLevel>,
+            Option<&WindAffected>,
+        ),
+        Without<ScatterLayerChildProcessed>,
+    >,
     mut materials: ResMut<Assets<TIn>>,
     mut extended_materials: ResMut<Assets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
@@ -66,8 +69,6 @@ pub fn collect_assets<TIn, TOut>(
             };
 
             debug!("Found {} assets in layer {:?}", result.len(), layer);
-
-            cmd.entity(layer).insert(ScatterLayerProcessed);
         }
     }
 }
@@ -84,16 +85,19 @@ fn collect_assets_recursive<TIn, TOut>(
     current_lod_level: Option<LodLevel>,
     prototype_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
     meshes: &mut ResMut<Assets<Mesh>>,
-    q_children: &Query<(
-        Entity,
-        Option<&MeshMaterial3d<TIn>>,
-        Option<&Mesh3d>,
-        Option<&Children>,
-        Option<&WindConfig>,
-        Option<&Name>,
-        Option<&LodLevel>,
-        Option<&WindAffected>,
-    )>,
+    q_children: &Query<
+        (
+            Entity,
+            Option<&MeshMaterial3d<TIn>>,
+            Option<&Mesh3d>,
+            Option<&Children>,
+            Option<&WindConfig>,
+            Option<&Name>,
+            Option<&LodLevel>,
+            Option<&WindAffected>,
+        ),
+        Without<ScatterLayerChildProcessed>,
+    >,
 ) -> Vec<Handle<ScatterAsset<TOut>>>
 where
     TIn: Material,
@@ -133,6 +137,10 @@ where
                 q_children,
             ));
         }
+    }
+
+    if !types.is_empty() {
+        cmd.entity(entity).insert(ScatterLayerChildProcessed);
     }
 
     let Some(material) = material else {
@@ -184,6 +192,8 @@ where
     ));
 
     types.push(asset_handle);
+
+    cmd.entity(entity).insert(ScatterLayerChildProcessed);
 
     types
 }

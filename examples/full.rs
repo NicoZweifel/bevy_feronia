@@ -114,7 +114,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 InstanceScale { min: 3., max: 10. },
                 InstanceJitter(1.0),
                 WindAffected,
-                children![SceneRoot(assets.load("foliage_complex.glb#Scene0")),]
+                children![
+                    SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                    (
+                        LodLevel(1),
+                        SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
+                    )
+                ]
             )
         ],
     ))
