@@ -16,7 +16,7 @@ fn main() -> AppExit {
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .add_systems(Startup, setup)
-        .add_systems(Update, (scatter_on_keypress))
+        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
