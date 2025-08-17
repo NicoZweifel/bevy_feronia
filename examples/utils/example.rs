@@ -47,7 +47,7 @@ pub fn setup(
             ColorGrading::default(),
             Bloom::NATURAL,
             Tonemapping::TonyMcMapface,
-            Transform::from_xyz(-10., 2., 10.).looking_at(Vec3::ZERO, Vec3::Y),
+            Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
             ChunkCenter,
             Skybox {
                 image: asset_server.load("skybox.ktx2"),

@@ -68,7 +68,7 @@ pub trait LodConfiguration {
         VisibilityRange {
             start_margin,
             end_margin,
-            use_aabb: true,
+            use_aabb: false,
         }
     }
 }

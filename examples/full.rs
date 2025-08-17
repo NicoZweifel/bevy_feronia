@@ -115,10 +115,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 InstanceJitter(1.0),
                 WindAffected,
                 children![
-                    // TODO find out why lighting is sometimes messed up on LOD 0
-                    // SceneRoot(assets.load("foliage_complex.glb#Scene0")),
                     (
-                        LevelOfDetail(0),
+                        LevelOfDetail(1),
                         SceneRoot(assets.load("foliage_complex_medium_lod.glb#Scene0")),
                     ),
                     (
