@@ -106,7 +106,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
-                DistributionDensity(2.0),
+                DistributionDensity(1.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
@@ -115,9 +115,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 InstanceJitter(1.0),
                 WindAffected,
                 children![
-                    SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                    // TODO find out why lighting is sometimes messed up on LOD 0
+                    // SceneRoot(assets.load("foliage_complex.glb#Scene0")),
                     (
-                        LevelOfDetail(1),
+                        LevelOfDetail(0),
+                        SceneRoot(assets.load("foliage_complex_medium_lod.glb#Scene0")),
+                    ),
+                    (
+                        LevelOfDetail(2),
                         SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
                     )
                 ]

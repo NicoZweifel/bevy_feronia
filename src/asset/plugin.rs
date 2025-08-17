@@ -39,6 +39,9 @@ where
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (collect_assets::<TIn, TOut>,));
+        app.add_systems(
+            Update,
+            (collect_assets::<TIn, TOut>.run_if(in_state(ScatterState::Ready)),),
+        );
     }
 }

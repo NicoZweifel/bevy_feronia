@@ -180,9 +180,11 @@ where
     let asset_handle = prototype_assets.add(asset);
 
     // TODO do this in a separate system (some assets might not ever be scattered and just need to be affected by wind).
-    cmd.entity(entity)
-        .remove::<MeshMaterial3d<TIn>>()
-        .insert((WindAffectedRegistered(asset_handle.clone()), WindAffected, ScatterLayerChildProcessed));
+    cmd.entity(entity).remove::<MeshMaterial3d<TIn>>().insert((
+        WindAffectedRegistered(asset_handle.clone()),
+        WindAffected,
+        ScatterLayerChildProcessed,
+    ));
 
     cmd.spawn((
         ScatterItem,
@@ -190,7 +192,7 @@ where
         lod,
         ChildOf(layer),
         ScatterItemOf(layer),
-        ScatterLayerChildProcessed
+        ScatterLayerChildProcessed,
     ));
 
     types.push(asset_handle);

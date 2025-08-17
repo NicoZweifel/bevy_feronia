@@ -27,7 +27,7 @@ impl Plugin for ExamplePlugin {
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup)
-            .add_systems(Update, anistropic_filtering);
+            .add_systems(Update, anisotropic_filtering);
     }
 }
 
@@ -91,7 +91,7 @@ pub fn setup(
     ));
 }
 
-fn anistropic_filtering(
+fn anisotropic_filtering(
     mut ev_asset: EventReader<AssetEvent<Image>>,
     mut image_assets: ResMut<Assets<Image>>,
 ) {
