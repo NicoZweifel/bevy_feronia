@@ -166,7 +166,7 @@ where
         *aabb,
         unique_color,
         // TODO: expose with setting
-        true,
+        false,
     );
 
     let material = extended_materials.add(new_material);
