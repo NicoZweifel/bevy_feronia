@@ -25,7 +25,7 @@ impl Plugin for HeightMapPlugin {
                             resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Setup)),
                         ),
                     create_height_map_ghost.run_if(
-                        resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Loading)),
+                        resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Ghost)),
                     ),
                     bake_height_map.run_if(in_state(HeightMapState::Baking)),
                 ),

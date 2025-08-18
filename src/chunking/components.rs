@@ -1,4 +1,4 @@
-use crate::core::LodLevel;
+use crate::core::LevelOfDetail;
 use bevy::camera::visibility::VisibilityRange;
 use bevy::prelude::*;
 
@@ -9,6 +9,21 @@ pub struct LodConfig(pub Vec<LodLevelDistance>);
 impl LodConfiguration for LodConfig {
     fn get(&self) -> &Vec<LodLevelDistance> {
         &self.0
+    }
+}
+
+impl Default for LodConfig {
+    fn default() -> Self {
+        Self(
+            // LODs are ordered from High (0) to Low (n).
+            vec![
+                50.0.into(),
+                // Level 1: Medium
+                100.0.into(),
+                // Level 2: Low
+                LodLevelDistance::default(),
+            ],
+        )
     }
 }
 
@@ -23,7 +38,7 @@ pub trait LodConfiguration {
         &self.get()[level as usize]
     }
 
-    fn get_visibility_range(&self, lod_level: LodLevel) -> VisibilityRange {
+    fn get_visibility_range(&self, lod_level: LevelOfDetail) -> VisibilityRange {
         let current_lod_dist = self
             .get()
             .get(*lod_level as usize)
@@ -53,7 +68,7 @@ pub trait LodConfiguration {
         VisibilityRange {
             start_margin,
             end_margin,
-            use_aabb: true,
+            use_aabb: false,
         }
     }
 }
@@ -186,21 +201,6 @@ impl Default for LodLevelDistance {
 impl From<f32> for LodLevelDistance {
     fn from(val: f32) -> Self {
         LodLevelDistance(val)
-    }
-}
-
-impl Default for LodConfig {
-    fn default() -> Self {
-        Self(
-            // LODs are ordered from High (0) to Low (n).
-            vec![
-                50.0.into(),
-                // Level 1: Medium
-                100.0.into(),
-                // Level 2: Low
-                LodLevelDistance::default(),
-            ],
-        )
     }
 }
 

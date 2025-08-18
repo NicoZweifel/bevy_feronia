@@ -52,20 +52,28 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         descriptor.layout.push(self.material_layout.clone());
 
         let shader_defs = &mut descriptor.vertex.shader_defs;
+
         if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
             shader_defs.push("WIND_BILLBOARDING".into());
         }
+
         if key
             .wind_key
             .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
         {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
+
         if key.wind_key.contains(WindAffectedKey::HIGH_QUALITY) {
             shader_defs.push("WIND_HIGH_QUALITY".into());
         }
+
         if key.wind_key.contains(WindAffectedKey::FAST_NORMALS) {
             shader_defs.push("FAST_NORMALS".into());
+        }
+
+        if key.wind_key.contains(WindAffectedKey::DEBUG) {
+            shader_defs.push("DEBUG".into());
         }
 
         descriptor.vertex.shader = self.shader.clone();

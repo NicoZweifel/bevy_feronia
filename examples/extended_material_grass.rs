@@ -12,13 +12,12 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
-            strength: 0.8,
-            micro_strength: 0.2,
             round_exponent: 15.,
-            edge_correction_factor: 0.001,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .insert_state(ScatterState::Setup)
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()
@@ -30,14 +29,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Foliage Layer"),
-            DistributionDensity(70.),
+            DistributionDensity(100.),
             InstanceJitter(1.),
             WindAffected,
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
+                    LevelOfDetail(1),
                 )
             ]
         )],

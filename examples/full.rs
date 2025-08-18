@@ -16,12 +16,9 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
-            strength: 0.8,
-            micro_strength: 0.2,
             round_exponent: 15.,
-            edge_correction_factor: 0.001,
-            high_quality: true,
-            lod_threshold: 10.0,
+            strength: 0.4,
+            micro_strength: 0.1,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
@@ -42,7 +39,13 @@ fn main() -> AppExit {
             InstancedWindAffectedScatterPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
-        .add_systems(Startup, (setup_density_map, setup).chain())
+        .init_state::<AppState>()
+        .add_systems(Startup, (load_assets, setup_density_map))
+        .add_systems(
+            Update,
+            check_assets_loaded.run_if(in_state(AppState::Loading)),
+        )
+        .add_systems(OnEnter(AppState::InGame), spawn_scene)
         .add_systems(
             Update,
             (
@@ -51,6 +54,36 @@ fn main() -> AppExit {
             ),
         )
         .run()
+}
+
+#[derive(States, Debug, Clone, Eq, PartialEq, Hash, Default)]
+enum AppState {
+    #[default]
+    Loading,
+    InGame,
+}
+
+#[derive(Resource)]
+struct Scenes {
+    landscape: Handle<Scene>,
+    grass_lod_high: Handle<Scene>,
+    grass_lod_medium: Handle<Scene>,
+    grass_lod_low: Handle<Scene>,
+    foliage_lod_high: Handle<Scene>,
+    foliage_lod_medium: Handle<Scene>,
+    foliage_lod_low: Handle<Scene>,
+}
+
+fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Scenes {
+        landscape: asset_server.load("landscape_large.glb#Scene0"),
+        grass_lod_high: asset_server.load("grass.glb#Scene0"),
+        grass_lod_medium: asset_server.load("grass_low_lod.glb#Scene0"),
+        grass_lod_low: asset_server.load("grass_low_lod.glb#Scene0"),
+        foliage_lod_high: asset_server.load("foliage_complex.glb#Scene0"),
+        foliage_lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
+        foliage_lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
+    });
 }
 
 fn setup_height_map_inspection(
@@ -71,7 +104,39 @@ fn setup_height_map_inspection(
     ));
 }
 
-fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
+fn check_assets_loaded(
+    mut next_state: ResMut<NextState<AppState>>,
+    asset_server: Res<AssetServer>,
+    handles: Res<Scenes>,
+) {
+    let all_loaded = [
+        handles.landscape.id(),
+        handles.grass_lod_high.id(),
+        handles.grass_lod_medium.id(),
+        handles.grass_lod_low.id(),
+        handles.foliage_lod_high.id(),
+        handles.foliage_lod_medium.id(),
+        handles.foliage_lod_low.id(),
+    ]
+    .iter()
+    .all(|id| {
+        asset_server
+            .get_load_state(*id)
+            .is_some_and(|x| x.is_loaded())
+    });
+
+    if all_loaded {
+        next_state.set(AppState::InGame);
+    }
+}
+
+fn spawn_scene(
+    mut cmd: Commands,
+    assets: Res<AssetServer>,
+    density_map: Res<DensityMap>,
+    mut ns_scatter: ResMut<NextState<ScatterState>>,
+    mut ns_height_map: ResMut<NextState<HeightMapState>>,
+) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),
         ScatterRoot::default(),
@@ -96,17 +161,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                     SceneRoot(assets.load("grass.glb#Scene0")),
                     (
                         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                        LodLevel(1),
+                        LevelOfDetail(1),
                     ),
                     (
                         SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                        LodLevel(2)
+                        LevelOfDetail(2)
                     ),
                 ],
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
-                DistributionDensity(2.0),
+                DistributionDensity(1.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
@@ -116,16 +181,26 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 WindAffected,
                 children![
                     SceneRoot(assets.load("foliage_complex.glb#Scene0")),
+                    // TODO: Deterministic scattering
+                    /*
                     (
-                        LodLevel(1),
+                        LevelOfDetail(1),
+                        SceneRoot(assets.load("foliage_complex_medium_lod.glb#Scene0")),
+                    ),
+                    (
+                        LevelOfDetail(2),
                         SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
                     )
+                     */
                 ]
             )
         ],
     ))
     .observe(instanced_scatter_observer)
     .observe(extended_scatter_observer);
+
+    ns_height_map.set(HeightMapState::Setup);
+    ns_scatter.set(ScatterState::Setup);
 }
 
 fn scatter_on_keypress(
@@ -192,6 +267,7 @@ fn setup_density_map(
     cmd.insert_resource(DensityMap(handle));
 }
 
+// TODO make expressive/descriptive configuration/plugin
 #[derive(Resource)]
 pub struct DensityMapConfig {
     pub size: u32,

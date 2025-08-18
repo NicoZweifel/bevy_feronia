@@ -16,12 +16,9 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
-            strength: 0.8,
-            micro_strength: 0.2,
             round_exponent: 15.,
             edge_correction_factor: 0.001,
             high_quality: true,
-            lod_threshold: 10.,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
@@ -33,6 +30,8 @@ fn main() -> AppExit {
             no_indirect_drawing: true,
         })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
+        .insert_state(ScatterState::Setup)
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
         .run()
 }
@@ -70,7 +69,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
+                    LevelOfDetail(1),
                 )
             ]
         )],

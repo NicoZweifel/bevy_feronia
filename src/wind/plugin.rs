@@ -50,7 +50,7 @@ where
         app.add_systems(
             Update,
             (
-                insert_material::<TIn, TOut>,
+                replace_materials::<TIn, TOut>,
                 update_materials::<TIn, TOut>.run_if(resource_changed::<Wind>),
             ),
         );

@@ -10,11 +10,15 @@ use example::*;
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            strength: 0.5,
-            micro_strength: 0.2,
+            strength: 0.05,
+            micro_strength: 0.03,
+            s_curve_strength: 0.01,
+            bop_strength: 0.01,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .insert_state(ScatterState::Setup)
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()

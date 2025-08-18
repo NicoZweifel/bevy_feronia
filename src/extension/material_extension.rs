@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy::asset::{AssetPath, embedded_path};
+use bevy::camera::primitives::Aabb;
 use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::pbr::{MaterialExtension, MaterialExtensionKey, MaterialExtensionPipeline};
 use bevy::prelude::*;
@@ -17,6 +18,12 @@ pub struct WindAffectedExtension {
     // Whether the Extension is controlled externally and isn't automatically updated by the Wind resource.
     pub controlled: bool,
 
+    pub aabb: Aabb,
+
+    pub debug_color: Color,
+
+    pub debug: bool,
+
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,
@@ -25,6 +32,8 @@ pub struct WindAffectedExtension {
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
+            .with_aabb(&material_extension.aabb)
+            .with_debug_color(material_extension.debug_color.to_linear().to_vec4())
     }
 }
 
@@ -84,7 +93,7 @@ impl MaterialExtension for WindAffectedExtension {
 impl From<&WindAffectedExtension> for WindAffectedKey {
     fn from(material: &WindAffectedExtension) -> Self {
         let mut key = WindAffectedKey::empty();
-
+        key.set(WindAffectedKey::DEBUG, material.debug);
         key.set(
             WindAffectedKey::ENABLE_BILLBOARDING,
             material.wind.enable_billboarding,

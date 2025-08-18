@@ -75,7 +75,7 @@ where
     fn material(&self) -> &Handle<T>;
     fn wind(&self) -> Option<&Wind>;
     fn aabb(&self) -> &Aabb;
-    fn lod(&self) -> &LodLevel;
+    fn lod(&self) -> &LevelOfDetail;
 }
 
 pub trait Sampler {
@@ -84,7 +84,7 @@ pub trait Sampler {
 
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
 #[reflect(Component)]
-pub struct LodLevel(pub u32);
+pub struct LevelOfDetail(pub u32);
 
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {

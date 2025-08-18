@@ -58,6 +58,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.world_normal = displaced.world_normal;
 #endif
 
+    out.uv = vertex.uv;
+
     return out;
 }
 

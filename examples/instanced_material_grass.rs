@@ -14,10 +14,7 @@ fn main() -> AppExit {
         .insert_resource(Wind {
             enable_billboarding: true,
             enable_edge_correction: true,
-            strength: 0.8,
-            micro_strength: 0.2,
             round_exponent: 15.,
-            edge_correction_factor: 0.001,
             ..default()
         })
         .insert_resource(ExamplePluginOptions {
@@ -28,6 +25,8 @@ fn main() -> AppExit {
             aabb_color: GREEN_500.into(),
         })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
+        .insert_state(ScatterState::Setup)
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, (scatter_on_keypress, draw_aabbs))
         .run()
@@ -47,7 +46,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LodLevel(1),
+                    LevelOfDetail(1),
                 )
             ]
         )],

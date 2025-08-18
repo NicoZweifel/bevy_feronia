@@ -78,7 +78,7 @@ pub fn skip_setup(
 }
 
 pub fn finish_setup(mut next_state: ResMut<NextState<HeightMapState>>) {
-    next_state.set(HeightMapState::Loading);
+    next_state.set(HeightMapState::Ghost);
 }
 
 pub fn create_height_map_ghost(
