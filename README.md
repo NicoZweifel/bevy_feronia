@@ -60,6 +60,12 @@ https://github.com/user-attachments/assets/6c1e64ad-004a-4a38-8034-eb5c25ce7f8a
 
 https://github.com/user-attachments/assets/3141e4ac-24ff-4519-8ba5-afadf8f6a2ad
 
+### Full example WIP
+
+`cargo run --example full`
+
+https://github.com/user-attachments/assets/2b81a6d2-cd6a-4baa-85c3-1dc814114a37
+
 ### Credits/Inspirations
 
 - [Graswald](https://gscatter.com/gallery) for their amazing assets.
