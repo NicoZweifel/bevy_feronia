@@ -38,7 +38,7 @@ fn main() -> AppExit {
             ExtendedWindAffectedScatterPlugin,
         ))
         .init_state::<AppState>()
-        .add_systems(Startup, (load_assets,setup_density_map))
+        .add_systems(Startup, (load_assets, setup_density_map))
         .add_systems(
             Update,
             check_assets_loaded.run_if(in_state(AppState::Loading)),
@@ -54,7 +54,6 @@ fn main() -> AppExit {
         .run()
 }
 
-
 #[derive(States, Debug, Clone, Eq, PartialEq, Hash, Default)]
 enum AppState {
     #[default]
@@ -68,7 +67,7 @@ struct Scenes {
     grass_lod_high: Handle<Scene>,
     grass_lod_medium: Handle<Scene>,
     grass_lod_low: Handle<Scene>,
-   foliage_lod_high: Handle<Scene>,
+    foliage_lod_high: Handle<Scene>,
     foliage_lod_medium: Handle<Scene>,
     foliage_lod_low: Handle<Scene>,
 }
@@ -117,21 +116,24 @@ fn check_assets_loaded(
         handles.foliage_lod_medium.id(),
         handles.foliage_lod_low.id(),
     ]
-        .iter()
-        .all(|id| {
-            asset_server
-                .get_load_state(*id)
-                .is_some_and(|x| x.is_loaded())
-        });
+    .iter()
+    .all(|id| {
+        asset_server
+            .get_load_state(*id)
+            .is_some_and(|x| x.is_loaded())
+    });
 
     if all_loaded {
         next_state.set(AppState::InGame);
     }
 }
 
-fn spawn_scene(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>,
-               mut ns_scatter: ResMut<NextState<ScatterState>>,
-               mut ns_height_map: ResMut<NextState<HeightMapState>>,
+fn spawn_scene(
+    mut cmd: Commands,
+    assets: Res<AssetServer>,
+    density_map: Res<DensityMap>,
+    mut ns_scatter: ResMut<NextState<ScatterState>>,
+    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_large.glb#Scene0")),

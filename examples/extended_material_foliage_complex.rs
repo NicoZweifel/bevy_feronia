@@ -91,10 +91,7 @@ fn spawn_scene(
                 min: 0.,
                 max: std::f32::consts::PI * 2.
             },
-            InstanceScale{
-                min: 2.,
-                max: 5.
-            },
+            InstanceScale { min: 2., max: 5. },
             WindAffected,
             children![
                 (LevelOfDetail(0), SceneRoot(handles.lod_high.clone()),),
