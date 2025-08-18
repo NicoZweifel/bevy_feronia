@@ -83,7 +83,7 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        LodConfig(vec![5.0.into(), 10.0.into(), 35.0.into(), 75.0.into()]),
+        LodConfig(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(50.),
@@ -94,9 +94,10 @@ fn spawn_scene(
             InstanceScale { min: 2., max: 5. },
             WindAffected,
             children![
-                (LevelOfDetail(0), SceneRoot(handles.lod_high.clone()),),
-                (LevelOfDetail(1), SceneRoot(handles.lod_medium.clone()),),
-                (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()),)
+                // TODO figure out what's wrong with highest detail models
+                //(LevelOfDetail(0), SceneRoot(handles.lod_high.clone()),),
+                (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
+                (LevelOfDetail(1), SceneRoot(handles.lod_low.clone()),)
             ]
         )],
     ))
