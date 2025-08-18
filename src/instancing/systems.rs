@@ -39,6 +39,7 @@ pub(crate) fn add_instance_key_component(
         );
         key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
         key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
+        key.set(WindAffectedKey::DEBUG, material.debug);
 
         commands
             .entity(entity)

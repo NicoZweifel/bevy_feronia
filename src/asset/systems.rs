@@ -165,7 +165,8 @@ where
         controlled,
         *aabb,
         unique_color,
-        false,
+        // TODO: expose with setting
+        true,
     );
 
     let material = extended_materials.add(new_material);

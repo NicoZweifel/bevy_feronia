@@ -96,4 +96,3 @@ pub fn spawn_extended_wind_affected(
         );
     }
 }
-
