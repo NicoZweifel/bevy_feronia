@@ -10,7 +10,7 @@ I try to follow a few naming conventions, but they're not super strict:
 - ```cmd: Commands```
 - ```q_some_entity: Query<Entity,With<SomeEntity>>```
 - `er_some_event` and `ew_some_event` for `EventReader`/`EventWriter`
-- using short names like `i`, `x`, `e` is okay if it doesn't hurt readability
+- using short names like `i`, `x`, `e` is okay if the scope is small, clear and it doesn't hurt readability.
 
 ### Debugging
 To see detailed log messages while running the project, you can set the RUST_LOG environment variable:
