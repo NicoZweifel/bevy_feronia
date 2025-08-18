@@ -78,16 +78,14 @@ fn fragment(
     out.color = apply_pbr_lighting(pbr_input);
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
-#ifdef DEBUG
-#ifdef BINDLESS
-    // You'll need to get the `wind` uniform here, similar to the vertex shader
-    let slot = mesh[in.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-    let wind_uniform =  wind_material[wind_indices[slot].material];
-    out.color = wind_uniform.debug_color;
-#else
-    // If not bindless, the `wind` uniform should be directly available
-    out.color = wind.debug_color;
-#endif
+#ifdef MATERIAL_DEBUG
+    #ifdef BINDLESS
+        let slot = mesh[in.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
+        let wind =  wind_material[wind_indices[slot].material];
+        out.color = wind.debug_color;
+    #else
+        out.color = wind.debug_color;
+    #endif
 #endif
 
     return out;

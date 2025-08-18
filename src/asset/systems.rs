@@ -165,6 +165,7 @@ where
         controlled,
         *aabb,
         unique_color,
+        // TODO: expose with setting
         false,
     );
 

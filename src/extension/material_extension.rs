@@ -86,6 +86,16 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("FAST_NORMALS".into());
         }
 
+        if key.bind_group_data.contains(WindAffectedKey::DEBUG) {
+            shader_defs.push("MATERIAL_DEBUG".into());
+            descriptor
+                .fragment
+                .as_mut()
+                .unwrap()
+                .shader_defs
+                .push("MATERIAL_DEBUG".into());
+        }
+
         Ok(())
     }
 }

@@ -73,7 +73,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         }
 
         if key.wind_key.contains(WindAffectedKey::DEBUG) {
-            shader_defs.push("DEBUG".into());
+            shader_defs.push("MATERIAL_DEBUG".into());
         }
 
         descriptor.vertex.shader = self.shader.clone();
