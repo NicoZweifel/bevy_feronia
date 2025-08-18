@@ -13,7 +13,6 @@ fn main() -> AppExit {
             enable_billboarding: true,
             enable_edge_correction: true,
             round_exponent: 15.,
-            edge_correction_factor: 0.001,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))

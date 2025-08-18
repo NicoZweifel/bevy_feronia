@@ -10,8 +10,8 @@ use example::*;
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            strength: 0.1,
-            micro_strength: 0.05,
+            strength: 0.2,
+            micro_strength: 0.1,
             s_curve_strength: 0.01,
             bop_strength: 0.01,
             ..default()

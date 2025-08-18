@@ -17,6 +17,8 @@ fn main() -> AppExit {
             enable_billboarding: true,
             enable_edge_correction: true,
             round_exponent: 15.,
+            strength: 0.4,
+            micro_strength: 0.1,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
