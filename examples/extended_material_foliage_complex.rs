@@ -83,7 +83,7 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        LodConfig(vec![5.0.into(), 15.0.into(), 35.0.into(), 75.0.into()]),
+        LodConfig(vec![5.0.into(), 10.0.into(), 35.0.into(), 75.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(50.),
