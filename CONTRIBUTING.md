@@ -13,7 +13,9 @@ I try to follow a few naming conventions, but they're not super strict:
 - using short names like `i`, `x`, `e` is okay if the scope is small, clear and it doesn't hurt readability.
 
 ### Debugging
-To see detailed log messages while running the project, you can set the RUST_LOG environment variable:
+To see detailed log messages while running the project, you can set the `RUST_LOG` environment variable:
+
+ `RUST_LOG="warn,bevy_feronia=debug"`
 
 ### CI / GitHub Actions
 There is no CI or GitHub Actions pipeline yet. I'm not opposed to adding one, I just haven't gotten around to it.
