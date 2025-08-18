@@ -76,10 +76,12 @@ impl Plugin for ScatterPlugin {
             )
             .add_systems(
                 Update,
-                (
-                    transition_to_ready_state.run_if(in_state(ScatterState::Setup)),
-                    (check_unprocessed_layers, check_unprocessed_items),
-                ),
+                (transition_to_ready_state,).run_if(in_state(ScatterState::Setup)),
+            )
+            .add_systems(
+                Update,
+                (check_unprocessed_layers, check_unprocessed_items)
+                    .run_if(in_state(ScatterState::Ready)),
             );
     }
 }

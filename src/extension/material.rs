@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
 use bevy::pbr::ExtendedMaterial;
 use bevy::prelude::*;
 
@@ -14,6 +15,9 @@ where
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
+        aabb: Aabb,
+        debug_color: Color,
+        debug: bool,
     ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
             base: base.unwrap_or_default(),
@@ -21,6 +25,9 @@ where
                 noise_texture,
                 wind,
                 controlled,
+                aabb,
+                debug_color,
+                debug,
             },
         }
     }

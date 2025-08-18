@@ -14,18 +14,23 @@ where
     TOut::update_material(materials, wind.clone());
 }
 
-pub fn insert_material<TIn, TOut>(
+pub fn replace_materials<TIn, TOut>(
     mut cmd: Commands,
-    q: Query<(Entity, &WindAffectedRegistered<TOut>), Without<WindAffectedReady>>,
+    q: Query<(Entity, &WindAffectedRegistered<ScatterAsset<TOut>>), Without<WindAffectedReady>>,
+    scatter_assets: Res<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
+        let Some(scatter_asset) = scatter_assets.get(&**wind_affected) else {
+            continue;
+        };
+
         debug!("Replacing Material with WindAffected material...");
 
         cmd.entity(entity).insert((
-            TOut::component((**wind_affected).clone()),
+            TOut::component(scatter_asset.material.clone()),
             WindAffectedReady,
         ));
     }

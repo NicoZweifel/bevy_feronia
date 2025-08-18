@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::camera::primitives::Aabb;
 use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
 use bevy::{
     ecs::query::QueryItem,
@@ -17,6 +18,13 @@ pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,
     // Whether the material is controlled externally and isn't automatically updated by the Wind resource.
     pub controlled: bool,
+
+    pub debug: bool,
+
+    pub aabb: Aabb,
+
+    pub debug_color: Color,
+
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,
@@ -78,11 +86,17 @@ where
         wind: Wind,
         noise_texture: Handle<Image>,
         controlled: bool,
+        aabb: Aabb,
+        debug_color: Color,
+        debug: bool,
     ) -> InstancedWindAffectedMaterial {
         InstancedWindAffectedMaterial {
             wind,
             noise_texture,
             controlled,
+            aabb,
+            debug_color,
+            debug,
         }
     }
 
@@ -100,5 +114,7 @@ where
 impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
     fn from(material: &'a InstancedWindAffectedMaterial) -> Self {
         WindUniform::from(&material.wind)
+            .with_aabb(&material.aabb)
+            .with_debug_color(material.debug_color.to_linear().to_vec4())
     }
 }

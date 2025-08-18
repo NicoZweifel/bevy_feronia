@@ -18,6 +18,9 @@ struct Wind {
     twist_strength: f32,
     edge_correction_factor: f32,
     lod_threshold: f32,
+    aabb_min: vec3<f32>,
+    aabb_max: vec3<f32>,
+   debug_color: vec4<f32> 
 };
 
 struct WindMaterialUniform {

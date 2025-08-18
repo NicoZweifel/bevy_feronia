@@ -126,6 +126,18 @@ where
     }
 }
 
+/// A temporary component added to a foliage entity while we wait for its
+/// material and all associated textures to be fully loaded.
+#[derive(Component, Clone)]
+pub struct AwaitingMaterial<T: Material> {
+    /// The handle to the final ScatterAsset that contains all the necessary info.
+    pub asset_handle: Handle<ScatterAsset<T>>,
+    /// The entity for the layer this item belongs to.
+    pub layer: Entity,
+    /// The LOD level of this specific item.
+    pub lod: LevelOfDetail,
+}
+
 /// A marker component to signify that a `ScatterLayer` has already had its
 /// sources discovered and its `ScatterItem's generated.
 #[derive(Component)]

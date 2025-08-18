@@ -11,6 +11,8 @@ pub fn transition_to_ready_state(
         return;
     };
 
+    debug!("Transitioning ScatterState to Ready.");
+
     next_state.set(ScatterState::Ready);
 }
 

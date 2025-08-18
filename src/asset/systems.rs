@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::camera::primitives::MeshAabb;
+use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;
 
 pub fn collect_assets<TIn, TOut>(
@@ -18,6 +18,7 @@ pub fn collect_assets<TIn, TOut>(
             Entity,
             Option<&MeshMaterial3d<TIn>>,
             Option<&Mesh3d>,
+            Option<&Aabb>,
             Option<&Children>,
             Option<&WindConfig>,
             Option<&Name>,
@@ -83,13 +84,14 @@ fn collect_assets_recursive<TIn, TOut>(
     wind: &Res<Wind>,
     current_name: Option<Name>,
     current_lod_level: Option<LevelOfDetail>,
-    prototype_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
+    scatter_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
     meshes: &mut ResMut<Assets<Mesh>>,
     q_children: &Query<
         (
             Entity,
             Option<&MeshMaterial3d<TIn>>,
             Option<&Mesh3d>,
+            Option<&Aabb>,
             Option<&Children>,
             Option<&WindConfig>,
             Option<&Name>,
@@ -106,7 +108,7 @@ where
     let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
     // TODO only add displacement/wind affected materials if wind affected
-    let Ok((entity, material, mesh, children, wind_component, name, lod, _wind_affected)) =
+    let Ok((entity, material, mesh, aabb, children, wind_component, name, lod, _wind_affected)) =
         q_children.get(entity)
     else {
         return types;
@@ -132,7 +134,7 @@ where
                 wind,
                 name.clone(),
                 Some(lod),
-                prototype_assets,
+                scatter_assets,
                 meshes,
                 q_children,
             ));
@@ -151,16 +153,26 @@ where
         return types;
     };
 
+    let Some(aabb) = aabb else { return types };
+
+    let hue = (entity.index() * 30) as f32 % 360.0;
+    let unique_color = Color::hsl(hue, 1.0, 0.5);
+
     let new_material = TOut::create_material(
         Some(materials.get(material).unwrap().clone()),
         final_wind.clone(),
         wind_noise_texture.0.clone(),
         controlled,
+        *aabb,
+        unique_color,
+        false,
     );
 
     let material = extended_materials.add(new_material);
+
     let mesh = meshes.get(mesh).cloned().unwrap();
     let mesh = meshes.add(mesh.clone());
+
     let mesh_aabb = meshes.get(&mesh).unwrap().compute_aabb().unwrap();
 
     let asset = ScatterAsset {
@@ -177,16 +189,12 @@ where
         asset.name, asset.lod_level
     );
 
-    let asset_handle = prototype_assets.add(asset);
+    let asset_handle = scatter_assets.add(asset);
 
-    // TODO do this in a separate system (some assets might not ever be scattered and just need to be affected by wind).
     cmd.entity(entity).remove::<MeshMaterial3d<TIn>>().insert((
+        // TODO only do this and ignore scatter item logic (some assets might not ever be scattered and just need to be affected by wind).
         WindAffectedRegistered(asset_handle.clone()),
         WindAffected,
-        ScatterLayerChildProcessed,
-    ));
-
-    cmd.spawn((
         ScatterItem,
         ScatterItemAsset::<TOut>(asset_handle.clone()),
         lod,
