@@ -2,6 +2,7 @@ use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;
 
+// TODO: refactor this abomination into separate systems that collect/register assets and handle individual settings.
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,

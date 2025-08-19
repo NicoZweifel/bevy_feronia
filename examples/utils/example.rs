@@ -2,7 +2,6 @@
 mod camera_controller;
 
 use bevy::image::{ImageSampler, ImageSamplerDescriptor};
-use bevy::prelude::light_consts::lux::DIRECT_SUNLIGHT;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping}, //diagnostic::*,
@@ -83,7 +82,8 @@ pub fn setup(
 
     cmd.spawn((
         DirectionalLight {
-            illuminance: DIRECT_SUNLIGHT,
+            // NOTE: Direct sunlight has over-exposure, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
+            illuminance: 30_000.,
             shadows_enabled: true,
             ..default()
         },
