@@ -59,14 +59,6 @@ where
     }
 }
 
-pub trait ProtoTypes<TOut, TType>
-where
-    TOut: Asset + Clone,
-    TType: ProtoType<TOut> + Asset + Clone,
-{
-    // TODO use trait or remove
-}
-
 pub trait ProtoType<T>
 where
     T: Asset + Clone,

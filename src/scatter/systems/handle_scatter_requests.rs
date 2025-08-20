@@ -18,7 +18,7 @@ type ScatterLayerQueryData<'a> = (
 
 pub fn handle_scatter_requests<TIn, TOut>(
     mut cmd: Commands,
-    requests: Query<(Entity, &ScatterRequest<TIn, TOut>), With<ScatterRequest<TIn, TOut>>>,
+    q_requests: Query<(Entity, &ScatterRequest<TIn, TOut>), With<ScatterRequest<TIn, TOut>>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     images: Res<Assets<Image>>,
@@ -37,7 +37,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
     // NOTE: handle 2 per frame. TODO optimize / compute shaders for instanced procedural material
-    for (entity, request) in requests.iter().take(2) {
+    for (entity, request) in q_requests.iter().take(2) {
         let Ok((
             scatter_root_ref,
             density_dist,
