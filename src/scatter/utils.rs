@@ -1,9 +1,13 @@
+use std::hash::Hasher;
+use std::hash::Hash;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use rand::Rng;
 use rand::prelude::*;
+use rand_pcg::Pcg64;
+use xxh3::hash64_with_seed;
 
 pub fn get_height_map_sampler<'a>(
     images: &'a Res<Assets<Image>>,
@@ -82,13 +86,14 @@ pub struct Container {
     pub size: Vec3,
     pub root_size: Vec3,
     pub transform: Transform,
+    pub seed: u64
 }
 
 // TODO refactor into async CPU/GPU pipelines
-pub(super) fn create_scatter_result(
+pub(super) fn create_scatter_result<R: Rng + ?Sized>(
     container: &Container,
     modifiers: &InstanceModifiers,
-    rng: &mut ThreadRng,
+    rng: &mut R,
 ) -> Option<ScatterResult> {
     let instances_dim_f = container.instances_dim;
     let cell_width = container.size.x / instances_dim_f;
@@ -160,11 +165,23 @@ where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    let mut rng = rand::rng();
+    let mut rng = Pcg64::seed_from_u64(container.seed);
 
     let data = (0..(container.instances_dim as u32).pow(2))
         .filter_map(|_| create_scatter_result(&container, &modifiers, &mut rng))
         .collect::<Vec<_>>();
 
     ScatterResults::<TIn, TOut>::from(&container).with_data(data)
+}
+
+/// A standardized helper function to generate a deterministic u64 seed.
+///
+/// It combines the global `WorldSeed` with location-specific data (like chunk coordinates
+/// or an entity's position) using a fast, high-quality hashing algorithm.
+pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    location_data.hash(&mut hasher);
+    let location_bytes = hasher.finish().to_le_bytes();
+
+    hash64_with_seed(&location_bytes, world_seed.get())
 }

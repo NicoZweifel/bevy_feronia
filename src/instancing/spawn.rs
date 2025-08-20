@@ -4,7 +4,8 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use rand::prelude::IteratorRandom;
-use rand::rng;
+use rand::SeedableRng;
+use rand_pcg::Pcg64;
 
 pub fn spawn_instanced_wind_affected(
     mut er_spawn: EventReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
@@ -13,10 +14,10 @@ pub fn spawn_instanced_wind_affected(
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
 ) {
-    for e in er_spawn.read() {
+    for event in er_spawn.read() {
         debug!("Spawning instanced wind affected!");
 
-        let instances = e
+        let instances = event
             .trigger
             .data
             .iter()
@@ -33,7 +34,7 @@ pub fn spawn_instanced_wind_affected(
         let mut chunk_gtf = Transform::default();
         let mut chunk_level = ChunkLevel::default();
 
-        if let Some(chunk) = e.trigger.chunk {
+        if let Some(chunk) = event.trigger.chunk {
             let Ok((gtf, level)) = q_chunks.get(chunk) else {
                 continue;
             };
@@ -43,7 +44,7 @@ pub fn spawn_instanced_wind_affected(
         }
 
         let mut prototypes: Vec<ScatterAsset<InstancedWindAffectedMaterial>> = vec![];
-        for item in e.items.iter() {
+        for item in event.items.iter() {
             let prototype = prototype_assets.get(&item.0);
 
             let Some(prototype) = prototype else {
@@ -59,7 +60,7 @@ pub fn spawn_instanced_wind_affected(
 
         prototypes
             .iter()
-            .filter(|x| e.trigger.chunk.is_none() || *x.lod_level == *chunk_level)
+            .filter(|x| event.trigger.chunk.is_none() || *x.lod_level == *chunk_level)
             .map(|x| (x.name.clone().unwrap_or(Name::new("")), x))
             .for_each(|(name, x)| {
                 name_map
@@ -74,14 +75,16 @@ pub fn spawn_instanced_wind_affected(
             prototypes.len()
         );
 
-        let prototypes = name_map.values().choose(&mut rng());
+        // NOTE: this will spawn only the same type in a chunk (use individual layers for multiple instanced types) TODO
+        let mut rng = Pcg64::seed_from_u64(event.trigger.seed);
+        let prototypes = name_map.values().choose(&mut rng);
 
         let Some(prototypes) = prototypes else {
             warn!("No prototypes in level {chunk_level:?}!");
             return;
         };
 
-        let Ok(lod_config) = q_root.get(e.trigger.root) else {
+        let Ok(lod_config) = q_root.get(event.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             return;
         };
@@ -130,7 +133,7 @@ pub fn spawn_instanced_wind_affected(
 
             let local_aabb = Aabb::from_min_max(local_min, local_max);
 
-            let parent = e.trigger.chunk.unwrap_or(e.trigger.layer);
+            let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
             cmd.entity(entity).insert((
                 Transform::default(),
