@@ -25,7 +25,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
     >,
     q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,
-    q_chunk: Query<(&ChunkSize, &GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
+    q_chunk: Query<(&ChunkSize, &GlobalTransform, &ChunkLevel ,&ChunkCoord), (With<Chunk>, Without<Merging>)>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     world_seed: Res<WorldSeed>,
@@ -73,14 +73,13 @@ pub fn handle_scatter_requests<TIn, TOut>(
                 continue;
             };
 
-            let Ok((chunk_size, chunk_gtf, chunk_level)) = q_chunk.get(chunk_entity) else {
+            let Ok((chunk_size, chunk_gtf, chunk_level,chunk_coord)) = q_chunk.get(chunk_entity) else {
                 continue;
             };
 
             let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
 
-            // NOTE: don't need the precision for chunks
-            let seed = generate_seed(&world_seed, chunk_gtf.translation().as_i64vec3());
+            let seed = generate_seed(&world_seed, chunk_coord);
 
             Some(ScatterTaskData {
                 container: Container {
@@ -111,9 +110,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             let size = Vec3::from(aabb.half_extents * 2.0);
 
-            // NOTE: don't need the precision for layers
-            let seed = generate_seed(&world_seed, layer_gtf.translation().as_i64vec3());
-
             Some(ScatterTaskData {
                 container: Container {
                     layer_entity: request.layer_entity,
@@ -125,7 +121,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
                     size,
                     root_size: size,
                     transform: layer_gtf.compute_transform(),
-                    seed,
+                    seed: **world_seed,
                 },
                 map_height: map_height.cloned(),
                 scale: instance_scale.cloned(),
