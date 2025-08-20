@@ -55,9 +55,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
         let density = density_dist.map_or(1.0, |d| **d);
 
-        // TODO use coordinates instead of entity id
-        let location_entity = request.chunk_entity.unwrap_or(request.layer_entity);
-        let seed = generate_seed(&world_seed, location_entity);
 
         debug!(
             "Scattering {} instances in ScatterLayer {}",
@@ -81,6 +78,9 @@ pub fn handle_scatter_requests<TIn, TOut>(
             };
 
             let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
+
+            // NOTE: don't need the precision for chunks
+            let seed = generate_seed(&world_seed, chunk_gtf.translation().as_i64vec3());
 
             Some(ScatterTaskData {
                 container: Container {
@@ -110,6 +110,9 @@ pub fn handle_scatter_requests<TIn, TOut>(
             };
 
             let size = Vec3::from(aabb.half_extents * 2.0);
+
+            // NOTE: don't need the precision for layers
+            let seed = generate_seed(&world_seed, layer_gtf.translation().as_i64vec3());
 
             Some(ScatterTaskData {
                 container: Container {
