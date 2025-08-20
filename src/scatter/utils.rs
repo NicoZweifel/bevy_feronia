@@ -1,5 +1,3 @@
-use std::hash::Hasher;
-use std::hash::Hash;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
@@ -7,6 +5,8 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
+use std::hash::Hash;
+use std::hash::Hasher;
 use xxh3::hash64_with_seed;
 
 pub fn get_height_map_sampler<'a>(
@@ -86,7 +86,7 @@ pub struct Container {
     pub size: Vec3,
     pub root_size: Vec3,
     pub transform: Transform,
-    pub seed: u64
+    pub seed: u64,
 }
 
 // TODO refactor into async CPU/GPU pipelines

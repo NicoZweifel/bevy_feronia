@@ -2,7 +2,6 @@ use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 
-
 #[derive(Event, BufferedEvent, Debug, Clone)]
 pub struct SpawnProtoTypes<T>
 where
@@ -19,7 +18,7 @@ pub struct SpawnTrigger {
     pub root: Entity,
     pub target: Entity,
     pub data: Vec<ScatterResult>,
-    pub seed: u64
+    pub seed: u64,
 }
 
 impl<TIn, TOut> From<On<'_, ScatterResults<TIn, TOut>>> for SpawnTrigger

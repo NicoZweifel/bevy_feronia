@@ -6,12 +6,11 @@ use bevy::prelude::*;
 #[reflect(Resource)]
 pub struct WorldSeed(pub u64);
 
-impl WorldSeed{
+impl WorldSeed {
     pub fn get(&self) -> u64 {
         **self
     }
 }
-
 
 impl Default for WorldSeed {
     fn default() -> Self {

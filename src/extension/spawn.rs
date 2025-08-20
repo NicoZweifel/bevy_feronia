@@ -1,11 +1,11 @@
-use std::hash::Hasher;
-use std::hash::Hash;
 use crate::prelude::*;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
+use rand::SeedableRng;
 use rand::prelude::IteratorRandom;
-use rand::{rng, SeedableRng};
 use rand_pcg::Pcg64;
+use std::hash::Hash;
+use std::hash::Hasher;
 
 pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
@@ -64,12 +64,13 @@ pub fn spawn_extended_wind_affected(
         );
 
         cmd.spawn_batch(
-            event.trigger
+            event
+                .trigger
                 .data
                 .clone()
                 .iter_mut()
                 .flat_map(|scatter_result| {
-                   let mut instance_hasher = std::collections::hash_map::DefaultHasher::new();
+                    let mut instance_hasher = std::collections::hash_map::DefaultHasher::new();
 
                     event.trigger.seed.hash(&mut instance_hasher);
                     scatter_result.hash(&mut instance_hasher);

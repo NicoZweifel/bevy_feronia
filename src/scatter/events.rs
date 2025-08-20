@@ -1,4 +1,3 @@
-use std::hash::{Hash, Hasher};
 use crate::prelude::{ScatterAsset, WindAffectable};
 use crate::scatter::utils::Container;
 use bevy::asset::Asset;
@@ -6,6 +5,7 @@ use bevy::pbr::Material;
 use bevy::prelude::{
     BufferedEvent, Component, Deref, DerefMut, Entity, EntityEvent, Reflect, Transform,
 };
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::slice::Iter;
 
@@ -67,9 +67,9 @@ pub struct ScatterResult(pub Transform);
 
 impl PartialEq for ScatterResult {
     fn eq(&self, other: &Self) -> bool {
-        self.0.translation.x.to_bits() == other.0.translation.x.to_bits() &&
-        self.0.translation.y.to_bits() == other.0.translation.y.to_bits()&&
-        self.0.translation.z.to_bits() == other.0.translation.z.to_bits()
+        self.0.translation.x.to_bits() == other.0.translation.x.to_bits()
+            && self.0.translation.y.to_bits() == other.0.translation.y.to_bits()
+            && self.0.translation.z.to_bits() == other.0.translation.z.to_bits()
     }
 }
 

@@ -3,8 +3,8 @@ use bevy::camera::primitives::Aabb;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
-use rand::prelude::IteratorRandom;
 use rand::SeedableRng;
+use rand::prelude::IteratorRandom;
 use rand_pcg::Pcg64;
 
 pub fn spawn_instanced_wind_affected(

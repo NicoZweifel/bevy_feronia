@@ -25,7 +25,10 @@ pub fn handle_scatter_requests<TIn, TOut>(
     >,
     q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,
-    q_chunk: Query<(&ChunkSize, &GlobalTransform, &ChunkLevel ,&ChunkCoord), (With<Chunk>, Without<Merging>)>,
+    q_chunk: Query<
+        (&ChunkSize, &GlobalTransform, &ChunkLevel, &ChunkCoord),
+        (With<Chunk>, Without<Merging>),
+    >,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     world_seed: Res<WorldSeed>,
@@ -55,7 +58,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
         let density = density_dist.map_or(1.0, |d| **d);
 
-
         debug!(
             "Scattering {} instances in ScatterLayer {}",
             density, request.layer_entity,
@@ -73,7 +75,8 @@ pub fn handle_scatter_requests<TIn, TOut>(
                 continue;
             };
 
-            let Ok((chunk_size, chunk_gtf, chunk_level,chunk_coord)) = q_chunk.get(chunk_entity) else {
+            let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk_entity)
+            else {
                 continue;
             };
 
@@ -92,7 +95,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
                     size,
                     root_size: Vec3::from(aabb.half_extents * 2.),
                     transform: chunk_gtf.compute_transform(),
-                    seed
+                    seed,
                 },
                 map_height: map_height.cloned(),
                 scale: instance_scale.cloned(),
