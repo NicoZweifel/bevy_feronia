@@ -15,7 +15,9 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
+            // TODO should only affect grass
             enable_billboarding: true,
+            // TODO should only affect grass
             enable_edge_correction: true,
             round_exponent: 15.,
             strength: 0.4,

@@ -48,7 +48,7 @@ impl Default for Wind {
             s_curve_frequency: PI,
             bop_speed: 1.0,
             bop_strength: 0.05,
-            twist_strength: 0.01,
+            twist_strength: 0.05,
             enable_billboarding: false,
             enable_edge_correction: false,
             fast_normals: false,

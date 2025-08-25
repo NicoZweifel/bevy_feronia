@@ -17,7 +17,12 @@ fn calculate_vertex_displacement(
     let normalized_height = (local_pos.y - wind.aabb_min.y) / max(height_range, 0.0001);
 
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
-    let twisted_local_pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
+
+    var pos = local_pos;
+
+#ifndef WIND_BILLBOARDING
+    pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, pos);
+#endif
 
     let macro_displacement = (noise.macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
@@ -31,7 +36,7 @@ fn calculate_vertex_displacement(
     total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
 #endif
 
-    var final_world_pos = (instance.world_from_local * vec4<f32>(twisted_local_pos, 1.0)).xyz;
+    var final_world_pos = (instance.world_from_local * vec4<f32>(pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
 
 #ifdef WIND_BILLBOARDING
@@ -43,14 +48,14 @@ fn calculate_vertex_displacement(
         instance.world_from_local
     );
 
-    let billboard_base = billboard_anchor.xyz + (billboard_matrix * twisted_local_pos);
+    let billboard_base = billboard_anchor.xyz + (billboard_matrix * pos);
     let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
     final_world_pos = billboarded_pos;
 #endif
 
 #ifdef WIND_EDGE_CORRECTION
-    final_world_pos = calculate_edge_correction(final_world_pos, local_pos, wind);
+    final_world_pos = calculate_edge_correction(final_world_pos, pos, wind);
 #endif
 
     return final_world_pos;

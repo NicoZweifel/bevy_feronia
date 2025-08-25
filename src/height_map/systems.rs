@@ -139,7 +139,8 @@ pub fn bake_height_map(
 
                 cmd.insert_resource(HeightMap(images.add(image)));
 
-                println!("capture");
+                debug!("HeightMap created.");
+
                 next_state.set(HeightMapState::Ready);
             },
         );
