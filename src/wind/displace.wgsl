@@ -18,7 +18,11 @@ fn calculate_vertex_displacement(
 
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
 
-    var pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, local_pos);
+    var pos = local_pos;
+
+#ifndef WIND_BILLBOARDING
+    pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, pos);
+#endif
 
     let macro_displacement = (noise.macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
