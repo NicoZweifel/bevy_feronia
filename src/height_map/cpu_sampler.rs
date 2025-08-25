@@ -29,7 +29,7 @@ impl<'a> HeightMapCpuSampler<'a> {
             .and_then(|slice| slice.try_into().ok())
             .map(f32::from_le_bytes)
             .unwrap_or_else(|| {
-                warn!("Failed to read heightmap pixel at ({}, {})", x, y);
+                warn!("Failed to read heightmap pixel at ({x}, {y})");
                 0.0
             })
     }
