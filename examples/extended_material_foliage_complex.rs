@@ -6,6 +6,7 @@ use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
@@ -79,6 +80,7 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
+    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
@@ -103,6 +105,7 @@ fn spawn_scene(
     ))
     .observe(extended_scatter_observer);
 
+    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 
@@ -110,10 +113,13 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_scatter_root: Query<Entity, With<ScatterRoot>>,
+    mut world_seed: ResMut<WorldSeed>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
+
+    **world_seed = rng().next_u64();
 
     cmd.trigger_targets(
         Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),

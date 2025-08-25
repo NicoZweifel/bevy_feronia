@@ -10,6 +10,7 @@ use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
@@ -22,7 +23,7 @@ fn main() -> AppExit {
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
-        /*.insert_resource(ChunkDebugConfig {
+        /*   .insert_resource(ChunkDebugConfig {
             lod_colors: vec![
                 RED_500.into(),
                 ORANGE_500.into(),
@@ -132,13 +133,13 @@ fn check_assets_loaded(
 
 fn spawn_scene(
     mut cmd: Commands,
-    assets: Res<AssetServer>,
     density_map: Res<DensityMap>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
+    handles: Res<Scenes>,
 ) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_large.glb#Scene0")),
+        SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
         MapHeight,
         ChunkRoot::default(),
@@ -158,19 +159,16 @@ fn spawn_scene(
                 InstanceScale { min: 2.0, max: 5.0 },
                 WindAffected,
                 children![
-                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    SceneRoot(handles.grass_lod_high.clone()),
                     (
-                        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                        SceneRoot(handles.grass_lod_medium.clone()),
                         LevelOfDetail(1),
                     ),
-                    (
-                        SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                        LevelOfDetail(2)
-                    ),
+                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2)),
                 ],
             ),
             (
-                bevy_feronia::extension::scatter::scatter_layer("Foliage Layer"),
+                bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
                 DistributionDensity(1.0),
                 InstanceRotationYaw {
                     min: 0.0,
@@ -179,20 +177,7 @@ fn spawn_scene(
                 InstanceScale { min: 3., max: 10. },
                 InstanceJitter(1.0),
                 WindAffected,
-                children![
-                    SceneRoot(assets.load("foliage_complex.glb#Scene0")),
-                    // TODO: Deterministic scattering
-                    /*
-                    (
-                        LevelOfDetail(1),
-                        SceneRoot(assets.load("foliage_complex_medium_lod.glb#Scene0")),
-                    ),
-                    (
-                        LevelOfDetail(2),
-                        SceneRoot(assets.load("foliage_complex_low_lod.glb#Scene0")),
-                    )
-                     */
-                ]
+                children![SceneRoot(handles.foliage_lod_medium.clone()),]
             )
         ],
     ))
@@ -207,10 +192,15 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Query<Entity, With<ScatterRoot>>,
+    mut world_seed: ResMut<WorldSeed>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
+
+    **world_seed = rng().next_u64();
+
+    info!("Updated `WorldSeed`: {}", **world_seed);
 
     let targets = q_root.iter().collect::<Vec<_>>();
 
