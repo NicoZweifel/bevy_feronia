@@ -177,7 +177,7 @@ where
 /// A standardized helper function to generate a deterministic u64 seed.
 ///
 /// It combines the global `WorldSeed` with location-specific data (like chunk coordinates
-/// or an entity's position) using a fast, high-quality hashing algorithm.
+/// or an entity's position).
 pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     location_data.hash(&mut hasher);
