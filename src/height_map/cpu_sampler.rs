@@ -20,8 +20,10 @@ impl<'a> HeightMapCpuSampler<'a> {
     }
 
     /// Fetches the raw, normalized height value [0.0, 1.0] from the texture data at a given pixel coordinate.
-   fn get_normalized_height_at(&self, x: u32, y: u32) -> f32 {
-        let Some(data) = self.image_data.as_ref() else { return 0.0; };
+    fn get_normalized_height_at(&self, x: u32, y: u32) -> f32 {
+        let Some(data) = self.image_data.as_ref() else {
+            return 0.0;
+        };
         let byte_index = (y * self.image_size + x) as usize * 4;
 
         // Each pixel is an R32Float, which is 4 bytes.
@@ -35,12 +37,12 @@ impl<'a> HeightMapCpuSampler<'a> {
     }
 }
 
-
 impl<'a> Sampler for HeightMapCpuSampler<'a> {
     /// Calculates the terrain height at a given world position using bilinear interpolation.
     fn sample(&self, world_pos: Vec3) -> f32 {
         // Convert world coordinates to floating-point pixel coordinates.
-        let uv = (world_pos.xz() + Vec2::splat(self.total_world_size / 2.0)) / self.total_world_size;
+        let uv =
+            (world_pos.xz() + Vec2::splat(self.total_world_size / 2.0)) / self.total_world_size;
         let pixel_f = uv.clamp(Vec2::ZERO, Vec2::ONE) * (self.image_size - 1) as f32;
 
         // Get corner coordinates and interpolation weights.
@@ -63,6 +65,8 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
         let bottom = h01.lerp(h11, weight.x);
         let normalized_height = top.lerp(bottom, weight.y);
 
-        self.world_height_range.start.lerp(self.world_height_range.end, normalized_height)
+        self.world_height_range
+            .start
+            .lerp(self.world_height_range.end, normalized_height)
     }
 }
