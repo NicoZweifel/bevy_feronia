@@ -40,6 +40,22 @@ fn calculate_vertex_displacement(
     final_world_pos += total_world_offset;
 
 #ifdef WIND_BILLBOARDING
+    final_world_pos = billboarding(wind, instance, pos, total_world_offset);
+#endif
+
+#ifdef WIND_EDGE_CORRECTION
+    final_world_pos = calculate_edge_correction(final_world_pos, pos, wind);
+#endif
+
+    return final_world_pos;
+}
+
+fn billboarding(
+    wind: Wind,
+    instance: InstanceInfo,
+    pos: vec3<f32>,
+    total_world_offset: vec3<f32>,
+) -> vec3<f32> {
     let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
 
     let billboard_matrix = calculate_billboard_matrix(
@@ -49,16 +65,8 @@ fn calculate_vertex_displacement(
     );
 
     let billboard_base = billboard_anchor.xyz + (billboard_matrix * pos);
-    let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
-    final_world_pos = billboarded_pos;
-#endif
-
-#ifdef WIND_EDGE_CORRECTION
-    final_world_pos = calculate_edge_correction(final_world_pos, pos, wind);
-#endif
-
-    return final_world_pos;
+    return billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 }
 
 fn displace_vertex_and_calc_normal(
