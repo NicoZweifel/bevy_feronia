@@ -24,7 +24,10 @@ fn sample_noise(instance: InstanceInfo) -> SampledNoise {
     let noise_texture_sampler =  bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif
 
-    let tex_coord =  instance.instance_position.xz * wind.noise_scale + instance.wrapped_time * wind.scroll_speed * wind.direction;
+    let base_uv = instance.instance_position.xz * wind.noise_scale;
+    let uv_scroll_offset = instance.wrapped_time * wind.scroll_speed * wind.direction;
+    let tex_coord = base_uv + uv_scroll_offset;
+
     let packed_noise = textureSampleLevel(noise_texture, noise_texture_sampler, tex_coord, 0.0);
 
     noise.macro_noise = packed_noise.r;
