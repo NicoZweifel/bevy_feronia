@@ -13,6 +13,9 @@ fn calculate_vertex_displacement(
     instance: InstanceInfo,
     lod_fade: f32
 ) -> vec3<f32> {
+    let clamped_macro_noise = clamp(noise.macro_noise, 0.001, 1.0 - 0.001);
+    let macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
+
     let height_range = wind.aabb_max.y - wind.aabb_min.y;
     let normalized_height = (local_pos.y - wind.aabb_min.y) / max(height_range, 0.0001);
 
@@ -21,15 +24,17 @@ fn calculate_vertex_displacement(
     var pos = local_pos;
 
 #ifndef WIND_BILLBOARDING
-    pos = calculate_twist(wind, noise.macro_noise, c_curve_shape, pos);
+    pos = calculate_twist(wind, macro_wind_factor, c_curve_shape, pos);
 #endif
 
-    let macro_displacement = (noise.macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
+    let macro_displacement = macro_wind_factor * wind.strength * c_curve_shape;
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
     var total_world_offset = horizontal_dir * macro_displacement;
 
 #ifdef WIND_HIGH_QUALITY
-    let micro_displacement = (noise.micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
+    let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
+    let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
+    let micro_displacement = micro_wind_factor * wind.micro_strength * c_curve_shape;
     let micro_wind = horizontal_dir * micro_displacement;
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
@@ -40,6 +45,22 @@ fn calculate_vertex_displacement(
     final_world_pos += total_world_offset;
 
 #ifdef WIND_BILLBOARDING
+    final_world_pos = billboarding(wind, instance, pos, total_world_offset);
+#endif
+
+#ifdef WIND_EDGE_CORRECTION
+    final_world_pos = calculate_edge_correction(final_world_pos, pos, wind);
+#endif
+
+    return final_world_pos;
+}
+
+fn billboarding(
+    wind: Wind,
+    instance: InstanceInfo,
+    pos: vec3<f32>,
+    total_world_offset: vec3<f32>,
+) -> vec3<f32> {
     let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
 
     let billboard_matrix = calculate_billboard_matrix(
@@ -49,16 +70,8 @@ fn calculate_vertex_displacement(
     );
 
     let billboard_base = billboard_anchor.xyz + (billboard_matrix * pos);
-    let billboarded_pos = billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 
-    final_world_pos = billboarded_pos;
-#endif
-
-#ifdef WIND_EDGE_CORRECTION
-    final_world_pos = calculate_edge_correction(final_world_pos, pos, wind);
-#endif
-
-    return final_world_pos;
+    return billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 }
 
 fn displace_vertex_and_calc_normal(
@@ -191,11 +204,11 @@ fn calculate_bop_displacement(
 
 fn calculate_twist(
     wind: Wind,
-    macro_noise: f32,
+    macro_noise_factor: f32,
     c_curve_shape: f32,
     local_pos: vec3<f32>,
 ) -> vec3<f32> {
-    let twist = (macro_noise * 2.0 - 1.0) * wind.twist_strength;
+    let twist = macro_noise_factor * wind.twist_strength;
     let twist_angle = twist * c_curve_shape;
 
     let cos_a = cos(twist_angle);

@@ -1,6 +1,6 @@
 # bevy_feronia
 
-Foliage/Grass Wind simulation shaders/materials that prioritize visual fidelity/artistic freedom and modularity.
+Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity.
 
 > [!CAUTION]
 > This package is in very early development, api's will most likely change and be modularized.
