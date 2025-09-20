@@ -56,8 +56,9 @@ fn scatter_on_keypress(
 
     println!("Scattering");
 
-    cmd.trigger_targets(
-        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
-        q_root.iter().collect::<Vec<_>>(),
-    );
+    q_root
+        .iter()
+        .map(|x| Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(x))
+        .for_each(|x| cmd.trigger(x));
+
 }

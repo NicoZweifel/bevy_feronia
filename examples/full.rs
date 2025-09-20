@@ -214,17 +214,15 @@ fn scatter_on_keypress(
         return;
     };
 
-    let targets = q_root.iter().collect::<Vec<_>>();
+    q_root
+        .iter()
+        .map(|x| Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(x))
+        .for_each(|x| cmd.trigger(x));
 
-    cmd.trigger_targets(
-        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
-        targets.clone(),
-    );
-
-    cmd.trigger_targets(
-        Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-        targets,
-    );
+    q_root
+        .iter()
+        .map(|x| Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(x))
+        .for_each(|x| cmd.trigger(x));
 }
 
 fn setup_density_map(

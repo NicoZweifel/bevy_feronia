@@ -20,7 +20,7 @@ pub struct SpawnTrigger {
     pub data: Vec<ScatterResult>,
 }
 
-impl<TIn, TOut> From<On<'_,'_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+impl<TIn, TOut> From<On<'_, '_, ScatterResults<TIn, TOut>>> for SpawnTrigger
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,

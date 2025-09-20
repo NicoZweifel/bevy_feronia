@@ -3,6 +3,7 @@ mod example;
 
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
+use bevy::tasks::futures_lite::StreamExt;
 use bevy_feronia::chunking::systems::debug::draw_aabbs;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::instancing::scatter::scatter_layer;
@@ -64,8 +65,8 @@ fn scatter_on_keypress(
         return;
     };
 
-    cmd.trigger_targets(
-        Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(),
-        q_root.iter().collect::<Vec<_>>(),
-    );
+    q_root
+        .iter()
+        .map(|x| Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(x))
+        .for_each(|x| cmd.trigger(x));
 }

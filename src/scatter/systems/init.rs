@@ -39,7 +39,7 @@ pub fn chunk_init_scatter<
                 continue;
             };
 
-            cmd.trigger(ScatterChunk::<TIn, TOut>::new(chunk,scatter_layer))
+            cmd.trigger(ScatterChunk::<TIn, TOut>::new(chunk, scatter_layer))
         }
 
         cmd.entity(chunk).remove::<ChunkInitScatter<TIn, TOut>>();

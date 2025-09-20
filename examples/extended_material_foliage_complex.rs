@@ -115,7 +115,8 @@ fn scatter_on_keypress(
         return;
     };
 
-    cmd.trigger(
-        q_scatter_root.iter().map(|x| Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(x))
-    );
+    q_scatter_root
+        .iter()
+        .map(|x| Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(x))
+        .for_each(|x| cmd.trigger(x));
 }

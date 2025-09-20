@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use std::marker::PhantomData;
 use std::slice::Iter;
 
-#[derive(EntityEvent,Message, Component, Reflect)]
+#[derive(EntityEvent, Message, Component, Reflect)]
 pub struct Scatter<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
@@ -28,7 +28,7 @@ where
     }
 }
 
-#[derive(EntityEvent,Message, Component, Reflect)]
+#[derive(EntityEvent, Message, Component, Reflect)]
 pub struct ScatterChunk<TIn, TOut>
 where
     TIn: Material,
@@ -44,7 +44,7 @@ where
     Tin: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, Tin, TOut> + Asset + Clone,
 {
-    pub fn new(entity: Entity,scatter_layer: Entity) -> Self {
+    pub fn new(entity: Entity, scatter_layer: Entity) -> Self {
         Self {
             entity,
             scatter_layer,
@@ -56,7 +56,7 @@ where
 #[derive(Clone, Debug, Deref, DerefMut)]
 pub struct ScatterResult(pub Transform);
 
-#[derive(EntityEvent,Message, Clone, Debug)]
+#[derive(EntityEvent, Message, Clone, Debug)]
 pub struct ScatterResults<TIn, TOut>
 where
     TIn: Material,
