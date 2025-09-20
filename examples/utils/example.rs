@@ -2,13 +2,13 @@
 mod camera_controller;
 
 use bevy::image::{ImageSampler, ImageSamplerDescriptor};
+use bevy::post_process::bloom::Bloom;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
-use bevy::post_process::bloom::Bloom;
 use bevy_feronia::prelude::*;
 use camera_controller::*;
 
