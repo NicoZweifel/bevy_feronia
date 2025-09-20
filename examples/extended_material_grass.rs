@@ -60,5 +60,4 @@ fn scatter_on_keypress(
         .iter()
         .map(|x| Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(x))
         .for_each(|x| cmd.trigger(x));
-
 }
