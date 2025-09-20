@@ -41,11 +41,11 @@ impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset 
         }
 
         app.add_plugins(ScatterAssetsPlugin::<TIn, TOut>::new())
-            .add_event::<Scatter<TIn, TOut>>()
+            .add_message::<Scatter<TIn, TOut>>()
             .init_asset::<ScatterAsset<TIn>>()
             .init_asset::<ScatterAsset<TOut>>()
-            .add_event::<ScatterChunk<TIn, TOut>>()
-            .add_event::<ScatterResults<TIn, TOut>>()
+            .add_message::<ScatterChunk<TIn, TOut>>()
+            .add_message::<ScatterResults<TIn, TOut>>()
             .add_observer(on_add_scatter_root::<TIn, TOut>)
             .add_observer(on_add_scatter_layer::<TIn, TOut>)
             .add_observer(on_chunk_add::<TIn, TOut>)

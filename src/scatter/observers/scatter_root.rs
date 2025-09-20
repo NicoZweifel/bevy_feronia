@@ -5,13 +5,11 @@ pub fn scatter_root<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 >(
-    mut trigger: On<Scatter<TIn, TOut>>,
+    trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
     q_root: Query<&ScatterRoot>,
 ) {
-    trigger.propagate(false);
-
-    let root = trigger.target();
+    let root = trigger.entity;
 
     let Ok(layers) = q_root.get(root) else {
         warn!("ScatterRoot not found!");
@@ -20,8 +18,8 @@ pub fn scatter_root<
 
     debug!("Scattering root: {root}");
 
-    cmd.trigger_targets(
-        Scatter::<TIn, TOut>::new(),
-        layers.iter().collect::<Vec<_>>(),
-    );
+    layers
+        .iter()
+        .map(|x| Scatter::<TIn, TOut>::new(x))
+        .for_each(|x| cmd.trigger(x));
 }

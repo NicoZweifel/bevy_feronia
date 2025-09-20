@@ -9,7 +9,7 @@ I try to follow a few naming conventions, but they're not super strict:
 
 - ```cmd: Commands```
 - ```q_some_entity: Query<Entity,With<SomeEntity>>```
-- `er_some_event` and `ew_some_event` for `EventReader`/`EventWriter`
+- `mr_some_event` and `mw_some_event` for `MessageReader`/`MessageWriter`
 - using short names like `i`, `x`, `e` is okay if the scope is small, clear and it doesn't hurt readability.
 
 ### Debugging

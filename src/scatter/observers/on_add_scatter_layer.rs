@@ -19,7 +19,7 @@ pub fn on_add_scatter_layer<
     >,
     root_query: Query<Option<&ChunkRoot>, With<ScatterRoot>>,
 ) {
-    let layer = trigger.target();
+    let layer = trigger.entity;
 
     debug!("Added ScatterLayer {layer}.");
 

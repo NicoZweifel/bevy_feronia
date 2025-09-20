@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.17.0-rc.1", default-features = false, features = [
     "bevy_pbr","bevy_state",
     "bevy_log",
     "bevy_gizmos"
@@ -17,7 +17,7 @@ rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher", "asset_processor","basis-universal"] }
+bevy = { version = "0.17.0-rc.1", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher", "asset_processor","basis-universal"] }
 
 bytemuck = "1.23.1"
 #iyes_perf_ui = "0.5.0"

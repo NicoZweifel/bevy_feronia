@@ -9,7 +9,7 @@ pub fn on_chunk_add<
     trigger: On<Add, Chunk>,
     mut cmd: Commands,
 ) {
-    let chunk = trigger.target();
+    let chunk = trigger.entity;
 
     cmd.entity(chunk)
         .insert(ChunkInitScatter::<TIn, TOut>::default());
@@ -39,7 +39,7 @@ pub fn chunk_init_scatter<
                 continue;
             };
 
-            cmd.trigger_targets(ScatterChunk::<TIn, TOut>::new(scatter_layer), [chunk])
+            cmd.trigger(ScatterChunk::<TIn, TOut>::new(chunk,scatter_layer))
         }
 
         cmd.entity(chunk).remove::<ChunkInitScatter<TIn, TOut>>();

@@ -5,12 +5,10 @@ pub fn scatter<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 >(
-    mut trigger: On<Scatter<TIn, TOut>>,
+    trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
 ) {
-    trigger.propagate(false);
-
-    let layer_entity = trigger.target();
+    let layer_entity = trigger.entity;
 
     debug!("Scattering Layer: {layer_entity}");
 

@@ -13,9 +13,9 @@ pub enum ChunkSet {
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Chunk>()
-            .add_event::<SplitChunk>()
-            .add_event::<MergeCheck>()
-            .add_event::<MergeChunks>()
+            .add_message::<SplitChunk>()
+            .add_message::<MergeCheck>()
+            .add_message::<MergeChunks>()
             .configure_sets(
                 Update,
                 (
