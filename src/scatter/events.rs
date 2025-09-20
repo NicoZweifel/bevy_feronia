@@ -113,7 +113,7 @@ where
 {
     fn from(value: &Container) -> Self {
         Self::new(
-            value.layer_entity,
+            value.entity,
             value.root_entity,
             value.layer_entity,
             value.chunk_entity,

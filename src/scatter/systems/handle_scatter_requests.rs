@@ -80,6 +80,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             Some(ScatterTaskData {
                 container: Container {
+                    entity: request.target_entity,
                     layer_entity: request.layer_entity,
                     chunk_entity: Some(chunk_entity),
                     root_entity,
@@ -108,6 +109,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             Some(ScatterTaskData {
                 container: Container {
+                    entity: request.target_entity,
                     layer_entity: request.layer_entity,
                     chunk_entity: None,
                     root_entity,
@@ -207,7 +209,15 @@ pub fn handle_finished_scatter_tasks<TIn, TOut>(
 
         debug!("Scattered {} instances", results.data.len());
 
-        cmd.trigger(results.clone());
+        targets
+            .iter()
+            .map(|x| {
+                let mut results = results.clone();
+                results.entity = *x;
+                results
+            })
+            .for_each(|x| cmd.trigger(x));
+
         mw_results.write(results);
     }
 }

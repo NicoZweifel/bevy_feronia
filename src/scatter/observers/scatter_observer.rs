@@ -26,5 +26,7 @@ pub fn scatter_observer<TIn, TOut>(
 
     let event = SpawnProtoTypes::from(trigger).with_items(items.collect());
 
+    debug!("ScatterObserver triggered! Writing Spawn Events...");
+
     mw_spawn.write(event);
 }

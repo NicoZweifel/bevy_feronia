@@ -73,6 +73,7 @@ pub struct InstanceModifiers<'a> {
 
 #[derive(Clone)]
 pub struct Container {
+    pub entity: Entity,
     pub layer_entity: Entity,
     pub chunk_entity: Option<Entity>,
     pub root_entity: Entity,

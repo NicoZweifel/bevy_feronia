@@ -3,7 +3,6 @@ mod example;
 
 use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
-use bevy::tasks::futures_lite::StreamExt;
 use bevy_feronia::chunking::systems::debug::draw_aabbs;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::instancing::scatter::scatter_layer;
