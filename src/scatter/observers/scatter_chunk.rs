@@ -5,13 +5,11 @@ pub fn scatter_chunk<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 >(
-    mut trigger: On<ScatterChunk<TIn, TOut>>,
+    trigger: On<ScatterChunk<TIn, TOut>>,
     mut cmd: Commands,
     q_chunk: Query<Entity, (With<Chunk>, Without<Merging>)>,
 ) {
-    trigger.propagate(false);
-
-    let chunk_entity = trigger.target();
+    let chunk_entity = trigger.entity;
 
     if q_chunk.get(chunk_entity).is_err() {
         return;

@@ -9,9 +9,9 @@ pub fn extended_scatter_observer(
         With<ScatterLayerType<StandardMaterial, ExtendedWindAffectedMaterial>>,
     >,
     q_items: Query<&ScatterItemAsset<ExtendedWindAffectedMaterial>, With<ScatterItem>>,
-    ew_spawn: EventWriter<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
+    mw_spawn: MessageWriter<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
 ) {
     scatter_observer::<StandardMaterial, ExtendedWindAffectedMaterial>(
-        trigger, q_layer, q_items, ew_spawn,
+        trigger, q_layer, q_items, mw_spawn,
     );
 }

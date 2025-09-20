@@ -7,13 +7,13 @@ use rand::prelude::IteratorRandom;
 use rand::rng;
 
 pub fn spawn_instanced_wind_affected(
-    mut er_spawn: EventReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
+    mut mr_spawn: MessageReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
     mut cmd: Commands,
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
 ) {
-    for e in er_spawn.read() {
+    for e in mr_spawn.read() {
         debug!("Spawning instanced wind affected!");
 
         let instances = e

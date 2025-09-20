@@ -7,7 +7,7 @@ pub fn split(
         (Entity, &GlobalTransform, &SplitDistance),
         (With<CanSplit>, With<Chunk>, Without<Merging>),
     >,
-    mut ew_split: EventWriter<SplitChunk>,
+    mut mw_split: MessageWriter<SplitChunk>,
 ) {
     let Ok(center) = q_center.single() else {
         warn!(
@@ -21,21 +21,21 @@ pub fn split(
     for (entity, chunk_transform, split_distance) in &q_chunk {
         let distance = center.distance(chunk_transform.translation());
         if distance < **split_distance {
-            ew_split.write(SplitChunk(entity));
+            mw_split.write(SplitChunk(entity));
         }
     }
 }
 
 pub fn handle_split(
     mut cmd: Commands,
-    mut er_split: EventReader<SplitChunk>,
+    mut mr_split: MessageReader<SplitChunk>,
     q_chunk: Query<
         (&ChunkLevel, &ChunkSize, &ChunkOf, &ChunkCoord),
         (With<CanSplit>, With<Chunk>, Without<Merging>),
     >,
     q_chunk_config: Query<(&BaseChunkSize, &ChunkLodConfig, &ChunkSizeScalarConfig)>,
 ) {
-    for e in er_split.read() {
+    for e in mr_split.read() {
         let parent_entity = e.get();
         debug!("Splitting Chunk: {parent_entity}");
 

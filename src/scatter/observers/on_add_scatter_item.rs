@@ -7,10 +7,10 @@ pub fn on_add_scatter_item(
     mut cmd: Commands,
     q_item: Query<(&ChildOf, Option<&ScatterLayer>), With<ScatterItem>>,
 ) {
-    let Ok((parent, layer)) = q_item.get(trigger.target()) else {
+    let Ok((parent, layer)) = q_item.get(trigger.entity) else {
         warn!(
             "Could not get ScatterItemLayer for ScatterItem {}",
-            trigger.target()
+            trigger.entity
         );
         return;
     };
@@ -19,6 +19,6 @@ pub fn on_add_scatter_item(
         return;
     };
 
-    cmd.entity(trigger.target())
+    cmd.entity(trigger.entity)
         .insert(ScatterItemOf(parent.get()));
 }

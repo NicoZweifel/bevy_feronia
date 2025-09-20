@@ -11,7 +11,7 @@ impl Plugin for ExtendedWindAffectedPlugin {
         embedded_asset!(app, "prepass.wgsl");
 
         app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
-            .add_event::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
+            .add_message::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
             .add_plugins(WindMaterialPlugin::<
                 StandardMaterial,
                 ExtendedWindAffectedMaterial,

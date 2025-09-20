@@ -9,7 +9,7 @@ pub fn on_add_scatter_root<
     trigger: On<Add, ScatterRoot>,
     mut cmd: Commands,
 ) {
-    let root = trigger.target();
+    let root = trigger.entity;
 
     debug!("Added ScatterRoot {root}.");
 

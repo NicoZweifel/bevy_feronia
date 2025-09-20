@@ -181,7 +181,7 @@ where
 pub fn handle_finished_scatter_tasks<TIn, TOut>(
     mut cmd: Commands,
     mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TIn, TOut>>)>,
-    mut ew_results: EventWriter<ScatterResults<TIn, TOut>>,
+    mut mw_results: MessageWriter<ScatterResults<TIn, TOut>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
     TIn: Material,
@@ -207,7 +207,7 @@ pub fn handle_finished_scatter_tasks<TIn, TOut>(
 
         debug!("Scattered {} instances", results.data.len());
 
-        cmd.trigger_targets(results.clone(), targets);
-        ew_results.write(results);
+        cmd.trigger(results.clone());
+        mw_results.write(results);
     }
 }
