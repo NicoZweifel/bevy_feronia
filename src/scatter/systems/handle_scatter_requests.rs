@@ -86,6 +86,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             Some(ScatterTaskData {
                 container: Container {
+                    entity: request.target_entity,
                     layer_entity: request.layer_entity,
                     chunk_entity: Some(chunk_entity),
                     root_entity,
@@ -115,6 +116,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             Some(ScatterTaskData {
                 container: Container {
+                    entity: request.target_entity,
                     layer_entity: request.layer_entity,
                     chunk_entity: None,
                     root_entity,
@@ -189,7 +191,7 @@ where
 pub fn handle_finished_scatter_tasks<TIn, TOut>(
     mut cmd: Commands,
     mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TIn, TOut>>)>,
-    mut ew_results: EventWriter<ScatterResults<TIn, TOut>>,
+    mut mw_results: MessageWriter<ScatterResults<TIn, TOut>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
     TIn: Material,
@@ -215,7 +217,15 @@ pub fn handle_finished_scatter_tasks<TIn, TOut>(
 
         debug!("Scattered {} instances", results.data.len());
 
-        cmd.trigger_targets(results.clone(), targets);
-        ew_results.write(results);
+        targets
+            .iter()
+            .map(|x| {
+                let mut results = results.clone();
+                results.entity = *x;
+                results
+            })
+            .for_each(|x| cmd.trigger(x));
+
+        mw_results.write(results);
     }
 }

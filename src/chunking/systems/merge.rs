@@ -13,7 +13,7 @@ pub fn merge_check(
             Without<ChunkInitialize>,
         ),
     >,
-    mut ew_check: EventWriter<MergeCheck>,
+    mut mw_check: MessageWriter<MergeCheck>,
 ) {
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
 
@@ -22,7 +22,7 @@ pub fn merge_check(
     }
 
     for (parent, children) in parents {
-        ew_check.write(MergeCheck { parent, children });
+        mw_check.write(MergeCheck { parent, children });
     }
 }
 
@@ -31,7 +31,7 @@ pub fn handle_merge_check(
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
     q_chunk: Query<&MergeDistance, (With<CanMerge>, Without<Merging>, With<Chunk>)>,
     q_parent: Query<&GlobalTransform, With<Chunk>>,
-    mut er_check: EventReader<MergeCheck>,
+    mut mr_check: MessageReader<MergeCheck>,
 ) {
     let Ok(center) = q_center.single() else {
         warn!(
@@ -42,7 +42,7 @@ pub fn handle_merge_check(
 
     let center = center.translation();
 
-    for e in er_check.read() {
+    for e in mr_check.read() {
         let parent = e.parent;
         let Ok(parent_tf) = q_parent.get(parent) else {
             warn!("Couldn't get parent Chunk for merge!");
@@ -76,7 +76,7 @@ pub fn handle_merge_check(
 
 pub fn merge(
     q_chunk: Query<(Entity, &ChildOf), (With<Merging>, With<Chunk>)>,
-    mut ew_merge: EventWriter<MergeChunks>,
+    mut mw_merge: MessageWriter<MergeChunks>,
 ) {
     let mut merge_chunks_map = HashMap::<Entity, Vec<Entity>>::new();
 
@@ -90,15 +90,15 @@ pub fn merge(
     }
 
     for (parent, children) in &mut merge_chunks_map {
-        ew_merge.write(MergeChunks {
+        mw_merge.write(MergeChunks {
             children: children.clone(),
             parent: *parent,
         });
     }
 }
 
-pub fn handle_merge(mut cmd: Commands, mut er_merge: EventReader<MergeChunks>) {
-    for e in er_merge.read() {
+pub fn handle_merge(mut cmd: Commands, mut mr_merge: MessageReader<MergeChunks>) {
+    for e in mr_merge.read() {
         let children = e.children.clone();
         let parent = e.parent;
 

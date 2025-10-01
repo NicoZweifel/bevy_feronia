@@ -2,18 +2,16 @@ use crate::prelude::{ScatterAsset, WindAffectable};
 use crate::scatter::utils::Container;
 use bevy::asset::Asset;
 use bevy::pbr::Material;
-use bevy::prelude::{
-    BufferedEvent, Component, Deref, DerefMut, Entity, EntityEvent, Reflect, Transform,
-};
-use std::hash::{Hash, Hasher};
+use bevy::prelude::*;
 use std::marker::PhantomData;
 use std::slice::Iter;
 
-#[derive(EntityEvent, BufferedEvent, Component, Reflect)]
+#[derive(EntityEvent, Message, Component, Reflect)]
 pub struct Scatter<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 > {
+    pub entity: Entity,
     _phantom: PhantomData<(TIn, TOut)>,
 }
 
@@ -22,29 +20,21 @@ where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    pub fn new() -> Self {
+    pub fn new(entity: Entity) -> Self {
         Self {
+            entity,
             _phantom: PhantomData,
         }
     }
 }
 
-impl<TIn, TOut> Default for Scatter<TIn, TOut>
-where
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[derive(EntityEvent, BufferedEvent, Component, Reflect)]
+#[derive(EntityEvent, Message, Component, Reflect)]
 pub struct ScatterChunk<TIn, TOut>
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
+    pub entity: Entity,
     pub scatter_layer: Entity,
     _phantom: PhantomData<(TIn, TOut)>,
 }
@@ -54,8 +44,9 @@ where
     Tin: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, Tin, TOut> + Asset + Clone,
 {
-    pub fn new(scatter_layer: Entity) -> Self {
+    pub fn new(entity: Entity, scatter_layer: Entity) -> Self {
         Self {
+            entity,
             scatter_layer,
             _phantom: PhantomData,
         }
@@ -83,12 +74,13 @@ impl Hash for ScatterResult {
     }
 }
 
-#[derive(EntityEvent, BufferedEvent, Clone, Debug)]
+#[derive(EntityEvent, Message, Clone, Debug)]
 pub struct ScatterResults<TIn, TOut>
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
+    pub entity: Entity,
     pub data: Vec<ScatterResult>,
     pub chunk: Option<Entity>,
     pub layer: Entity,
@@ -111,6 +103,7 @@ where
     }
 
     pub fn new(
+        entity: Entity,
         root: Entity,
         layer: Entity,
         chunk: Option<Entity>,
@@ -118,6 +111,7 @@ where
         seed: u64,
     ) -> Self {
         Self {
+            entity,
             root,
             layer,
             chunk,
@@ -140,6 +134,7 @@ where
 {
     fn from(value: &Container) -> Self {
         Self::new(
+            value.entity,
             value.root_entity,
             value.layer_entity,
             value.chunk_entity,

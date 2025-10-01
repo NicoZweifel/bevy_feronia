@@ -13,15 +13,12 @@ pub fn scatter_chunks<
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 >(
-    mut trigger: On<Scatter<TIn, TOut>>,
+    trigger: On<Scatter<TIn, TOut>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
     q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
 ) {
-    trigger.propagate(false);
-
-    let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.target())
-    else {
+    let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.entity) else {
         warn!("ScatterLayer not found!");
         return;
     };
@@ -32,11 +29,12 @@ pub fn scatter_chunks<
     };
 
     if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
+        debug!("ScatterLayer is disabled!");
         return;
     };
 
-    cmd.trigger_targets(
-        ScatterChunk::<TIn, TOut>::new(layer_entity),
-        child_chunks.iter().collect::<Vec<_>>(),
-    );
+    child_chunks
+        .iter()
+        .map(|x| ScatterChunk::<TIn, TOut>::new(layer_entity, x))
+        .for_each(|x| cmd.trigger(x));
 }

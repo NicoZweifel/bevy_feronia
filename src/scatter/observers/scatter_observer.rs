@@ -6,7 +6,7 @@ pub fn scatter_observer<TIn, TOut>(
     trigger: On<ScatterResults<TIn, TOut>>,
     q_layer: Query<&ScatterLayer, With<ScatterLayerType<TIn, TOut>>>,
     q_items: Query<&ScatterItemAsset<TOut>, With<ScatterItem>>,
-    mut ew_spawn: EventWriter<SpawnProtoTypes<TOut>>,
+    mut mw_spawn: MessageWriter<SpawnProtoTypes<TOut>>,
 ) where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
@@ -26,5 +26,7 @@ pub fn scatter_observer<TIn, TOut>(
 
     let event = SpawnProtoTypes::from(trigger).with_items(items.collect());
 
-    ew_spawn.write(event);
+    debug!("ScatterObserver triggered! Writing Spawn Events...");
+
+    mw_spawn.write(event);
 }

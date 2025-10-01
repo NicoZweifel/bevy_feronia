@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy::prelude::*;
 
 pub fn on_add_chunk(trigger: On<Add, Chunk>, mut cmd: Commands, q_chunk: Query<&ChunkCoord>) {
-    let chunk = trigger.target();
+    let chunk = trigger.entity;
 
     debug!("Chunk added: {chunk}.");
 

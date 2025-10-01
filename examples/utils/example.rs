@@ -2,9 +2,10 @@
 mod camera_controller;
 
 use bevy::image::{ImageSampler, ImageSamplerDescriptor};
+use bevy::post_process::bloom::Bloom;
 use bevy::render::view::Hdr;
 use bevy::{
-    core_pipeline::{Skybox, bloom::Bloom, tonemapping::Tonemapping}, //diagnostic::*,
+    core_pipeline::{Skybox, tonemapping::Tonemapping},
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
@@ -92,10 +93,10 @@ pub fn setup(
 }
 
 fn anisotropic_filtering(
-    mut ev_asset: EventReader<AssetEvent<Image>>,
+    mut mv_asset: MessageReader<AssetEvent<Image>>,
     mut image_assets: ResMut<Assets<Image>>,
 ) {
-    for ev in ev_asset.read() {
+    for ev in mv_asset.read() {
         let AssetEvent::LoadedWithDependencies { id } = ev else {
             continue;
         };

@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 
-#[derive(Event, BufferedEvent, Debug, Clone)]
+#[derive(Event, Message, Debug, Clone)]
 pub struct SpawnProtoTypes<T>
 where
     T: Asset + Clone,
@@ -21,7 +21,7 @@ pub struct SpawnTrigger {
     pub seed: u64,
 }
 
-impl<TIn, TOut> From<On<'_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+impl<TIn, TOut> From<On<'_, '_, ScatterResults<TIn, TOut>>> for SpawnTrigger
 where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
@@ -30,7 +30,7 @@ where
         Self {
             chunk: value.chunk,
             layer: value.layer,
-            target: value.target(),
+            target: value.entity,
             data: value.data.clone(),
             root: value.root,
             seed: value.seed,

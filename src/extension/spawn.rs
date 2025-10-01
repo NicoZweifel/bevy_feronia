@@ -9,12 +9,12 @@ use std::hash::Hasher;
 
 pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
-    mut er_spawn: EventReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
+    mut mr_spawn: MessageReader<SpawnProtoTypes<ExtendedWindAffectedMaterial>>,
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
     q_chunks: Query<&ChunkLevel, (With<Chunk>, Without<Merging>)>,
 ) {
-    for event in er_spawn.read() {
+    for event in mr_spawn.read() {
         debug!("Spawning extended wind affected!");
 
         let mut chunk_level = ChunkLevel::default();

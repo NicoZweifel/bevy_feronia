@@ -112,8 +112,8 @@ fn spawn_scene(
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    q_scatter_root: Query<Entity, With<ScatterRoot>>,
     mut world_seed: ResMut<WorldSeed>,
+    q_root: Single<Entity, With<ScatterRoot>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
@@ -121,8 +121,6 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger_targets(
-        Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
-        q_scatter_root.iter().collect::<Vec<_>>(),
-    );
+    cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
 }
+

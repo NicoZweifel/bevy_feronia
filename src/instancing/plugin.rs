@@ -18,7 +18,7 @@ impl Plugin for InstancedWindAffectedPlugin {
         embedded_asset!(app, "instancing.wgsl");
 
         app.init_asset::<InstancedWindAffectedMaterial>()
-            .add_event::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();
+            .add_message::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();
         app.add_plugins((
             WindMaterialPlugin::<StandardMaterial, InstancedWindAffectedMaterial>::default(),
             ExtractComponentPlugin::<InstancePipelineKey>::default(),
