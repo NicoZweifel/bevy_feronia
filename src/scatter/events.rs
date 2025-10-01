@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use crate::prelude::{ScatterAsset, WindAffectable};
 use crate::scatter::utils::Container;
 use bevy::asset::Asset;
