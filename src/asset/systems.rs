@@ -50,8 +50,13 @@ pub fn collect_assets<TIn, TOut>(
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
         for layer in children.iter() {
-            let Ok((scatter_items, enable_debug, enable_billboarding, edge_correction_factor,curve_factor)) =
-                q_layers.get(layer)
+            let Ok((
+                scatter_items,
+                enable_debug,
+                enable_billboarding,
+                edge_correction_factor,
+                curve_factor,
+            )) = q_layers.get(layer)
             else {
                 continue;
             };
@@ -130,7 +135,7 @@ where
         enable_debug,
         enable_billboarding,
         edge_correction_factor,
-        curve_factor
+        curve_factor,
     )) = q_children.get(entity)
     else {
         return types;

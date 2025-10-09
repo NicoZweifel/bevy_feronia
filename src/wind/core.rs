@@ -88,7 +88,7 @@ impl WindUniform {
     }
 
     pub fn with_curve_factor(mut self, curve_factor: f32) -> Self {
-        self.curve_factor= curve_factor;
+        self.curve_factor = curve_factor;
         self
     }
 

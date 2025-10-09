@@ -135,7 +135,6 @@ impl Default for EdgeCorrectionFactor {
 #[reflect(Component)]
 pub struct CurveFactor(pub f32);
 
-
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {
     /// Raw pixel data.
