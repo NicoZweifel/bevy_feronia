@@ -12,9 +12,7 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            ..default()
-        })
+        .insert_resource(Wind { ..default() })
         .insert_resource(ExamplePluginOptions {
             no_indirect_drawing: true,
         })

@@ -11,9 +11,7 @@ use example::*;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            ..default()
-        })
+        .insert_resource(Wind { ..default() })
         .insert_resource(ChunkDebugConfig {
             lod_colors: vec![
                 RED_500.into(),

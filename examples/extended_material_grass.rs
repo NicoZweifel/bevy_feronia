@@ -10,9 +10,7 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            ..default()
-        })
+        .insert_resource(Wind { ..default() })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)

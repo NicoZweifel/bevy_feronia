@@ -49,7 +49,7 @@ impl Default for MaterialOptions {
             edge_correction_factor: 0.0,
             round_exponent: 0.0,
             // TODO sync/cleanup with LOD systems / chunks systems
-            lod_threshold: 50.
+            lod_threshold: 50.,
         }
     }
 }
@@ -127,7 +127,7 @@ pub struct EdgeCorrectionFactor(pub f32);
 
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
-       Self(0.001)
+        Self(0.001)
     }
 }
 

@@ -77,7 +77,10 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
-        if key.bind_group_data.contains(WindAffectedKey::WIND_LOW_QUALITY) {
+        if key
+            .bind_group_data
+            .contains(WindAffectedKey::WIND_LOW_QUALITY)
+        {
             shader_defs.push("WIND_LOW_QUALITY".into());
         }
 

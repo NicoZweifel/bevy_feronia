@@ -82,8 +82,6 @@ impl From<&Wind> for WindUniform {
 
 // TODO create another uniform for Options
 impl WindUniform {
-
-
     pub fn with_lod_threshold(mut self, lod_threshold: f32) -> Self {
         self.lod_threshold = lod_threshold;
         self
