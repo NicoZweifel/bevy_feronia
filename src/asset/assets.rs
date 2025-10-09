@@ -1,9 +1,9 @@
-use crate::core::{LevelOfDetail, ProtoType};
+use crate::core::*;
 use crate::prelude::Wind;
 use bevy::asset::{Asset, Handle};
 use bevy::camera::primitives::Aabb;
 use bevy::mesh::Mesh;
-use bevy::prelude::{Name, TypePath};
+use bevy::prelude::*;
 
 #[derive(Asset, TypePath, Clone, Debug)]
 pub struct ScatterAsset<T>
@@ -12,10 +12,12 @@ where
 {
     pub mesh: Handle<Mesh>,
     pub material: Handle<T>,
-    pub wind: Option<Wind>,
+    pub wind: Wind,
+    pub material_options: MaterialOptions,
     pub aabb: Aabb,
     pub lod_level: LevelOfDetail,
     pub name: Option<Name>,
+    pub layer: Entity,
 }
 
 impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
@@ -27,8 +29,8 @@ impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
         &self.material
     }
 
-    fn wind(&self) -> Option<&Wind> {
-        self.wind.as_ref()
+    fn wind(&self) -> &Wind {
+        &self.wind
     }
 
     fn aabb(&self) -> &Aabb {
@@ -37,5 +39,9 @@ impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
 
     fn lod(&self) -> &LevelOfDetail {
         &self.lod_level
+    }
+
+    fn material_options(&self) -> &MaterialOptions {
+        &self.material_options
     }
 }

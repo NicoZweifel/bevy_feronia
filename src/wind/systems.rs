@@ -1,3 +1,4 @@
+use crate::asset::systems::{MaterialOptionData, WindData};
 use crate::prelude::*;
 use bevy::asset::{Asset, Assets};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
@@ -6,12 +7,47 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<TIn, TOut>(materials: ResMut<Assets<TOut>>, wind: Res<Wind>)
-where
+pub fn update_materials<TIn, TOut>(
+    mut materials: ResMut<Assets<TOut>>,
+    wind: Res<Wind>,
+    mut scatter_assets: ResMut<Assets<ScatterAsset<TOut>>>,
+    q_layer: Query<
+        (WindData, MaterialOptionData, &ScatterLayerOf),
+        (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>),
+    >,
+    q_root: Query<(WindData, MaterialOptionData), (With<ScatterRoot>)>,
+) where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    TOut::update_material(materials, wind.clone());
+    for (_, asset) in scatter_assets.iter_mut() {
+        let Some(material) = materials.get_mut(&asset.material) else {
+            dbg!("Material not found!");
+            continue;
+        };
+
+        if asset.material_options.controlled {
+            continue;
+        };
+
+        let Ok((wind_data, material_options, root)) = q_layer.get(asset.layer) else {
+            dbg!("ScatterLayer not found!");
+            continue;
+        };
+
+        let Ok((root_wind_data, root_material_options)) = q_root.get(**root) else {
+            dbg!("ScatterRoot not found!");
+            continue;
+        };
+
+        let wind = wind.with(root_wind_data).with(wind_data);
+        let options = MaterialOptions::from(root_material_options).with(material_options);
+
+        asset.wind = wind.clone();
+        asset.material_options = options.clone();
+
+        TOut::update_material(material, wind, options);
+    }
 }
 
 pub fn replace_materials<TIn, TOut>(

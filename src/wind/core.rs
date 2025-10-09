@@ -19,7 +19,7 @@ where
         aabb: Aabb,
         options: MaterialOptions,
     ) -> TOut;
-    fn update_material(materials: ResMut<Assets<TOut>>, wind: Wind);
+    fn update_material(material: &mut TOut, wind: Wind, options: MaterialOptions);
 
     fn component(material: Handle<TOut>) -> impl Component;
 }

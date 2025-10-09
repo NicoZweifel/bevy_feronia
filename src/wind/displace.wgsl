@@ -36,8 +36,11 @@ fn calculate_vertex_displacement(
     let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
     let micro_displacement = micro_wind_factor * wind.micro_strength * c_curve_shape;
     let micro_wind = horizontal_dir * micro_displacement;
+
     let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
+
     let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
+
     total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
 #endif
 
@@ -154,21 +157,6 @@ fn calculate_edge_correction(
     let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
 
     return world_pos + final_offset;
-}
-
-fn calculate_main_wind_displacement(
-    wind: Wind,
-    c_curve_shape: f32,
-    macro_noise: f32,
-    micro_noise: f32,
-) -> vec3<f32> {
-    let macro_displacement = (macro_noise * 2.0 - 1.0) * wind.strength * c_curve_shape;
-    let micro_displacement = (micro_noise * 2.0 - 1.0) * wind.micro_strength * c_curve_shape;
-
-    let combined_displacement = macro_displacement + micro_displacement;
-    let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
-
-    return horizontal_dir * combined_displacement;
 }
 
 fn calculate_s_curve_displacement(

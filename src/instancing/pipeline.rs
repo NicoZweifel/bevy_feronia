@@ -65,7 +65,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         }
 
         if key.wind_key.contains(WindAffectedKey::WIND_LOW_QUALITY) {
-            shader_defs.push("WIND_HIGH_QUALITY".into());
+            shader_defs.push("WIND_LOW_QUALITY".into());
         }
 
         if key.wind_key.contains(WindAffectedKey::FAST_NORMALS) {

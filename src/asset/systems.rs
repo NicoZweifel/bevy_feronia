@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;
 
-type CollectableQueryData<'w, 's, T> = (
+pub type CollectableQueryData<'w, T> = (
     Entity,
     Option<&'w MeshMaterial3d<T>>,
     Option<&'w Mesh3d>,
@@ -12,23 +12,113 @@ type CollectableQueryData<'w, 's, T> = (
     Option<&'w Name>,
     Option<&'w LevelOfDetail>,
     Option<&'w WindAffected>,
+    MaterialOptionData<'w>,
+    WindData<'w>,
+);
+
+pub type MaterialOptionData<'w> = (
     Option<&'w EnableDebug>,
     Option<&'w EnableBillboarding>,
     Option<&'w EdgeCorrectionFactor>,
     Option<&'w CurveFactor>,
 );
 
+pub type WindData<'w> = (
+    Option<&'w Strength>,
+    Option<&'w MicroStrength>,
+    Option<&'w SCurveStrength>,
+    Option<&'w SCurveSpeed>,
+    Option<&'w SCurveFrequency>,
+    Option<&'w BopStrength>,
+    Option<&'w BopSpeed>,
+    Option<&'w TwistStrength>,
+    Option<&'w BendExponent>,
+    Option<&'w LowQuality>,
+);
+
+impl Wind {
+    pub fn with(
+        &self,
+        (
+            strength,
+            micro_strength,
+            s_curve_strength,
+            s_curve_speed,
+            s_curve_frequency,
+            bop_strength,
+            bop_speed,
+            twist_strength,
+            bend_exponent,
+            low_quality,
+        ): WindData,
+    ) -> Self {
+        Wind {
+            strength: strength.map(|x| **x * self.strength).unwrap_or(self.strength),
+            micro_strength: micro_strength.map(|x| **x * self.micro_strength).unwrap_or(self.micro_strength),
+            s_curve_strength: s_curve_strength
+                .map(|x| **x * self.s_curve_strength)
+                .unwrap_or(self.s_curve_strength),
+            s_curve_speed: s_curve_speed.map(|x| **x * self.s_curve_speed).unwrap_or(self.s_curve_speed),
+            s_curve_frequency: s_curve_frequency
+                .map(|x| **x)
+                .unwrap_or(self.s_curve_frequency),
+            bop_strength: bop_strength.map(|x| **x * self.bop_strength).unwrap_or(self.bop_strength),
+            bop_speed: bop_speed.map(|x| **x * self.bop_speed).unwrap_or(self.bop_speed),
+            twist_strength: twist_strength.map(|x| **x * self.twist_strength).unwrap_or(self.twist_strength),
+            bend_exponent: bend_exponent.map(|x| **x * self.bend_exponent).unwrap_or(self.bend_exponent),
+            low_quality: low_quality.map(|_| true).unwrap_or(self.low_quality),
+            ..*self
+        }
+    }
+}
+
+impl From<MaterialOptionData<'_>> for MaterialOptions {
+    fn from(
+        (enable_debug, enable_billboarding, edge_correction_factor, curve_factor):MaterialOptionData,
+    ) -> Self {
+        Self {
+            debug: enable_debug.is_some(),
+            enable_billboarding: enable_billboarding.is_some(),
+            edge_correction_factor: edge_correction_factor.map(|x| **x).unwrap_or(0.),
+            curve_factor: curve_factor.map(|x| **x).unwrap_or(0.),
+            ..default()
+        }
+    }
+}
+
+impl MaterialOptions {
+    pub fn with(
+        &self,
+        (enable_debug, enable_billboarding, edge_correction_factor, curve_factor):MaterialOptionData,
+    ) -> Self {
+        Self {
+            debug: enable_debug.map(|_| true).unwrap_or(self.debug),
+            enable_billboarding: enable_billboarding
+                .map(|_| true)
+                .unwrap_or(self.enable_billboarding),
+            edge_correction_factor: edge_correction_factor
+                .map(|x| **x)
+                .unwrap_or(self.edge_correction_factor),
+            curve_factor: curve_factor.map(|x| **x).unwrap_or(self.curve_factor),
+            ..*self
+        }
+    }
+    pub fn with_debug_color(mut self, debug_color: Color) -> Self {
+        self.debug_color = debug_color;
+        self
+    }
+
+    pub fn with_controlled(mut self, controlled: bool) -> Self {
+        self.controlled = controlled;
+        self
+    }
+}
+
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
-        (
-            &Children,
-            Option<&EnableDebug>,
-            Option<&EnableBillboarding>,
-            Option<&EdgeCorrectionFactor>,
-            Option<&CurveFactor>,
-        ),
+        (&Children, MaterialOptionData, WindData),
         (
             With<ScatterLayer>,
             Without<ScatterLayerProcessed>,
@@ -50,16 +140,14 @@ pub fn collect_assets<TIn, TOut>(
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
         for layer in children.iter() {
-            let Ok((
-                scatter_items,
-                enable_debug,
-                enable_billboarding,
-                edge_correction_factor,
-                curve_factor,
-            )) = q_layers.get(layer)
-            else {
+            let mut wind = wind.clone();
+            let Ok((scatter_items, material_option_data, wind_data)) = q_layers.get(layer) else {
                 continue;
             };
+
+            wind = wind.with(wind_data);
+
+            let options = MaterialOptions::from(material_option_data);
 
             let result = scatter_items
                 .iter()
@@ -72,15 +160,7 @@ pub fn collect_assets<TIn, TOut>(
                         &mut extended_materials,
                         &wind_noise_texture,
                         &wind,
-                        &MaterialOptions {
-                            debug: enable_debug.is_some(),
-                            enable_billboarding: enable_billboarding.is_some(),
-                            edge_correction_factor: edge_correction_factor
-                                .map(|x| **x)
-                                .unwrap_or(0.),
-                            curve_factor: curve_factor.map(|x| **x).unwrap_or(0.),
-                            ..default()
-                        },
+                        &options,
                         None,
                         None,
                         &mut prototype_assets,
@@ -132,18 +212,18 @@ where
         lod,
         // TODO
         _wind_affected,
-        enable_debug,
-        enable_billboarding,
-        edge_correction_factor,
-        curve_factor,
+        material_option_data,
+        wind_data,
     )) = q_children.get(entity)
     else {
         return types;
     };
 
-    let (final_wind, controlled) = wind_component
+    let (mut wind, controlled) = wind_component
         .and_then(|x| x.wind_override.clone().map(|x| (x.clone(), true)))
         .unwrap_or_else(|| ((*wind).clone(), false));
+
+    wind = wind.with(wind_data);
 
     let lod = lod.map_or(current_lod_level.unwrap_or_default(), |x| *x);
 
@@ -152,19 +232,10 @@ where
     let hue = (entity.index() * 30) as f32 % 360.0;
     let debug_color = Color::hsl(hue, 1.0, 0.5);
 
-    let options = MaterialOptions {
-        debug: enable_debug.map(|_| true).unwrap_or(options.debug),
-        enable_billboarding: enable_billboarding
-            .map(|_| true)
-            .unwrap_or(options.enable_billboarding),
-        edge_correction_factor: edge_correction_factor
-            .map(|x| **x)
-            .unwrap_or(options.edge_correction_factor),
-        curve_factor: curve_factor.map(|x| **x).unwrap_or(options.curve_factor),
-        debug_color,
-        controlled,
-        ..*options
-    };
+    let options = options
+        .with(material_option_data)
+        .with_debug_color(debug_color)
+        .with_controlled(controlled);
 
     if let Some(children) = children {
         for child in children.iter() {
@@ -175,7 +246,7 @@ where
                 materials,
                 extended_materials,
                 wind_noise_texture,
-                wind,
+                &wind,
                 &options,
                 name.clone(),
                 Some(lod),
@@ -202,10 +273,10 @@ where
 
     let new_material = TOut::create_material(
         Some(materials.get(material).unwrap().clone()),
-        final_wind.clone(),
+        wind.clone(),
         wind_noise_texture.0.clone(),
         *aabb,
-        options,
+        options.clone(),
     );
 
     let material = extended_materials.add(new_material);
@@ -218,10 +289,12 @@ where
     let asset = ScatterAsset {
         mesh,
         material,
-        wind: Some(final_wind),
+        wind,
         aabb: mesh_aabb,
-        name: name.clone(),
+        name,
         lod_level: lod,
+        material_options: options,
+        layer,
     };
 
     debug!(

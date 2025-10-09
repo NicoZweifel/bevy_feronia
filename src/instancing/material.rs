@@ -90,12 +90,13 @@ where
         }
     }
 
-    fn update_material(mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>, wind: Wind) {
-        let iter = materials.iter_mut().filter(|(_, x)| !x.options.controlled);
-
-        for (_, material) in iter {
-            material.wind = wind.clone();
-        }
+    fn update_material(
+        material: &mut InstancedWindAffectedMaterial,
+        wind: Wind,
+        options: MaterialOptions,
+    ) {
+        material.wind = wind;
+        material.options = options;
     }
 
     fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {

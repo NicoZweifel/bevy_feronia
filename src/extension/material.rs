@@ -28,14 +28,14 @@ where
         }
     }
 
-    fn update_material(mut materials: ResMut<Assets<ExtendedWindAffectedMaterial>>, wind: Wind) {
-        for (_, material) in materials
-            .iter_mut()
-            .filter(|(_, x)| !x.extension.options.controlled)
-        {
-            let ext = &mut material.extension;
-            ext.wind = wind.clone();
-        }
+    fn update_material(
+        material: &mut ExtendedWindAffectedMaterial,
+        wind: Wind,
+        options: MaterialOptions,
+    ) {
+        let ext = &mut material.extension;
+        ext.wind = wind;
+        ext.options = options;
     }
 
     fn component(material: Handle<ExtendedWindAffectedMaterial>) -> impl Component {

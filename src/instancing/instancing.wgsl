@@ -43,7 +43,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.i_index;
 
-    let noise = sample_noise(instance);
+    let noise = sample_noise(instance, vertex.position);
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(

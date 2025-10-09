@@ -100,9 +100,10 @@ where
 {
     fn mesh(&self) -> &Handle<Mesh>;
     fn material(&self) -> &Handle<T>;
-    fn wind(&self) -> Option<&Wind>;
+    fn wind(&self) -> &Wind;
     fn aabb(&self) -> &Aabb;
     fn lod(&self) -> &LevelOfDetail;
+    fn material_options(&self) -> &MaterialOptions;
 }
 
 pub trait Sampler {

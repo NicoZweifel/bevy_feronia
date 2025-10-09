@@ -19,3 +19,43 @@ pub struct WindConfig {
     // NOTE: If set, this material type will be manually controlled and not updated automatically with the global wind resource.
     pub wind_override: Option<Wind>,
 }
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct Strength(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct MicroStrength(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct SCurveStrength(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct SCurveSpeed(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct SCurveFrequency(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct BopStrength(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct BopSpeed(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct TwistStrength(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct BendExponent(pub f32);
+
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(Component)]
+pub struct LowQuality;

@@ -14,7 +14,7 @@
 #import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
 #endif
 
-fn sample_noise(instance: InstanceInfo) -> SampledNoise {
+fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledNoise {
     var noise: SampledNoise;
 
 #ifdef BINDLESS
@@ -24,7 +24,9 @@ fn sample_noise(instance: InstanceInfo) -> SampledNoise {
     let noise_texture_sampler =  bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif
 
-    let base_uv = instance.instance_position.xz * wind.noise_scale;
+    let world_pos = (instance.world_from_local * vec4<f32>(local_vertex_pos, 1.0)).xyz;
+
+    let base_uv = world_pos.xz * wind.noise_scale;
     let uv_scroll_offset = instance.wrapped_time * wind.scroll_speed * wind.direction;
     let tex_coord = base_uv + uv_scroll_offset;
 
@@ -34,7 +36,7 @@ fn sample_noise(instance: InstanceInfo) -> SampledNoise {
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
 
-#ifdef WIND_HIGH_QUALITY
+#ifndef WIND_LOW_QUALITY
     noise.micro_noise = packed_noise.g;
 
     let seed_x = bitcast<u32>(instance.instance_position.x);
