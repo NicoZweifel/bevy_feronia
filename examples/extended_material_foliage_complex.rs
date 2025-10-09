@@ -97,9 +97,8 @@ fn spawn_scene(
             WindAffected,
             children![
                 // TODO figure out what's wrong with highest detail models
-                (LevelOfDetail(0), SceneRoot(handles.lod_high.clone()),),
-                (LevelOfDetail(1), SceneRoot(handles.lod_medium.clone()),),
-                (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()),)
+                (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
+                (LevelOfDetail(1), SceneRoot(handles.lod_low.clone()),)
             ]
         )],
     ))
