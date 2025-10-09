@@ -2,18 +2,18 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::window::CursorOptions;
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::CursorGrabMode};
-//use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
+use bevy_inspector_egui::bevy_egui::{EguiContexts, EguiPreUpdateSet};
 
 pub struct CameraControllerPlugin;
 
 impl Plugin for CameraControllerPlugin {
     fn build(&self, app: &mut App) {
-        /*app.add_systems(
+        app.add_systems(
             PreUpdate,
             (block_mouse_input, block_keyboard_input)
                 .after(EguiPreUpdateSet::ProcessInput)
                 .before(EguiPreUpdateSet::BeginPass),
-        )*/
+        );
         app.add_systems(Update, (enable_cursor, disable_cursor, move_camera));
     }
 }
@@ -111,9 +111,9 @@ fn enable_cursor(
     let mut controller = controller.into_inner();
     controller.enabled = false;
 }
-/*
+
 pub fn block_mouse_input(mut mouse: ResMut<ButtonInput<MouseButton>>, mut contexts: EguiContexts) {
-    let Some(context) = contexts.try_ctx_mut() else {
+    let Ok(context) = contexts.ctx_mut() else {
         return;
     };
 
@@ -126,7 +126,7 @@ pub fn block_keyboard_input(
     mut keyboard_keycode: ResMut<ButtonInput<KeyCode>>,
     mut contexts: EguiContexts,
 ) {
-    let Some(context) = contexts.try_ctx_mut() else {
+    let Ok(context) = contexts.ctx_mut() else {
         return;
     };
 
@@ -134,5 +134,3 @@ pub fn block_keyboard_input(
         keyboard_keycode.reset_all();
     }
 }
-
- */

@@ -10,6 +10,8 @@ use bevy::{
     render::view::{ColorGrading, NoIndirectDrawing},
 };
 use bevy_feronia::prelude::*;
+use bevy_inspector_egui::quick::ResourceInspectorPlugin;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use camera_controller::*;
 
 #[derive(Resource, Default)]
@@ -25,6 +27,10 @@ impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ExamplePluginOptions>()
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
+            .add_plugins((
+                EguiPlugin::default(),
+                ResourceInspectorPlugin::<Wind>::default(),
+            ))
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup)
             .add_systems(Update, anisotropic_filtering);
