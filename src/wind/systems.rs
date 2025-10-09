@@ -15,7 +15,7 @@ pub fn update_materials<TIn, TOut>(
         (WindData, MaterialOptionData, &ScatterLayerOf),
         (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>),
     >,
-    q_root: Query<(WindData, MaterialOptionData), (With<ScatterRoot>)>,
+    q_root: Query<(WindData, MaterialOptionData), With<ScatterRoot>>,
 ) where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
