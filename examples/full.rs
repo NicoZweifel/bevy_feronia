@@ -15,11 +15,6 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            // TODO should only affect grass
-            enable_billboarding: true,
-            // TODO should only affect grass
-            enable_edge_correction: true,
-            round_exponent: 15.,
             strength: 0.4,
             micro_strength: 0.1,
             ..default()
@@ -161,6 +156,9 @@ fn spawn_scene(
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
+            EnableBillboarding,
+            EdgeCorrectionFactor::default(),
+            RoundExponent(15.),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -172,7 +170,7 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(1.0),
+                DistributionDensity(30.0),
                 InstanceRotationYaw {
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
@@ -210,10 +208,7 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    info!("Updated `WorldSeed`: {}", **world_seed);
-
     cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root));
-    cmd.trigger(Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(*q_root));
 }
 
 fn setup_density_map(

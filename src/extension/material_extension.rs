@@ -15,14 +15,10 @@ use bevy::shader::ShaderRef;
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
     pub wind: Wind,
-    // Whether the Extension is controlled externally and isn't automatically updated by the Wind resource.
-    pub controlled: bool,
 
     pub aabb: Aabb,
 
-    pub debug_color: Color,
-
-    pub debug: bool,
+    pub options: MaterialOptions,
 
     #[texture(51)]
     #[sampler(52)]
@@ -32,8 +28,11 @@ pub struct WindAffectedExtension {
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
+            .with_lod_threshold(material_extension.options.lod_threshold)
+            .with_round_exponent(material_extension.options.round_exponent)
+            .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
-            .with_debug_color(material_extension.debug_color.to_linear().to_vec4())
+            .with_debug_color(material_extension.options.debug_color.to_linear().to_vec4())
     }
 }
 
@@ -78,8 +77,8 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
-        if key.bind_group_data.contains(WindAffectedKey::HIGH_QUALITY) {
-            shader_defs.push("WIND_HIGH_QUALITY".into());
+        if key.bind_group_data.contains(WindAffectedKey::WIND_LOW_QUALITY) {
+            shader_defs.push("WIND_LOW_QUALITY".into());
         }
 
         if key.bind_group_data.contains(WindAffectedKey::FAST_NORMALS) {
@@ -103,17 +102,17 @@ impl MaterialExtension for WindAffectedExtension {
 impl From<&WindAffectedExtension> for WindAffectedKey {
     fn from(material: &WindAffectedExtension) -> Self {
         let mut key = WindAffectedKey::empty();
-        key.set(WindAffectedKey::DEBUG, material.debug);
+        key.set(WindAffectedKey::DEBUG, material.options.debug);
         key.set(
             WindAffectedKey::ENABLE_BILLBOARDING,
-            material.wind.enable_billboarding,
+            material.options.enable_billboarding,
         );
         key.set(
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
-            material.wind.enable_edge_correction,
+            material.options.edge_correction_factor > 0.,
         );
-        key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
-        key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
+        key.set(WindAffectedKey::WIND_LOW_QUALITY, material.wind.low_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
 
         key
     }

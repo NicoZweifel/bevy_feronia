@@ -12,7 +12,6 @@ pub struct Wind {
     pub noise_scale: f32,
     pub scroll_speed: f32,
     pub bend_exponent: f32,
-    pub round_exponent: f32,
     pub micro_strength: f32,
     pub micro_noise_scale: f32,
     pub micro_scroll_speed: f32,
@@ -22,12 +21,7 @@ pub struct Wind {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-    pub enable_billboarding: bool,
-    pub enable_edge_correction: bool,
-    pub fast_normals: bool,
-    pub high_quality: bool,
-    pub edge_correction_factor: f32,
-    pub lod_threshold: f32,
+    pub low_quality: bool,
 }
 
 impl Default for Wind {
@@ -42,19 +36,13 @@ impl Default for Wind {
             micro_noise_scale: 0.5,
             micro_scroll_speed: 0.1,
             bend_exponent: 2.0,
-            round_exponent: 0.0,
             s_curve_speed: 2.0,
             s_curve_strength: 0.1,
             s_curve_frequency: PI,
             bop_speed: 1.0,
             bop_strength: 0.05,
             twist_strength: 0.05,
-            enable_billboarding: false,
-            enable_edge_correction: false,
-            fast_normals: false,
-            lod_threshold: 50.0,
-            edge_correction_factor: 0.001,
-            high_quality: true,
+            low_quality: false,
         }
     }
 }

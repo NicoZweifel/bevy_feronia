@@ -16,10 +16,8 @@ where
         base: Option<TIn>,
         wind: Wind,
         noise_texture: Handle<Image>,
-        controlled: bool,
         aabb: Aabb,
-        debug_color: Color,
-        debug: bool,
+        options: MaterialOptions,
     ) -> TOut;
     fn update_material(materials: ResMut<Assets<TOut>>, wind: Wind);
 
@@ -44,6 +42,8 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
+
+    // TODO create another uniform for Options
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
     pub aabb_min: Vec3,
@@ -59,7 +59,6 @@ impl From<&Wind> for WindUniform {
             noise_scale: wind.noise_scale,
             scroll_speed: wind.scroll_speed,
             bend_exponent: wind.bend_exponent,
-            round_exponent: wind.round_exponent,
             micro_strength: wind.micro_strength,
             micro_noise_scale: wind.micro_noise_scale,
             micro_scroll_speed: wind.micro_scroll_speed,
@@ -69,8 +68,11 @@ impl From<&Wind> for WindUniform {
             bop_speed: wind.bop_speed,
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
-            edge_correction_factor: wind.edge_correction_factor,
-            lod_threshold: wind.lod_threshold,
+            // TODO sync/cleanup with LOD systems / chunks systems
+            lod_threshold: 50.,
+            // TODO create another uniform for Options
+            edge_correction_factor: 0.,
+            round_exponent: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
             debug_color: Vec4::splat(1.),
@@ -78,7 +80,25 @@ impl From<&Wind> for WindUniform {
     }
 }
 
+// TODO create another uniform for Options
 impl WindUniform {
+
+
+    pub fn with_lod_threshold(mut self, lod_threshold: f32) -> Self {
+        self.lod_threshold = lod_threshold;
+        self
+    }
+
+    pub fn with_round_exponent(mut self, round_exponent: f32) -> Self {
+        self.round_exponent = round_exponent;
+        self
+    }
+
+    pub fn with_edge_correction_factor(mut self, edge_correction_factor: f32) -> Self {
+        self.edge_correction_factor = edge_correction_factor;
+        self
+    }
+
     pub fn with_aabb(mut self, aabb: &Aabb) -> Self {
         self.aabb_min = aabb.min().into();
         self.aabb_max = aabb.max().into();
@@ -97,7 +117,7 @@ bitflags! {
     pub struct WindAffectedKey: u64 {
         const ENABLE_BILLBOARDING    = 1 << 0;
         const ENABLE_EDGE_CORRECTION = 1 << 1;
-        const HIGH_QUALITY = 1 << 2;
+        const WIND_LOW_QUALITY = 1 << 2;
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;
     }

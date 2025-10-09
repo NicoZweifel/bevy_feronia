@@ -14,11 +14,6 @@ use noise::{NoiseFn, Perlin};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            enable_billboarding: true,
-            enable_edge_correction: true,
-            round_exponent: 15.,
-            edge_correction_factor: 0.001,
-            high_quality: true,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })

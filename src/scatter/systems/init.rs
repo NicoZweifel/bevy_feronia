@@ -21,7 +21,7 @@ pub fn chunk_init_scatter<
 >(
     mut cmd: Commands,
     q_chunks: Query<(Entity, &ChunkOf), (With<Chunk>, With<ChunkInitScatter<TIn, TOut>>)>,
-    q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
+    q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>, With<ScatterChunked>)>,
     q_root: Query<&ScatterRoot>,
 ) {
     for (chunk, root_chunk) in q_chunks.iter() {

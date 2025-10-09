@@ -22,7 +22,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
     q_requests: Query<(Entity, &ScatterRequest<TIn, TOut>), With<ScatterRequest<TIn, TOut>>>,
     q_scatter_root: Query<
         (Entity, Option<&MapHeight>, &Aabb),
-        (Without<ChunkRoot>, With<ScatterRoot>),
+        With<ScatterRoot>,
     >,
     q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,

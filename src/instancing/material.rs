@@ -16,14 +16,8 @@ use bevy::{
 #[uniform(50, WindUniform)]
 pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,
-    // Whether the material is controlled externally and isn't automatically updated by the Wind resource.
-    pub controlled: bool,
-
-    pub debug: bool,
-
     pub aabb: Aabb,
-
-    pub debug_color: Color,
+    pub options: MaterialOptions,
 
     #[texture(51)]
     #[sampler(52)]
@@ -85,23 +79,21 @@ where
         _base: Option<StandardMaterial>,
         wind: Wind,
         noise_texture: Handle<Image>,
-        controlled: bool,
         aabb: Aabb,
-        debug_color: Color,
-        debug: bool,
+        options: MaterialOptions,
     ) -> InstancedWindAffectedMaterial {
         InstancedWindAffectedMaterial {
             wind,
             noise_texture,
-            controlled,
             aabb,
-            debug_color,
-            debug,
+            options,
         }
     }
 
     fn update_material(mut materials: ResMut<Assets<InstancedWindAffectedMaterial>>, wind: Wind) {
-        for (_, material) in materials.iter_mut().filter(|(_, x)| !x.controlled) {
+        let iter = materials.iter_mut().filter(|(_, x)| !x.options.controlled);
+
+        for (_, material) in iter {
             material.wind = wind.clone();
         }
     }
@@ -114,7 +106,10 @@ where
 impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
     fn from(material: &'a InstancedWindAffectedMaterial) -> Self {
         WindUniform::from(&material.wind)
+            .with_lod_threshold(material.options.lod_threshold)
+            .with_round_exponent(material.options.round_exponent)
+            .with_edge_correction_factor(material.options.edge_correction_factor)
             .with_aabb(&material.aabb)
-            .with_debug_color(material.debug_color.to_linear().to_vec4())
+            .with_debug_color(material.options.debug_color.to_linear().to_vec4())
     }
 }

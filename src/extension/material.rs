@@ -14,20 +14,16 @@ where
         base: Option<StandardMaterial>,
         wind: Wind,
         noise_texture: Handle<Image>,
-        controlled: bool,
         aabb: Aabb,
-        debug_color: Color,
-        debug: bool,
+        options: MaterialOptions,
     ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
             base: base.unwrap_or_default(),
             extension: WindAffectedExtension {
                 noise_texture,
                 wind,
-                controlled,
                 aabb,
-                debug_color,
-                debug,
+                options,
             },
         }
     }
@@ -35,7 +31,7 @@ where
     fn update_material(mut materials: ResMut<Assets<ExtendedWindAffectedMaterial>>, wind: Wind) {
         for (_, material) in materials
             .iter_mut()
-            .filter(|(_, x)| !x.extension.controlled)
+            .filter(|(_, x)| !x.extension.options.controlled)
         {
             let ext = &mut material.extension;
             ext.wind = wind.clone();

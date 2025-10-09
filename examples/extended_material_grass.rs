@@ -11,10 +11,6 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            enable_billboarding: true,
-            enable_edge_correction: true,
-            round_exponent: 15.,
-            edge_correction_factor: 0.01,
             ..default()
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
@@ -34,6 +30,9 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             DistributionDensity(100.),
             InstanceJitter(1.),
             WindAffected,
+            EnableBillboarding,
+            EdgeCorrectionFactor::default(),
+            RoundExponent(15.),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (

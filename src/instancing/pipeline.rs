@@ -64,7 +64,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("WIND_EDGE_CORRECTION".into());
         }
 
-        if key.wind_key.contains(WindAffectedKey::HIGH_QUALITY) {
+        if key.wind_key.contains(WindAffectedKey::WIND_LOW_QUALITY) {
             shader_defs.push("WIND_HIGH_QUALITY".into());
         }
 
