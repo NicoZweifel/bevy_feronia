@@ -176,9 +176,7 @@ where
     ScatterResults::<TIn, TOut>::from(&container).with_data(data)
 }
 
-/// A standardized helper function to generate a deterministic u64 seed.
-///
-/// It combines the global `WorldSeed` with location-specific data (like chunk coordinates
+/// Generates a deterministic u64 seed by combining the global `WorldSeed` with location-specific data (like chunk coordinates
 /// or an entity's position).
 pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
