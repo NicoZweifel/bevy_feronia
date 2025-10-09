@@ -6,6 +6,7 @@ use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
@@ -48,11 +49,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut world_seed: ResMut<WorldSeed>,
     q_root: Single<Entity, With<ScatterRoot>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
+
+    **world_seed = rng().next_u64();
 
     cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
 }

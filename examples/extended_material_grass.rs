@@ -6,16 +6,11 @@ use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            enable_billboarding: true,
-            enable_edge_correction: true,
-            round_exponent: 15.,
-            edge_correction_factor: 0.01,
-            ..default()
-        })
+        .insert_resource(Wind { ..default() })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
@@ -33,6 +28,9 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             DistributionDensity(100.),
             InstanceJitter(1.),
             WindAffected,
+            EnableBillboarding,
+            EdgeCorrectionFactor::default(),
+            RoundExponent(15.),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
@@ -49,12 +47,15 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     q_root: Single<Entity, With<ScatterRoot>>,
+    mut world_seed: ResMut<WorldSeed>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
+    **world_seed = rng().next_u64();
+
+    println!("Scattering");
+
     cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
 }
-
-

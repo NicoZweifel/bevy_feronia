@@ -6,6 +6,7 @@ use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
@@ -79,10 +80,12 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
+    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
+        ChunkRoot::default(),
         LodConfig(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
@@ -95,7 +98,6 @@ fn spawn_scene(
             WindAffected,
             children![
                 // TODO figure out what's wrong with highest detail models
-                //(LevelOfDetail(0), SceneRoot(handles.lod_high.clone()),),
                 (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
                 (LevelOfDetail(1), SceneRoot(handles.lod_low.clone()),)
             ]
@@ -103,18 +105,21 @@ fn spawn_scene(
     ))
     .observe(extended_scatter_observer);
 
+    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut world_seed: ResMut<WorldSeed>,
     q_root: Single<Entity, With<ScatterRoot>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
+    **world_seed = rng().next_u64();
+
     cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
 }
-

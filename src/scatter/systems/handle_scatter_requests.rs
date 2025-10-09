@@ -1,6 +1,6 @@
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use crate::scatter::utils::{Container, InstanceModifiers, create_scatter_results};
+use crate::scatter::utils::{Container, InstanceModifiers, create_scatter_results, generate_seed};
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
@@ -13,22 +13,24 @@ type ScatterLayerQueryData<'a> = (
     Option<&'a InstanceRotationYaw>,
     Option<&'a InstanceScale>,
     Option<&'a InstanceJitter>,
+    Option<&'a ScaleDensity>,
     &'a GlobalTransform,
 );
 
 pub fn handle_scatter_requests<TIn, TOut>(
     mut cmd: Commands,
     q_requests: Query<(Entity, &ScatterRequest<TIn, TOut>), With<ScatterRequest<TIn, TOut>>>,
-    height_map_cfg: Option<Res<HeightMapConfig>>,
-    height_map: Option<Res<HeightMap>>,
-    images: Res<Assets<Image>>,
-    q_scatter_root: Query<
-        (Entity, Option<&MapHeight>, &Aabb),
-        (Without<ChunkRoot>, With<ScatterRoot>),
-    >,
+    q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,
-    q_chunk: Query<(&ChunkSize, &GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
+    q_chunk: Query<
+        (&ChunkSize, &GlobalTransform, &ChunkLevel, &ChunkCoord),
+        (With<Chunk>, Without<Merging>),
+    >,
+    height_map_cfg: Option<Res<HeightMapConfig>>,
+    height_map: Option<Res<HeightMap>>,
+    world_seed: Res<WorldSeed>,
+    images: Res<Assets<Image>>,
 ) where
     TIn: Material + Send + 'static,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Send + 'static,
@@ -45,6 +47,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
             instance_rotation,
             instance_scale,
             instance_jitter,
+            scale_density,
             layer_gtf,
         )) = q_layer.get(request.layer_entity)
         else {
@@ -60,7 +63,6 @@ pub fn handle_scatter_requests<TIn, TOut>(
         );
 
         let density_map_image = pattern_dist
-            .as_ref()
             .and_then(|x| images.get(&x.density_map))
             .cloned();
 
@@ -68,15 +70,23 @@ pub fn handle_scatter_requests<TIn, TOut>(
             let Ok((root_entity, base_chunk_size, map_height, aabb)) =
                 q_chunk_root.get(**scatter_root_ref)
             else {
-                warn!("ScatterRoot not found!");
+                warn!("ChunkRoot not found!");
                 continue;
             };
 
-            let Ok((chunk_size, chunk_gtf, chunk_level)) = q_chunk.get(chunk_entity) else {
+            let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk_entity)
+            else {
                 continue;
             };
 
             let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
+
+            let seed = generate_seed(&world_seed, chunk_coord);
+
+            let instances_dim = density
+                * scale_density
+                    .map(|_| **chunk_level as f32 / 2. + 0.5)
+                    .unwrap_or(1.0);
 
             Some(ScatterTaskData {
                 container: Container {
@@ -84,12 +94,13 @@ pub fn handle_scatter_requests<TIn, TOut>(
                     layer_entity: request.layer_entity,
                     chunk_entity: Some(chunk_entity),
                     root_entity,
-                    instances_dim: density * (**chunk_level as f32 / 2. + 1.0),
+                    instances_dim,
                     corner: -size / 2.0,
                     height: 0.0,
                     size,
                     root_size: Vec3::from(aabb.half_extents * 2.),
                     transform: chunk_gtf.compute_transform(),
+                    seed,
                 },
                 map_height: map_height.cloned(),
                 scale: instance_scale.cloned(),
@@ -119,6 +130,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
                     size,
                     root_size: size,
                     transform: layer_gtf.compute_transform(),
+                    seed: **world_seed,
                 },
                 map_height: map_height.cloned(),
                 scale: instance_scale.cloned(),

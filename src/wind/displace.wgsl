@@ -86,7 +86,7 @@ fn displace_vertex_and_calc_normal(
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
     let small_offset = 0.01;
-#ifdef WIND_HIGH_QUALITY
+#ifndef WIND_LOW_QUALITY
     let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
     let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
 #else
@@ -103,13 +103,13 @@ fn displace_vertex_and_calc_normal(
 
     #ifdef FAST_NORMALS
         // --- OPTIMIZED PATH ---
-        #ifdef WIND_HIGH_QUALITY
+        #ifndef WIND_LOW_QUALITY
             // TODO
         #else
             out.world_normal = mesh_normal;
         #endif
     #else
-        #ifdef WIND_HIGH_QUALITY
+        #ifndef WIND_LOW_QUALITY
             let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
             let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
             let tangent_x = neighbor_pos_x - final_pos_xyz;

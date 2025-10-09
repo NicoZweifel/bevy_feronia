@@ -2,32 +2,38 @@ use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;
 
-// TODO: refactor this abomination into separate systems that collect/register assets and handle individual settings.
+type CollectableQueryData<'w, 's, T> = (
+    Entity,
+    Option<&'w MeshMaterial3d<T>>,
+    Option<&'w Mesh3d>,
+    Option<&'w Aabb>,
+    Option<&'w Children>,
+    Option<&'w WindConfig>,
+    Option<&'w Name>,
+    Option<&'w LevelOfDetail>,
+    Option<&'w WindAffected>,
+    Option<&'w EnableDebug>,
+    Option<&'w EnableBillboarding>,
+    Option<&'w EdgeCorrectionFactor>,
+);
+
 pub fn collect_assets<TIn, TOut>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
-        &Children,
+        (
+            &Children,
+            Option<&EnableDebug>,
+            Option<&EnableBillboarding>,
+            Option<&EdgeCorrectionFactor>,
+        ),
         (
             With<ScatterLayer>,
             Without<ScatterLayerProcessed>,
             With<ScatterLayerType<TIn, TOut>>,
         ),
     >,
-    q_collect: Query<
-        (
-            Entity,
-            Option<&MeshMaterial3d<TIn>>,
-            Option<&Mesh3d>,
-            Option<&Aabb>,
-            Option<&Children>,
-            Option<&WindConfig>,
-            Option<&Name>,
-            Option<&LevelOfDetail>,
-            Option<&WindAffected>,
-        ),
-        Without<ScatterLayerChildProcessed>,
-    >,
+    q_collect: Query<CollectableQueryData<TIn>, Without<ScatterLayerChildProcessed>>,
     mut materials: ResMut<Assets<TIn>>,
     mut extended_materials: ResMut<Assets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
@@ -42,7 +48,9 @@ pub fn collect_assets<TIn, TOut>(
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
         for layer in children.iter() {
-            let Ok(scatter_items) = q_layers.get(layer) else {
+            let Ok((scatter_items, enable_debug, enable_billboarding, edge_correction_factor)) =
+                q_layers.get(layer)
+            else {
                 continue;
             };
 
@@ -57,6 +65,14 @@ pub fn collect_assets<TIn, TOut>(
                         &mut extended_materials,
                         &wind_noise_texture,
                         &wind,
+                        &MaterialOptions {
+                            debug: enable_debug.is_some(),
+                            enable_billboarding: enable_billboarding.is_some(),
+                            edge_correction_factor: edge_correction_factor
+                                .map(|x| **x)
+                                .unwrap_or(0.),
+                            ..default()
+                        },
                         None,
                         None,
                         &mut prototype_assets,
@@ -79,28 +95,16 @@ fn collect_assets_recursive<TIn, TOut>(
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
-    materials: &mut ResMut<Assets<TIn>>,
-    extended_materials: &mut ResMut<Assets<TOut>>,
-    wind_noise_texture: &Res<WindTexture>,
-    wind: &Res<Wind>,
+    materials: &mut Assets<TIn>,
+    extended_materials: &mut Assets<TOut>,
+    wind_noise_texture: &WindTexture,
+    wind: &Wind,
+    options: &MaterialOptions,
     current_name: Option<Name>,
     current_lod_level: Option<LevelOfDetail>,
-    scatter_assets: &mut ResMut<Assets<ScatterAsset<TOut>>>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    q_children: &Query<
-        (
-            Entity,
-            Option<&MeshMaterial3d<TIn>>,
-            Option<&Mesh3d>,
-            Option<&Aabb>,
-            Option<&Children>,
-            Option<&WindConfig>,
-            Option<&Name>,
-            Option<&LevelOfDetail>,
-            Option<&WindAffected>,
-        ),
-        Without<ScatterLayerChildProcessed>,
-    >,
+    scatter_assets: &mut Assets<ScatterAsset<TOut>>,
+    meshes: &mut Assets<Mesh>,
+    q_children: &Query<CollectableQueryData<TIn>, Without<ScatterLayerChildProcessed>>,
 ) -> Vec<Handle<ScatterAsset<TOut>>>
 where
     TIn: Material,
@@ -109,8 +113,21 @@ where
     let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
 
     // TODO only add displacement/wind affected materials if wind affected
-    let Ok((entity, material, mesh, aabb, children, wind_component, name, lod, _wind_affected)) =
-        q_children.get(entity)
+    let Ok((
+        entity,
+        material,
+        mesh,
+        aabb,
+        children,
+        wind_component,
+        name,
+        lod,
+        // TODO
+        _wind_affected,
+        enable_debug,
+        enable_billboarding,
+        edge_correction_factor,
+    )) = q_children.get(entity)
     else {
         return types;
     };
@@ -123,6 +140,22 @@ where
 
     let name = current_name.map_or(name.cloned(), Some);
 
+    let hue = (entity.index() * 30) as f32 % 360.0;
+    let debug_color = Color::hsl(hue, 1.0, 0.5);
+
+    let options = MaterialOptions {
+        debug: enable_debug.map(|_| true).unwrap_or(options.debug),
+        enable_billboarding: enable_billboarding
+            .map(|_| true)
+            .unwrap_or(options.enable_billboarding),
+        edge_correction_factor: edge_correction_factor
+            .map(|x| **x)
+            .unwrap_or(options.edge_correction_factor),
+        debug_color,
+        controlled,
+        ..*options
+    };
+
     if let Some(children) = children {
         for child in children.iter() {
             types.append(&mut collect_assets_recursive::<TIn, TOut>(
@@ -133,6 +166,7 @@ where
                 extended_materials,
                 wind_noise_texture,
                 wind,
+                &options,
                 name.clone(),
                 Some(lod),
                 scatter_assets,
@@ -156,18 +190,12 @@ where
 
     let Some(aabb) = aabb else { return types };
 
-    let hue = (entity.index() * 30) as f32 % 360.0;
-    let unique_color = Color::hsl(hue, 1.0, 0.5);
-
     let new_material = TOut::create_material(
         Some(materials.get(material).unwrap().clone()),
         final_wind.clone(),
         wind_noise_texture.0.clone(),
-        controlled,
         *aabb,
-        unique_color,
-        // TODO: expose with setting
-        false,
+        options,
     );
 
     let material = extended_materials.add(new_material);

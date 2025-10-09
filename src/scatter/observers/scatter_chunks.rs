@@ -29,7 +29,6 @@ pub fn scatter_chunks<
     };
 
     if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
-        debug!("ScatterLayer is disabled!");
         return;
     };
 

@@ -67,6 +67,11 @@ pub struct ScatterItem;
 #[reflect(Component)]
 pub struct ScatterRootProcessed;
 
+/// Determines whether a `ScatterLayer` inside a `ScatterRoot` is scattered in chunks.
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+pub struct ScatterChunked;
+
 #[derive(Component, Reflect, Debug, Clone, Deref)]
 #[reflect(Component)]
 pub struct ScatterItemAsset<T>(pub Handle<ScatterAsset<T>>)
@@ -126,18 +131,6 @@ where
     }
 }
 
-/// A temporary component added to a foliage entity while we wait for its
-/// material and all associated textures to be fully loaded.
-#[derive(Component, Clone)]
-pub struct AwaitingMaterial<T: Material> {
-    /// The handle to the final ScatterAsset that contains all the necessary info.
-    pub asset_handle: Handle<ScatterAsset<T>>,
-    /// The entity for the layer this item belongs to.
-    pub layer: Entity,
-    /// The LOD level of this specific item.
-    pub lod: LevelOfDetail,
-}
-
 /// A marker component to signify that a `ScatterLayer` has already had its
 /// sources discovered and its `ScatterItem's generated.
 #[derive(Component)]
@@ -167,6 +160,11 @@ pub struct ScatterLayerEnabled(pub bool);
 #[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct DistributionDensity(pub f32);
+
+/// Enables density scaling when using chunks.
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct ScaleDensity;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]

@@ -69,6 +69,7 @@ impl Plugin for ScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((ChunkPlugin, HeightMapPlugin, WindPlugin))
             .init_state::<ScatterState>()
+            .init_resource::<WorldSeed>()
             .add_observer(on_add_scatter_item)
             .add_systems(
                 PostUpdate,

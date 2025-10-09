@@ -31,15 +31,15 @@ pub(crate) fn add_instance_key_component(
         let mut key = WindAffectedKey::empty();
         key.set(
             WindAffectedKey::ENABLE_BILLBOARDING,
-            material.wind.enable_billboarding,
+            material.options.enable_billboarding,
         );
         key.set(
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
-            material.wind.enable_edge_correction,
+            material.options.edge_correction_factor > 0.,
         );
-        key.set(WindAffectedKey::HIGH_QUALITY, material.wind.high_quality);
-        key.set(WindAffectedKey::FAST_NORMALS, material.wind.fast_normals);
-        key.set(WindAffectedKey::DEBUG, material.debug);
+        key.set(WindAffectedKey::WIND_LOW_QUALITY, material.wind.low_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
+        key.set(WindAffectedKey::DEBUG, material.options.debug);
 
         commands
             .entity(entity)

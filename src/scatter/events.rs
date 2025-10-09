@@ -3,6 +3,7 @@ use crate::scatter::utils::Container;
 use bevy::asset::Asset;
 use bevy::pbr::Material;
 use bevy::prelude::*;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::slice::Iter;
 
@@ -53,8 +54,29 @@ where
     }
 }
 
-#[derive(Clone, Debug, Deref, DerefMut)]
-pub struct ScatterResult(pub Transform);
+#[derive(Clone, Debug)]
+pub struct ScatterResult {
+    pub transform: Transform,
+    pub seed: u64,
+}
+
+impl PartialEq for ScatterResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.transform.translation.x.to_bits() == other.transform.translation.x.to_bits()
+            && self.transform.translation.y.to_bits() == other.transform.translation.y.to_bits()
+            && self.transform.translation.z.to_bits() == other.transform.translation.z.to_bits()
+    }
+}
+
+impl Eq for ScatterResult {}
+
+impl Hash for ScatterResult {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.transform.translation.x.to_bits().hash(state);
+        self.transform.translation.y.to_bits().hash(state);
+        self.transform.translation.z.to_bits().hash(state);
+    }
+}
 
 #[derive(EntityEvent, Message, Clone, Debug)]
 pub struct ScatterResults<TIn, TOut>
@@ -67,6 +89,7 @@ where
     pub chunk: Option<Entity>,
     pub layer: Entity,
     pub root: Entity,
+    pub seed: u64,
     _phantom: PhantomData<(TIn, TOut)>,
 }
 
@@ -89,6 +112,7 @@ where
         layer: Entity,
         chunk: Option<Entity>,
         data: Vec<ScatterResult>,
+        seed: u64,
     ) -> Self {
         Self {
             entity,
@@ -96,6 +120,7 @@ where
             layer,
             chunk,
             data,
+            seed,
             _phantom: PhantomData,
         }
     }
@@ -118,6 +143,7 @@ where
             value.layer_entity,
             value.chunk_entity,
             vec![],
+            value.seed,
         )
     }
 }

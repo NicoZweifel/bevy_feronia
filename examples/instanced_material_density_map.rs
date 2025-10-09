@@ -13,14 +13,7 @@ use noise::{NoiseFn, Perlin};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            enable_billboarding: true,
-            enable_edge_correction: true,
-            round_exponent: 15.,
-            edge_correction_factor: 0.001,
-            high_quality: true,
-            ..default()
-        })
+        .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
         .insert_resource(ChunkDebugConfig {
             lod_colors: vec![RED_500.into(), ORANGE_500.into()],
@@ -65,6 +58,10 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(1.),
             WindAffected,
+            ScaleDensity,
+            ScatterChunked,
+            EnableBillboarding,
+            EdgeCorrectionFactor::default(),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (

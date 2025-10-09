@@ -10,7 +10,7 @@ pub fn on_add_scatter_layer<
     trigger: On<Add, ScatterLayerType<TIn, TOut>>,
     mut cmd: Commands,
     layer_query: Query<
-        &ChildOf,
+        (&ChildOf, Option<&ScatterChunked>),
         (
             With<ScatterLayer>,
             With<ScatterLayerType<TIn, TOut>>,
@@ -23,7 +23,7 @@ pub fn on_add_scatter_layer<
 
     debug!("Added ScatterLayer {layer}.");
 
-    let Ok(layer_root) = layer_query.get(layer) else {
+    let Ok((layer_root, scatter_chunked)) = layer_query.get(layer) else {
         warn!("Could not get ScatterLayer {layer}!");
         return;
     };
@@ -32,7 +32,7 @@ pub fn on_add_scatter_layer<
         .insert((ScatterObserver, ScatterLayerOf(layer_root.get())));
 
     let chunk_root = root_query.get(layer_root.get()).unwrap();
-    if chunk_root.is_some() {
+    if chunk_root.is_some() && scatter_chunked.is_some() {
         cmd.entity(layer).observe(scatter_chunks::<TIn, TOut>);
     } else {
         cmd.entity(layer).observe(scatter::<TIn, TOut>);

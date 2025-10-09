@@ -4,6 +4,10 @@ use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use rand::Rng;
 use rand::prelude::*;
+use rand_pcg::Pcg64;
+use std::hash::Hash;
+use std::hash::Hasher;
+use xxh3::hash64_with_seed;
 
 pub fn get_height_map_sampler<'a>(
     images: &'a Res<Assets<Image>>,
@@ -83,13 +87,14 @@ pub struct Container {
     pub size: Vec3,
     pub root_size: Vec3,
     pub transform: Transform,
+    pub seed: u64,
 }
 
 // TODO refactor into async CPU/GPU pipelines
-pub(super) fn create_scatter_result(
+pub(super) fn create_scatter_result<R: Rng + ?Sized>(
     container: &Container,
     modifiers: &InstanceModifiers,
-    rng: &mut ThreadRng,
+    rng: &mut R,
 ) -> Option<ScatterResult> {
     let instances_dim_f = container.instances_dim;
     let cell_width = container.size.x / instances_dim_f;
@@ -146,11 +151,16 @@ pub(super) fn create_scatter_result(
         Quat::from_rotation_y(rng.random_range(r.min..r.max))
     });
 
-    Some(ScatterResult(Transform {
-        translation: instance_pos,
-        rotation: final_rotation,
-        scale: Vec3::splat(final_scale),
-    }))
+    let instance_seed = generate_instance_seed(container.seed, final_world_pos);
+
+    Some(ScatterResult {
+        seed: instance_seed,
+        transform: Transform {
+            translation: instance_pos,
+            rotation: final_rotation,
+            scale: Vec3::splat(final_scale),
+        },
+    })
 }
 
 pub(super) fn create_scatter_results<TIn, TOut>(
@@ -161,11 +171,30 @@ where
     TIn: Material,
     TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    let mut rng = rand::rng();
+    let mut rng = Pcg64::seed_from_u64(container.seed);
 
     let data = (0..(container.instances_dim as u32).pow(2))
         .filter_map(|_| create_scatter_result(&container, &modifiers, &mut rng))
         .collect::<Vec<_>>();
 
     ScatterResults::<TIn, TOut>::from(&container).with_data(data)
+}
+
+/// Generates a deterministic u64 seed by combining the global `WorldSeed` with location-specific data (like chunk coordinates
+/// or an entity's position).
+pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    location_data.hash(&mut hasher);
+    let location_bytes = hasher.finish().to_le_bytes();
+
+    hash64_with_seed(&location_bytes, world_seed.get())
+}
+
+pub fn generate_instance_seed(base_seed: u64, world_position: Vec3) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    base_seed.hash(&mut hasher);
+
+    world_position.as_ivec3().hash(&mut hasher);
+
+    hasher.finish()
 }

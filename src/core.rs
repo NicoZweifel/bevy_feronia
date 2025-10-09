@@ -18,6 +18,40 @@ pub struct SpawnTrigger {
     pub root: Entity,
     pub target: Entity,
     pub data: Vec<ScatterResult>,
+    pub seed: u64,
+}
+
+#[derive(Clone, Debug, Reflect)]
+pub struct MaterialOptions {
+    // Determines whether the material is controlled externally and
+    // isn't automatically updated and kept in sync with the Wind resource.
+    pub controlled: bool,
+
+    pub debug_color: Color,
+
+    pub debug: bool,
+
+    pub enable_billboarding: bool,
+    pub fast_normals: bool,
+    pub edge_correction_factor: f32,
+    pub round_exponent: f32,
+    pub lod_threshold: f32,
+}
+
+impl Default for MaterialOptions {
+    fn default() -> Self {
+        Self {
+            controlled: false,
+            debug_color: Default::default(),
+            debug: false,
+            enable_billboarding: false,
+            fast_normals: false,
+            edge_correction_factor: 0.0,
+            round_exponent: 0.0,
+            // TODO sync/cleanup with LOD systems / chunks systems
+            lod_threshold: 50.,
+        }
+    }
 }
 
 impl<TIn, TOut> From<On<'_, '_, ScatterResults<TIn, TOut>>> for SpawnTrigger
@@ -32,6 +66,7 @@ where
             target: value.entity,
             data: value.data.clone(),
             root: value.root,
+            seed: value.seed,
         }
     }
 }
@@ -77,6 +112,28 @@ pub trait Sampler {
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
 #[reflect(Component)]
 pub struct LevelOfDetail(pub u32);
+
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(Component)]
+pub struct EnableDebug;
+
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(Component)]
+pub struct EnableBillboarding;
+
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
+pub struct EdgeCorrectionFactor(pub f32);
+
+impl Default for EdgeCorrectionFactor {
+    fn default() -> Self {
+        Self(0.001)
+    }
+}
+
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect, Default)]
+#[reflect(Component)]
+pub struct RoundExponent(pub f32);
 
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {
