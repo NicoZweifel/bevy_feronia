@@ -62,5 +62,3 @@ fn scatter_on_keypress(
 
     cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
 }
-
-

@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
@@ -185,4 +186,48 @@ pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
     let location_bytes = hasher.finish().to_le_bytes();
 
     hash64_with_seed(&location_bytes, world_seed.get())
+}
+
+/// Selects a prototype deterministically based on a seed, then finds the correct LOD.
+pub fn select_consistent_prototype<'a, M: Asset + Clone>(
+    items: &Vec<ScatterItemAsset<M>>,
+    seed: u64,
+    prototype_assets: &'a Assets<ScatterAsset<M>>,
+    chunk_level: &ChunkLevel,
+    is_chunk_spawn: bool,
+) -> Option<(Name, &'a ScatterAsset<M>)> {
+    let prototypes: Vec<&ScatterAsset<M>> = items
+        .iter()
+        .filter_map(|handle| prototype_assets.get(&**handle))
+        .collect();
+
+    if prototypes.is_empty() {
+        warn!("No prototype assets could be loaded from handles.");
+        return None;
+    }
+
+    let mut name_map: HashMap<Name, Vec<&ScatterAsset<M>>> = HashMap::new();
+    prototypes.iter().for_each(|prototype| {
+        let name = prototype.name.clone().unwrap_or_else(|| Name::new(""));
+        name_map.entry(name).or_default().push(prototype);
+    });
+
+    if name_map.is_empty() {
+        warn!("No prototypes to spawn after grouping.");
+        return None;
+    }
+
+    let mut sorted_names: Vec<&Name> = name_map.keys().collect();
+    sorted_names.sort();
+
+    let mut rng = Pcg64::seed_from_u64(seed);
+    let chosen_name = sorted_names.choose(&mut rng)?;
+    let prototype_group = name_map.get(*chosen_name)?;
+
+    let prototype = prototype_group
+        .iter()
+        .find(|p| !is_chunk_spawn || *p.lod_level == **chunk_level)
+        .map(|p| *p)?;
+
+    Some(((*chosen_name).clone(), prototype))
 }

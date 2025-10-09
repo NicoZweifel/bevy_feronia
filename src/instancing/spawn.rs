@@ -1,11 +1,8 @@
 use crate::prelude::*;
+use crate::scatter::utils::select_consistent_prototype;
 use bevy::camera::primitives::Aabb;
-use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
-use rand::SeedableRng;
-use rand::prelude::IteratorRandom;
-use rand_pcg::Pcg64;
 
 pub fn spawn_instanced_wind_affected(
     mut mr_spawn: MessageReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
@@ -43,105 +40,81 @@ pub fn spawn_instanced_wind_affected(
             chunk_level = level.clone();
         }
 
-        let mut prototypes: Vec<ScatterAsset<InstancedWindAffectedMaterial>> = vec![];
-        for item in event.items.iter() {
-            let prototype = prototype_assets.get(&item.0);
-
-            let Some(prototype) = prototype else {
-                warn!("Couldn't get ScatterRoot!");
-                return;
-            };
-
-            prototypes.push(prototype.clone());
-        }
-
-        let mut name_map =
-            HashMap::<Name, Vec<&ScatterAsset<InstancedWindAffectedMaterial>>>::new();
-
-        prototypes
-            .iter()
-            .filter(|x| event.trigger.chunk.is_none() || *x.lod_level == *chunk_level)
-            .map(|x| (x.name.clone().unwrap_or(Name::new("")), x))
-            .for_each(|(name, x)| {
-                name_map
-                    .get_mut(&name)
-                    .map(|y| y.push(x))
-                    .map(|_| x)
-                    .or_else(|| name_map.insert(name, vec![x]).map(|_| x));
-            });
-
-        debug!(
-            "Spawning {} instanced prototypes in level {chunk_level:?}.",
-            prototypes.len()
-        );
-
-        // NOTE: this will spawn only the same type in a chunk (use individual layers for multiple instanced types) TODO
-        let mut rng = Pcg64::seed_from_u64(event.trigger.seed);
-        let prototypes = name_map.values().choose(&mut rng);
-
-        let Some(prototypes) = prototypes else {
-            warn!("No prototypes in level {chunk_level:?}!");
-            return;
+        let Some((chosen_name, prototype)) = select_consistent_prototype(
+            &event.items,
+            event.trigger.seed,
+            &prototype_assets,
+            &chunk_level,
+            event.trigger.chunk.is_some(),
+        ) else {
+            debug!(
+                "No suitable instanced prototype found for LOD {:?}. Skipping.",
+                chunk_level
+            );
+            continue;
         };
 
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
-            return;
+            continue;
         };
 
-        for prototype in prototypes {
-            let mesh_handle = prototype.mesh().clone();
-            let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
+        debug!(
+            "Spawning instanced prototype '{}' in level {:?}",
+            chosen_name, chunk_level
+        );
 
-            let instances = instances
-                .iter()
-                .map(|instance| {
-                    let mut instance = *instance;
+        let mesh_handle = prototype.mesh().clone();
+        let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-                    instance.position += chunk_gtf.translation;
+        let instances = instances
+            .iter()
+            .map(|instance| {
+                let mut instance = *instance;
 
-                    let instance_min =
-                        instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
-                    let instance_max =
-                        instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
-                    min_point = min_point.min(instance_min);
-                    max_point = max_point.max(instance_max);
+                instance.position += chunk_gtf.translation;
 
-                    instance
-                })
-                .collect::<Vec<_>>();
+                let instance_min =
+                    instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
+                let instance_max =
+                    instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
+                min_point = min_point.min(instance_min);
+                max_point = max_point.max(instance_max);
 
-            let entity = cmd
-                .spawn((
-                    InstancedWindAffectedMeshMaterial(prototype.material().clone()),
-                    Mesh3d(mesh_handle),
-                    InstanceMaterialData(instances),
-                    NoAutomaticBatching,
-                    WindAffected,
-                    WindAffectedReady,
-                ))
-                .id();
+                instance
+            })
+            .collect::<Vec<_>>();
 
-            let lod_level = prototype.lod_level;
+        let entity = cmd
+            .spawn((
+                InstancedWindAffectedMeshMaterial(prototype.material().clone()),
+                Mesh3d(mesh_handle),
+                InstanceMaterialData(instances),
+                NoAutomaticBatching,
+                WindAffected,
+                WindAffectedReady,
+            ))
+            .id();
 
-            let visibility_range = lod_config.get_visibility_range(lod_level);
+        let lod_level = prototype.lod_level;
 
-            let chunk_center = chunk_gtf.translation;
+        let visibility_range = lod_config.get_visibility_range(lod_level);
 
-            let local_min = min_point - chunk_center;
-            let local_max = max_point - chunk_center;
+        let chunk_center = chunk_gtf.translation;
 
-            let local_aabb = Aabb::from_min_max(local_min, local_max);
+        let local_min = min_point - chunk_center;
+        let local_max = max_point - chunk_center;
 
-            let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
+        let local_aabb = Aabb::from_min_max(local_min, local_max);
 
-            cmd.entity(entity).insert((
-                Transform::default(),
-                Visibility::Visible,
-                local_aabb,
-                ChildOf(parent),
-                visibility_range,
-            ));
-        }
+        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
+
+        cmd.entity(entity).insert((
+            Transform::default(),
+            Visibility::Visible,
+            local_aabb,
+            ChildOf(parent),
+            visibility_range,
+        ));
     }
 }

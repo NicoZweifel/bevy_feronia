@@ -1,9 +1,9 @@
-use std::hash::{Hash, Hasher};
 use crate::prelude::{ScatterAsset, WindAffectable};
 use crate::scatter::utils::Container;
 use bevy::asset::Asset;
 use bevy::pbr::Material;
 use bevy::prelude::*;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::slice::Iter;
 

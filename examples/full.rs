@@ -95,7 +95,6 @@ fn setup_height_map_inspection(
     mut materials: ResMut<Assets<StandardMaterial>>,
     height_map: Res<HeightMapTexture>,
 ) {
-    // Inspect the height map
     cmd.spawn((
         Transform::from_xyz(10.0, 5.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),
@@ -179,7 +178,14 @@ fn spawn_scene(
                 InstanceScale { min: 3., max: 10. },
                 InstanceJitter(1.0),
                 WindAffected,
-                children![SceneRoot(handles.foliage_lod_medium.clone()),]
+                children![
+                    SceneRoot(handles.foliage_lod_high.clone()),
+                    (
+                        SceneRoot(handles.foliage_lod_medium.clone()),
+                        LevelOfDetail(1)
+                    ),
+                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
+                ]
             )
         ],
     ))
