@@ -1,8 +1,11 @@
 use crate::prelude::*;
-use crate::scatter::utils::select_consistent_prototype;
 use bevy::camera::primitives::Aabb;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
+use rand::SeedableRng;
+use rand::prelude::IndexedRandom;
+use rand_pcg::Pcg64;
 
 pub fn spawn_instanced_wind_affected(
     mut mr_spawn: MessageReader<SpawnProtoTypes<InstancedWindAffectedMaterial>>,
@@ -10,111 +13,147 @@ pub fn spawn_instanced_wind_affected(
     prototype_assets: Res<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>,
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
+    q_layers: Query<(), With<ScatterChunked>>,
 ) {
     for event in mr_spawn.read() {
         debug!("Spawning instanced wind affected!");
 
-        let instances = event
+        let (chunk_gtf, chunk_level) = event
             .trigger
-            .data
+            .chunk
+            .map(|x| q_chunks.get(x).ok())
+            .flatten()
+            .map(|(gtf, level)| (*gtf, level.clone()))
+            .unwrap_or_default();
+
+        let is_chunked = event.trigger.chunk.is_some() && q_layers.get(event.trigger.layer).is_ok();
+
+        let prototypes: Vec<_> = event
+            .items
             .iter()
-            .enumerate()
-            .map(|(i, res)| InstanceData {
-                position: res.translation,
-                scale: res.scale.element_sum() / 3.0,
-                // TODO expose
-                color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
-                index: i as u32,
-            })
-            .collect::<Vec<_>>();
+            .filter_map(|h| prototype_assets.get(&**h))
+            .collect();
 
-        let mut chunk_gtf = Transform::default();
-        let mut chunk_level = ChunkLevel::default();
+        let mut name_map: HashMap<Name, Vec<&ScatterAsset<InstancedWindAffectedMaterial>>> =
+            HashMap::new();
 
-        if let Some(chunk) = event.trigger.chunk {
-            let Ok((gtf, level)) = q_chunks.get(chunk) else {
+        prototypes.iter().for_each(|p| {
+            let name = p.name.clone().unwrap_or_else(|| Name::new(""));
+            name_map.entry(name).or_default().push(*p);
+        });
+
+        if name_map.is_empty() {
+            continue;
+        }
+
+        let mut sorted_names: Vec<&Name> = name_map.keys().collect();
+        sorted_names.sort();
+
+        let mut instance_groups: HashMap<Name, Vec<InstanceData>> = HashMap::new();
+
+        for (i, res) in event.trigger.data.iter().enumerate() {
+            let mut rng = Pcg64::seed_from_u64(res.seed);
+            let Some(chosen_name) = sorted_names.choose(&mut rng) else {
                 continue;
             };
 
-            chunk_gtf = gtf.compute_transform();
-            chunk_level = level.clone();
-        }
+            let target_lod_level = if is_chunked {
+                *chunk_level
+            } else {
+                name_map
+                    .get(*chosen_name)
+                    .and_then(|group| group.iter().map(|p| *p.lod_level).min())
+                    .unwrap_or_default()
+            };
 
-        let Some((chosen_name, prototype)) = select_consistent_prototype(
-            &event.items,
-            event.trigger.seed,
-            &prototype_assets,
-            &chunk_level,
-            event.trigger.chunk.is_some(),
-        ) else {
-            debug!(
-                "No suitable instanced prototype found for LOD {:?}. Skipping.",
-                chunk_level
-            );
-            continue;
-        };
+            if name_map
+                .get(*chosen_name)
+                .and_then(|g| g.iter().find(|p| *p.lod_level == target_lod_level))
+                .is_some()
+            {
+                let instance_data = InstanceData {
+                    position: res.transform.translation,
+                    scale: res.transform.scale.element_sum() / 3.0,
+                    color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
+                    index: i as u32,
+                };
+
+                instance_groups
+                    .entry((*chosen_name).clone())
+                    .or_default()
+                    .push(instance_data);
+            }
+        }
 
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             continue;
         };
 
-        debug!(
-            "Spawning instanced prototype '{}' in level {:?}",
-            chosen_name, chunk_level
-        );
+        for (name, instances) in instance_groups {
+            let target_lod = if is_chunked {
+                *chunk_level
+            } else {
+                name_map
+                    .get(&name)
+                    .unwrap()
+                    .iter()
+                    .map(|p| *p.lod_level)
+                    .min()
+                    .unwrap_or_default()
+            };
 
-        let mesh_handle = prototype.mesh().clone();
-        let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
+            let prototype = name_map
+                .get(&name)
+                .unwrap()
+                .iter()
+                .find(|p| *p.lod_level == target_lod)
+                .unwrap();
 
-        let instances = instances
-            .iter()
-            .map(|instance| {
-                let mut instance = *instance;
+            let mesh_handle = prototype.mesh().clone();
+            let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-                instance.position += chunk_gtf.translation;
+            let instances_with_offset = instances
+                .iter()
+                .map(|instance| {
+                    let mut instance = *instance;
+                    instance.position += chunk_gtf.translation();
 
-                let instance_min =
-                    instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
-                let instance_max =
-                    instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
-                min_point = min_point.min(instance_min);
-                max_point = max_point.max(instance_max);
+                    let instance_min =
+                        instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
+                    let instance_max =
+                        instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
+                    min_point = min_point.min(instance_min);
+                    max_point = max_point.max(instance_max);
+                    instance
+                })
+                .collect::<Vec<_>>();
 
-                instance
-            })
-            .collect::<Vec<_>>();
+            let entity = cmd
+                .spawn((
+                    InstancedWindAffectedMeshMaterial(prototype.material().clone()),
+                    Mesh3d(mesh_handle),
+                    InstanceMaterialData(instances_with_offset),
+                    NoAutomaticBatching,
+                    WindAffected,
+                    WindAffectedReady,
+                ))
+                .id();
 
-        let entity = cmd
-            .spawn((
-                InstancedWindAffectedMeshMaterial(prototype.material().clone()),
-                Mesh3d(mesh_handle),
-                InstanceMaterialData(instances),
-                NoAutomaticBatching,
-                WindAffected,
-                WindAffectedReady,
-            ))
-            .id();
+            let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
+            let local_aabb = Aabb::from_min_max(
+                min_point - chunk_gtf.translation(),
+                max_point - chunk_gtf.translation(),
+            );
+            let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
-        let lod_level = prototype.lod_level;
-
-        let visibility_range = lod_config.get_visibility_range(lod_level);
-
-        let chunk_center = chunk_gtf.translation;
-
-        let local_min = min_point - chunk_center;
-        let local_max = max_point - chunk_center;
-
-        let local_aabb = Aabb::from_min_max(local_min, local_max);
-
-        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
-
-        cmd.entity(entity).insert((
-            Transform::default(),
-            Visibility::Visible,
-            local_aabb,
-            ChildOf(parent),
-            visibility_range,
-        ));
+            cmd.entity(entity).insert((
+                Transform::default(),
+                Visibility::Visible,
+                local_aabb,
+                ChildOf(parent),
+                visibility_range,
+            ));
+        }
     }
 }

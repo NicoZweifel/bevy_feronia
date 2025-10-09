@@ -5,7 +5,6 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
-use std::collections::HashMap;
 use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
@@ -152,11 +151,16 @@ pub(super) fn create_scatter_result<R: Rng + ?Sized>(
         Quat::from_rotation_y(rng.random_range(r.min..r.max))
     });
 
-    Some(ScatterResult(Transform {
-        translation: instance_pos,
-        rotation: final_rotation,
-        scale: Vec3::splat(final_scale),
-    }))
+    let instance_seed = generate_instance_seed(container.seed, final_world_pos);
+
+    Some(ScatterResult {
+        seed: instance_seed,
+        transform: Transform {
+            translation: instance_pos,
+            rotation: final_rotation,
+            scale: Vec3::splat(final_scale),
+        },
+    })
 }
 
 pub(super) fn create_scatter_results<TIn, TOut>(
@@ -186,46 +190,11 @@ pub fn generate_seed(world_seed: &WorldSeed, location_data: impl Hash) -> u64 {
     hash64_with_seed(&location_bytes, world_seed.get())
 }
 
-/// Selects a prototype deterministically based on a seed, then finds the correct LOD.
-pub fn select_consistent_prototype<'a, M: Asset + Clone>(
-    items: &Vec<ScatterItemAsset<M>>,
-    seed: u64,
-    prototype_assets: &'a Assets<ScatterAsset<M>>,
-    chunk_level: &ChunkLevel,
-    is_chunk_spawn: bool,
-) -> Option<(Name, &'a ScatterAsset<M>)> {
-    let prototypes: Vec<&ScatterAsset<M>> = items
-        .iter()
-        .filter_map(|handle| prototype_assets.get(&**handle))
-        .collect();
+pub fn generate_instance_seed(base_seed: u64, world_position: Vec3) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    base_seed.hash(&mut hasher);
 
-    if prototypes.is_empty() {
-        warn!("No prototype assets could be loaded from handles.");
-        return None;
-    }
+    world_position.as_ivec3().hash(&mut hasher);
 
-    let mut name_map: HashMap<Name, Vec<&ScatterAsset<M>>> = HashMap::new();
-    prototypes.iter().for_each(|prototype| {
-        let name = prototype.name.clone().unwrap_or_else(|| Name::new(""));
-        name_map.entry(name).or_default().push(prototype);
-    });
-
-    if name_map.is_empty() {
-        warn!("No prototypes to spawn after grouping.");
-        return None;
-    }
-
-    let mut sorted_names: Vec<&Name> = name_map.keys().collect();
-    sorted_names.sort();
-
-    let mut rng = Pcg64::seed_from_u64(seed);
-    let chosen_name = sorted_names.choose(&mut rng)?;
-    let prototype_group = name_map.get(*chosen_name)?;
-
-    let prototype = prototype_group
-        .iter()
-        .find(|p| !is_chunk_spawn || *p.lod_level == **chunk_level)
-        .map(|p| *p)?;
-
-    Some(((*chosen_name).clone(), prototype))
+    hasher.finish()
 }

@@ -1,6 +1,9 @@
 use crate::prelude::*;
-use crate::scatter::utils::select_consistent_prototype;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
+use rand::SeedableRng;
+use rand::prelude::IndexedRandom;
+use rand_pcg::Pcg64;
 
 pub fn spawn_extended_wind_affected(
     mut cmd: Commands,
@@ -8,62 +11,88 @@ pub fn spawn_extended_wind_affected(
     prototype_assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
     q_chunks: Query<&ChunkLevel, (With<Chunk>, Without<Merging>)>,
+    q_layers: Query<(), With<ScatterChunked>>,
 ) {
     for event in mr_spawn.read() {
         debug!("Spawning extended wind affected!");
 
-        let mut chunk_level = ChunkLevel::default();
+        let chunk_level = event
+            .trigger
+            .chunk
+            .map(|x| q_chunks.get(x).ok())
+            .flatten()
+            .cloned()
+            .unwrap_or_default();
 
-        if let Some(chunk) = event.trigger.chunk {
-            let Ok(level) = q_chunks.get(chunk) else {
-                continue;
-            };
+        let is_chunked = event.trigger.chunk.is_some() && q_layers.get(event.trigger.layer).is_ok();
 
-            chunk_level = level.clone();
+        let prototypes: Vec<_> = event
+            .items
+            .iter()
+            .filter_map(|h| prototype_assets.get(&**h))
+            .collect();
+
+        let mut name_map: HashMap<Name, Vec<&ScatterAsset<_>>> = HashMap::new();
+
+        prototypes.iter().for_each(|p| {
+            let name = p.name.clone().unwrap_or_else(|| Name::new(""));
+            name_map.entry(name).or_default().push(*p);
+        });
+
+        if name_map.is_empty() {
+            continue;
         }
 
-        let Some((chosen_name, prototype)) = select_consistent_prototype(
-            &event.items,
-            event.trigger.seed,
-            &prototype_assets,
-            &chunk_level,
-            event.trigger.chunk.is_some(),
-        ) else {
-            debug!(
-                "No suitable extended prototype found for LOD {:?}. Skipping.",
-                chunk_level
-            );
-            continue;
-        };
+        let mut sorted_names: Vec<&Name> = name_map.keys().collect();
+        sorted_names.sort();
+
+        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             warn!("Couldn't get ScatterRoot!");
             continue;
         };
 
-        debug!("Spawning extended prototype '{chosen_name}' in level {chunk_level:?}");
-
-        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
-        let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
-
-        let mesh_handle = prototype.mesh().clone();
-        let material_handle = prototype.material().clone();
-
         cmd.spawn_batch(
             event
                 .trigger
                 .data
                 .iter()
-                .map(move |scatter_result| {
-                    (
-                        **scatter_result,
-                        Mesh3d(mesh_handle.clone()),
-                        MeshMaterial3d(material_handle.clone()),
-                        WindAffected,
-                        WindAffectedReady,
-                        ChildOf(parent),
-                        visibility_range.clone(),
-                    )
+                .flat_map(|res| {
+                    let mut rng = Pcg64::seed_from_u64(res.seed);
+
+                    let Some(chosen_name) = sorted_names.choose(&mut rng) else {
+                        return vec![].into_iter();
+                    };
+
+                    let Some(prototypes_to_spawn) = name_map.get(*chosen_name) else {
+                        return vec![].into_iter();
+                    };
+
+                    prototypes_to_spawn
+                        .iter()
+                        .filter(|p| {
+                            if is_chunked {
+                                *p.lod_level == *chunk_level
+                            } else {
+                                *p.lod_level >= *chunk_level
+                            }
+                        })
+                        .map(move |prototype| {
+                            let visibility_range =
+                                lod_config.get_visibility_range(prototype.lod_level);
+                            (
+                                res.transform,
+                                Mesh3d(prototype.mesh().clone()),
+                                MeshMaterial3d(prototype.material().clone()),
+                                WindAffected,
+                                WindAffectedReady,
+                                ChildOf(parent),
+                                visibility_range,
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .into_iter()
                 })
                 .collect::<Vec<_>>(),
         );

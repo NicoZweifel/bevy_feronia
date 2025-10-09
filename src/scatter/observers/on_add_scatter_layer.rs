@@ -23,7 +23,7 @@ pub fn on_add_scatter_layer<
 
     debug!("Added ScatterLayer {layer}.");
 
-    let Ok((layer_root,scatter_chunked)) = layer_query.get(layer) else {
+    let Ok((layer_root, scatter_chunked)) = layer_query.get(layer) else {
         warn!("Could not get ScatterLayer {layer}!");
         return;
     };

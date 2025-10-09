@@ -54,14 +54,17 @@ where
     }
 }
 
-#[derive(Clone, Debug, Deref, DerefMut)]
-pub struct ScatterResult(pub Transform);
+#[derive(Clone, Debug)]
+pub struct ScatterResult {
+    pub transform: Transform,
+    pub seed: u64,
+}
 
 impl PartialEq for ScatterResult {
     fn eq(&self, other: &Self) -> bool {
-        self.0.translation.x.to_bits() == other.0.translation.x.to_bits()
-            && self.0.translation.y.to_bits() == other.0.translation.y.to_bits()
-            && self.0.translation.z.to_bits() == other.0.translation.z.to_bits()
+        self.transform.translation.x.to_bits() == other.transform.translation.x.to_bits()
+            && self.transform.translation.y.to_bits() == other.transform.translation.y.to_bits()
+            && self.transform.translation.z.to_bits() == other.transform.translation.z.to_bits()
     }
 }
 
@@ -69,9 +72,9 @@ impl Eq for ScatterResult {}
 
 impl Hash for ScatterResult {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.translation.x.to_bits().hash(state);
-        self.0.translation.y.to_bits().hash(state);
-        self.0.translation.z.to_bits().hash(state);
+        self.transform.translation.x.to_bits().hash(state);
+        self.transform.translation.y.to_bits().hash(state);
+        self.transform.translation.z.to_bits().hash(state);
     }
 }
 

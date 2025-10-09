@@ -73,7 +73,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
             let Ok((root_entity, base_chunk_size, map_height, aabb)) =
                 q_chunk_root.get(**scatter_root_ref)
             else {
-                warn!("ScatterRoot not found!");
+                warn!("ChunkRoot not found!");
                 continue;
             };
 
