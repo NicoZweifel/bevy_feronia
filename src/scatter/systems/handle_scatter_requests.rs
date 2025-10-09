@@ -13,6 +13,7 @@ type ScatterLayerQueryData<'a> = (
     Option<&'a InstanceRotationYaw>,
     Option<&'a InstanceScale>,
     Option<&'a InstanceJitter>,
+    Option<&'a ScaleDensity>,
     &'a GlobalTransform,
 );
 
@@ -49,6 +50,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
             instance_rotation,
             instance_scale,
             instance_jitter,
+            scale_density,
             layer_gtf,
         )) = q_layer.get(request.layer_entity)
         else {
@@ -84,13 +86,18 @@ pub fn handle_scatter_requests<TIn, TOut>(
 
             let seed = generate_seed(&world_seed, chunk_coord);
 
+            let instances_dim = density
+                * scale_density
+                    .map(|_| **chunk_level as f32 / 2. + 0.5)
+                    .unwrap_or(1.0);
+
             Some(ScatterTaskData {
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
                     chunk_entity: Some(chunk_entity),
                     root_entity,
-                    instances_dim: density * (**chunk_level as f32 / 2. + 1.0),
+                    instances_dim,
                     corner: -size / 2.0,
                     height: 0.0,
                     size,

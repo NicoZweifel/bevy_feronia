@@ -50,6 +50,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceScale { min: 1., max: 1.5 },
             InstanceJitter(1.),
             WindAffected,
+            ScaleDensity,
+            ScatterChunked,
             children![
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),

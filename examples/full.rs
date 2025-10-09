@@ -159,6 +159,8 @@ fn spawn_scene(
                 InstanceJitter(1.0),
                 InstanceScale { min: 2.0, max: 5.0 },
                 WindAffected,
+                ScaleDensity,
+                ScatterChunked,
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -175,7 +177,7 @@ fn spawn_scene(
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
                 },
-                InstanceScale { min: 3., max: 10. },
+                InstanceScale { min: 5., max: 10. },
                 InstanceJitter(1.0),
                 WindAffected,
                 children![
