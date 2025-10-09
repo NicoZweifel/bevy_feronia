@@ -10,8 +10,7 @@ use bevy::{
     render::view::{ColorGrading, NoIndirectDrawing},
 };
 use bevy_feronia::prelude::*;
-use bevy_inspector_egui::quick::ResourceInspectorPlugin;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_inspector_egui::{quick::ResourceInspectorPlugin,bevy_egui::EguiPlugin};
 use camera_controller::*;
 
 #[derive(Resource, Default)]

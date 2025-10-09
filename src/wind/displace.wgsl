@@ -31,7 +31,7 @@ fn calculate_vertex_displacement(
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
     var total_world_offset = horizontal_dir * macro_displacement;
 
-#ifdef WIND_HIGH_QUALITY
+#ifndef WIND_LOW_QUALITY
     let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
     let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
     let micro_displacement = micro_wind_factor * wind.micro_strength * c_curve_shape;
