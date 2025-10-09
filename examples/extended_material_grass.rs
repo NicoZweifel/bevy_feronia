@@ -30,7 +30,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             WindAffected,
             EnableBillboarding,
             EdgeCorrectionFactor::default(),
-            RoundExponent(15.),
+            CurveFactor(15.),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (

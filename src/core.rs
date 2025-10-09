@@ -34,7 +34,7 @@ pub struct MaterialOptions {
     pub enable_billboarding: bool,
     pub fast_normals: bool,
     pub edge_correction_factor: f32,
-    pub round_exponent: f32,
+    pub curve_factor: f32,
     pub lod_threshold: f32,
 }
 
@@ -47,7 +47,7 @@ impl Default for MaterialOptions {
             enable_billboarding: false,
             fast_normals: false,
             edge_correction_factor: 0.0,
-            round_exponent: 0.0,
+            curve_factor: 0.0,
             // TODO sync/cleanup with LOD systems / chunks systems
             lod_threshold: 50.,
         }
@@ -133,7 +133,8 @@ impl Default for EdgeCorrectionFactor {
 
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect, Default)]
 #[reflect(Component)]
-pub struct RoundExponent(pub f32);
+pub struct CurveFactor(pub f32);
+
 
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {

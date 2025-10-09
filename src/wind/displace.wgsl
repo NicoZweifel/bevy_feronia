@@ -116,8 +116,8 @@ fn displace_vertex_and_calc_normal(
             let tangent_z = neighbor_pos_z - final_pos_xyz;
             var calculated_normal = normalize(cross(tangent_z, tangent_x));
 
-            if (wind.round_exponent > 0.0) {
-                let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.round_exponent;
+            if (wind.curve_factor > 0.0) {
+                let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.curve_factor;
                 calculated_normal = normalize(calculated_normal + curve_offset);
             }
 

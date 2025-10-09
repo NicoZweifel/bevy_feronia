@@ -15,6 +15,7 @@ type CollectableQueryData<'w, 's, T> = (
     Option<&'w EnableDebug>,
     Option<&'w EnableBillboarding>,
     Option<&'w EdgeCorrectionFactor>,
+    Option<&'w CurveFactor>,
 );
 
 pub fn collect_assets<TIn, TOut>(
@@ -26,6 +27,7 @@ pub fn collect_assets<TIn, TOut>(
             Option<&EnableDebug>,
             Option<&EnableBillboarding>,
             Option<&EdgeCorrectionFactor>,
+            Option<&CurveFactor>,
         ),
         (
             With<ScatterLayer>,
@@ -48,7 +50,7 @@ pub fn collect_assets<TIn, TOut>(
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
         for layer in children.iter() {
-            let Ok((scatter_items, enable_debug, enable_billboarding, edge_correction_factor)) =
+            let Ok((scatter_items, enable_debug, enable_billboarding, edge_correction_factor,curve_factor)) =
                 q_layers.get(layer)
             else {
                 continue;
@@ -71,6 +73,7 @@ pub fn collect_assets<TIn, TOut>(
                             edge_correction_factor: edge_correction_factor
                                 .map(|x| **x)
                                 .unwrap_or(0.),
+                            curve_factor: curve_factor.map(|x| **x).unwrap_or(0.),
                             ..default()
                         },
                         None,
@@ -127,6 +130,7 @@ where
         enable_debug,
         enable_billboarding,
         edge_correction_factor,
+        curve_factor
     )) = q_children.get(entity)
     else {
         return types;
@@ -151,6 +155,7 @@ where
         edge_correction_factor: edge_correction_factor
             .map(|x| **x)
             .unwrap_or(options.edge_correction_factor),
+        curve_factor: curve_factor.map(|x| **x).unwrap_or(options.curve_factor),
         debug_color,
         controlled,
         ..*options

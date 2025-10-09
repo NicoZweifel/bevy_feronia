@@ -29,7 +29,7 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
             .with_lod_threshold(material_extension.options.lod_threshold)
-            .with_round_exponent(material_extension.options.round_exponent)
+            .with_curve_factor(material_extension.options.curve_factor)
             .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
             .with_debug_color(material_extension.options.debug_color.to_linear().to_vec4())

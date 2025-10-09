@@ -158,7 +158,7 @@ fn spawn_scene(
                 ScatterChunked,
                 EnableBillboarding,
                 EdgeCorrectionFactor::default(),
-                RoundExponent(15.),
+                CurveFactor(15.),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (

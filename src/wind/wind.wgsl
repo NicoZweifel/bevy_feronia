@@ -6,7 +6,7 @@ struct Wind {
     noise_scale: f32,
     scroll_speed: f32,
     bend_exponent: f32,
-    round_exponent: f32,
+    curve_factor: f32,
     micro_strength: f32,
     micro_noise_scale: f32,
     micro_scroll_speed: f32,

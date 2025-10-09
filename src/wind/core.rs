@@ -32,7 +32,7 @@ pub struct WindUniform {
     pub noise_scale: f32,
     pub scroll_speed: f32,
     pub bend_exponent: f32,
-    pub round_exponent: f32,
+    pub curve_factor: f32,
     pub micro_strength: f32,
     pub micro_noise_scale: f32,
     pub micro_scroll_speed: f32,
@@ -72,7 +72,7 @@ impl From<&Wind> for WindUniform {
             lod_threshold: 50.,
             // TODO create another uniform for Options
             edge_correction_factor: 0.,
-            round_exponent: 0.,
+            curve_factor: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
             debug_color: Vec4::splat(1.),
@@ -87,8 +87,8 @@ impl WindUniform {
         self
     }
 
-    pub fn with_round_exponent(mut self, round_exponent: f32) -> Self {
-        self.round_exponent = round_exponent;
+    pub fn with_curve_factor(mut self, curve_factor: f32) -> Self {
+        self.curve_factor= curve_factor;
         self
     }
 
