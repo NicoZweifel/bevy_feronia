@@ -62,11 +62,11 @@ pub fn spawn_extended_wind_affected(
                     let mut rng = Pcg64::seed_from_u64(res.seed);
 
                     let Some(chosen_name) = sorted_names.choose(&mut rng) else {
-                        return vec![].into_iter();
+                        return vec![];
                     };
 
                     let Some(prototypes_to_spawn) = name_map.get(*chosen_name) else {
-                        return vec![].into_iter();
+                        return vec![];
                     };
 
                     prototypes_to_spawn
@@ -92,7 +92,6 @@ pub fn spawn_extended_wind_affected(
                             )
                         })
                         .collect::<Vec<_>>()
-                        .into_iter()
                 })
                 .collect::<Vec<_>>(),
         );
