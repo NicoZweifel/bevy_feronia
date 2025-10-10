@@ -14,11 +14,10 @@ use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin}
 use camera_controller::*;
 
 #[cfg(all(feature = "dlss"))]
-use bevy::{anti_alias::dlss::{
-    Dlss, DlssProjectId,
-},asset::uuid};
-
-
+use bevy::{
+    anti_alias::dlss::{Dlss, DlssProjectId},
+    asset::uuid,
+};
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
@@ -32,9 +31,9 @@ pub struct ExamplePlugin;
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(all(feature = "dlss"))]
-    app.insert_resource(DlssProjectId(uuid::uuid!(
-        "edac5c37-87f0-4e5c-be93-3636dd13677a"
-    )));
+        app.insert_resource(DlssProjectId(uuid::uuid!(
+            "edac5c37-87f0-4e5c-be93-3636dd13677a"
+        )));
 
         app.init_resource::<ExamplePluginOptions>()
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))

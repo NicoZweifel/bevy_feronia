@@ -87,7 +87,7 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
         foliage_lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
         trees_lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
         trees_lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
-        trees_lod_low   : asset_server.load("trees_low_lod.glb#Scene0"),
+        trees_lod_low: asset_server.load("trees_low_lod.glb#Scene0"),
         rocks_low: asset_server.load("rocks_low.glb#Scene0"),
     });
 }
@@ -201,7 +201,6 @@ fn spawn_scene(
                     (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(1))
                 ]
             ),
-
             (
                 bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
                 DistributionDensity(5.0),
@@ -214,11 +213,14 @@ fn spawn_scene(
                 WindAffected,
                 children![
                     SceneRoot(handles.trees_lod_high.clone()),
-                    (SceneRoot(handles.trees_lod_medium.clone()), LevelOfDetail(1)),
+                    (
+                        SceneRoot(handles.trees_lod_medium.clone()),
+                        LevelOfDetail(1)
+                    ),
                     (SceneRoot(handles.trees_lod_low.clone()), LevelOfDetail(2)),
                 ]
             ),
-             (
+            (
                 bevy_feronia::extension::scatter::scatter_layer("Rock Layer"),
                 DistributionDensity(15.0),
                 InstanceRotationYaw {
