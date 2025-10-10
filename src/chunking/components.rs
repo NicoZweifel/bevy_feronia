@@ -45,8 +45,8 @@ pub trait LodConfiguration {
             .map(|x| **x)
             .unwrap_or(*LodLevelDistance::default());
 
-        let fade_band = current_lod_dist * 0.1;
-
+        let fade_band_multiplier = 0.2;
+        
         let start_margin = if *lod_level == 0 {
             0.0..0.0
         } else {
@@ -56,12 +56,14 @@ pub trait LodConfiguration {
                 .map(|x| **x)
                 .unwrap_or(*LodLevelDistance::default());
 
+            let fade_band = prev_lod_dist * fade_band_multiplier;
             prev_lod_dist - fade_band..prev_lod_dist
         };
 
         let end_margin = if *lod_level == self.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
+            let fade_band = current_lod_dist * fade_band_multiplier;
             current_lod_dist - fade_band..current_lod_dist
         };
 
