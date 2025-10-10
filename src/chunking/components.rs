@@ -46,7 +46,7 @@ pub trait LodConfiguration {
             .unwrap_or(*LodLevelDistance::default());
 
         let fade_band_multiplier = 0.2;
-        
+
         let start_margin = if *lod_level == 0 {
             0.0..0.0
         } else {
