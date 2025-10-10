@@ -68,3 +68,11 @@ codegen-units = 1
 # Slows compile times, marginal improvements.
 lto = "thin"
 
+[features]
+default = []
+
+# This feature, when enabled, will enable the "dlss" feature in the bevy crate.
+dlss = ["bevy/dlss"]
+
+
+

@@ -70,6 +70,10 @@ struct Scenes {
     foliage_lod_high: Handle<Scene>,
     foliage_lod_medium: Handle<Scene>,
     foliage_lod_low: Handle<Scene>,
+    trees_lod_high: Handle<Scene>,
+    trees_lod_medium: Handle<Scene>,
+    trees_lod_low: Handle<Scene>,
+    rocks_low: Handle<Scene>,
 }
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -81,6 +85,10 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
         foliage_lod_high: asset_server.load("foliage_complex.glb#Scene0"),
         foliage_lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
         foliage_lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
+        trees_lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
+        trees_lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
+        trees_lod_low   : asset_server.load("trees_low_lod.glb#Scene0"),
+        rocks_low: asset_server.load("rocks_low.glb#Scene0"),
     });
 }
 
@@ -114,6 +122,10 @@ fn check_assets_loaded(
         handles.foliage_lod_high.id(),
         handles.foliage_lod_medium.id(),
         handles.foliage_lod_low.id(),
+        handles.trees_lod_high.id(),
+        handles.trees_lod_medium.id(),
+        handles.trees_lod_low.id(),
+        handles.rocks_low.id(),
     ]
     .iter()
     .all(|id| {
@@ -159,6 +171,8 @@ fn spawn_scene(
                 EnableBillboarding,
                 EdgeCorrectionFactor::default(),
                 CurveFactor(15.),
+                Strength(2.),
+                MicroStrength(2.),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -175,16 +189,48 @@ fn spawn_scene(
                     min: 0.0,
                     max: std::f32::consts::PI * 2.0
                 },
-                InstanceScale { min: 5., max: 10. },
+                InstanceScale { min: 8., max: 16. },
                 InstanceJitter(1.0),
                 WindAffected,
                 children![
                     SceneRoot(handles.foliage_lod_high.clone()),
                     (
                         SceneRoot(handles.foliage_lod_medium.clone()),
-                        LevelOfDetail(1)
+                        LevelOfDetail(0)
                     ),
-                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
+                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(1))
+                ]
+            ),
+
+            (
+                bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
+                DistributionDensity(5.0),
+                InstanceRotationYaw {
+                    min: 0.0,
+                    max: std::f32::consts::PI * 2.0
+                },
+                InstanceScale { min: 2., max: 10. },
+                InstanceJitter(1.0),
+                WindAffected,
+                children![
+                    SceneRoot(handles.trees_lod_high.clone()),
+                    (SceneRoot(handles.trees_lod_medium.clone()), LevelOfDetail(1)),
+                    (SceneRoot(handles.trees_lod_low.clone()), LevelOfDetail(2)),
+                ]
+            ),
+             (
+                bevy_feronia::extension::scatter::scatter_layer("Rock Layer"),
+                DistributionDensity(15.0),
+                InstanceRotationYaw {
+                    min: 0.0,
+                    max: std::f32::consts::PI * 2.0
+                },
+                InstanceScale { min: 2., max: 10. },
+                InstanceJitter(1.0),
+                children![
+                    SceneRoot(handles.rocks_low.clone()),
+                    (SceneRoot(handles.rocks_low.clone()), LevelOfDetail(1)),
+                    (SceneRoot(handles.rocks_low.clone()), LevelOfDetail(2)),
                 ]
             )
         ],

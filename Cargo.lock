@@ -498,7 +498,9 @@ dependencies = [
  "bevy_render",
  "bevy_shader",
  "bevy_utils",
+ "dlss_wgpu",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1010,6 +1012,7 @@ dependencies = [
  "bevy_render",
  "bevy_scene",
  "bevy_shader",
+ "bevy_solari",
  "bevy_sprite",
  "bevy_sprite_render",
  "bevy_state",
@@ -1386,6 +1389,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_solari"
+version = "0.17.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2101ad5cbaa0c6588ff3f54edeaccece5a785166ec52b658fb207f35dc0f81b9"
+dependencies = [
+ "bevy_anti_alias",
+ "bevy_app",
+ "bevy_asset",
+ "bevy_camera",
+ "bevy_color",
+ "bevy_core_pipeline",
+ "bevy_derive",
+ "bevy_diagnostic",
+ "bevy_ecs",
+ "bevy_image",
+ "bevy_math",
+ "bevy_mesh",
+ "bevy_pbr",
+ "bevy_platform",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_shader",
+ "bevy_transform",
+ "bevy_utils",
+ "bytemuck",
+ "derive_more",
+ "tracing",
+]
+
+[[package]]
 name = "bevy_sprite"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1684,6 +1717,8 @@ dependencies = [
  "cexpr",
  "clang-sys",
  "itertools 0.13.0",
+ "log",
+ "prettyplease",
  "proc-macro2",
  "quote",
  "regex",
@@ -2243,6 +2278,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
 dependencies = [
  "libloading",
+]
+
+[[package]]
+name = "dlss_wgpu"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01670f54e1656ac1083f08546628fef0f0fe1c573614a0feedc72c92e97862c2"
+dependencies = [
+ "ash",
+ "bindgen",
+ "bitflags 2.9.4",
+ "cc",
+ "glam",
+ "thiserror 2.0.17",
+ "uuid",
+ "wgpu",
 ]
 
 [[package]]
@@ -4201,6 +4252,16 @@ name = "presser"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8cf8e6a8aa66ce33f63993ffc4ea4271eb5b0530a9002db8455ea6050c77bfa"
+
+[[package]]
+name = "prettyplease"
+version = "0.2.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b"
+dependencies = [
+ "proc-macro2",
+ "syn",
+]
 
 [[package]]
 name = "proc-macro-crate"
