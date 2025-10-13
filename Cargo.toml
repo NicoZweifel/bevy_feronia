@@ -6,7 +6,7 @@ edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
 license = "MIT OR Apache-2.0"
 
-exclude = ["assets/", ".github/"]
+exclude = ["assets/", ".github/", "blend/"]
 
 [dependencies]
 bevy = { version = "0.17", default-features = false, features = [
