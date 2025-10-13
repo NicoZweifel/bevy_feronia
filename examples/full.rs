@@ -7,13 +7,10 @@ use bevy::light::FogVolume;
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::asset::systems::{
-    process_same_type_material_requests, queue_material_creation_requests,
-};
 use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
+use bevy_feronia::scatter::observers::{standard_scatter_observer};
 use bevy_feronia::prelude::*;
-use bevy_feronia::scatter::observers::{scatter_observer, standard_scatter_observer};
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{RngCore, rng};
