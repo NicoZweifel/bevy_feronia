@@ -5,3 +5,9 @@ pub struct MapHeight;
 
 #[derive(Component)]
 pub struct HeightMapped;
+
+#[derive(Component)]
+pub struct HeightMapCamera;
+
+#[derive(Component)]
+pub struct HeightMapGhost;

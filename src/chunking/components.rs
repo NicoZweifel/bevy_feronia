@@ -45,7 +45,8 @@ pub trait LodConfiguration {
             .map(|x| **x)
             .unwrap_or(*LodLevelDistance::default());
 
-        let fade_band_multiplier = 0.2;
+        // TODO
+        // let fade_band_multiplier = 0.2;
 
         let start_margin = if *lod_level == 0 {
             0.0..0.0
@@ -56,15 +57,19 @@ pub trait LodConfiguration {
                 .map(|x| **x)
                 .unwrap_or(*LodLevelDistance::default());
 
-            let fade_band = prev_lod_dist * fade_band_multiplier;
-            prev_lod_dist - fade_band..prev_lod_dist
+            // TODO investigate/fix why fade band isn't working consistently
+            // let fade_band = prev_lod_dist * fade_band_multiplier;
+            let fade_band = 0.0;
+            prev_lod_dist..(prev_lod_dist + fade_band)
         };
 
         let end_margin = if *lod_level == self.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            let fade_band = current_lod_dist * fade_band_multiplier;
-            current_lod_dist - fade_band..current_lod_dist
+            // TODO
+            // let fade_band = current_lod_dist * fade_band_multiplier;
+            let fade_band = 0.0;
+            current_lod_dist..(current_lod_dist + fade_band)
         };
 
         VisibilityRange {

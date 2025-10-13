@@ -21,18 +21,18 @@ impl Plugin for WindPlugin {
     }
 }
 
-pub struct WindMaterialPlugin<TIn, TOut>
+pub struct ScatterMaterialPlugin<TOut, TIn = StandardMaterial>
 where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
-    pub _marker: PhantomData<(TIn, TOut)>,
+    pub _marker: PhantomData<(TOut, TIn)>,
 }
 
-impl<TIn, TOut> Default for WindMaterialPlugin<TIn, TOut>
+impl<TOut, TIn> Default for ScatterMaterialPlugin<TOut, TIn>
 where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -41,17 +41,17 @@ where
     }
 }
 
-impl<TIn, TOut> Plugin for WindMaterialPlugin<TIn, TOut>
+impl<TOut, TIn> Plugin for ScatterMaterialPlugin<TOut, TIn>
 where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone + Debug,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Debug,
 {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
             (
-                replace_materials::<TIn, TOut>,
-                update_materials::<TIn, TOut>.run_if(resource_changed::<Wind>),
+                replace_materials::<TOut, TIn>,
+                update_materials::<TOut, TIn>.run_if(resource_changed::<Wind>),
             ),
         );
     }

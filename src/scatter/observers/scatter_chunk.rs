@@ -1,14 +1,14 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-pub fn scatter_chunk<
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
-    trigger: On<ScatterChunk<TIn, TOut>>,
+pub fn scatter_chunk<TOut, TIn>(
+    trigger: On<ScatterChunk<TOut, TIn>>,
     mut cmd: Commands,
     q_chunk: Query<Entity, (With<Chunk>, Without<Merging>)>,
-) {
+) where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TIn: Material,
+{
     let chunk_entity = trigger.entity;
 
     if q_chunk.get(chunk_entity).is_err() {
@@ -16,7 +16,7 @@ pub fn scatter_chunk<
     }
 
     cmd.entity(chunk_entity)
-        .insert(ScatterRequest::<TIn, TOut>::new(
+        .insert(ScatterRequest::<TOut, TIn>::new(
             chunk_entity,
             trigger.scatter_layer,
             Some(chunk_entity),

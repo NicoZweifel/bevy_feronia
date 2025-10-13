@@ -13,13 +13,14 @@ type ScatterLayerQueryData<'a> = (
     Option<&'a InstanceRotationYaw>,
     Option<&'a InstanceScale>,
     Option<&'a InstanceJitter>,
+    Option<&'a Avoidance>,
     Option<&'a ScaleDensity>,
     &'a GlobalTransform,
 );
 
-pub fn handle_scatter_requests<TIn, TOut>(
+pub fn handle_scatter_requests<TOut, TIn>(
     mut cmd: Commands,
-    q_requests: Query<(Entity, &ScatterRequest<TIn, TOut>), With<ScatterRequest<TIn, TOut>>>,
+    q_requests: Query<(Entity, &ScatterRequest<TOut, TIn>), With<ScatterRequest<TOut, TIn>>>,
     q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,
@@ -27,13 +28,14 @@ pub fn handle_scatter_requests<TIn, TOut>(
         (&ChunkSize, &GlobalTransform, &ChunkLevel, &ChunkCoord),
         (With<Chunk>, Without<Merging>),
     >,
+    q_scatter_root_with_map: Query<&ScatterOccupancyMap>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     world_seed: Res<WorldSeed>,
     images: Res<Assets<Image>>,
 ) where
     TIn: Material + Send + 'static,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Send + 'static,
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone + Send + 'static,
 {
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
@@ -47,6 +49,7 @@ pub fn handle_scatter_requests<TIn, TOut>(
             instance_rotation,
             instance_scale,
             instance_jitter,
+            avoidance,
             scale_density,
             layer_gtf,
         )) = q_layer.get(request.layer_entity)
@@ -54,6 +57,12 @@ pub fn handle_scatter_requests<TIn, TOut>(
             warn!("ScatterLayer not found!");
             continue;
         };
+
+        let default_map = ScatterOccupancyMap::default();
+        let scatter_root_entity = **scatter_root_ref;
+        let occupancy_map = q_scatter_root_with_map
+            .get(scatter_root_entity)
+            .unwrap_or(&default_map);
 
         let density = density_dist.map_or(1.0, |d| **d);
 
@@ -106,6 +115,9 @@ pub fn handle_scatter_requests<TIn, TOut>(
                 scale: instance_scale.cloned(),
                 rotation: instance_rotation.cloned(),
                 jitter: instance_jitter.cloned(),
+                avoidance: avoidance.cloned(),
+                external_avoidance_data: occupancy_map.occupied_zones.clone(),
+
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
@@ -136,6 +148,8 @@ pub fn handle_scatter_requests<TIn, TOut>(
                 scale: instance_scale.cloned(),
                 rotation: instance_rotation.cloned(),
                 jitter: instance_jitter.cloned(),
+                avoidance: avoidance.cloned(),
+                external_avoidance_data: occupancy_map.occupied_zones.clone(),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
@@ -146,22 +160,22 @@ pub fn handle_scatter_requests<TIn, TOut>(
             continue;
         };
 
-        cmd.entity(entity).remove::<ScatterRequest<TIn, TOut>>();
+        cmd.entity(entity).remove::<ScatterRequest<TOut, TIn>>();
 
         let task = AsyncComputeTaskPool::get()
-            .spawn(async move { create_scatter_results_from_task_data::<TIn, TOut>(data) });
+            .spawn(async move { create_scatter_results_from_task_data::<TOut, TIn>(data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
     }
 }
 
-fn create_scatter_results_from_task_data<TIn, TOut>(
+fn create_scatter_results_from_task_data<TOut, TIn>(
     task_data: ScatterTaskData,
-) -> ScatterResults<TIn, TOut>
+) -> ScatterResults<TOut, TIn>
 where
     TIn: Material + Send + 'static,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone + Send + 'static,
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone + Send + 'static,
 {
     let density_sampler = task_data
         .density_map_image
@@ -183,23 +197,25 @@ where
         task_data.container,
         InstanceModifiers {
             jitter: task_data.jitter.as_ref(),
+            avoidance: task_data.avoidance.as_ref(),
             map_height: task_data.map_height.as_ref(),
             height_sampler: &height_sampler,
             density_sampler: &density_sampler,
             scale: task_data.scale.as_ref(),
             rotation: task_data.rotation.as_ref(),
         },
+        &task_data.external_avoidance_data,
     )
 }
 
-pub fn handle_finished_scatter_tasks<TIn, TOut>(
+pub fn handle_finished_scatter_tasks<TOut, TIn>(
     mut cmd: Commands,
-    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TIn, TOut>>)>,
-    mut mw_results: MessageWriter<ScatterResults<TIn, TOut>>,
+    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TOut, TIn>>)>,
+    mut mw_results: MessageWriter<ScatterResults<TOut, TIn>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
 {
     for (entity, mut task) in &mut tasks {
         let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {
@@ -211,7 +227,7 @@ pub fn handle_finished_scatter_tasks<TIn, TOut>(
         }
 
         cmd.entity(entity)
-            .remove::<CpuScatterTask<ScatterResults<TIn, TOut>>>();
+            .remove::<CpuScatterTask<ScatterResults<TOut, TIn>>>();
 
         let mut targets = vec![results.root, results.layer];
 

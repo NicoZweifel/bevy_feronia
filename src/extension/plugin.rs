@@ -1,4 +1,3 @@
-use crate::extension::spawn::spawn_extended_wind_affected;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
@@ -12,11 +11,8 @@ impl Plugin for ExtendedWindAffectedPlugin {
 
         app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
             .add_message::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
-            .add_plugins(WindMaterialPlugin::<
-                StandardMaterial,
-                ExtendedWindAffectedMaterial,
-            >::default())
-            .add_systems(Update, spawn_extended_wind_affected);
+            .add_plugins(ScatterMaterialPlugin::<ExtendedWindAffectedMaterial>::default())
+            .add_systems(Update, ExtendedWindAffectedMaterial::spawn);
     }
 }
 
@@ -26,7 +22,8 @@ impl Plugin for ExtendedWindAffectedScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ExtendedWindAffectedPlugin,
-            ScatterAssetPlugin::<StandardMaterial, ExtendedWindAffectedMaterial>::new(),
+            ScatterAssetsPlugin::<ExtendedWindAffectedMaterial>::new(),
+            ScatterAssetPlugin::<ExtendedWindAffectedMaterial>::new(),
         ));
     }
 }

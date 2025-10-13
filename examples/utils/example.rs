@@ -6,6 +6,7 @@ use bevy::post_process::bloom::Bloom;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
+    light::{CascadeShadowConfigBuilder, VolumetricLight},
     prelude::*,
     render::view::{ColorGrading, NoIndirectDrawing},
 };
@@ -77,6 +78,10 @@ pub fn setup(
             bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
             bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
             */
+            bevy::light::VolumetricFog {
+                ambient_intensity: 0.1,
+                ..default()
+            },
         ))
         .id();
 
@@ -91,22 +96,28 @@ pub fn setup(
             unlit: true,
             ..default()
         })),
-        Transform::from_xyz(0., 5.0, 0.0),
+        Transform::from_xyz(0., 5., 0.),
     ))
     .with_child(PointLight {
-        radius: 3.0,
-        color: Color::srgb(0.1, 0.1, 1.0),
+        radius: 3.,
+        color: Color::srgb(0.1, 0.1, 1.),
         ..default()
     });
 
     cmd.spawn((
         DirectionalLight {
-            // NOTE: Direct sunlight has over-exposure, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
+            // NOTE: Direct sunlight has over-exposure with the SkyBox, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
             shadows_enabled: true,
             ..default()
         },
-        Transform::from_xyz(-50., 100.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
+        VolumetricLight,
+        CascadeShadowConfigBuilder {
+            maximum_distance: 300.,
+            ..default()
+        }
+        .build(),
+        Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 

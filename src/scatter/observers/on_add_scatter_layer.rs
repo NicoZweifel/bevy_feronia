@@ -3,22 +3,22 @@ use crate::scatter::observers::*;
 use bevy::ecs::relationship::Relationship;
 use bevy::prelude::*;
 
-pub fn on_add_scatter_layer<
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
-    trigger: On<Add, ScatterLayerType<TIn, TOut>>,
+pub fn on_add_scatter_layer<TOut, TIn>(
+    trigger: On<Add, ScatterLayerType<TOut, TIn>>,
     mut cmd: Commands,
     layer_query: Query<
         (&ChildOf, Option<&ScatterChunked>),
         (
             With<ScatterLayer>,
-            With<ScatterLayerType<TIn, TOut>>,
+            With<ScatterLayerType<TOut, TIn>>,
             Without<ScatterObserver>,
         ),
     >,
     root_query: Query<Option<&ChunkRoot>, With<ScatterRoot>>,
-) {
+) where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TIn: Material,
+{
     let layer = trigger.entity;
 
     debug!("Added ScatterLayer {layer}.");
@@ -33,8 +33,8 @@ pub fn on_add_scatter_layer<
 
     let chunk_root = root_query.get(layer_root.get()).unwrap();
     if chunk_root.is_some() && scatter_chunked.is_some() {
-        cmd.entity(layer).observe(scatter_chunks::<TIn, TOut>);
+        cmd.entity(layer).observe(scatter_chunks::<TOut, TIn>);
     } else {
-        cmd.entity(layer).observe(scatter::<TIn, TOut>);
+        cmd.entity(layer).observe(scatter::<TOut, TIn>);
     }
 }

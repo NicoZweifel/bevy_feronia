@@ -1,21 +1,24 @@
+use crate::asset::systems::{
+    process_same_type_material_requests, queue_material_creation_requests,
+};
 use crate::prelude::*;
 use crate::scatter::observers::*;
-use crate::scatter::systems::handle_scatter_requests::{
-    handle_finished_scatter_tasks, handle_scatter_requests,
-};
 use crate::scatter::systems::prelude::*;
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
-pub struct ScatterAssetPlugin<
+pub struct ScatterAssetPlugin<TOut, TIn = StandardMaterial>
+where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
-> {
-    _phantom: PhantomData<(TIn, TOut)>,
+{
+    _phantom: PhantomData<(TOut, TIn)>,
 }
 
-impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone>
-    ScatterAssetPlugin<TIn, TOut>
+impl<TOut, TIn> ScatterAssetPlugin<TOut, TIn>
+where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TIn: Material,
 {
     pub fn new() -> Self {
         Self {
@@ -24,40 +27,43 @@ impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset 
     }
 }
 
-impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone> Default
-    for ScatterAssetPlugin<TIn, TOut>
+impl<TOut, TIn> Default for ScatterAssetPlugin<TOut, TIn>
+where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TIn: Material,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<TIn: Material, TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone> Plugin
-    for ScatterAssetPlugin<TIn, TOut>
+impl<TOut, TIn> Plugin for ScatterAssetPlugin<TOut, TIn>
+where
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TIn: Material,
 {
     fn build(&self, app: &mut App) {
         if !app.is_plugin_added::<ScatterPlugin>() {
             app.add_plugins(ScatterPlugin);
         }
 
-        app.add_plugins(ScatterAssetsPlugin::<TIn, TOut>::new())
-            .add_message::<Scatter<TIn, TOut>>()
+        app.add_message::<Scatter<TOut, TIn>>()
             .init_asset::<ScatterAsset<TIn>>()
             .init_asset::<ScatterAsset<TOut>>()
-            .add_message::<ScatterChunk<TIn, TOut>>()
-            .add_message::<ScatterResults<TIn, TOut>>()
-            .add_observer(on_add_scatter_root::<TIn, TOut>)
-            .add_observer(on_add_scatter_layer::<TIn, TOut>)
-            .add_observer(on_chunk_add::<TIn, TOut>)
+            .add_message::<ScatterChunk<TOut, TIn>>()
+            .add_message::<ScatterResults<TOut, TIn>>()
+            .add_observer(on_add_scatter_root::<TOut, TIn>)
+            .add_observer(on_add_scatter_layer::<TOut, TIn>)
+            .add_observer(on_chunk_add::<TOut, TIn>)
             .add_systems(
                 Update,
-                chunk_init_scatter::<TIn, TOut>.in_set(ChunkSet::Ready),
+                chunk_init_scatter::<TOut, TIn>.in_set(ChunkSet::Ready),
             )
             .add_systems(
                 Update,
                 (
-                    handle_scatter_requests::<TIn, TOut>,
-                    handle_finished_scatter_tasks::<TIn, TOut>,
+                    handle_scatter_requests::<TOut, TIn>,
+                    handle_finished_scatter_tasks::<TOut, TIn>,
                 ),
             );
     }
@@ -70,6 +76,7 @@ impl Plugin for ScatterPlugin {
         app.add_plugins((ChunkPlugin, HeightMapPlugin, WindPlugin))
             .init_state::<ScatterState>()
             .init_resource::<WorldSeed>()
+            .add_message::<ClearScatterLayer>()
             .add_observer(on_add_scatter_item)
             .add_systems(
                 PostUpdate,
@@ -81,7 +88,33 @@ impl Plugin for ScatterPlugin {
             )
             .add_systems(
                 Update,
-                (check_unprocessed_layers, check_unprocessed_items)
+                (
+                    check_unprocessed_layers,
+                    check_unprocessed_items,
+                    clear_scatter_layers,
+                )
+                    .run_if(in_state(ScatterState::Ready)),
+            );
+    }
+}
+
+pub struct StandardScatterPlugin;
+
+impl Plugin for StandardScatterPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_message::<SpawnProtoTypes<StandardMaterial>>()
+            .add_plugins(ScatterMaterialPlugin::<StandardMaterial>::default())
+            .add_systems(Update, StandardMaterial::spawn)
+            .add_message::<SpawnProtoTypes<StandardMaterial>>()
+            .add_plugins((ScatterAssetPlugin::<StandardMaterial>::new(),))
+            .add_systems(
+                Update,
+                (
+                    queue_material_creation_requests::<StandardMaterial, StandardMaterial>,
+                    process_same_type_material_requests::<StandardMaterial>.after(
+                        queue_material_creation_requests::<StandardMaterial, StandardMaterial>,
+                    ),
+                )
                     .run_if(in_state(ScatterState::Ready)),
             );
     }

@@ -9,14 +9,11 @@ type LayerQueryItem<'a> = (
     Option<&'a ScatterLayerEnabled>,
 );
 
-pub fn scatter_chunks<
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
-    trigger: On<Scatter<TIn, TOut>>,
+pub fn scatter_chunks<TOut: ScatterMaterial<TOut, TIn> + Asset + Clone, TIn: Material>(
+    trigger: On<Scatter<TOut, TIn>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
-    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>)>,
+    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>)>,
 ) {
     let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.entity) else {
         warn!("ScatterLayer not found!");
@@ -34,6 +31,6 @@ pub fn scatter_chunks<
 
     child_chunks
         .iter()
-        .map(|x| ScatterChunk::<TIn, TOut>::new(layer_entity, x))
+        .map(|x| ScatterChunk::<TOut, TIn>::new(x, layer_entity))
         .for_each(|x| cmd.trigger(x));
 }

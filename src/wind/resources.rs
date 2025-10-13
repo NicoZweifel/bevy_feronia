@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut, Clone)]
 pub struct WindTexture(pub Handle<Image>);
 
 #[derive(Resource, Debug, Clone, Reflect)]

@@ -54,12 +54,12 @@ impl Default for MaterialOptions {
     }
 }
 
-impl<TIn, TOut> From<On<'_, '_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
 {
-    fn from(value: On<ScatterResults<TIn, TOut>>) -> Self {
+    fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
         Self {
             chunk: value.chunk,
             layer: value.layer,

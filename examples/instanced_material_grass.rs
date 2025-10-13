@@ -65,5 +65,5 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }

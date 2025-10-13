@@ -8,6 +8,6 @@ where
     (
         Name::new(name),
         ScatterLayer::default(),
-        ScatterLayerType::<StandardMaterial, ExtendedWindAffectedMaterial>::default(),
+        ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
     )
 }

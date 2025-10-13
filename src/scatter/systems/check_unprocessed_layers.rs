@@ -3,16 +3,19 @@ use bevy::prelude::*;
 
 pub fn check_unprocessed_items(
     mut cmd: Commands,
-    q_layer: Query<(Entity, &Children), (Without<ScatterLayerProcessed>, With<ScatterLayer>)>,
+    q_layer: Query<
+        (Entity, &Children, &Name),
+        (Without<ScatterLayerProcessed>, With<ScatterLayer>),
+    >,
     q_unprocessed_children: Query<Entity, Without<ScatterLayerChildProcessed>>,
 ) {
-    for (layer, children) in &q_layer {
+    for (layer, children, name) in &q_layer {
         if children
             .iter()
             .map(|e| q_unprocessed_children.get(e))
             .any(|r| r.is_ok())
         {
-            debug!("ScatterLayer {layer} has unprocessed children.");
+            debug!("ScatterLayer {name} {layer} has unprocessed children.");
             continue;
         }
 

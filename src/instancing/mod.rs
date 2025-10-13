@@ -6,7 +6,6 @@ pub mod pipeline;
 pub mod plugin;
 pub mod prepare;
 pub mod scatter;
-pub mod spawn;
 pub mod systems;
 
 pub use plugin::*;

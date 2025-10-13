@@ -73,6 +73,7 @@ pub struct InstanceModifiers<'a> {
     pub scale: Option<&'a InstanceScale>,
     pub rotation: Option<&'a InstanceRotationYaw>,
     pub jitter: Option<&'a InstanceJitter>,
+    pub avoidance: Option<&'a Avoidance>,
 }
 
 #[derive(Clone)]
@@ -95,6 +96,7 @@ pub(super) fn create_scatter_result<R: Rng + ?Sized>(
     container: &Container,
     modifiers: &InstanceModifiers,
     rng: &mut R,
+    external_avoidance_data: &Vec<AvoidanceData>,
 ) -> Option<ScatterResult> {
     let instances_dim_f = container.instances_dim;
     let cell_width = container.size.x / instances_dim_f;
@@ -127,6 +129,15 @@ pub(super) fn create_scatter_result<R: Rng + ?Sized>(
     );
 
     let final_world_pos = cell_center_world_pos + random_offset;
+
+    if external_avoidance_data.iter().any(|obstacle| {
+        final_world_pos
+            .with_y(0.)
+            .distance_squared(obstacle.world_pos.with_y(0.))
+            < obstacle.radius_sq
+    }) {
+        return None;
+    }
 
     let mut instance_pos = final_world_pos - container.transform.translation;
 
@@ -163,21 +174,29 @@ pub(super) fn create_scatter_result<R: Rng + ?Sized>(
     })
 }
 
-pub(super) fn create_scatter_results<TIn, TOut>(
+pub(super) fn create_scatter_results<TOut, TIn>(
     container: Container,
     modifiers: InstanceModifiers,
-) -> ScatterResults<TIn, TOut>
+    external_avoidance_data: &Vec<AvoidanceData>,
+) -> ScatterResults<TOut, TIn>
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
 {
     let mut rng = Pcg64::seed_from_u64(container.seed);
+    let mut results = Vec::new();
 
-    let data = (0..(container.instances_dim as u32).pow(2))
-        .filter_map(|_| create_scatter_result(&container, &modifiers, &mut rng))
-        .collect::<Vec<_>>();
+    for _ in 0..(container.instances_dim as u32).pow(2) {
+        let Some(candidate) =
+            create_scatter_result(&container, &modifiers, &mut rng, external_avoidance_data)
+        else {
+            continue;
+        };
 
-    ScatterResults::<TIn, TOut>::from(&container).with_data(data)
+        results.push(candidate);
+    }
+
+    ScatterResults::<TOut, TIn>::from(&container).with_data(results)
 }
 
 /// Generates a deterministic u64 seed by combining the global `WorldSeed` with location-specific data (like chunk coordinates
