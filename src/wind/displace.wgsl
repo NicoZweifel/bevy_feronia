@@ -110,7 +110,7 @@ fn displace_vertex_and_calc_normal(
     #ifdef FAST_NORMALS
         // --- OPTIMIZED PATH ---
         #ifndef WIND_LOW_QUALITY
-            // TODO
+            // TODO approximations methods and/or pre-defined geometry calculations for normals / tangents
         #else
             out.world_normal = mesh_normal;
         #endif
@@ -145,9 +145,9 @@ fn displace_vertex_and_calc_normal(
             #endif
         #else
                 out.world_normal = mesh_normal;
-        #endif
-    #endif
-#endif
+        #endif // WIND_LOW_QUALITY
+    #endif // FAST_NORMALS
+#endif // VERTEX_NORMALS
 
     return out;
 }
