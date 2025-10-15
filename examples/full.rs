@@ -247,13 +247,13 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(150.),
+                DistributionDensity(100.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
                 InstanceJitter::default(),
-                InstanceScale { min: 1.0, max: 2.0 },
+                InstanceScale { min: 1.5, max: 3.0 },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,

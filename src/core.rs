@@ -129,7 +129,7 @@ pub struct EdgeCorrectionFactor(pub f32);
 
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
-        Self(0.001)
+        Self(0.01)
     }
 }
 
