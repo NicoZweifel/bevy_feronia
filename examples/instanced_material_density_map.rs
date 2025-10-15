@@ -56,7 +56,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 max: std::f32::consts::PI * 2.
             },
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(1.),
+            InstanceJitter::default(),
             WindAffected,
             ScaleDensity,
             ScatterChunked,

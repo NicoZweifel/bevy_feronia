@@ -1,3 +1,4 @@
+use std::f32::consts::TAU;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
@@ -132,9 +133,15 @@ impl Default for EdgeCorrectionFactor {
     }
 }
 
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect, Default)]
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct CurveFactor(pub f32);
+
+impl Default for CurveFactor {
+    fn default() -> Self {
+       Self(TAU)
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {
