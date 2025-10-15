@@ -1,3 +1,5 @@
+// TODO not used atm, mb another file is not required.
+
 #import bevy_pbr::mesh_view_bindings::view
 #import bevy_pbr::mesh_view_bindings::globals
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
