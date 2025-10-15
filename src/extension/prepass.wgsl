@@ -65,6 +65,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
             vertex.normal,
             vertex.uv,
 #endif
+#ifdef VERTEX_TANGENTS
+            vertex.tangent,
+#endif
         );
 
 #ifdef VERTEX_POSITIONS
@@ -123,7 +126,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
             instance_prev,
 #ifdef VERTEX_NORMALS
             vertex.normal,
-            vertex.uv
+            vertex.uv,
+#endif
+#ifdef VERTEX_TANGENTS
+            vertex.tangent,
 #endif
         );
 

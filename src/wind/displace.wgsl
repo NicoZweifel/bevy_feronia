@@ -84,7 +84,10 @@ fn displace_vertex_and_calc_normal(
     instance: InstanceInfo,
 #ifdef VERTEX_NORMALS
     normal: vec3<f32>,
-    uv: vec2<f32>
+    uv: vec2<f32>,
+#endif
+#ifdef VERTEX_TANGENTS
+    tangent: vec4<f32>
 #endif
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
@@ -115,9 +118,11 @@ fn displace_vertex_and_calc_normal(
         #ifndef WIND_LOW_QUALITY
             let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
             let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
-            let tangent_x = neighbor_pos_x - final_pos_xyz;
-            let tangent_z = neighbor_pos_z - final_pos_xyz;
-            var calculated_normal = normalize(cross(tangent_z, tangent_x));
+
+            let dPdx = neighbor_pos_x - final_pos_xyz;
+            let dPdz = neighbor_pos_z - final_pos_xyz;
+
+            var calculated_normal = normalize(cross(dPdz, dPdx));
 
             if (wind.curve_factor > 0.0) {
                 let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.curve_factor;
@@ -131,22 +136,17 @@ fn displace_vertex_and_calc_normal(
                 out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
             #endif
 
+            #ifdef VERTEX_TANGENTS
+                let new_world_tangent = normalize(tangent.x * dPdx + tangent.z * dPdz);
+
+                let reorthogonalized_tangent = normalize(new_world_tangent - dot(new_world_tangent, out.world_normal) * out.world_normal);
+
+                out.world_tangent = vec4<f32>(reorthogonalized_tangent, tangent.w);
+            #endif
         #else
                 out.world_normal = mesh_normal;
         #endif
     #endif
-#endif
-
-#ifdef VERTEX_TANGENTS
-    let original_world_tangent = mesh_tangent_local_to_world(
-        instance.world_from_local,
-        instance.tangent,
-        instance.instance_index
-    );
-
-    let reorthogonalized_tangent = normalize(original_world_tangent.xyz - dot(original_world_tangent.xyz, out.world_normal) * out.world_normal);
-
-    out.world_tangent = vec4<f32>(reorthogonalized_tangent, original_world_tangent.w);
 #endif
 
     return out;

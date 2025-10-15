@@ -58,7 +58,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance,
 #ifdef VERTEX_NORMALS
         vertex.normal,
-        vertex.uv
+        vertex.uv,
+#endif
+#ifdef VERTEX_TANGENTS
+        vertex.tangent
 #endif
     );
 
@@ -94,5 +97,4 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     return out;
 }
-
 
