@@ -71,7 +71,7 @@ lto = "thin"
 [features]
 default = []
 
-# This feature, when enabled, will enable the "dlss" feature in the bevy crate.
+# Enables the "dlss" feature in the bevy crate.
 dlss = ["bevy/dlss"]
 
 
