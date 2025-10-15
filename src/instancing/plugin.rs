@@ -1,9 +1,8 @@
 use super::prepare::prepare_instance_buffer;
 use super::{draw::DrawInstancedWindAffected, pipeline::InstancedWindAffectedPipeline, systems::*};
 use crate::prelude::*;
-use bevy::asset::{embedded_asset, embedded_path};
+use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::AlphaMask3d;
-use bevy::pbr::PrepassPipeline;
 use bevy::prelude::*;
 use bevy::render::{
     Render, RenderApp, RenderSystems, extract_component::ExtractComponentPlugin,
