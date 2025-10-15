@@ -6,7 +6,7 @@ edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
 license = "MIT OR Apache-2.0"
 
-exclude = ["assets/", ".github/", "blend/"]
+exclude = ["assets/", ".github/"]
 
 [dependencies]
 bevy = { version = "0.17", default-features = false, features = [
@@ -30,10 +30,12 @@ bytemuck = "1.23.1"
 #iyes_perf_ui = "0.5.0"
 # Set max log levels. This helps avoid unwanted low-severity log spam, which can affect performance.
 log = { version = "0.4", features = [
+    "max_level_debug",
     "release_max_level_warn",
 ] }
 noise = "0.9.0"
 tracing = { version = "0.1", features = [
+    "max_level_debug",
     "release_max_level_warn",
 ] }
 
