@@ -75,7 +75,7 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
     }
 }
 
-impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMaterial {
+impl ScatterMaterial for InstancedWindAffectedMaterial {
     fn create_material(
         _base: Option<StandardMaterial>,
         wind: Wind,
@@ -174,6 +174,7 @@ impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMat
                         scale: res.transform.scale.element_sum() / 3.0,
                         color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i as u32,
+                        ..default()
                     };
 
                     instance_groups
@@ -183,8 +184,7 @@ impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMat
                 }
             }
 
-            // TODO
-            let Ok(_lod_config) = q_root.get(event.trigger.root) else {
+            let Ok(lod_config) = q_root.get(event.trigger.root) else {
                 warn!("Couldn't get ScatterRoot!");
                 continue;
             };
@@ -212,6 +212,8 @@ impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMat
                 let mesh_handle = prototype.mesh().clone();
                 let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
+                let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
+
                 let instances_with_offset = instances
                     .iter()
                     .map(|instance| {
@@ -224,6 +226,14 @@ impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMat
                             instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
                         min_point = min_point.min(instance_min);
                         max_point = max_point.max(instance_max);
+
+                        instance.visibility_range = [
+                            visibility_range.start_margin.start,
+                            visibility_range.start_margin.end,
+                            visibility_range.end_margin.start,
+                            visibility_range.end_margin.end,
+                        ];
+
                         instance
                     })
                     .collect::<Vec<_>>();
@@ -240,8 +250,6 @@ impl ScatterMaterial<InstancedWindAffectedMaterial> for InstancedWindAffectedMat
                     ))
                     .id();
 
-                // TODO fix https://github.com/NicoZweifel/bevy_feronia/issues/10
-                // let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
                 let local_aabb = Aabb::from_min_max(
                     min_point - chunk_gtf.translation(),
                     max_point - chunk_gtf.translation(),

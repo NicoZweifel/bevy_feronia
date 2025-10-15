@@ -8,7 +8,7 @@ pub fn scatter_observer<TOut, TIn>(
     q_items: Query<&ScatterItemAsset<TOut>, With<ScatterItem>>,
     mut mw_spawn: MessageWriter<SpawnProtoTypes<TOut>>,
 ) where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     let layer = trigger.layer;

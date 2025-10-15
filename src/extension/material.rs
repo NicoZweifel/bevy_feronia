@@ -9,7 +9,7 @@ use rand_pcg::Pcg64;
 
 pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;
 
-impl ScatterMaterial<ExtendedWindAffectedMaterial> for ExtendedWindAffectedMaterial {
+impl ScatterMaterial for ExtendedWindAffectedMaterial {
     fn create_material(
         base: Option<StandardMaterial>,
         wind: Wind,

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-pub fn scatter<TOut: ScatterMaterial<TOut, TIn> + Asset + Clone, TIn: Material>(
+pub fn scatter<TOut: ScatterMaterial<TIn> + Asset + Clone, TIn: Material>(
     trigger: On<Scatter<TOut, TIn>>,
     mut cmd: Commands,
 ) {

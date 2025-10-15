@@ -18,13 +18,15 @@ impl ExtractComponent for InstancePipelineKey {
     }
 }
 
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
     pub color: [f32; 4],
     pub index: u32,
+    pub _padding: [u32; 3],
+    pub visibility_range: [f32; 4],
 }
 
 #[derive(Component, Deref)]

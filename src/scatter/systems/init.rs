@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 pub fn on_chunk_add<TOut, TIn>(trigger: On<Add, Chunk>, mut cmd: Commands)
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     let chunk = trigger.entity;
@@ -26,7 +26,7 @@ pub fn chunk_init_scatter<TOut, TIn>(
     >,
     q_root: Query<&ScatterRoot>,
 ) where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     for (chunk, root_chunk) in q_chunks.iter() {

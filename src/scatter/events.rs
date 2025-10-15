@@ -9,7 +9,7 @@ use std::slice::Iter;
 
 #[derive(EntityEvent, Message, Component, Reflect)]
 pub struct Scatter<
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone = StandardMaterial,
+    TOut: ScatterMaterial<TIn> + Asset + Clone = StandardMaterial,
     TIn: Material = StandardMaterial,
 > {
     pub entity: Entity,
@@ -18,7 +18,7 @@ pub struct Scatter<
 
 impl<TOut, TIn> Scatter<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub fn new(entity: Entity) -> Self {
@@ -32,7 +32,7 @@ where
 #[derive(EntityEvent, Message, Component, Reflect)]
 pub struct ScatterChunk<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub entity: Entity,
@@ -42,7 +42,7 @@ where
 
 impl<TOut, TIn> ScatterChunk<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub fn new(entity: Entity, scatter_layer: Entity) -> Self {
@@ -81,7 +81,7 @@ impl Hash for ScatterResult {
 #[derive(EntityEvent, Message, Clone, Debug)]
 pub struct ScatterResults<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub entity: Entity,
@@ -96,7 +96,7 @@ where
 
 impl<TOut, TIn> ScatterResults<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub fn get(&self) -> &Vec<ScatterResult> {
@@ -136,7 +136,7 @@ where
 
 impl<TOut, TIn> From<&Container> for ScatterResults<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn from(value: &Container) -> Self {

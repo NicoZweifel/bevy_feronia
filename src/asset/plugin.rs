@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 pub struct ScatterAssetsPlugin<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     _marker: PhantomData<(TOut, TIn)>,
@@ -13,7 +13,7 @@ where
 
 impl<TOut, TIn> ScatterAssetsPlugin<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub fn new() -> Self {
@@ -25,7 +25,7 @@ where
 
 impl<TOut, TIn> Default for ScatterAssetsPlugin<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn default() -> Self {
@@ -35,7 +35,7 @@ where
 
 impl<TOut, TIn> Plugin for ScatterAssetsPlugin<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn build(&self, app: &mut App) {

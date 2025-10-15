@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 #[derive(Component)]
 pub struct ScatterRequest<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub target_entity: Entity,
@@ -19,7 +19,7 @@ where
 
 impl<TOut, TIn> ScatterRequest<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub fn new(target_entity: Entity, layer_entity: Entity, chunk_entity: Option<Entity>) -> Self {
@@ -101,7 +101,7 @@ pub struct ScatterLayer(Vec<Entity>);
 #[reflect(Component)]
 pub struct ChunkInitScatter<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     _phantom: PhantomData<(TOut, TIn)>,
@@ -109,7 +109,7 @@ where
 
 impl<TOut, TIn> Default for ChunkInitScatter<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn default() -> Self {
@@ -123,7 +123,7 @@ where
 #[reflect(Component)]
 pub struct ScatterLayerType<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     _phantom: PhantomData<(TOut, TIn)>,
@@ -131,7 +131,7 @@ where
 
 impl<TOut, TIn> Default for ScatterLayerType<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn default() -> Self {
@@ -159,7 +159,7 @@ pub struct ScatterLayerOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
-#[require(Transform, Visibility, LodConfig)]
+#[require(Transform, Visibility, LodConfig, ScatterOccupancyMap)]
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 
@@ -236,7 +236,7 @@ impl Default for Avoidance {
 #[derive(Component)]
 pub struct HierarchicalScatterState<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     /// Layers of the root, in the order they should be processed.
@@ -248,7 +248,7 @@ where
 
 impl<TOut, TIn> Default for HierarchicalScatterState<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn default() -> Self {

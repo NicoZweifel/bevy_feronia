@@ -43,12 +43,6 @@ impl MaterialExtension for WindAffectedExtension {
         )
     }
 
-    fn fragment_shader() -> ShaderRef {
-        ShaderRef::Path(
-            AssetPath::from_path_buf(embedded_path!("main.wgsl")).with_source("embedded"),
-        )
-    }
-
     fn prepass_vertex_shader() -> ShaderRef {
         ShaderRef::Path(
             AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),

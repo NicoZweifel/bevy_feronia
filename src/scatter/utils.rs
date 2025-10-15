@@ -181,7 +181,7 @@ pub(super) fn create_scatter_results<TOut, TIn>(
 ) -> ScatterResults<TOut, TIn>
 where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     let mut rng = Pcg64::seed_from_u64(container.seed);
     let mut results = Vec::new();

@@ -9,9 +9,8 @@ use rand::SeedableRng;
 use rand::prelude::IndexedRandom;
 use rand_pcg::Pcg64;
 
-pub trait ScatterMaterial<TOut, TIn = StandardMaterial>
+pub trait ScatterMaterial<TIn = StandardMaterial>: Asset + Clone
 where
-    TOut: Asset + Clone,
     TIn: Material,
 {
     // TODO refactor
@@ -21,22 +20,22 @@ where
         noise_texture: Handle<Image>,
         aabb: Aabb,
         options: MaterialOptions,
-    ) -> TOut;
-    fn update_material(material: &mut TOut, wind: Wind, options: MaterialOptions);
+    ) -> Self;
+    fn update_material(material: &mut Self, wind: Wind, options: MaterialOptions);
 
-    fn component(material: Handle<TOut>) -> impl Component;
+    fn component(material: Handle<Self>) -> impl Component;
 
     fn spawn(
         cmd: Commands,
-        mr_spawn: MessageReader<SpawnProtoTypes<TOut>>,
-        prototype_assets: Res<Assets<ScatterAsset<TOut>>>,
+        mr_spawn: MessageReader<SpawnProtoTypes<Self>>,
+        prototype_assets: Res<Assets<ScatterAsset<Self>>>,
         q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
         q_root: Query<&LodConfig, With<ScatterRoot>>,
         q_layers: Query<(), With<ScatterChunked>>,
     );
 }
 
-impl ScatterMaterial<StandardMaterial> for StandardMaterial {
+impl ScatterMaterial for StandardMaterial {
     fn create_material(
         base: Option<StandardMaterial>,
         _wind: Wind,

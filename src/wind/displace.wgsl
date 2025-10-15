@@ -1,5 +1,5 @@
 #define_import_path bevy_feronia::displace
-#import bevy_pbr::mesh_functions::mesh_normal_local_to_world
+#import bevy_pbr::mesh_functions::{mesh_normal_local_to_world, mesh_tangent_local_to_world}
 #import bevy_pbr::mesh_view_bindings::view
 
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
@@ -135,6 +135,18 @@ fn displace_vertex_and_calc_normal(
                 out.world_normal = mesh_normal;
         #endif
     #endif
+#endif
+
+#ifdef VERTEX_TANGENTS
+    let original_world_tangent = mesh_tangent_local_to_world(
+        instance.world_from_local,
+        instance.tangent,
+        instance.instance_index
+    );
+
+    let reorthogonalized_tangent = normalize(original_world_tangent.xyz - dot(original_world_tangent.xyz, out.world_normal) * out.world_normal);
+
+    out.world_tangent = vec4<f32>(reorthogonalized_tangent, original_world_tangent.w);
 #endif
 
     return out;

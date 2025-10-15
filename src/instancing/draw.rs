@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::render::render_resource::ShaderStages;
 use bevy::{
     ecs::system::{SystemParamItem, lifetimeless::*},
     pbr::{
@@ -14,7 +15,7 @@ use bevy::{
     },
 };
 
-pub(crate) type DrawCustom = (
+pub(crate) type DrawInstancedWindAffected = (
     SetItemPipeline,
     SetMeshViewBindGroup<0>,
     SetMeshViewBindingArrayBindGroup<1>,

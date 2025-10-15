@@ -9,8 +9,8 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
-use bevy_feronia::scatter::observers::{standard_scatter_observer};
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::observers::standard_scatter_observer;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{RngCore, rng};
@@ -247,18 +247,18 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(120.),
+                DistributionDensity(200.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
                 InstanceJitter::default(),
-                InstanceScale { min: 1.0, max: 4.0 },
+                InstanceScale { min: 0.5, max: 1.5 },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
                 EnableBillboarding,
-                EdgeCorrectionFactor::default(),
+                EdgeCorrectionFactor(0.01),
                 CurveFactor(15.),
                 Strength(2.),
                 MicroStrength(2.),
@@ -270,7 +270,7 @@ fn spawn_scene(
                     ),
                     (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2)),
                 ],
-            ),
+            )
         ],
     ))
     .observe(instanced_scatter_observer)

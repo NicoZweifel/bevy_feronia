@@ -9,7 +9,7 @@ type LayerQueryItem<'a> = (
     Option<&'a ScatterLayerEnabled>,
 );
 
-pub fn scatter_chunks<TOut: ScatterMaterial<TOut, TIn> + Asset + Clone, TIn: Material>(
+pub fn scatter_chunks<TOut: ScatterMaterial<TIn> + Asset + Clone, TIn: Material>(
     trigger: On<Scatter<TOut, TIn>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,

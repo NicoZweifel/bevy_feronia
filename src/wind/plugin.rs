@@ -23,7 +23,7 @@ impl Plugin for WindPlugin {
 
 pub struct ScatterMaterialPlugin<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     pub _marker: PhantomData<(TOut, TIn)>,
@@ -31,7 +31,7 @@ where
 
 impl<TOut, TIn> Default for ScatterMaterialPlugin<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     fn default() -> Self {
@@ -43,7 +43,7 @@ where
 
 impl<TOut, TIn> Plugin for ScatterMaterialPlugin<TOut, TIn>
 where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone + Debug,
+    TOut: ScatterMaterial<TIn> + Asset + Clone + Debug,
     TIn: Material,
 {
     fn build(&self, app: &mut App) {

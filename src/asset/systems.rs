@@ -150,7 +150,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
     wind: Res<Wind>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     for (root, children) in &q_roots {
         debug!(
@@ -194,7 +194,7 @@ fn queue_requests_recursive<TOut, TIn>(
 ) -> bool
 where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     // TODO only add displacement/wind affected materials if wind affected
     let Ok((
@@ -282,7 +282,7 @@ where
 pub struct MaterialCreationRequest<TOut, TIn>
 where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     source_material_handle: Handle<TIn>,
     wind: Wind,
@@ -305,7 +305,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
     mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     for (entity, request) in &requests_query {
         let source_material = materials_in.get(&request.source_material_handle);
@@ -361,7 +361,7 @@ pub fn process_same_type_material_requests<T>(
     mut meshes: ResMut<Assets<Mesh>>,
     mut prototype_assets: ResMut<Assets<ScatterAsset<T>>>,
 ) where
-    T: ScatterMaterial<T, T> + Material + Clone,
+    T: ScatterMaterial<T> + Material + Clone,
 {
     let requests: Vec<(Entity, MaterialCreationRequest<T, T>)> =
         requests_query.iter().map(|(e, r)| (e, r.clone())).collect();

@@ -57,7 +57,7 @@ impl Default for MaterialOptions {
 impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
 where
     TIn: Material,
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
         Self {

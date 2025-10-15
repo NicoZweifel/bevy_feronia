@@ -1,21 +1,25 @@
 use super::{
     components::{InstanceMaterialData, InstancePipelineKey},
-    draw::DrawCustom,
+    draw::DrawInstancedWindAffected,
     material::{InstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial},
-    pipeline::{CustomPipelineKey, InstancedWindAffectedPipeline},
+    pipeline::{InstancedWindAffectedPipeline, InstancedWindAffectedPipelineKey},
 };
 use crate::prelude::*;
+use bevy::core_pipeline::core_3d::AlphaMask3d;
+use bevy::core_pipeline::prepass::{
+    DepthPrepass, MotionVectorPrepass, NormalPrepass, OpaqueNoLightmap3dBatchSetKey,
+    OpaqueNoLightmap3dBinKey,
+};
+use bevy::ecs::system::SystemChangeTick;
+use bevy::render::batching::gpu_preprocessing::GpuPreprocessingSupport;
+use bevy::render::mesh::allocator::MeshAllocator;
+use bevy::render::render_phase::{BinnedRenderPhaseType, ViewBinnedRenderPhases};
 use bevy::{
-    core_pipeline::core_3d::Transparent3d,
     pbr::{MeshPipelineKey, RenderMeshInstances},
     prelude::*,
     render::{
-        mesh::RenderMesh,
-        render_asset::RenderAssets,
-        render_phase::{DrawFunctions, PhaseItemExtraIndex, ViewSortedRenderPhases},
-        render_resource::*,
-        sync_world::MainEntity,
-        view::ExtractedView,
+        mesh::RenderMesh, render_asset::RenderAssets, render_phase::DrawFunctions,
+        render_resource::*, sync_world::MainEntity, view::ExtractedView,
     },
 };
 
@@ -48,8 +52,8 @@ pub(crate) fn add_instance_key_component(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn queue_custom(
-    transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
+pub(crate) fn queue_instanced_wind_affected(
+    alpha_mask_3d_draw_functions: Res<DrawFunctions<AlphaMask3d>>,
     custom_pipeline: Res<InstancedWindAffectedPipeline>,
     mut pipelines: ResMut<SpecializedMeshPipelines<InstancedWindAffectedPipeline>>,
     pipeline_cache: Res<PipelineCache>,
@@ -62,19 +66,40 @@ pub(crate) fn queue_custom(
             With<InstancedWindAffectedMeshMaterial>,
         ),
     >,
-    mut transparent_render_phases: ResMut<ViewSortedRenderPhases<Transparent3d>>,
-    views: Query<(&ExtractedView, &Msaa)>,
+    mesh_allocator: Res<MeshAllocator>,
+    gpu_preprocessing_support: Res<GpuPreprocessingSupport>,
+    mut alpha_mask_render_phases: ResMut<ViewBinnedRenderPhases<AlphaMask3d>>,
+    ticks: SystemChangeTick,
+    views: Query<(
+        &ExtractedView,
+        &Msaa,
+        Option<&DepthPrepass>,
+        Option<&NormalPrepass>,
+        Option<&MotionVectorPrepass>,
+    )>,
 ) {
-    let draw_custom = transparent_3d_draw_functions.read().id::<DrawCustom>();
+    let draw_custom = alpha_mask_3d_draw_functions
+        .read()
+        .id::<DrawInstancedWindAffected>();
 
-    for (view, msaa) in &views {
-        let Some(transparent_phase) = transparent_render_phases.get_mut(&view.retained_view_entity)
+    for (view, msaa, depth_prepass, normal_prepass, motion_vector_prepass) in &views {
+        let Some(alpha_mask_phase) = alpha_mask_render_phases.get_mut(&view.retained_view_entity)
         else {
             continue;
         };
-        let view_key = MeshPipelineKey::from_msaa_samples(msaa.samples())
+
+        let mut view_key = MeshPipelineKey::from_msaa_samples(msaa.samples())
             | MeshPipelineKey::from_hdr(view.hdr);
-        let rangefinder = view.rangefinder3d();
+
+        if depth_prepass.is_some() {
+            view_key |= MeshPipelineKey::DEPTH_PREPASS;
+        }
+        if normal_prepass.is_some() {
+            view_key |= MeshPipelineKey::NORMAL_PREPASS;
+        }
+        if motion_vector_prepass.is_some() {
+            view_key |= MeshPipelineKey::MOTION_VECTOR_PREPASS;
+        }
 
         for (entity, main_entity, instance_key) in &material_meshes {
             let Some(mesh_instance) = render_mesh_instances.render_mesh_queue_data(*main_entity)
@@ -85,24 +110,39 @@ pub(crate) fn queue_custom(
                 continue;
             };
 
-            let key = CustomPipelineKey {
+            let mut key = InstancedWindAffectedPipelineKey {
                 mesh_key: view_key
                     | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology()),
                 wind_key: WindAffectedKey::from_bits(instance_key.0).unwrap(),
             };
+
+            key.mesh_key |= MeshPipelineKey::MAY_DISCARD;
+
             let pipeline = pipelines
                 .specialize(&pipeline_cache, &custom_pipeline, key, &mesh.layout)
                 .unwrap();
 
-            transparent_phase.add(Transparent3d {
-                entity: (entity, *main_entity),
-                pipeline,
-                draw_function: draw_custom,
-                distance: rangefinder.distance_translation(&mesh_instance.translation),
-                batch_range: 0..1,
-                extra_index: PhaseItemExtraIndex::None,
-                indexed: true,
-            });
+            let (vertex_slab, index_slab) = mesh_allocator.mesh_slabs(&mesh_instance.mesh_asset_id);
+
+            alpha_mask_phase.add(
+                OpaqueNoLightmap3dBatchSetKey {
+                    pipeline,
+                    draw_function: draw_custom,
+                    material_bind_group_index: None,
+                    vertex_slab: vertex_slab.unwrap_or_default(),
+                    index_slab,
+                },
+                OpaqueNoLightmap3dBinKey {
+                    asset_id: mesh_instance.mesh_asset_id.into(),
+                },
+                (entity, *main_entity),
+                mesh_instance.current_uniform_index,
+                BinnedRenderPhaseType::mesh(
+                    mesh_instance.should_batch(),
+                    &gpu_preprocessing_support,
+                ),
+                ticks.this_run(),
+            );
         }
     }
 }

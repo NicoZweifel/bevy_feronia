@@ -16,7 +16,7 @@ pub fn on_add_scatter_layer<TOut, TIn>(
     >,
     root_query: Query<Option<&ChunkRoot>, With<ScatterRoot>>,
 ) where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     let layer = trigger.entity;

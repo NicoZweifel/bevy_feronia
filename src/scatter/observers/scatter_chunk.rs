@@ -6,7 +6,7 @@ pub fn scatter_chunk<TOut, TIn>(
     mut cmd: Commands,
     q_chunk: Query<Entity, (With<Chunk>, Without<Merging>)>,
 ) where
-    TOut: ScatterMaterial<TOut, TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
 {
     let chunk_entity = trigger.entity;

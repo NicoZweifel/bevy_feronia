@@ -14,9 +14,11 @@ use bevy_feronia::prelude::*;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use camera_controller::*;
 
+#[cfg(not(feature = "dlss"))]
+use bevy::anti_alias::taa::TemporalAntiAliasing;
 #[cfg(all(feature = "dlss"))]
 use bevy::{
-    anti_alias::dlss::{Dlss, DlssProjectId},
+    anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
     asset::uuid,
 };
 
@@ -72,12 +74,19 @@ pub fn setup(
                 ..default()
             },
             #[cfg(all(feature = "dlss"))]
-            (Msaa::Off, Dlss::default()),
-            /*
-            Msaa::Off,
-            bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
-            bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
-            */
+            (
+                Msaa::Off,
+                Dlss {
+                    perf_quality_mode: DlssPerfQualityMode::Dlaa,
+                    ..default()
+                },
+            ),
+            #[cfg(not(feature = "dlss"))]
+            (
+                Msaa::Off,
+                bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
+                TemporalAntiAliasing::default(),
+            ),
             bevy::light::VolumetricFog {
                 ambient_intensity: 0.1,
                 ..default()

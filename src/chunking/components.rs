@@ -17,9 +17,9 @@ impl Default for LodConfig {
         Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
-                50.0.into(),
+                30.0.into(),
                 // Level 1: Medium
-                100.0.into(),
+                60.0.into(),
                 // Level 2: Low
                 LodLevelDistance::default(),
             ],
@@ -45,8 +45,7 @@ pub trait LodConfiguration {
             .map(|x| **x)
             .unwrap_or(*LodLevelDistance::default());
 
-        // TODO
-        // let fade_band_multiplier = 0.2;
+        let fade_band_multiplier = 0.1;
 
         let start_margin = if *lod_level == 0 {
             0.0..0.0
@@ -58,17 +57,14 @@ pub trait LodConfiguration {
                 .unwrap_or(*LodLevelDistance::default());
 
             // TODO investigate/fix why fade band isn't working consistently
-            // let fade_band = prev_lod_dist * fade_band_multiplier;
-            let fade_band = 0.0;
+            let fade_band = prev_lod_dist * fade_band_multiplier;
             prev_lod_dist..(prev_lod_dist + fade_band)
         };
 
         let end_margin = if *lod_level == self.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
-            // TODO
-            // let fade_band = current_lod_dist * fade_band_multiplier;
-            let fade_band = 0.0;
+            let fade_band = current_lod_dist * fade_band_multiplier;
             current_lod_dist..(current_lod_dist + fade_band)
         };
 
@@ -91,9 +87,9 @@ impl Default for ChunkLodConfig {
             vec![
                 60.0.into(),
                 // Level 1: Medium
-                120.0.into(),
+                100.0.into(),
                 // Level 2: Low
-                180.0.into(),
+                200.0.into(),
                 LodLevelDistance::default(),
             ],
         )

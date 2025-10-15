@@ -11,13 +11,13 @@ use bevy::{
 use std::mem::size_of;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub(crate) struct CustomPipelineKey {
+pub struct InstancedWindAffectedPipelineKey {
     pub(crate) mesh_key: MeshPipelineKey,
     pub(crate) wind_key: WindAffectedKey,
 }
 
 #[derive(Resource)]
-pub(crate) struct InstancedWindAffectedPipeline {
+pub struct InstancedWindAffectedPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
     material_layout: BindGroupLayout,
@@ -41,7 +41,7 @@ impl FromWorld for InstancedWindAffectedPipeline {
 }
 
 impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
-    type Key = CustomPipelineKey;
+    type Key = InstancedWindAffectedPipelineKey;
 
     fn specialize(
         &self,
@@ -51,7 +51,32 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         let mut descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout)?;
         descriptor.layout.push(self.material_layout.clone());
 
+        if let Some(ds) = descriptor.depth_stencil.as_mut() {
+            ds.depth_write_enabled = true;
+            ds.depth_compare = CompareFunction::GreaterEqual;
+        }
+
+        if let Some(fragment) = descriptor.fragment.as_mut() {
+            if let Some(target) = fragment.targets.get_mut(0) {
+                if let Some(target) = target {
+                    target.blend = None;
+                }
+            }
+        }
+
         let shader_defs = &mut descriptor.vertex.shader_defs;
+
+        if !shader_defs.contains(&"MAY_DISCARD".into()) {
+            shader_defs.push("MAY_DISCARD".into());
+        }
+
+        shader_defs.push("VISIBILITY_RANGE_DITHER".into());
+        descriptor
+            .fragment
+            .as_mut()
+            .unwrap()
+            .shader_defs
+            .push("VISIBILITY_RANGE_DITHER".into());
 
         if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
             shader_defs.push("WIND_BILLBOARDING".into());
@@ -98,6 +123,12 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
                     format: VertexFormat::Uint32,
                     offset: VertexFormat::Float32x4.size() * 2,
                     shader_location: 10,
+                },
+                // Visibility Range
+                VertexAttribute {
+                    format: VertexFormat::Float32x4,
+                    offset: VertexFormat::Float32x4.size() * 3,
+                    shader_location: 11,
                 },
             ],
         });
