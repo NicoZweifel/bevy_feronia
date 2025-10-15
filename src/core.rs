@@ -1,7 +1,7 @@
-use std::f32::consts::TAU;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
+use std::f32::consts::TAU;
 
 #[derive(Event, Message, Debug, Clone)]
 pub struct SpawnProtoTypes<T>
@@ -139,7 +139,7 @@ pub struct CurveFactor(pub f32);
 
 impl Default for CurveFactor {
     fn default() -> Self {
-       Self(TAU)
+        Self(TAU)
     }
 }
 
