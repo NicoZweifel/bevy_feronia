@@ -34,9 +34,6 @@ fn main() -> AppExit {
             ],
             aabb_color: GREEN_500.into(),
         })*/
-        .insert_resource(ExamplePluginOptions {
-            no_indirect_drawing: false,
-        })
         .add_plugins((
             ExamplePlugin,
             StandardScatterPlugin,

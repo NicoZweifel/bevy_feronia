@@ -172,7 +172,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     let instance_data = InstanceData {
                         position: res.transform.translation,
                         scale: res.transform.scale.element_sum() / 3.0,
-                        color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0)).to_f32_array(),
                         index: i as u32,
                         ..default()
                     };
@@ -227,13 +226,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         min_point = min_point.min(instance_min);
                         max_point = max_point.max(instance_max);
 
-                        instance.visibility_range = [
-                            visibility_range.start_margin.start,
-                            visibility_range.start_margin.end,
-                            visibility_range.end_margin.start,
-                            visibility_range.end_margin.end,
-                        ];
-
                         instance
                     })
                     .collect::<Vec<_>>();
@@ -242,7 +234,17 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .spawn((
                         InstancedWindAffectedMeshMaterial(prototype.material().clone()),
                         Mesh3d(mesh_handle),
-                        InstanceMaterialData(instances_with_offset),
+                        InstanceMaterialData {
+                            color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0))
+                                .to_f32_array(),
+                            visibility_range: [
+                                visibility_range.start_margin.start,
+                                visibility_range.start_margin.end,
+                                visibility_range.end_margin.start,
+                                visibility_range.end_margin.end,
+                            ],
+                            instances: instances_with_offset,
+                        },
                         NoAutomaticBatching,
                         WindAffected,
                         WindAffectedReady,

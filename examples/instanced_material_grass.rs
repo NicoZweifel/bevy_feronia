@@ -13,9 +13,6 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .insert_resource(ExamplePluginOptions {
-            no_indirect_drawing: true,
-        })
         .insert_resource(ChunkDebugConfig {
             lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),

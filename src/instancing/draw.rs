@@ -31,17 +31,26 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         SRes<MeshAllocator>,
         SRes<RenderAssets<PreparedInstancedWindAffectedMaterial>>,
     );
+
     type ViewQuery = ();
+
     type ItemQuery = (
         Read<InstanceBuffer>,
         Read<InstancedWindAffectedMeshMaterial>,
+        Read<InstanceUniformBuffer>,
+        Option<Read<GpuDrawIndexedIndirect>>,
     );
 
     #[inline]
     fn render<'w>(
         item: &P,
         _view: (),
-        items: Option<(&'w InstanceBuffer, &'w InstancedWindAffectedMeshMaterial)>,
+        items: Option<(
+            &'w InstanceBuffer,
+            &'w InstancedWindAffectedMeshMaterial,
+            &'w InstanceUniformBuffer,
+            Option<&'w GpuDrawIndexedIndirect>,
+        )>,
         (meshes, render_mesh_instances, mesh_allocator, prepared_materials): SystemParamItem<
             'w,
             '_,
@@ -49,9 +58,11 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         >,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let Some((instance_buffer, material)) = items else {
+        let Some((instance_buffer, material, instance_uniform_buffer, indirect_draw_opt)) = items
+        else {
             return RenderCommandResult::Skip;
         };
+
         let Some(mesh_instance) = render_mesh_instances.render_mesh_queue_data(item.main_entity())
         else {
             return RenderCommandResult::Skip;
@@ -73,12 +84,17 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
         pass.set_vertex_buffer(0, vertex_buffer_slice.buffer.slice(..));
         pass.set_vertex_buffer(1, instance_buffer.buffer.slice(..));
         pass.set_bind_group(3, &prepared_material.bind_group, &[]);
+        pass.set_bind_group(4, &instance_uniform_buffer.bind_group, &[]);
 
         match &gpu_mesh.buffer_info {
             RenderMeshBufferInfo::Indexed {
                 index_format,
-                count,
+                count: _,
             } => {
+                let Some(indirect_draw) = indirect_draw_opt else {
+                    return RenderCommandResult::Skip;
+                };
+
                 let Some(index_buffer_slice) =
                     mesh_allocator.mesh_index_slice(&mesh_instance.mesh_asset_id)
                 else {
@@ -87,12 +103,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
 
                 pass.set_index_buffer(index_buffer_slice.buffer.slice(..), 0, *index_format);
 
-                // TODO use draw_indexed_indirect
-                pass.draw_indexed(
-                    index_buffer_slice.range.start..(index_buffer_slice.range.start + count),
-                    vertex_buffer_slice.range.start as i32,
-                    0..instance_buffer.length as u32,
-                );
+                pass.draw_indexed_indirect(&indirect_draw.buffer, indirect_draw.offset);
             }
             RenderMeshBufferInfo::NonIndexed => {
                 pass.draw(vertex_buffer_slice.range, 0..instance_buffer.length as u32);

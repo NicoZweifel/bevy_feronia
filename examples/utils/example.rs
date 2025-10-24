@@ -8,7 +8,7 @@ use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
     light::{CascadeShadowConfigBuilder, VolumetricLight},
     prelude::*,
-    render::view::{ColorGrading, NoIndirectDrawing},
+    render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
@@ -24,9 +24,7 @@ use bevy::{
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
-    // TODO remove this when using draw_indirect_indexed.
-    // needs to be true for draw_indexed to work if not using chunking
-    pub no_indirect_drawing: bool,
+    // add options here if needed again
 }
 
 pub struct ExamplePlugin;
@@ -55,48 +53,42 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
-    options: Res<ExamplePluginOptions>,
+    // options: Res<ExamplePluginOptions>,
 ) {
-    let camera = cmd
-        .spawn((
-            Camera::default(),
-            Hdr,
-            Controller::default(),
-            Camera3d::default(),
-            ColorGrading::default(),
-            Bloom::NATURAL,
-            Tonemapping::TonyMcMapface,
-            Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
-            ChunkCenter,
-            Skybox {
-                image: asset_server.load("skybox.ktx2"),
-                brightness: 10000.,
+    cmd.spawn((
+        Camera::default(),
+        Hdr,
+        Controller::default(),
+        Camera3d::default(),
+        ColorGrading::default(),
+        Bloom::NATURAL,
+        Tonemapping::TonyMcMapface,
+        Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
+        ChunkCenter,
+        Skybox {
+            image: asset_server.load("skybox.ktx2"),
+            brightness: 10000.,
+            ..default()
+        },
+        #[cfg(all(feature = "dlss"))]
+        (
+            Msaa::Off,
+            Dlss {
+                perf_quality_mode: DlssPerfQualityMode::Dlaa,
                 ..default()
             },
-            #[cfg(all(feature = "dlss"))]
-            (
-                Msaa::Off,
-                Dlss {
-                    perf_quality_mode: DlssPerfQualityMode::Dlaa,
-                    ..default()
-                },
-            ),
-            #[cfg(not(feature = "dlss"))]
-            (
-                Msaa::Off,
-                bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
-                TemporalAntiAliasing::default(),
-            ),
-            bevy::light::VolumetricFog {
-                ambient_intensity: 0.1,
-                ..default()
-            },
-        ))
-        .id();
-
-    if options.no_indirect_drawing {
-        cmd.entity(camera).insert(NoIndirectDrawing);
-    }
+        ),
+        #[cfg(not(feature = "dlss"))]
+        (
+            Msaa::Off,
+            bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
+            TemporalAntiAliasing::default(),
+        ),
+        bevy::light::VolumetricFog {
+            ambient_intensity: 0.1,
+            ..default()
+        },
+    ));
 
     cmd.spawn((
         Mesh3d(meshes.add(Sphere::new(3.0).mesh().uv(120, 64))),

@@ -1,4 +1,6 @@
-use super::prepare::prepare_instance_buffer;
+use super::prepare::{
+    prepare_indirect_draw_buffer, prepare_instance_buffer, prepare_instance_uniform_buffer,
+};
 use super::{draw::DrawInstancedWindAffected, pipeline::InstancedWindAffectedPipeline, systems::*};
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
@@ -35,8 +37,13 @@ impl Plugin for InstancedWindAffectedPlugin {
             .add_systems(
                 Render,
                 (
-                    queue_instanced_wind_affected.in_set(RenderSystems::QueueMeshes),
-                    prepare_instance_buffer.in_set(RenderSystems::PrepareResources),
+                    (
+                        queue_instanced_wind_affected,
+                        prepare_indirect_draw_buffer.after(queue_instanced_wind_affected),
+                    )
+                        .in_set(RenderSystems::QueueMeshes),
+                    (prepare_instance_buffer, prepare_instance_uniform_buffer)
+                        .in_set(RenderSystems::PrepareResources),
                 ),
             );
     }

@@ -195,9 +195,7 @@ pub fn setup_height_map_pipeline(
     cmd.insert_resource(HeightMapTexture(image_handle));
 }
 
-/// System that tears down all temporary entities and resources used for height map generation.
-/// This runs once when the pipeline enters the `Ready` state.
-pub fn cleanup_height_map_pipeline(
+pub fn teardown_height_map_pipeline(
     mut cmd: Commands,
     q_ghosts: Query<Entity, With<HeightMapGhost>>,
     q_camera: Query<Entity, With<HeightMapCamera>>,

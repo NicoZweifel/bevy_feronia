@@ -1,5 +1,5 @@
 use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
-use crate::prelude::WindAffectedKey;
+use crate::prelude::{InstanceUniforms, WindAffectedKey};
 use bevy::mesh::MeshVertexBufferLayoutRef;
 use bevy::{
     asset::{AssetPath, embedded_path},
@@ -12,15 +12,16 @@ use std::mem::size_of;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct InstancedWindAffectedPipelineKey {
-    pub(crate) mesh_key: MeshPipelineKey,
-    pub(crate) wind_key: WindAffectedKey,
+    pub mesh_key: MeshPipelineKey,
+    pub wind_key: WindAffectedKey,
 }
 
 #[derive(Resource)]
 pub struct InstancedWindAffectedPipeline {
-    shader: Handle<Shader>,
-    mesh_pipeline: MeshPipeline,
-    material_layout: BindGroupLayout,
+    pub shader: Handle<Shader>,
+    pub mesh_pipeline: MeshPipeline,
+    pub material_layout: BindGroupLayout,
+    pub instance_uniform_layout: BindGroupLayout,
 }
 
 impl FromWorld for InstancedWindAffectedPipeline {
@@ -30,12 +31,27 @@ impl FromWorld for InstancedWindAffectedPipeline {
         let material_layout = InstancedWindAffectedMaterial::bind_group_layout(render_device);
         let asset_server = world.resource::<AssetServer>();
 
+        let instance_uniform_layout = render_device.create_bind_group_layout(
+            "instance_uniform_layout",
+            &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::VERTEX_FRAGMENT,
+                ty: BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: BufferSize::new(size_of::<InstanceUniforms>() as u64),
+                },
+                count: None,
+            }],
+        );
+
         InstancedWindAffectedPipeline {
             shader: asset_server.load(
                 AssetPath::from_path_buf(embedded_path!("instancing.wgsl")).with_source("embedded"),
             ),
             mesh_pipeline,
             material_layout,
+            instance_uniform_layout,
         }
     }
 }
@@ -49,7 +65,9 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         layout: &MeshVertexBufferLayoutRef,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         let mut descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout)?;
+
         descriptor.layout.push(self.material_layout.clone());
+        descriptor.layout.push(self.instance_uniform_layout.clone());
 
         if let Some(ds) = descriptor.depth_stencil.as_mut() {
             ds.depth_write_enabled = true;
@@ -71,6 +89,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         }
 
         shader_defs.push("VISIBILITY_RANGE_DITHER".into());
+
         descriptor
             .fragment
             .as_mut()
@@ -102,6 +121,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         }
 
         descriptor.vertex.shader = self.shader.clone();
+
         descriptor.vertex.buffers.push(VertexBufferLayout {
             array_stride: size_of::<InstanceData>() as u64,
             step_mode: VertexStepMode::Instance,
@@ -112,26 +132,15 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
                     offset: 0,
                     shader_location: 8,
                 },
-                // Color
-                VertexAttribute {
-                    format: VertexFormat::Float32x4,
-                    offset: VertexFormat::Float32x4.size(),
-                    shader_location: 9,
-                },
                 // Index
                 VertexAttribute {
                     format: VertexFormat::Uint32,
-                    offset: VertexFormat::Float32x4.size() * 2,
-                    shader_location: 10,
-                },
-                // Visibility Range
-                VertexAttribute {
-                    format: VertexFormat::Float32x4,
-                    offset: VertexFormat::Float32x4.size() * 3,
-                    shader_location: 11,
+                    offset: VertexFormat::Float32x4.size(),
+                    shader_location: 9,
                 },
             ],
         });
+
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
 
         Ok(descriptor)

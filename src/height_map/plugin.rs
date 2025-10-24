@@ -30,6 +30,6 @@ impl Plugin for HeightMapPlugin {
                     bake_height_map.run_if(in_state(HeightMapState::Baking)),
                 ),
             )
-            .add_systems(OnEnter(HeightMapState::Ready), cleanup_height_map_pipeline);
+            .add_systems(OnEnter(HeightMapState::Ready), teardown_height_map_pipeline);
     }
 }
