@@ -9,11 +9,17 @@ struct SampledNoise {
 struct DisplacedVertex {
     world_position: vec4<f32>,
     world_normal: vec3<f32>,
+#ifdef VERTEX_TANGENTS
+    world_tangent: vec4<f32>
+#endif
 }
 
 struct InstanceInfo {
     world_from_local: mat4x4<f32>,
     instance_position: vec4<f32>,
     wrapped_time: f32,
-    instance_index: u32
+    instance_index: u32,
+#ifdef VERTEX_TANGENTS
+    tangent: vec4<f32>
+#endif
 }

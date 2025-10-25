@@ -19,9 +19,6 @@ fn main() -> AppExit {
             lod_colors: vec![RED_500.into(), ORANGE_500.into()],
             aabb_color: GREEN_500.into(),
         })
-        .insert_resource(ExamplePluginOptions {
-            no_indirect_drawing: true,
-        })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
@@ -38,7 +35,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         ChunkLodConfig(vec![30.0.into(), f32::MAX.into()]),
         ChunkSizeScalarConfig(vec![1.into(), 2.into()]),
         MapHeight,
-        LodConfig(vec![
+        LodConfig::from(vec![
             // Level 0: High
             30.0.into(),
             // Level 2: Low
@@ -56,7 +53,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 max: std::f32::consts::PI * 2.
             },
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(1.),
+            InstanceJitter::default(),
             WindAffected,
             ScaleDensity,
             ScatterChunked,

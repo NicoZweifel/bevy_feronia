@@ -1,5 +1,5 @@
 #define_import_path bevy_feronia::displace
-#import bevy_pbr::mesh_functions::mesh_normal_local_to_world
+#import bevy_pbr::mesh_functions::{mesh_normal_local_to_world, mesh_tangent_local_to_world}
 #import bevy_pbr::mesh_view_bindings::view
 
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
@@ -84,7 +84,10 @@ fn displace_vertex_and_calc_normal(
     instance: InstanceInfo,
 #ifdef VERTEX_NORMALS
     normal: vec3<f32>,
-    uv: vec2<f32>
+    uv: vec2<f32>,
+#endif
+#ifdef VERTEX_TANGENTS
+    tangent: vec4<f32>
 #endif
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
@@ -107,7 +110,7 @@ fn displace_vertex_and_calc_normal(
     #ifdef FAST_NORMALS
         // --- OPTIMIZED PATH ---
         #ifndef WIND_LOW_QUALITY
-            // TODO
+            // TODO approximation methods and/or pre-defined geometry calculations for normals / tangents
         #else
             out.world_normal = mesh_normal;
         #endif
@@ -115,9 +118,11 @@ fn displace_vertex_and_calc_normal(
         #ifndef WIND_LOW_QUALITY
             let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
             let neighbor_pos_z = calculate_vertex_displacement(vertex_pos + vec3<f32>(0.0, 0.0, small_offset), wind, noise, instance, lod_fade);
-            let tangent_x = neighbor_pos_x - final_pos_xyz;
-            let tangent_z = neighbor_pos_z - final_pos_xyz;
-            var calculated_normal = normalize(cross(tangent_z, tangent_x));
+
+            let dPdx = neighbor_pos_x - final_pos_xyz;
+            let dPdz = neighbor_pos_z - final_pos_xyz;
+
+            var calculated_normal = normalize(cross(dPdz, dPdx));
 
             if (wind.curve_factor > 0.0) {
                 let curve_offset = vec3<f32>(vertex_pos.x, 0.0, 0.0) * wind.curve_factor;
@@ -131,11 +136,18 @@ fn displace_vertex_and_calc_normal(
                 out.world_normal = normalize(mesh_normal + normal_delta * lod_fade);
             #endif
 
+            #ifdef VERTEX_TANGENTS
+                let new_world_tangent = normalize(tangent.x * dPdx + tangent.z * dPdz);
+
+                let reorthogonalized_tangent = normalize(new_world_tangent - dot(new_world_tangent, out.world_normal) * out.world_normal);
+
+                out.world_tangent = vec4<f32>(reorthogonalized_tangent, tangent.w);
+            #endif
         #else
                 out.world_normal = mesh_normal;
-        #endif
-    #endif
-#endif
+        #endif // WIND_LOW_QUALITY
+    #endif // FAST_NORMALS
+#endif // VERTEX_NORMALS
 
     return out;
 }
@@ -151,9 +163,7 @@ fn calculate_edge_correction(
     let world_right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera_flat));
 
     let ortho_factor = 1.0 - abs(dot(view_vector, world_right));
-
     let offset_direction = world_right * sign(local_pos.x);
-
     let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
 
     return world_pos + final_offset;

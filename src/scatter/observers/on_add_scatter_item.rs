@@ -5,9 +5,9 @@ use bevy::prelude::*;
 pub fn on_add_scatter_item(
     trigger: On<Add, ScatterItem>,
     mut cmd: Commands,
-    q_item: Query<(&ChildOf, Option<&ScatterLayer>), With<ScatterItem>>,
+    q_item: Query<(&ChildOf, Option<&ScatterLayer>, Option<&ScatterItemOf>), With<ScatterItem>>,
 ) {
-    let Ok((parent, layer)) = q_item.get(trigger.entity) else {
+    let Ok((parent, layer, scatter_item_of)) = q_item.get(trigger.entity) else {
         warn!(
             "Could not get ScatterItemLayer for ScatterItem {}",
             trigger.entity
@@ -15,7 +15,7 @@ pub fn on_add_scatter_item(
         return;
     };
 
-    if layer.is_some() {
+    if layer.is_some() || scatter_item_of.is_some() {
         return;
     };
 

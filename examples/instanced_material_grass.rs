@@ -13,9 +13,6 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .insert_resource(ExamplePluginOptions {
-            no_indirect_drawing: true,
-        })
         .insert_resource(ChunkDebugConfig {
             lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
             aabb_color: GREEN_500.into(),
@@ -36,11 +33,11 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             DistributionDensity(100.),
             InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter(1.),
+            InstanceJitter::default(),
             WindAffected,
             EnableBillboarding,
             EdgeCorrectionFactor::default(),
-            CurveFactor(15.),
+            CurveFactor::default(),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
@@ -65,5 +62,5 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<StandardMaterial, InstancedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }

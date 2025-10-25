@@ -1,11 +1,8 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-pub fn scatter<
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
-    trigger: On<Scatter<TIn, TOut>>,
+pub fn scatter<TOut: ScatterMaterial<TIn> + Asset + Clone, TIn: Material>(
+    trigger: On<Scatter<TOut, TIn>>,
     mut cmd: Commands,
 ) {
     let layer_entity = trigger.entity;
@@ -13,7 +10,7 @@ pub fn scatter<
     debug!("Scattering Layer: {layer_entity}");
 
     cmd.entity(layer_entity)
-        .insert(ScatterRequest::<TIn, TOut>::new(
+        .insert(ScatterRequest::<TOut, TIn>::new(
             layer_entity,
             layer_entity,
             None,

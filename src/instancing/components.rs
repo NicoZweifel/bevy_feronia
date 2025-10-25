@@ -1,3 +1,4 @@
+use bevy::render::render_resource::BindGroup;
 use bevy::{
     ecs::query::QueryItem,
     prelude::*,
@@ -18,17 +19,21 @@ impl ExtractComponent for InstancePipelineKey {
     }
 }
 
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
-    pub color: [f32; 4],
     pub index: u32,
+    pub _padding: [u32; 3],
 }
 
-#[derive(Component, Deref)]
-pub struct InstanceMaterialData(pub Vec<InstanceData>);
+#[derive(Component, Clone)]
+pub struct InstanceMaterialData {
+    pub instances: Vec<InstanceData>,
+    pub color: [f32; 4],
+    pub visibility_range: [f32; 4],
+}
 
 impl ExtractComponent for InstanceMaterialData {
     type QueryData = &'static InstanceMaterialData;
@@ -36,12 +41,31 @@ impl ExtractComponent for InstanceMaterialData {
     type Out = Self;
 
     fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
-        Some(InstanceMaterialData(item.0.clone()))
+        Some(item.clone())
     }
 }
 
 #[derive(Component)]
-pub(crate) struct InstanceBuffer {
-    pub(crate) buffer: Buffer,
-    pub(crate) length: usize,
+pub struct InstanceBuffer {
+    pub buffer: Buffer,
+    pub length: usize,
+}
+
+#[derive(Component)]
+pub struct GpuDrawIndexedIndirect {
+    pub buffer: Buffer,
+    pub offset: u64,
+}
+
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
+#[repr(C)]
+pub struct InstanceUniforms {
+    pub color: [f32; 4],
+    pub visibility_range: [f32; 4],
+}
+
+#[derive(Component)]
+pub struct InstanceUniformBuffer {
+    pub buffer: Buffer,
+    pub bind_group: BindGroup,
 }

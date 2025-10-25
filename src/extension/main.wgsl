@@ -1,6 +1,5 @@
 #import bevy_pbr::mesh_view_bindings::view
-#import bevy_pbr::mesh_functions::get_world_from_local
-#import bevy_pbr::mesh_functions::get_model_matrix
+#import bevy_pbr::mesh_functions::{get_world_from_local, get_visibility_range_dither_level, get_model_matrix, mesh_tangent_local_to_world}
 #import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
 #import bevy_pbr::pbr_fragment::pbr_material_from_standard_material
@@ -13,13 +12,17 @@
 #import bevy_pbr::mesh_view_bindings::globals
 #import bevy_pbr::mesh_bindings::mesh
 
-#import bevy_feronia::wind::{Wind, BindlessWindIndices}
+#import bevy_feronia::wind::Wind
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
+
+#ifdef BINDLESS
+#import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
+#endif
 
 #ifdef BINDLESS
 #import bevy_feronia::bindings::{wind_indices, wind_material}
 #else
-#import bevy_feronia::bindings::wind
+#import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
 #endif
 
 #import bevy_feronia::displace::{displace_vertex_and_calc_normal}
@@ -34,11 +37,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
     let wind =  wind_material[wind_indices[slot].material];
 #endif
+    let world_from_local = get_world_from_local(vertex.instance_index);
+
 
     // --- INSTANCE ---
     var instance: InstanceInfo;
     let camera_world_pos = view.world_position.xyz;
-    instance.world_from_local = get_world_from_local(vertex.instance_index);
+    instance.world_from_local = world_from_local;
     instance.instance_position = instance.world_from_local[3];
     instance.wrapped_time = globals.time % 1000.0;
     instance.instance_index = vertex.instance_index;
@@ -51,42 +56,45 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         noise,
         vertex.position,
         instance,
+#ifdef VERTEX_NORMALS
         vertex.normal,
-        vertex.uv
+        vertex.uv,
+#endif
+#ifdef VERTEX_TANGENTS
+        vertex.tangent
+#endif
     );
 
+
+#ifdef VERTEX_POSITIONS
     out.position = position_world_to_clip(displaced.world_position.xyz);
     out.world_position = displaced.world_position;
+#endif
+
+#ifdef VERTEX_NORMALS
     out.world_normal = displaced.world_normal;
+#endif
 
+#ifdef VERTEX_UVS_A
     out.uv = vertex.uv;
+#endif
+#ifdef VERTEX_UVS_B
+    out.uv_b = vertex.uv_b;
+#endif
+
+#ifdef VERTEX_TANGENTS
+    out.world_tangent = displaced.world_tangent;
+#endif
+
+#ifdef VERTEX_OUTPUT_INSTANCE_INDEX
     out.instance_index = vertex.instance_index;
+#endif
 
-    return out;
-}
-
-@fragment
-fn fragment(
-    in: VertexOutput,
-    @builtin(front_facing) is_front: bool,
-) -> FragmentOutput {
-    var pbr_input = pbr_input_from_standard_material(in, is_front);
-    pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
-
-    var out: FragmentOutput;
-
-    out.color = apply_pbr_lighting(pbr_input);
-    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
-
-#ifdef MATERIAL_DEBUG
-    #ifdef BINDLESS
-        let slot = mesh[in.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-        let wind =  wind_material[wind_indices[slot].material];
-        out.color = wind.debug_color;
-    #else
-        out.color = wind.debug_color;
-    #endif
+#ifdef VISIBILITY_RANGE_DITHER
+    out.visibility_range_dither = get_visibility_range_dither_level(
+        vertex.instance_index, world_from_local[3]);
 #endif
 
     return out;
 }
+

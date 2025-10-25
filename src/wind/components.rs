@@ -22,11 +22,11 @@ pub struct WindConfig {
 
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct Strength(pub f32);
+pub struct StrengthMultiplier(pub f32);
 
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct MicroStrength(pub f32);
+pub struct MicroStrengthMultiplier(pub f32);
 
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]

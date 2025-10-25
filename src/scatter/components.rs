@@ -1,26 +1,26 @@
 use crate::prelude::*;
-use crate::scatter::utils::Container;
+use crate::scatter::utils::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::Buffer;
 use bevy::tasks::Task;
 use std::marker::PhantomData;
 
 #[derive(Component)]
-pub struct ScatterRequest<TIn, TOut>
+pub struct ScatterRequest<TOut, TIn = StandardMaterial>
 where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     pub target_entity: Entity,
     pub layer_entity: Entity,
     pub chunk_entity: Option<Entity>,
-    _phantom: PhantomData<(TIn, TOut)>,
+    _phantom: PhantomData<(TOut, TIn)>,
 }
 
-impl<TIn, TOut> ScatterRequest<TIn, TOut>
+impl<TOut, TIn> ScatterRequest<TOut, TIn>
 where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     pub fn new(target_entity: Entity, layer_entity: Entity, chunk_entity: Option<Entity>) -> Self {
         Self {
@@ -32,6 +32,13 @@ where
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct AvoidanceData {
+    pub world_pos: Vec3,
+    pub radius_sq: f32,
+    pub scale: f32
+}
+
 #[derive(Clone)]
 pub struct ScatterTaskData {
     pub container: Container,
@@ -39,9 +46,12 @@ pub struct ScatterTaskData {
     pub scale: Option<InstanceScale>,
     pub rotation: Option<InstanceRotationYaw>,
     pub jitter: Option<InstanceJitter>,
+    pub avoidance: Option<Avoidance>,
     pub height_map_image: Option<Image>,
     pub height_map_config: Option<HeightMapConfig>,
     pub density_map_image: Option<Image>,
+    pub external_avoidance_data: Vec<AvoidanceData>,
+    pub density: Option<LodLevelDensity>,
 }
 
 #[derive(Component)]
@@ -91,17 +101,18 @@ pub struct ScatterLayer(Vec<Entity>);
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct ChunkInitScatter<
+pub struct ChunkInitScatter<TOut, TIn = StandardMaterial>
+where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
-> {
-    _phantom: PhantomData<(TIn, TOut)>,
+{
+    _phantom: PhantomData<(TOut, TIn)>,
 }
 
-impl<TIn, TOut> Default for ChunkInitScatter<TIn, TOut>
+impl<TOut, TIn> Default for ChunkInitScatter<TOut, TIn>
 where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -112,17 +123,18 @@ where
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct ScatterLayerType<
+pub struct ScatterLayerType<TOut, TIn = StandardMaterial>
+where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
-> {
-    _phantom: PhantomData<(TIn, TOut)>,
+{
+    _phantom: PhantomData<(TOut, TIn)>,
 }
 
-impl<TIn, TOut> Default for ScatterLayerType<TIn, TOut>
+impl<TOut, TIn> Default for ScatterLayerType<TOut, TIn>
 where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
 {
     fn default() -> Self {
         Self {
@@ -149,7 +161,7 @@ pub struct ScatterLayerOf(pub Entity);
 
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
 #[reflect(Component)]
-#[require(Transform, Visibility, LodConfig)]
+#[require(Transform, Visibility, LodConfig, ScatterOccupancyMap)]
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 
@@ -166,6 +178,11 @@ pub struct DistributionDensity(pub f32);
 #[reflect(Component)]
 pub struct ScaleDensity;
 
+/// Indicated if an Entity was added by a scatter system layer.
+#[derive(Component, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct ScatteredInstance(pub Entity);
+
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 pub struct DistributionPattern {
@@ -180,6 +197,15 @@ pub struct InstanceRotationYaw {
     pub max: f32,
 }
 
+impl Default for InstanceRotationYaw {
+    fn default() -> Self {
+        Self {
+            min: 0.0,
+            max: std::f32::consts::TAU,
+        }
+    }
+}
+
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct InstanceScale {
@@ -190,3 +216,58 @@ pub struct InstanceScale {
 #[derive(Component, Reflect, Deref, DerefMut, Clone)]
 #[reflect(Component)]
 pub struct InstanceJitter(pub f32);
+
+impl Default for InstanceJitter {
+    fn default() -> Self {
+        Self(1.)
+    }
+}
+
+#[derive(Component, Reflect, Deref, DerefMut, Clone)]
+#[reflect(Component)]
+pub struct InstanceDensity(pub f32);
+
+/// Specifies the minimum distance between the centers of scattered objects.
+/// Prevents them from spawning on top of each other.
+#[derive(Component, Clone, Debug, Deref, DerefMut)]
+pub struct Avoidance(pub f32);
+
+impl Default for Avoidance {
+    fn default() -> Self {
+        Self(1.)
+    }
+}
+
+/// Temporary component that manages the state of a hierarchical scatter.
+#[derive(Component)]
+pub struct HierarchicalScatterState<TOut, TIn = StandardMaterial>
+where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TIn: Material,
+{
+    /// Layers of the root, in the order they should be processed.
+    pub ordered_layers: Vec<Entity>,
+    /// Index of the layer currently being processed.
+    pub current_layer_index: usize,
+    pub(crate) _phantom: PhantomData<(TOut, TIn)>,
+}
+
+impl<TOut, TIn> Default for HierarchicalScatterState<TOut, TIn>
+where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TIn: Material,
+{
+    fn default() -> Self {
+        Self {
+            ordered_layers: vec![],
+            current_layer_index: 0,
+            _phantom: Default::default(),
+        }
+    }
+}
+
+/// Temporary component on the `ScatterRoot` that accumulates occupied zones.
+#[derive(Component, Default)]
+pub struct ScatterOccupancyMap {
+    pub occupied_zones: Vec<AvoidanceData>,
+}

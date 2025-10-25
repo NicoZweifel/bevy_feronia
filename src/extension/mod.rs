@@ -3,7 +3,6 @@ pub mod material_extension;
 pub mod observers;
 pub mod plugin;
 pub mod scatter;
-pub mod spawn;
 
 pub use plugin::ExtendedWindAffectedPlugin;
 

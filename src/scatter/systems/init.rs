@@ -2,53 +2,49 @@ use crate::prelude::*;
 use crate::scatter::observers::scatter_chunk;
 use bevy::prelude::*;
 
-pub fn on_chunk_add<
+pub fn on_chunk_add<TOut, TIn>(trigger: On<Add, Chunk>, mut cmd: Commands)
+where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
-    trigger: On<Add, Chunk>,
-    mut cmd: Commands,
-) {
+{
     let chunk = trigger.entity;
 
     cmd.entity(chunk)
-        .insert(ChunkInitScatter::<TIn, TOut>::default());
+        .insert(ChunkInitScatter::<TOut, TIn>::default());
 }
 
-pub fn chunk_init_scatter<
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
->(
+pub fn chunk_init_scatter<TOut, TIn>(
     mut cmd: Commands,
-    q_chunks: Query<(Entity, &ChunkOf), (With<Chunk>, With<ChunkInitScatter<TIn, TOut>>)>,
+    q_chunks: Query<(Entity, &ChunkOf), (With<Chunk>, With<ChunkInitScatter<TOut, TIn>>)>,
     q_layer: Query<
         Entity,
         (
             With<ScatterLayer>,
-            With<ScatterLayerType<TIn, TOut>>,
+            With<ScatterLayerType<TOut, TIn>>,
             With<ScatterChunked>,
         ),
     >,
     q_root: Query<&ScatterRoot>,
-) {
+) where
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TIn: Material,
+{
     for (chunk, root_chunk) in q_chunks.iter() {
         let Ok(layers) = q_root.get(**root_chunk) else {
             warn!("Couldn't get ScatterRoot: {}", **root_chunk);
             return;
         };
 
-        debug!("Chunk initial scatter: {chunk}.");
-
-        cmd.entity(chunk).observe(scatter_chunk::<TIn, TOut>);
+        cmd.entity(chunk).observe(scatter_chunk::<TOut, TIn>);
 
         for scatter_layer in layers.iter() {
             let Ok(scatter_layer) = q_layer.get(scatter_layer) else {
                 continue;
             };
 
-            cmd.trigger(ScatterChunk::<TIn, TOut>::new(chunk, scatter_layer))
+            cmd.trigger(ScatterChunk::<TOut, TIn>::new(chunk, scatter_layer))
         }
 
-        cmd.entity(chunk).remove::<ChunkInitScatter<TIn, TOut>>();
+        cmd.entity(chunk).remove::<ChunkInitScatter<TOut, TIn>>();
     }
 }

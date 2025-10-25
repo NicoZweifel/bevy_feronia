@@ -2,28 +2,47 @@ use crate::core::LevelOfDetail;
 use bevy::camera::visibility::VisibilityRange;
 use bevy::prelude::*;
 
-#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[derive(Component, Reflect, Debug)]
 #[reflect(Component)]
-pub struct LodConfig(pub Vec<LodLevelDistance>);
-
-impl LodConfiguration for LodConfig {
-    fn get(&self) -> &Vec<LodLevelDistance> {
-        &self.0
-    }
+pub struct LodConfig {
+    pub distance: Vec<LodLevelDistance>,
+    pub density: Vec<LodLevelDensity>,
 }
 
 impl Default for LodConfig {
     fn default() -> Self {
-        Self(
+        Self {
+            distance:
             // LODs are ordered from High (0) to Low (n).
             vec![
-                50.0.into(),
+                60.0.into(),
                 // Level 1: Medium
-                100.0.into(),
+                120.0.into(),
                 // Level 2: Low
-                LodLevelDistance::default(),
+                default(),
             ],
-        )
+            density: vec![
+                1.0.into(),
+                0.3.into(),
+                0.1.into(),
+                default()
+            ]
+        }
+    }
+}
+
+impl From<Vec<LodLevelDistance>> for LodConfig {
+    fn from(value: Vec<LodLevelDistance>) -> Self {
+        Self {
+            distance: value,
+            ..default()
+        }
+    }
+}
+
+impl LodConfiguration for LodConfig {
+    fn get(&self) -> &Vec<LodLevelDistance> {
+        &self.distance
     }
 }
 
@@ -56,15 +75,16 @@ pub trait LodConfiguration {
                 .map(|x| **x)
                 .unwrap_or(*LodLevelDistance::default());
 
+            // TODO investigate/fix why fade band isn't working consistently
             let fade_band = prev_lod_dist * fade_band_multiplier;
-            prev_lod_dist - fade_band..prev_lod_dist
+            prev_lod_dist..(prev_lod_dist + fade_band)
         };
 
         let end_margin = if *lod_level == self.get_max_lod_level() {
             f32::MAX..f32::MAX
         } else {
             let fade_band = current_lod_dist * fade_band_multiplier;
-            current_lod_dist - fade_band..current_lod_dist
+            current_lod_dist..(current_lod_dist + fade_band)
         };
 
         VisibilityRange {
@@ -84,11 +104,11 @@ impl Default for ChunkLodConfig {
         Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
-                60.0.into(),
+                100.0.into(),
                 // Level 1: Medium
-                120.0.into(),
+                200.0.into(),
                 // Level 2: Low
-                180.0.into(),
+                400.0.into(),
                 LodLevelDistance::default(),
             ],
         )
@@ -190,10 +210,6 @@ pub struct ChunkRoot(Vec<Entity>);
 #[derive(Reflect, Debug, Deref, DerefMut)]
 pub struct LodLevelDistance(pub f32);
 
-/// The size of a chunk at this level, as a multiple of the highest-LOD chunk size.
-#[derive(Reflect, Debug, Deref, DerefMut)]
-pub struct ChunkSizeScalar(pub u32);
-
 impl Default for LodLevelDistance {
     fn default() -> Self {
         f32::MAX.into()
@@ -205,6 +221,20 @@ impl From<f32> for LodLevelDistance {
         LodLevelDistance(val)
     }
 }
+
+/// The density of this LOD Level. Should be between 0.0 and 1.0.
+#[derive(Reflect, Debug, Deref, DerefMut, Clone, Default)]
+pub struct LodLevelDensity(pub f32);
+
+impl From<f32> for LodLevelDensity {
+    fn from(val: f32) -> Self {
+        LodLevelDensity(val)
+    }
+}
+
+/// The size of a chunk at this level, as a multiple of the highest-LOD chunk size.
+#[derive(Reflect, Debug, Deref, DerefMut)]
+pub struct ChunkSizeScalar(pub u32);
 
 impl From<u32> for ChunkSizeScalar {
     fn from(val: u32) -> Self {

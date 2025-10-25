@@ -1,13 +1,16 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use bevy::asset::RenderAssetUsages;
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::light::FogVolume;
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::prelude::*;
+use bevy_feronia::scatter::observers::standard_scatter_observer;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{RngCore, rng};
@@ -15,8 +18,10 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind {
-            strength: 0.4,
+            strength: 0.2,
             micro_strength: 0.1,
+            s_curve_strength: 0.1,
+            bop_strength: 0.1,
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
@@ -29,11 +34,9 @@ fn main() -> AppExit {
             ],
             aabb_color: GREEN_500.into(),
         })*/
-        .insert_resource(ExamplePluginOptions {
-            no_indirect_drawing: true,
-        })
         .add_plugins((
             ExamplePlugin,
+            StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
@@ -51,6 +54,8 @@ fn main() -> AppExit {
                 scatter_on_keypress,
             ),
         )
+        .add_observer(scatter_extended)
+        .add_observer(scatter_instanced)
         .run()
 }
 
@@ -70,6 +75,13 @@ struct Scenes {
     foliage_lod_high: Handle<Scene>,
     foliage_lod_medium: Handle<Scene>,
     foliage_lod_low: Handle<Scene>,
+    trees_lod_high: Handle<Scene>,
+    trees_lod_medium: Handle<Scene>,
+    trees_lod_low: Handle<Scene>,
+    rocks_lod_low: Handle<Scene>,
+    rocks_lod_medium: Handle<Scene>,
+    rocks_lod_high: Handle<Scene>,
+    audio: Handle<AudioSource>,
 }
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -81,6 +93,14 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
         foliage_lod_high: asset_server.load("foliage_complex.glb#Scene0"),
         foliage_lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
         foliage_lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
+        trees_lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
+        trees_lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
+        trees_lod_low: asset_server.load("trees_low_lod.glb#Scene0"),
+        rocks_lod_low: asset_server.load("rocks_low_lod.glb#Scene0"),
+        rocks_lod_medium: asset_server.load("rocks_medium_lod.glb#Scene0"),
+        rocks_lod_high: asset_server.load("rocks_high_lod.glb#Scene0"),
+        audio: asset_server
+            .load("sounds/birds-singing-in-and-leaves-rustling-with-the-wind-14557.mp3"),
     });
 }
 
@@ -114,6 +134,10 @@ fn check_assets_loaded(
         handles.foliage_lod_high.id(),
         handles.foliage_lod_medium.id(),
         handles.foliage_lod_low.id(),
+        handles.trees_lod_high.id(),
+        handles.trees_lod_medium.id(),
+        handles.trees_lod_low.id(),
+        handles.rocks_lod_low.id(),
     ]
     .iter()
     .all(|id| {
@@ -133,32 +157,108 @@ fn spawn_scene(
     mut ns_scatter: ResMut<NextState<ScatterState>>,
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
     handles: Res<Scenes>,
+    mut images: ResMut<Assets<Image>>,
 ) {
+    let fog_texture = create_spherical_fog_texture(64);
+
+    let fog_texture_handle = images.add(fog_texture);
+
+    if let Some(image) = images.get_mut(&fog_texture_handle) {
+        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
+    }
+
+    cmd.spawn((
+        FogVolume {
+            density_texture: Some(fog_texture_handle),
+            density_factor: 0.1,
+            fog_color: Color::WHITE,
+            scattering_asymmetry: 0.6,
+            ..default()
+        },
+        Transform::from_scale(Vec3::splat(260.).with_y(50.))
+            .with_translation(Vec3::new(0., 15., 0.)),
+    ));
+
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
         MapHeight,
         ChunkRoot::default(),
+        AudioPlayer::new(handles.audio.clone()),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            ..default()
+        },
         children![
             (
+                Name::new("Rock Layer"),
+                ScatterLayer::default(),
+                ScatterLayerType::<StandardMaterial>::default(),
+                DistributionDensity(5.0),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 2., max: 6. },
+                InstanceJitter::default(),
+                Avoidance(3.),
+                children![
+                    SceneRoot(handles.rocks_lod_high.clone()),
+                    (
+                        SceneRoot(handles.rocks_lod_medium.clone()),
+                        LevelOfDetail(1)
+                    ),
+                    (SceneRoot(handles.rocks_lod_low.clone()), LevelOfDetail(2)),
+                ]
+            ),
+            (
+                bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
+                DistributionDensity(5.0),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 6., max: 8. },
+                InstanceJitter::default(),
+                Avoidance(1.),
+                WindAffected,
+                children![
+                    SceneRoot(handles.trees_lod_high.clone()),
+                    (
+                        SceneRoot(handles.trees_lod_medium.clone()),
+                        LevelOfDetail(1)
+                    ),
+                    (SceneRoot(handles.trees_lod_low.clone()), LevelOfDetail(2)),
+                ]
+            ),
+            (
+                bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
+                DistributionDensity(10.0),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 15., max: 25. },
+                InstanceJitter::default(),
+                Avoidance(0.2),
+                WindAffected,
+                children![
+                    SceneRoot(handles.foliage_lod_high.clone()),
+                    (
+                        SceneRoot(handles.foliage_lod_medium.clone()),
+                        LevelOfDetail(0)
+                    ),
+                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(1))
+                ]
+            ),
+            (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(100.),
+                DistributionDensity(120.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
-                InstanceRotationYaw {
-                    min: 0.0,
-                    max: std::f32::consts::PI * 2.0
-                },
-                InstanceJitter(1.0),
-                InstanceScale { min: 2.0, max: 5.0 },
+                InstanceJitter::default(),
+                InstanceScale { min: 2., max: 4. },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
                 EnableBillboarding,
                 EdgeCorrectionFactor::default(),
-                CurveFactor(15.),
+                CurveFactor::default(),
+                StrengthMultiplier(1.5),
+                MicroStrengthMultiplier(1.5),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -167,30 +267,12 @@ fn spawn_scene(
                     ),
                     (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2)),
                 ],
-            ),
-            (
-                bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(30.0),
-                InstanceRotationYaw {
-                    min: 0.0,
-                    max: std::f32::consts::PI * 2.0
-                },
-                InstanceScale { min: 5., max: 10. },
-                InstanceJitter(1.0),
-                WindAffected,
-                children![
-                    SceneRoot(handles.foliage_lod_high.clone()),
-                    (
-                        SceneRoot(handles.foliage_lod_medium.clone()),
-                        LevelOfDetail(1)
-                    ),
-                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
-                ]
             )
         ],
     ))
     .observe(instanced_scatter_observer)
-    .observe(extended_scatter_observer);
+    .observe(extended_scatter_observer)
+    .observe(standard_scatter_observer);
 
     ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
@@ -201,14 +283,36 @@ fn scatter_on_keypress(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut world_seed: ResMut<WorldSeed>,
     q_root: Single<Entity, With<ScatterRoot>>,
+    mut mw_clear_root: MessageWriter<ClearScatterRoot>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
+    mw_clear_root.write((*q_root).into());
+
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root));
+    // Scatter the rocks.
+    cmd.trigger(Scatter::<StandardMaterial>::new(*q_root));
+}
+
+fn scatter_extended(
+    _: On<ScatterFinished<StandardMaterial>>,
+    mut cmd: Commands,
+    q_root: Single<Entity, With<ScatterRoot>>,
+) {
+    // Scatter the foliage after the rocks.
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
+}
+
+fn scatter_instanced(
+    _: On<ScatterFinished<ExtendedWindAffectedMaterial>>,
+    mut cmd: Commands,
+    q_root: Single<Entity, With<ScatterRoot>>,
+) {
+    // Scatter the grass last so it doesn't grow on occupied areas.
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }
 
 fn setup_density_map(
@@ -261,3 +365,42 @@ pub struct DensityMapConfig {
 
 #[derive(Resource, Deref, DerefMut)]
 struct DensityMap(Handle<Image>);
+
+/// Generates a 3D texture with a spherical density gradient.
+///
+/// The density is 1.0 (255) at the center and fades to 0.0 (0) at the edges.
+fn create_spherical_fog_texture(size: u32) -> Image {
+    let mut data = vec![0; (size * size * size) as usize];
+    let center = size as f32 / 2.0;
+
+    for z in 0..size {
+        for y in 0..size {
+            for x in 0..size {
+                let dx = x as f32 - center;
+                let dy = y as f32 - center;
+                let dz = z as f32 - center;
+
+                let distance = (dx * dx + dy * dy + dz * dz).sqrt() / center;
+
+                let density = (1.0 - distance).clamp(0.0, 1.0).powf(2.0);
+
+                let value = (density * 255.0) as u8;
+
+                let index = (x + y * size + z * size * size) as usize;
+                data[index] = value;
+            }
+        }
+    }
+
+    Image::new(
+        Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: size,
+        },
+        TextureDimension::D3,
+        data,
+        TextureFormat::R8Unorm,
+        RenderAssetUsages::default(),
+    )
+}

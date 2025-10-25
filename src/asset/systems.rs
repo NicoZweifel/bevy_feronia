@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;
+use std::marker::PhantomData;
 
 pub type CollectableQueryData<'w, T> = (
     Entity,
@@ -24,8 +25,8 @@ pub type MaterialOptionData<'w> = (
 );
 
 pub type WindData<'w> = (
-    Option<&'w Strength>,
-    Option<&'w MicroStrength>,
+    Option<&'w StrengthMultiplier>,
+    Option<&'w MicroStrengthMultiplier>,
     Option<&'w SCurveStrength>,
     Option<&'w SCurveSpeed>,
     Option<&'w SCurveFrequency>,
@@ -128,7 +129,7 @@ impl MaterialOptions {
     }
 }
 
-pub fn collect_assets<TIn, TOut>(
+pub fn queue_material_creation_requests<TOut, TIn>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
@@ -136,22 +137,26 @@ pub fn collect_assets<TIn, TOut>(
         (
             With<ScatterLayer>,
             Without<ScatterLayerProcessed>,
-            With<ScatterLayerType<TIn, TOut>>,
+            With<ScatterLayerType<TOut, TIn>>,
         ),
     >,
-    q_collect: Query<CollectableQueryData<TIn>, Without<ScatterLayerChildProcessed>>,
-    mut materials: ResMut<Assets<TIn>>,
-    mut extended_materials: ResMut<Assets<TOut>>,
-    wind_noise_texture: Res<WindTexture>,
+    q_collect: Query<
+        CollectableQueryData<TIn>,
+        (
+            Without<ScatterLayerChildProcessed>,
+            Without<MaterialCreationRequest<TOut, TIn>>,
+        ),
+    >,
     wind: Res<Wind>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     for (root, children) in &q_roots {
-        debug!("Collecting ScatterAssets in root {:?}...", root);
+        debug!(
+            "Queueing ScatterAsset creation requests in root {:?}...",
+            root
+        );
 
         for layer in children.iter() {
             let mut wind = wind.clone();
@@ -160,60 +165,37 @@ pub fn collect_assets<TIn, TOut>(
             };
 
             wind = wind.with(wind_data);
-
             let options = MaterialOptions::from(material_option_data);
 
-            let result = scatter_items
-                .iter()
-                .flat_map(|x| {
-                    collect_assets_recursive::<TIn, TOut>(
-                        layer,
-                        x,
-                        &mut cmd,
-                        &mut materials,
-                        &mut extended_materials,
-                        &wind_noise_texture,
-                        &wind,
-                        &options,
-                        None,
-                        None,
-                        &mut prototype_assets,
-                        &mut meshes,
-                        &q_collect,
-                    )
-                })
-                .collect::<Vec<_>>();
-
-            if result.is_empty() {
-                continue;
-            };
-
-            debug!("Found {} assets in layer {:?}", result.len(), layer);
+            for item in scatter_items {
+                queue_requests_recursive::<TOut, TIn>(
+                    layer, *item, &mut cmd, &wind, &options, None, None, &q_collect,
+                );
+            }
         }
     }
 }
 
-fn collect_assets_recursive<TIn, TOut>(
+fn queue_requests_recursive<TOut, TIn>(
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
-    materials: &mut Assets<TIn>,
-    extended_materials: &mut Assets<TOut>,
-    wind_noise_texture: &WindTexture,
     wind: &Wind,
     options: &MaterialOptions,
     current_name: Option<Name>,
     current_lod_level: Option<LevelOfDetail>,
-    scatter_assets: &mut Assets<ScatterAsset<TOut>>,
-    meshes: &mut Assets<Mesh>,
-    q_children: &Query<CollectableQueryData<TIn>, Without<ScatterLayerChildProcessed>>,
-) -> Vec<Handle<ScatterAsset<TOut>>>
+    q_children: &Query<
+        CollectableQueryData<TIn>,
+        (
+            Without<ScatterLayerChildProcessed>,
+            Without<MaterialCreationRequest<TOut, TIn>>,
+        ),
+    >,
+) -> bool
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
-    let mut types: Vec<Handle<ScatterAsset<TOut>>> = Vec::new();
-
     // TODO only add displacement/wind affected materials if wind affected
     let Ok((
         entity,
@@ -230,7 +212,7 @@ where
         wind_data,
     )) = q_children.get(entity)
     else {
-        return types;
+        return false;
     };
 
     let (mut wind, controlled) = wind_component
@@ -251,86 +233,184 @@ where
         .with_debug_color(debug_color)
         .with_controlled(controlled);
 
+    let mut has_children_with_materials = false;
     if let Some(children) = children {
-        for child in children.iter() {
-            types.append(&mut collect_assets_recursive::<TIn, TOut>(
+        for child in children {
+            let found_material = queue_requests_recursive::<TOut, TIn>(
                 layer,
-                child,
+                *child,
                 cmd,
-                materials,
-                extended_materials,
-                wind_noise_texture,
                 &wind,
                 &options,
                 name.clone(),
                 Some(lod),
-                scatter_assets,
-                meshes,
                 q_children,
-            ));
+            );
+
+            if found_material {
+                has_children_with_materials = true;
+            }
         }
     }
 
-    if !types.is_empty() {
+    if has_children_with_materials {
         cmd.entity(entity).insert(ScatterLayerChildProcessed);
     }
 
-    let Some(material) = material else {
-        return types;
+    let (Some(material), Some(mesh), Some(aabb)) = (material, mesh, aabb) else {
+        return has_children_with_materials;
     };
 
-    let Some(mesh) = mesh else {
-        return types;
-    };
+    cmd.entity(entity)
+        .insert((MaterialCreationRequest::<TOut, TIn> {
+            source_material_handle: material.0.clone(),
+            wind,
+            options,
+            mesh_handle: mesh.0.clone(),
+            aabb: *aabb,
+            name,
+            lod_level: lod,
+            layer,
+            _phantom: PhantomData,
+        },));
 
-    let Some(aabb) = aabb else { return types };
+    true
+}
 
-    let new_material = TOut::create_material(
-        Some(materials.get(material).unwrap().clone()),
-        wind.clone(),
-        wind_noise_texture.0.clone(),
-        *aabb,
-        options.clone(),
-    );
+// Decouples the "read" phase (collection) with the "write" phase (processing).
+#[derive(Component, Clone)]
+pub struct MaterialCreationRequest<TOut, TIn>
+where
+    TIn: Material,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+{
+    source_material_handle: Handle<TIn>,
+    wind: Wind,
+    options: MaterialOptions,
+    mesh_handle: Handle<Mesh>,
+    aabb: Aabb,
+    name: Option<Name>,
+    lod_level: LevelOfDetail,
+    layer: Entity,
+    _phantom: PhantomData<TOut>,
+}
 
-    let material = extended_materials.add(new_material);
+pub fn process_distinct_material_requests<TOut, TIn>(
+    mut cmd: Commands,
+    requests_query: Query<(Entity, &MaterialCreationRequest<TOut, TIn>)>,
+    materials_in: Res<Assets<TIn>>,
+    mut materials_out: ResMut<Assets<TOut>>,
+    wind_noise_texture: Res<WindTexture>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
+) where
+    TIn: Material,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+{
+    for (entity, request) in &requests_query {
+        let source_material = materials_in.get(&request.source_material_handle);
 
-    let mesh = meshes.get(mesh).cloned().unwrap();
-    let mesh = meshes.add(mesh.clone());
+        let new_material = TOut::create_material(
+            source_material.cloned(),
+            request.wind.clone(),
+            wind_noise_texture.0.clone(),
+            request.aabb,
+            request.options.clone(),
+        );
+        let material_handle = materials_out.add(new_material);
 
-    let mesh_aabb = meshes.get(&mesh).unwrap().compute_aabb().unwrap();
+        let mesh = meshes.get(&request.mesh_handle).cloned().unwrap();
+        let mesh_handle = meshes.add(mesh);
+        let mesh_aabb = meshes.get(&mesh_handle).unwrap().compute_aabb().unwrap();
 
-    let asset = ScatterAsset {
-        mesh,
-        material,
-        wind,
-        aabb: mesh_aabb,
-        name,
-        lod_level: lod,
-        material_options: options,
-        layer,
-    };
+        let asset = ScatterAsset {
+            mesh: mesh_handle,
+            material: material_handle,
+            wind: request.wind.clone(),
+            aabb: mesh_aabb,
+            name: request.name.clone(),
+            lod_level: request.lod_level,
+            material_options: request.options.clone(),
+            layer: request.layer,
+        };
 
-    debug!(
-        "Adding asset {:?} lod_level {:?}",
-        asset.name, asset.lod_level
-    );
+        let asset_handle = prototype_assets.add(asset);
 
-    let asset_handle = scatter_assets.add(asset);
+        cmd.entity(entity)
+            .remove::<MaterialCreationRequest<TOut, TIn>>()
+            .remove::<MeshMaterial3d<TIn>>()
+            .insert((
+                // TODO only insert if actually wind affected
+                WindAffectedRegistered(asset_handle.clone()),
+                WindAffected,
+                ScatterItem,
+                ScatterItemAsset::<TOut>(asset_handle.clone()),
+                request.lod_level,
+                ChildOf(request.layer),
+                ScatterItemOf(request.layer),
+                // TODO should remove or use in editor after registration is complete.
+                Visibility::Hidden,
+                ScatterLayerChildProcessed,
+            ));
+    }
+}
 
-    cmd.entity(entity).remove::<MeshMaterial3d<TIn>>().insert((
-        // TODO only do this and ignore scatter item logic (some assets might not ever be scattered and just need to be affected by wind).
-        WindAffectedRegistered(asset_handle.clone()),
-        WindAffected,
-        ScatterItem,
-        ScatterItemAsset::<TOut>(asset_handle.clone()),
-        lod,
-        ChildOf(layer),
-        ScatterItemOf(layer),
-        ScatterLayerChildProcessed,
-    ));
+pub fn process_same_type_material_requests<T>(
+    mut cmd: Commands,
+    requests_query: Query<(Entity, &MaterialCreationRequest<T, T>)>,
+    mut materials: ResMut<Assets<T>>,
+    wind_noise_texture: Res<WindTexture>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut prototype_assets: ResMut<Assets<ScatterAsset<T>>>,
+) where
+    T: ScatterMaterial<T> + Material + Clone,
+{
+    let requests: Vec<(Entity, MaterialCreationRequest<T, T>)> =
+        requests_query.iter().map(|(e, r)| (e, r.clone())).collect();
 
-    types.push(asset_handle);
+    for (entity, request) in requests {
+        let source_material = materials.get(&request.source_material_handle).cloned();
 
-    types
+        let new_material = T::create_material(
+            source_material,
+            request.wind.clone(),
+            wind_noise_texture.0.clone(),
+            request.aabb,
+            request.options.clone(),
+        );
+        let material_handle = materials.add(new_material);
+
+        let mesh = meshes.get(&request.mesh_handle).cloned().unwrap();
+        let mesh_handle = meshes.add(mesh);
+        let mesh_aabb = meshes.get(&mesh_handle).unwrap().compute_aabb().unwrap();
+
+        let asset = ScatterAsset {
+            mesh: mesh_handle,
+            material: material_handle,
+            wind: request.wind.clone(),
+            aabb: mesh_aabb,
+            name: request.name.clone(),
+            lod_level: request.lod_level,
+            material_options: request.options.clone(),
+            layer: request.layer,
+        };
+
+        let asset_handle = prototype_assets.add(asset);
+
+        cmd.entity(entity)
+            .remove::<MaterialCreationRequest<T, T>>()
+            .insert((
+                // TODO only insert if actually wind affected
+                WindAffectedRegistered(asset_handle.clone()),
+                WindAffected,
+                ScatterItem,
+                ScatterItemAsset::<T>(asset_handle.clone()),
+                request.lod_level,
+                ChildOf(request.layer),
+                ScatterItemOf(request.layer),
+                // TODO should remove or use in editor after registration is complete.
+                Visibility::Hidden,
+                ScatterLayerChildProcessed,
+            ));
+    }
 }

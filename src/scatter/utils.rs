@@ -2,9 +2,6 @@ use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-use rand::Rng;
-use rand::prelude::*;
-use rand_pcg::Pcg64;
 use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
@@ -73,6 +70,8 @@ pub struct InstanceModifiers<'a> {
     pub scale: Option<&'a InstanceScale>,
     pub rotation: Option<&'a InstanceRotationYaw>,
     pub jitter: Option<&'a InstanceJitter>,
+    pub avoidance: Option<&'a Avoidance>,
+    pub density: Option<&'a LodLevelDensity>,
 }
 
 #[derive(Clone)]
@@ -88,96 +87,6 @@ pub struct Container {
     pub root_size: Vec3,
     pub transform: Transform,
     pub seed: u64,
-}
-
-// TODO refactor into async CPU/GPU pipelines
-pub(super) fn create_scatter_result<R: Rng + ?Sized>(
-    container: &Container,
-    modifiers: &InstanceModifiers,
-    rng: &mut R,
-) -> Option<ScatterResult> {
-    let instances_dim_f = container.instances_dim;
-    let cell_width = container.size.x / instances_dim_f;
-    let cell_depth = container.size.z / instances_dim_f;
-
-    let world_corner_pos = container.transform.translation + container.corner;
-
-    let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
-    let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
-
-    let snapped_world_cell_corner = world_corner_pos
-        + Vec3::new(
-            local_cell_x_idx * cell_width,
-            0.0,
-            local_cell_z_idx * cell_depth,
-        );
-
-    let cell_center_world_pos =
-        snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
-
-    let jitter_strength = modifiers.jitter.map_or(1.0, |j| **j).clamp(0.0, 1.0);
-
-    let max_offset_x = (cell_width * jitter_strength) / 2.0;
-    let max_offset_z = (cell_depth * jitter_strength) / 2.0;
-
-    let random_offset = Vec3::new(
-        rng.random_range(-max_offset_x..max_offset_x),
-        0.0,
-        rng.random_range(-max_offset_z..max_offset_z),
-    );
-
-    let final_world_pos = cell_center_world_pos + random_offset;
-
-    let mut instance_pos = final_world_pos - container.transform.translation;
-
-    instance_pos.y = match modifiers.map_height {
-        None => container.height,
-        Some(_) => {
-            modifiers.height_sampler.sample(final_world_pos) - container.transform.translation.y
-        }
-    };
-
-    if let Some(sampler) = &modifiers.density_sampler {
-        if rng.random::<f32>() > sampler.sample(final_world_pos) {
-            return None;
-        }
-    }
-
-    let final_scale = modifiers
-        .scale
-        .map_or(1.0, |s| rng.random_range(s.min..s.max));
-
-    let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
-        Quat::from_rotation_y(rng.random_range(r.min..r.max))
-    });
-
-    let instance_seed = generate_instance_seed(container.seed, final_world_pos);
-
-    Some(ScatterResult {
-        seed: instance_seed,
-        transform: Transform {
-            translation: instance_pos,
-            rotation: final_rotation,
-            scale: Vec3::splat(final_scale),
-        },
-    })
-}
-
-pub(super) fn create_scatter_results<TIn, TOut>(
-    container: Container,
-    modifiers: InstanceModifiers,
-) -> ScatterResults<TIn, TOut>
-where
-    TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
-{
-    let mut rng = Pcg64::seed_from_u64(container.seed);
-
-    let data = (0..(container.instances_dim as u32).pow(2))
-        .filter_map(|_| create_scatter_result(&container, &modifiers, &mut rng))
-        .collect::<Vec<_>>();
-
-    ScatterResults::<TIn, TOut>::from(&container).with_data(data)
 }
 
 /// Generates a deterministic u64 seed by combining the global `WorldSeed` with location-specific data (like chunk coordinates

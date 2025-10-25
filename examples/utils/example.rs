@@ -6,24 +6,36 @@ use bevy::post_process::bloom::Bloom;
 use bevy::render::view::Hdr;
 use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
+    light::{CascadeShadowConfigBuilder, VolumetricLight},
     prelude::*,
-    render::view::{ColorGrading, NoIndirectDrawing},
+    render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use camera_controller::*;
 
+#[cfg(not(feature = "dlss"))]
+use bevy::anti_alias::taa::TemporalAntiAliasing;
+#[cfg(all(feature = "dlss"))]
+use bevy::{
+    anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
+    asset::uuid,
+};
+
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
-    // TODO remove this when using draw_indirect_indexed.
-    // needs to be true for draw_indexed to work if not using chunking
-    pub no_indirect_drawing: bool,
+    // add options here if needed again
 }
 
 pub struct ExamplePlugin;
 
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(all(feature = "dlss"))]
+        app.insert_resource(DlssProjectId(uuid::uuid!(
+            "edac5c37-87f0-4e5c-be93-3636dd13677a"
+        )));
+
         app.init_resource::<ExamplePluginOptions>()
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
             .add_plugins((
@@ -41,35 +53,42 @@ pub fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
-    options: Res<ExamplePluginOptions>,
+    // options: Res<ExamplePluginOptions>,
 ) {
-    let camera = cmd
-        .spawn((
-            Camera::default(),
-            Hdr,
-            Controller::default(),
-            Camera3d::default(),
-            ColorGrading::default(),
-            Bloom::NATURAL,
-            Tonemapping::TonyMcMapface,
-            Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
-            ChunkCenter,
-            Skybox {
-                image: asset_server.load("skybox.ktx2"),
-                brightness: 10000.,
+    cmd.spawn((
+        Camera::default(),
+        Hdr,
+        Controller::default(),
+        Camera3d::default(),
+        ColorGrading::default(),
+        Bloom::NATURAL,
+        Tonemapping::TonyMcMapface,
+        Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
+        ChunkCenter,
+        Skybox {
+            image: asset_server.load("skybox.ktx2"),
+            brightness: 10000.,
+            ..default()
+        },
+        #[cfg(all(feature = "dlss"))]
+        (
+            Msaa::Off,
+            Dlss {
+                perf_quality_mode: DlssPerfQualityMode::Dlaa,
                 ..default()
             },
-            /*
+        ),
+        #[cfg(not(feature = "dlss"))]
+        (
             Msaa::Off,
             bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
-            bevy::core_pipeline::experimental::taa::TemporalAntiAliasing::default(),
-            */
-        ))
-        .id();
-
-    if options.no_indirect_drawing {
-        cmd.entity(camera).insert(NoIndirectDrawing);
-    }
+            TemporalAntiAliasing::default(),
+        ),
+        bevy::light::VolumetricFog {
+            ambient_intensity: 0.1,
+            ..default()
+        },
+    ));
 
     cmd.spawn((
         Mesh3d(meshes.add(Sphere::new(3.0).mesh().uv(120, 64))),
@@ -78,22 +97,28 @@ pub fn setup(
             unlit: true,
             ..default()
         })),
-        Transform::from_xyz(0., 5.0, 0.0),
+        Transform::from_xyz(0., 5., 0.),
     ))
     .with_child(PointLight {
-        radius: 3.0,
-        color: Color::srgb(0.1, 0.1, 1.0),
+        radius: 3.,
+        color: Color::srgb(0.1, 0.1, 1.),
         ..default()
     });
 
     cmd.spawn((
         DirectionalLight {
-            // NOTE: Direct sunlight has over-exposure, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
+            // NOTE: Direct sunlight has over-exposure with the SkyBox, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
             shadows_enabled: true,
             ..default()
         },
-        Transform::from_xyz(-50., 100.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
+        VolumetricLight,
+        CascadeShadowConfigBuilder {
+            maximum_distance: 300.,
+            ..default()
+        }
+        .build(),
+        Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 

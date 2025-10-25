@@ -20,8 +20,8 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
 #ifdef BINDLESS
     let slot = mesh[instance.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
     let wind =  wind_material[wind_indices[slot].material];
-    let noise_texture =   bindless_textures_2d[wind_indices[slot].noise_texture];
-    let noise_texture_sampler =  bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
+    let noise_texture =  bindless_textures_2d[wind_indices[slot].noise_texture];
+    let noise_texture_sampler = bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif
 
     let world_pos = (instance.world_from_local * vec4<f32>(local_vertex_pos, 1.0)).xyz;

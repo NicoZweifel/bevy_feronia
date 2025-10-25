@@ -26,11 +26,11 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(100.),
-            InstanceJitter(1.),
+            InstanceJitter::default(),
             WindAffected,
             EnableBillboarding,
             EdgeCorrectionFactor::default(),
-            CurveFactor(15.),
+            CurveFactor::default(),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
@@ -57,5 +57,5 @@ fn scatter_on_keypress(
 
     println!("Scattering");
 
-    cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root))
 }

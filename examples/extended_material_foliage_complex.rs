@@ -86,7 +86,7 @@ fn spawn_scene(
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
         ChunkRoot::default(),
-        LodConfig(vec![10.0.into(), 35.0.into(), 85.0.into()]),
+        LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(50.),
@@ -95,6 +95,7 @@ fn spawn_scene(
                 max: std::f32::consts::PI * 2.
             },
             InstanceScale { min: 2., max: 5. },
+            Avoidance::default(),
             WindAffected,
             children![
                 // TODO figure out what's wrong with highest detail models
@@ -121,5 +122,5 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<StandardMaterial, ExtendedWindAffectedMaterial>::new(*q_root))
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root))
 }

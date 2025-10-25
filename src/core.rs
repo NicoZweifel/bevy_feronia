@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
+use std::f32::consts::TAU;
 
 #[derive(Event, Message, Debug, Clone)]
 pub struct SpawnProtoTypes<T>
@@ -54,12 +55,12 @@ impl Default for MaterialOptions {
     }
 }
 
-impl<TIn, TOut> From<On<'_, '_, ScatterResults<TIn, TOut>>> for SpawnTrigger
+impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
 where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
-    fn from(value: On<ScatterResults<TIn, TOut>>) -> Self {
+    fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
         Self {
             chunk: value.chunk,
             layer: value.layer,
@@ -128,13 +129,19 @@ pub struct EdgeCorrectionFactor(pub f32);
 
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
-        Self(0.001)
+        Self(0.01)
     }
 }
 
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect, Default)]
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct CurveFactor(pub f32);
+
+impl Default for CurveFactor {
+    fn default() -> Self {
+        Self(TAU)
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct ThreadSafeImage {

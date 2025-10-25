@@ -102,6 +102,7 @@ pub fn create_height_map_ghost(
                 transform.compute_transform(),
                 cfg.render_layer.clone(),
                 NoFrustumCulling,
+                HeightMapGhost,
             ));
 
             cmd.entity(landscape_root).insert(HeightMapped);
@@ -163,6 +164,7 @@ pub fn setup_height_map_pipeline(
     let image_handle = images.add(image);
 
     cmd.spawn((
+        HeightMapCamera,
         Camera {
             target: RenderTarget::Image(ImageRenderTarget::from(image_handle.clone())),
             order: -1,
@@ -191,4 +193,37 @@ pub fn setup_height_map_pipeline(
     ));
 
     cmd.insert_resource(HeightMapTexture(image_handle));
+}
+
+pub fn teardown_height_map_pipeline(
+    mut cmd: Commands,
+    q_ghosts: Query<Entity, With<HeightMapGhost>>,
+    q_camera: Query<Entity, With<HeightMapCamera>>,
+    q_mapped_landscapes: Query<Entity, With<HeightMapped>>,
+) {
+    info!("Tearing down height map pipeline...");
+
+    for entity in &q_ghosts {
+        cmd.entity(entity).despawn();
+    }
+    debug!(
+        "Despawned {} height map ghost entities.",
+        q_ghosts.iter().count()
+    );
+
+    for entity in &q_camera {
+        cmd.entity(entity).despawn();
+    }
+    debug!("Despawned height map camera.");
+
+    cmd.remove_resource::<HeightMapTexture>();
+    cmd.remove_resource::<HeightMapMaterialHandle>();
+    debug!("Removed height map resources.");
+
+    for entity in &q_mapped_landscapes {
+        cmd.entity(entity).remove::<HeightMapped>();
+    }
+    debug!("Cleaned up HeightMapped component.");
+
+    info!("Height map pipeline teardown complete.");
 }

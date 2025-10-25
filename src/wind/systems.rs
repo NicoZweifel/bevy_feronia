@@ -7,18 +7,18 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<TIn, TOut>(
+pub fn update_materials<TOut, TIn>(
     mut materials: ResMut<Assets<TOut>>,
     wind: Res<Wind>,
     mut scatter_assets: ResMut<Assets<ScatterAsset<TOut>>>,
     q_layer: Query<
         (WindData, MaterialOptionData, &ScatterLayerOf),
-        (With<ScatterLayer>, With<ScatterLayerType<TIn, TOut>>),
+        (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>),
     >,
     q_root: Query<(WindData, MaterialOptionData), With<ScatterRoot>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     for (_, asset) in scatter_assets.iter_mut() {
         let Some(material) = materials.get_mut(&asset.material) else {
@@ -50,13 +50,13 @@ pub fn update_materials<TIn, TOut>(
     }
 }
 
-pub fn replace_materials<TIn, TOut>(
+pub fn replace_materials<TOut, TIn>(
     mut cmd: Commands,
     q: Query<(Entity, &WindAffectedRegistered<ScatterAsset<TOut>>), Without<WindAffectedReady>>,
     scatter_assets: Res<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: WindAffectable<ScatterAsset<TOut>, TIn, TOut> + Asset + Clone,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
     for (entity, wind_affected) in &q {
         let Some(scatter_asset) = scatter_assets.get(&**wind_affected) else {
