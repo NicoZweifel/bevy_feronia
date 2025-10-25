@@ -110,7 +110,7 @@ fn displace_vertex_and_calc_normal(
     #ifdef FAST_NORMALS
         // --- OPTIMIZED PATH ---
         #ifndef WIND_LOW_QUALITY
-            // TODO approximations methods and/or pre-defined geometry calculations for normals / tangents
+            // TODO approximation methods and/or pre-defined geometry calculations for normals / tangents
         #else
             out.world_normal = mesh_normal;
         #endif
@@ -163,9 +163,7 @@ fn calculate_edge_correction(
     let world_right = normalize(cross(vec3(0.0, 1.0, 0.0), to_camera_flat));
 
     let ortho_factor = 1.0 - abs(dot(view_vector, world_right));
-
     let offset_direction = world_right * sign(local_pos.x);
-
     let final_offset = offset_direction  * wind.edge_correction_factor * ortho_factor;
 
     return world_pos + final_offset;

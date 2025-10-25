@@ -42,8 +42,8 @@ impl ExtractComponent for InstancedWindAffectedMeshMaterial {
     }
 }
 
-pub(crate) struct PreparedInstancedWindAffectedMaterial {
-    pub(crate) bind_group: BindGroup,
+pub struct PreparedInstancedWindAffectedMaterial {
+    pub bind_group: BindGroup,
 }
 
 impl RenderAsset for PreparedInstancedWindAffectedMaterial {
