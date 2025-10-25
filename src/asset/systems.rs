@@ -223,6 +223,13 @@ where
 
     let lod = lod.map_or(current_lod_level.unwrap_or_default(), |x| *x);
 
+    if !controlled {
+        wind = Wind {
+            low_quality: *lod != 0,
+            ..wind
+        }
+    };
+
     let name = current_name.map_or(name.cloned(), Some);
 
     let hue = (entity.index() * 30) as f32 % 360.0;

@@ -85,7 +85,7 @@ pub fn hierarchical_scatter<TOut, TIn>(
             map.occupied_zones.push(AvoidanceData {
                 world_pos,
                 radius_sq,
-                scale: instance.transform.scale.element_sum() / 3.
+                scale: instance.transform.scale.element_sum() / 3.,
             });
         }
     }

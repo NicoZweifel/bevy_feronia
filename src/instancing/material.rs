@@ -201,69 +201,72 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         .unwrap_or_default()
                 };
 
-                let prototype = name_map
-                    .get(&name)
-                    .unwrap()
-                    .iter()
-                    .find(|p| *p.lod_level == target_lod)
-                    .unwrap();
+                let prototypes = name_map.get(&name).unwrap().iter().filter(|p| {
+                    if is_chunked {
+                        *p.lod_level == target_lod
+                    } else {
+                        *p.lod_level >= target_lod
+                    }
+                });
 
-                let mesh_handle = prototype.mesh().clone();
-                let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
+                for prototype in prototypes {
+                    let mesh_handle = prototype.mesh().clone();
+                    let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-                let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
+                    let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
 
-                let instances_with_offset = instances
-                    .iter()
-                    .map(|instance| {
-                        let mut instance = *instance;
-                        instance.position += chunk_gtf.translation();
+                    let instances_with_offset = instances
+                        .iter()
+                        .map(|instance| {
+                            let mut instance = *instance;
+                            instance.position += chunk_gtf.translation();
 
-                        let instance_min =
-                            instance.position + Vec3::from(prototype.aabb().min() * instance.scale);
-                        let instance_max =
-                            instance.position + Vec3::from(prototype.aabb().max() * instance.scale);
-                        min_point = min_point.min(instance_min);
-                        max_point = max_point.max(instance_max);
+                            let instance_min = instance.position
+                                + Vec3::from(prototype.aabb().min() * instance.scale);
+                            let instance_max = instance.position
+                                + Vec3::from(prototype.aabb().max() * instance.scale);
+                            min_point = min_point.min(instance_min);
+                            max_point = max_point.max(instance_max);
 
-                        instance
-                    })
-                    .collect::<Vec<_>>();
+                            instance
+                        })
+                        .collect::<Vec<_>>();
 
-                let entity = cmd
-                    .spawn((
-                        InstancedWindAffectedMeshMaterial(prototype.material().clone()),
-                        Mesh3d(mesh_handle),
-                        InstanceMaterialData {
-                            color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0))
-                                .to_f32_array(),
-                            visibility_range: [
-                                visibility_range.start_margin.start,
-                                visibility_range.start_margin.end,
-                                visibility_range.end_margin.start,
-                                visibility_range.end_margin.end,
-                            ],
-                            instances: instances_with_offset,
-                        },
-                        NoAutomaticBatching,
-                        WindAffected,
-                        WindAffectedReady,
-                        ScatteredInstance(event.trigger.layer),
-                    ))
-                    .id();
+                    let entity = cmd
+                        .spawn((
+                            InstancedWindAffectedMeshMaterial(prototype.material().clone()),
+                            Mesh3d(mesh_handle),
+                            InstanceMaterialData {
+                                color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0))
+                                    .to_f32_array(),
+                                visibility_range: [
+                                    visibility_range.start_margin.start,
+                                    visibility_range.start_margin.end,
+                                    visibility_range.end_margin.start,
+                                    visibility_range.end_margin.end,
+                                ],
+                                instances: instances_with_offset,
+                            },
+                            NoAutomaticBatching,
+                            WindAffected,
+                            WindAffectedReady,
+                            ScatteredInstance(event.trigger.layer),
+                        ))
+                        .id();
 
-                let local_aabb = Aabb::from_min_max(
-                    min_point - chunk_gtf.translation(),
-                    max_point - chunk_gtf.translation(),
-                );
-                let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
+                    let local_aabb = Aabb::from_min_max(
+                        min_point - chunk_gtf.translation(),
+                        max_point - chunk_gtf.translation(),
+                    );
+                    let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
-                cmd.entity(entity).insert((
-                    Transform::default(),
-                    Visibility::Visible,
-                    local_aabb,
-                    ChildOf(parent),
-                ));
+                    cmd.entity(entity).insert((
+                        Transform::default(),
+                        Visibility::Visible,
+                        local_aabb,
+                        ChildOf(parent),
+                    ));
+                }
             }
         }
     }

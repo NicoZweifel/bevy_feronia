@@ -210,7 +210,7 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
-                DistributionDensity(5.0),
+                DistributionDensity(6.0),
                 InstanceRotationYaw::default(),
                 InstanceScale { min: 6., max: 8. },
                 InstanceJitter::default(),
@@ -227,14 +227,14 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(10.0),
+                DistributionDensity(12.0),
                 InstanceRotationYaw::default(),
                 InstanceScale { min: 15., max: 25. },
                 InstanceJitter::default(),
                 Avoidance(0.2),
                 WindAffected,
                 children![
-                    SceneRoot(handles.foliage_lod_high.clone()),
+                    // TODO figure out what's wrong with highest detail models
                     (
                         SceneRoot(handles.foliage_lod_medium.clone()),
                         LevelOfDetail(0)

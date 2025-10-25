@@ -36,7 +36,7 @@ where
 pub struct AvoidanceData {
     pub world_pos: Vec3,
     pub radius_sq: f32,
-    pub scale: f32
+    pub scale: f32,
 }
 
 #[derive(Clone)]

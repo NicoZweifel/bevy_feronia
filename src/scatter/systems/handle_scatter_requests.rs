@@ -20,10 +20,7 @@ type ScatterLayerQueryData<'a> = (
 pub fn handle_scatter_requests<TOut, TIn>(
     mut cmd: Commands,
     q_requests: Query<(Entity, &ScatterRequest<TOut, TIn>), With<ScatterRequest<TOut, TIn>>>,
-    q_scatter_root: Query<
-        (Entity, Option<&MapHeight>, &Aabb),
-        With<ScatterRoot>,
-    >,
+    q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<
         (
             Entity,

@@ -1,7 +1,6 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
 use bevy_feronia::chunking::systems::debug::draw_aabbs;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
@@ -13,15 +12,17 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![RED_500.into(), ORANGE_500.into(), YELLOW_500.into()],
-            aabb_color: GREEN_500.into(),
-        })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
-        .add_systems(Update, (scatter_on_keypress, draw_aabbs))
+        .add_systems(
+            Update,
+            (
+                scatter_on_keypress,
+                draw_aabbs.run_if(resource_exists::<ChunkDebugConfig>),
+            ),
+        )
         .run()
 }
 
@@ -29,6 +30,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
+        LodConfig::from(vec![10.0.into(), 20.0.into(), f32::MAX.into()]),
         children![(
             scatter_layer("Grass Layer"),
             DistributionDensity(100.),

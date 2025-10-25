@@ -1,8 +1,6 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::css::WHITE;
-use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
 use bevy::prelude::*;
 use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::instancing::scatter::scatter_layer;
@@ -12,7 +10,7 @@ use example::*;
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .insert_resource(ChunkDebugConfig {
+        /*.insert_resource(ChunkDebugConfig {
             lod_colors: vec![
                 RED_500.into(),
                 ORANGE_500.into(),
@@ -20,7 +18,7 @@ fn main() -> AppExit {
                 WHITE.into(),
             ],
             aabb_color: GREEN_500.into(),
-        })
+        })*/
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
@@ -36,8 +34,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         MapHeight,
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(80.0),
-            InstanceScale { min: 1., max: 2. },
+            DistributionDensity(150.0),
+            InstanceScale { min: 2., max: 4. },
             InstanceJitter(1.),
             WindAffected,
             ScaleDensity,
