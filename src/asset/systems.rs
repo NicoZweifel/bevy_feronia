@@ -348,6 +348,8 @@ pub fn process_distinct_material_requests<TOut, TIn>(
                 request.lod_level,
                 ChildOf(request.layer),
                 ScatterItemOf(request.layer),
+                // TODO should remove or use in editor after registration is complete.
+                Visibility::Hidden,
                 ScatterLayerChildProcessed,
             ));
     }
@@ -406,6 +408,8 @@ pub fn process_same_type_material_requests<T>(
                 request.lod_level,
                 ChildOf(request.layer),
                 ScatterItemOf(request.layer),
+                // TODO should remove or use in editor after registration is complete.
+                Visibility::Hidden,
                 ScatterLayerChildProcessed,
             ));
     }
