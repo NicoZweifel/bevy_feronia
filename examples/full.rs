@@ -194,9 +194,9 @@ fn spawn_scene(
                 Name::new("Rock Layer"),
                 ScatterLayer::default(),
                 ScatterLayerType::<StandardMaterial>::default(),
-                DistributionDensity(10.0),
+                DistributionDensity(5.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 2., max: 8. },
+                InstanceScale { min: 2., max: 6. },
                 InstanceJitter::default(),
                 Avoidance(3.),
                 children![
@@ -229,9 +229,9 @@ fn spawn_scene(
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
                 DistributionDensity(10.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 8., max: 14. },
+                InstanceScale { min: 15., max: 25. },
                 InstanceJitter::default(),
-                Avoidance(0.3),
+                Avoidance(0.2),
                 WindAffected,
                 children![
                     SceneRoot(handles.foliage_lod_high.clone()),

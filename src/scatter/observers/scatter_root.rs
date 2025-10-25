@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use bevy::ecs::relationship::Relationship;
-use bevy::math::NormedVectorSpace;
 use bevy::prelude::*;
 
 pub fn scatter_root<TOut, TIn>(
