@@ -14,6 +14,16 @@ use bevy::{
     },
 };
 
+pub type DrawInstancedWindAffected = (
+    SetItemPipeline,
+    SetMeshViewBindGroup<0>,
+    SetMeshViewBindingArrayBindGroup<1>,
+    SetMeshBindGroup<2>,
+    SetInstancedWindAffectedMaterialBindGroup<3>,
+    SetInstancedWindAffectedPatchBindGroup<4>,
+    DrawInstancedWindAffectedMesh,
+);
+
 pub struct SetInstancedWindAffectedMaterialBindGroup<const I: usize>;
 impl<P: PhaseItem, const I: usize> RenderCommand<P>
     for SetInstancedWindAffectedMaterialBindGroup<I>
@@ -72,16 +82,6 @@ impl<P: PhaseItem, const I: usize> RenderCommand<P> for SetInstancedWindAffected
         RenderCommandResult::Success
     }
 }
-
-pub type DrawInstancedWindAffected = (
-    SetItemPipeline,
-    SetMeshViewBindGroup<0>,
-    SetMeshViewBindingArrayBindGroup<1>,
-    SetMeshBindGroup<2>,
-    SetInstancedWindAffectedMaterialBindGroup<3>,
-    SetInstancedWindAffectedPatchBindGroup<4>,
-    DrawInstancedWindAffectedMesh,
-);
 
 pub struct DrawInstancedWindAffectedMesh;
 
