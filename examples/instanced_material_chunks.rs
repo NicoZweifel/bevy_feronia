@@ -36,8 +36,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         MapHeight,
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(100.0),
-            InstanceScale { min: 1., max: 1.5 },
+            DistributionDensity(80.0),
+            InstanceScale { min: 1., max: 2. },
             InstanceJitter(1.),
             WindAffected,
             ScaleDensity,

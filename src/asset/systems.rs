@@ -25,8 +25,8 @@ pub type MaterialOptionData<'w> = (
 );
 
 pub type WindData<'w> = (
-    Option<&'w Strength>,
-    Option<&'w MicroStrength>,
+    Option<&'w StrengthMultiplier>,
+    Option<&'w MicroStrengthMultiplier>,
     Option<&'w SCurveStrength>,
     Option<&'w SCurveSpeed>,
     Option<&'w SCurveFrequency>,

@@ -29,7 +29,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
-        LodConfig(vec![LodLevelDistance::default()]),
+        LodConfig::from(vec![LodLevelDistance::default()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(15.),

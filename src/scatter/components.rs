@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::scatter::utils::Container;
+use crate::scatter::utils::*;
 use bevy::prelude::*;
 use bevy::render::render_resource::Buffer;
 use bevy::tasks::Task;
@@ -36,6 +36,7 @@ where
 pub struct AvoidanceData {
     pub world_pos: Vec3,
     pub radius_sq: f32,
+    pub scale: f32
 }
 
 #[derive(Clone)]
@@ -50,6 +51,7 @@ pub struct ScatterTaskData {
     pub height_map_config: Option<HeightMapConfig>,
     pub density_map_image: Option<Image>,
     pub external_avoidance_data: Vec<AvoidanceData>,
+    pub density: Option<LodLevelDensity>,
 }
 
 #[derive(Component)]
@@ -220,6 +222,10 @@ impl Default for InstanceJitter {
         Self(1.)
     }
 }
+
+#[derive(Component, Reflect, Deref, DerefMut, Clone)]
+#[reflect(Component)]
+pub struct InstanceDensity(pub f32);
 
 /// Specifies the minimum distance between the centers of scattered objects.
 /// Prevents them from spawning on top of each other.

@@ -86,7 +86,7 @@ fn spawn_scene(
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
         ChunkRoot::default(),
-        LodConfig(vec![10.0.into(), 35.0.into(), 85.0.into()]),
+        LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Tree Layer"),
             DistributionDensity(10.),

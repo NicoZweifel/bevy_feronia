@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy::ecs::relationship::Relationship;
+use bevy::math::NormedVectorSpace;
 use bevy::prelude::*;
 
 pub fn scatter_root<TOut, TIn>(
@@ -85,6 +86,7 @@ pub fn hierarchical_scatter<TOut, TIn>(
             map.occupied_zones.push(AvoidanceData {
                 world_pos,
                 radius_sq,
+                scale: instance.transform.scale.element_sum() / 3.
             });
         }
     }

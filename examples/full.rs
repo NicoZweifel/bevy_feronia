@@ -194,11 +194,11 @@ fn spawn_scene(
                 Name::new("Rock Layer"),
                 ScatterLayer::default(),
                 ScatterLayerType::<StandardMaterial>::default(),
-                DistributionDensity(15.0),
+                DistributionDensity(10.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 4. },
+                InstanceScale { min: 2., max: 8. },
                 InstanceJitter::default(),
-                Avoidance(4.),
+                Avoidance(3.),
                 children![
                     SceneRoot(handles.rocks_lod_high.clone()),
                     (
@@ -210,11 +210,11 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
-                DistributionDensity(15.0),
+                DistributionDensity(5.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 6. },
+                InstanceScale { min: 6., max: 8. },
                 InstanceJitter::default(),
-                Avoidance(3.),
+                Avoidance(1.),
                 WindAffected,
                 children![
                     SceneRoot(handles.trees_lod_high.clone()),
@@ -227,11 +227,11 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(30.0),
+                DistributionDensity(10.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 2., max: 10. },
+                InstanceScale { min: 8., max: 14. },
                 InstanceJitter::default(),
-                Avoidance::default(),
+                Avoidance(0.3),
                 WindAffected,
                 children![
                     SceneRoot(handles.foliage_lod_high.clone()),
@@ -244,21 +244,21 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(100.),
+                DistributionDensity(120.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
                 InstanceJitter::default(),
-                InstanceScale { min: 1.5, max: 3.0 },
+                InstanceScale { min: 2., max: 4. },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
                 EnableBillboarding,
                 EdgeCorrectionFactor::default(),
                 CurveFactor::default(),
-                Strength(2.),
-                MicroStrength(2.),
+                StrengthMultiplier(1.5),
+                MicroStrengthMultiplier(1.5),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -282,37 +282,36 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut world_seed: ResMut<WorldSeed>,
-    q_root: Single<(Entity, &ScatterRoot)>,
-    mut mr_clear_layers: MessageWriter<ClearScatterLayer>,
+    q_root: Single<Entity, With<ScatterRoot>>,
+    mut mw_clear_root: MessageWriter<ClearScatterRoot>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
-    let (root, layers) = q_root.into_inner();
-
-    mr_clear_layers.write_batch(layers.iter().map(|x| ClearScatterLayer(x)));
-
-    cmd.entity(root).insert(ScatterOccupancyMap::default());
+    mw_clear_root.write((*q_root).into());
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<StandardMaterial>::new(root));
+    // Scatter the rocks.
+    cmd.trigger(Scatter::<StandardMaterial>::new(*q_root));
 }
 
 fn scatter_extended(
-    _: On<Remove, HierarchicalScatterState<StandardMaterial>>,
+    _: On<ScatterFinished<StandardMaterial>>,
     mut cmd: Commands,
     q_root: Single<Entity, With<ScatterRoot>>,
 ) {
+    // Scatter the foliage after the rocks.
     cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
 }
 
 fn scatter_instanced(
-    _: On<Remove, HierarchicalScatterState<ExtendedWindAffectedMaterial>>,
+    _: On<ScatterFinished<ExtendedWindAffectedMaterial>>,
     mut cmd: Commands,
     q_root: Single<Entity, With<ScatterRoot>>,
 ) {
+    // Scatter the grass last so it doesn't grow on occupied areas.
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }
 

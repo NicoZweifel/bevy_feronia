@@ -35,7 +35,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         ChunkLodConfig(vec![30.0.into(), f32::MAX.into()]),
         ChunkSizeScalarConfig(vec![1.into(), 2.into()]),
         MapHeight,
-        LodConfig(vec![
+        LodConfig::from(vec![
             // Level 0: High
             30.0.into(),
             // Level 2: Low

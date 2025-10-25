@@ -1,6 +1,5 @@
-use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use crate::scatter::utils::{Container, InstanceModifiers, create_scatter_results, generate_seed};
+use crate::scatter::utils::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
@@ -21,14 +20,26 @@ type ScatterLayerQueryData<'a> = (
 pub fn handle_scatter_requests<TOut, TIn>(
     mut cmd: Commands,
     q_requests: Query<(Entity, &ScatterRequest<TOut, TIn>), With<ScatterRequest<TOut, TIn>>>,
-    q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
-    q_chunk_root: Query<(Entity, &BaseChunkSize, Option<&MapHeight>, &Aabb), With<ChunkRoot>>,
+    q_scatter_root: Query<
+        (Entity, Option<&MapHeight>, &Aabb),
+        With<ScatterRoot>,
+    >,
+    q_chunk_root: Query<
+        (
+            Entity,
+            &BaseChunkSize,
+            Option<&MapHeight>,
+            &Aabb,
+            &LodConfig,
+        ),
+        With<ChunkRoot>,
+    >,
     q_layer: Query<ScatterLayerQueryData, With<ScatterLayer>>,
     q_chunk: Query<
         (&ChunkSize, &GlobalTransform, &ChunkLevel, &ChunkCoord),
         (With<Chunk>, Without<Merging>),
     >,
-    q_scatter_root_with_map: Query<&ScatterOccupancyMap>,
+    q_scatter_root_with_map: Query<&ScatterOccupancyMap, With<ScatterRoot>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     world_seed: Res<WorldSeed>,
@@ -43,7 +54,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
     // NOTE: handle 2 per frame. TODO optimize / compute shaders for instanced procedural material
     for (entity, request) in q_requests.iter().take(2) {
         let Ok((
-            scatter_root_ref,
+            scatter_root,
             density_dist,
             pattern_dist,
             instance_rotation,
@@ -59,7 +70,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
         };
 
         let default_map = ScatterOccupancyMap::default();
-        let scatter_root_entity = **scatter_root_ref;
+        let scatter_root_entity = **scatter_root;
         let occupancy_map = q_scatter_root_with_map
             .get(scatter_root_entity)
             .unwrap_or(&default_map);
@@ -76,8 +87,8 @@ pub fn handle_scatter_requests<TOut, TIn>(
             .cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {
-            let Ok((root_entity, base_chunk_size, map_height, aabb)) =
-                q_chunk_root.get(**scatter_root_ref)
+            let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
+                q_chunk_root.get(**scatter_root)
             else {
                 warn!("ChunkRoot not found!");
                 continue;
@@ -117,13 +128,13 @@ pub fn handle_scatter_requests<TOut, TIn>(
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.occupied_zones.clone(),
-
+                density: Some(lod_config.density[**chunk_level as usize].clone()),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
             })
         } else {
-            let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root_ref) else {
+            let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
                 warn!("ScatterRoot not found!");
                 continue;
             };
@@ -152,6 +163,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
                 external_avoidance_data: occupancy_map.occupied_zones.clone(),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
+                density: None,
                 density_map_image,
             })
         };
@@ -163,49 +175,11 @@ pub fn handle_scatter_requests<TOut, TIn>(
         cmd.entity(entity).remove::<ScatterRequest<TOut, TIn>>();
 
         let task = AsyncComputeTaskPool::get()
-            .spawn(async move { create_scatter_results_from_task_data::<TOut, TIn>(data) });
+            .spawn(async move { ScatterResults::<TOut, TIn>::from(data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
     }
-}
-
-fn create_scatter_results_from_task_data<TOut, TIn>(
-    task_data: ScatterTaskData,
-) -> ScatterResults<TOut, TIn>
-where
-    TIn: Material + Send + 'static,
-    TOut: ScatterMaterial<TIn> + Asset + Clone + Send + 'static,
-{
-    let density_sampler = task_data
-        .density_map_image
-        .as_ref()
-        .map(|x| DensityMapSampler::new(x, task_data.container.root_size));
-
-    let height_sampler = task_data
-        .height_map_config
-        .as_ref()
-        .and_then(|cfg| {
-            task_data
-                .height_map_image
-                .as_ref()
-                .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
-        })
-        .unwrap_or(HeightMapSampler::Default(DefaultSampler));
-
-    create_scatter_results(
-        task_data.container,
-        InstanceModifiers {
-            jitter: task_data.jitter.as_ref(),
-            avoidance: task_data.avoidance.as_ref(),
-            map_height: task_data.map_height.as_ref(),
-            height_sampler: &height_sampler,
-            density_sampler: &density_sampler,
-            scale: task_data.scale.as_ref(),
-            rotation: task_data.rotation.as_ref(),
-        },
-        &task_data.external_avoidance_data,
-    )
 }
 
 pub fn handle_finished_scatter_tasks<TOut, TIn>(

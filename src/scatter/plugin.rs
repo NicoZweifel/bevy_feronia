@@ -52,9 +52,11 @@ where
             .init_asset::<ScatterAsset<TOut>>()
             .add_message::<ScatterChunk<TOut, TIn>>()
             .add_message::<ScatterResults<TOut, TIn>>()
+            .add_message::<ScatterFinished<TOut, TIn>>()
             .add_observer(on_add_scatter_root::<TOut, TIn>)
             .add_observer(on_add_scatter_layer::<TOut, TIn>)
             .add_observer(on_chunk_add::<TOut, TIn>)
+            .add_observer(scatter_finished::<TOut, TIn>)
             .add_systems(
                 Update,
                 chunk_init_scatter::<TOut, TIn>.in_set(ChunkSet::Ready),
@@ -77,6 +79,7 @@ impl Plugin for ScatterPlugin {
             .init_state::<ScatterState>()
             .init_resource::<WorldSeed>()
             .add_message::<ClearScatterLayer>()
+            .add_message::<ClearScatterRoot>()
             .add_observer(on_add_scatter_item)
             .add_systems(
                 PostUpdate,
@@ -91,7 +94,8 @@ impl Plugin for ScatterPlugin {
                 (
                     check_unprocessed_layers,
                     check_unprocessed_items,
-                    clear_scatter_layers,
+                    clear_scatter_roots,
+                    clear_scatter_layers.after(clear_scatter_roots),
                 )
                     .run_if(in_state(ScatterState::Ready)),
             );
