@@ -175,7 +175,7 @@ fn spawn_scene(
             scattering_asymmetry: 0.6,
             ..default()
         },
-        Transform::from_scale(Vec3::splat(260.).with_y(50.))
+        Transform::from_scale(Vec3::splat(300.).with_y(100.))
             .with_translation(Vec3::new(0., 15., 0.)),
     ));
 
