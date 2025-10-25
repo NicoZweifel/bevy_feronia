@@ -5,6 +5,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/NicoZweifel/bevy_feronia"
 
 exclude = ["assets/", ".github/"]
 
