@@ -22,7 +22,7 @@ pub struct SpawnTrigger {
     pub seed: u64,
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Clone, Debug, Reflect, Copy)]
 pub struct MaterialOptions {
     // Determines whether the material is controlled externally and
     // isn't automatically updated and kept in sync with the Wind resource.
@@ -55,20 +55,52 @@ impl Default for MaterialOptions {
     }
 }
 
-impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
-where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
-{
-    fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
+pub type MaterialOptionData<'w> = (
+    Option<&'w EnableDebug>,
+    Option<&'w EnableBillboarding>,
+    Option<&'w EdgeCorrectionFactor>,
+    Option<&'w CurveFactor>,
+);
+
+impl From<MaterialOptionData<'_>> for MaterialOptions {
+    fn from(
+        (enable_debug, enable_billboarding, edge_correction_factor, curve_factor):MaterialOptionData,
+    ) -> Self {
         Self {
-            chunk: value.chunk,
-            layer: value.layer,
-            target: value.entity,
-            data: value.data.clone(),
-            root: value.root,
-            seed: value.seed,
+            debug: enable_debug.is_some(),
+            enable_billboarding: enable_billboarding.is_some(),
+            edge_correction_factor: edge_correction_factor.map(|x| **x).unwrap_or(0.),
+            curve_factor: curve_factor.map(|x| **x).unwrap_or(0.),
+            ..default()
         }
+    }
+}
+
+impl MaterialOptions {
+    pub fn with(
+        &self,
+        (enable_debug, enable_billboarding, edge_correction_factor, curve_factor):MaterialOptionData,
+    ) -> Self {
+        Self {
+            debug: enable_debug.map(|_| true).unwrap_or(self.debug),
+            enable_billboarding: enable_billboarding
+                .map(|_| true)
+                .unwrap_or(self.enable_billboarding),
+            edge_correction_factor: edge_correction_factor
+                .map(|x| **x)
+                .unwrap_or(self.edge_correction_factor),
+            curve_factor: curve_factor.map(|x| **x).unwrap_or(self.curve_factor),
+            ..*self
+        }
+    }
+    pub fn with_debug_color(mut self, debug_color: Color) -> Self {
+        self.debug_color = debug_color;
+        self
+    }
+
+    pub fn with_controlled(mut self, controlled: bool) -> Self {
+        self.controlled = controlled;
+        self
     }
 }
 

@@ -2,7 +2,6 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -103,8 +102,7 @@ fn spawn_scene(
                 (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()),)
             ]
         )],
-    ))
-    .observe(extended_scatter_observer);
+    ));
 
     ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);

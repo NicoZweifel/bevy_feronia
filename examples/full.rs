@@ -2,15 +2,12 @@
 mod example;
 
 use bevy::asset::RenderAssetUsages;
-use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::image::*;
 use bevy::light::FogVolume;
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::extension::observers::extended_scatter_observer;
-use bevy_feronia::instancing::observers::instanced_scatter_observer;
+use bevy::render::render_resource::*;
 use bevy_feronia::prelude::*;
-use bevy_feronia::scatter::observers::standard_scatter_observer;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{RngCore, rng};
@@ -170,7 +167,7 @@ fn spawn_scene(
     cmd.spawn((
         FogVolume {
             density_texture: Some(fog_texture_handle),
-            density_factor: 0.1,
+            density_factor: 0.05,
             fog_color: Color::WHITE,
             scattering_asymmetry: 0.6,
             ..default()
@@ -189,6 +186,8 @@ fn spawn_scene(
             mode: bevy::audio::PlaybackMode::Loop,
             ..default()
         },
+        // Layers/Scattering should be ordered in respect to the ScatterOccupancyMap, i.e.,
+        // later layers/scatters can't scatter on occupied areas from earlier layers/scatters.
         children![
             (
                 Name::new("Rock Layer"),
@@ -196,7 +195,7 @@ fn spawn_scene(
                 ScatterLayerType::<StandardMaterial>::default(),
                 DistributionDensity(5.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 2., max: 6. },
+                InstanceScale { min: 2., max: 8. },
                 InstanceJitter::default(),
                 Avoidance(3.),
                 children![
@@ -269,10 +268,7 @@ fn spawn_scene(
                 ],
             )
         ],
-    ))
-    .observe(instanced_scatter_observer)
-    .observe(extended_scatter_observer)
-    .observe(standard_scatter_observer);
+    ));
 
     ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
@@ -289,8 +285,10 @@ fn scatter_on_keypress(
         return;
     };
 
+    // Clean up all scattered instances.
     mw_clear_root.write((*q_root).into());
 
+    // Generate a different world.
     **world_seed = rng().next_u64();
 
     // Scatter the rocks.

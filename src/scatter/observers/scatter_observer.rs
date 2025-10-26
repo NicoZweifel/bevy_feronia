@@ -30,12 +30,3 @@ pub fn scatter_observer<TOut, TIn>(
 
     mw_spawn.write(event);
 }
-
-pub fn standard_scatter_observer(
-    trigger: On<ScatterResults<StandardMaterial>>,
-    q_layer: Query<&ScatterLayer, With<ScatterLayerType<StandardMaterial>>>,
-    q_items: Query<&ScatterItemAsset<StandardMaterial>, With<ScatterItem>>,
-    mw_spawn: MessageWriter<SpawnProtoTypes<StandardMaterial>>,
-) {
-    scatter_observer::<StandardMaterial, StandardMaterial>(trigger, q_layer, q_items, mw_spawn);
-}

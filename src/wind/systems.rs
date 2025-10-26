@@ -1,4 +1,3 @@
-use crate::asset::systems::{MaterialOptionData, WindData};
 use crate::prelude::*;
 use bevy::asset::{Asset, Assets};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
@@ -26,11 +25,11 @@ pub fn update_materials<TOut, TIn>(
             continue;
         };
 
-        if asset.material_options.controlled {
+        if asset.properties.options.controlled {
             continue;
         };
 
-        let Ok((wind_data, material_options, root)) = q_layer.get(asset.layer) else {
+        let Ok((wind_data, material_options, root)) = q_layer.get(asset.properties.layer) else {
             dbg!("ScatterLayer not found!");
             continue;
         };
@@ -43,8 +42,8 @@ pub fn update_materials<TOut, TIn>(
         let wind = wind.with(root_wind_data).with(wind_data);
         let options = MaterialOptions::from(root_material_options).with(material_options);
 
-        asset.wind = wind.clone();
-        asset.material_options = options.clone();
+        asset.properties.wind = wind;
+        asset.properties.options = options;
 
         TOut::update_material(material, wind, options);
     }

@@ -5,7 +5,6 @@ use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500};
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -67,8 +66,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 )
             ]
         )],
-    ))
-    .observe(instanced_scatter_observer);
+    ));
 }
 
 fn setup_density_map(

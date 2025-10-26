@@ -2,7 +2,6 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::observers::extended_scatter_observer;
 use bevy_feronia::extension::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -42,8 +41,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             WindAffected,
             children![SceneRoot(assets.load("foliage.glb#Scene0"))]
         )],
-    ))
-    .observe(extended_scatter_observer);
+    ));
 }
 
 fn scatter_on_keypress(

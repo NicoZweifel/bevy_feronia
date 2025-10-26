@@ -234,6 +234,23 @@ where
     }
 }
 
+impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
+where
+    TIn: Material,
+    TOut: ScatterMaterial<TIn> + Asset + Clone,
+{
+    fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
+        Self {
+            chunk: value.chunk,
+            layer: value.layer,
+            target: value.entity,
+            data: value.data.clone(),
+            root: value.root,
+            seed: value.seed,
+        }
+    }
+}
+
 impl<TOut, TIn> ScatterResults<TOut, TIn>
 where
     TOut: ScatterMaterial<TIn> + Asset + Clone,

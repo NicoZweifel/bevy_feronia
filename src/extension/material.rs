@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
 use bevy::pbr::ExtendedMaterial;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
@@ -12,19 +11,12 @@ pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindA
 impl ScatterMaterial for ExtendedWindAffectedMaterial {
     fn create_material(
         base: Option<StandardMaterial>,
-        wind: Wind,
         noise_texture: Handle<Image>,
-        aabb: Aabb,
-        options: MaterialOptions,
+        properties: &ScatterAssetProperties,
     ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
             base: base.unwrap_or_default(),
-            extension: WindAffectedExtension {
-                noise_texture,
-                wind,
-                aabb,
-                options,
-            },
+            extension: WindAffectedExtension::new(&properties, noise_texture),
         }
     }
 
@@ -73,7 +65,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
             let mut name_map: HashMap<Name, Vec<&ScatterAsset<_>>> = HashMap::new();
 
             prototypes.iter().for_each(|p| {
-                let name = p.name.clone().unwrap_or_else(|| Name::new(""));
+                let name = p.properties.name.clone().unwrap_or_else(|| Name::new(""));
                 name_map.entry(name).or_default().push(*p);
             });
 
@@ -111,14 +103,14 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
                             .iter()
                             .filter(|p| {
                                 if is_chunked {
-                                    *p.lod_level == *chunk_level
+                                    *p.properties.lod_level == *chunk_level
                                 } else {
-                                    *p.lod_level >= *chunk_level
+                                    *p.properties.lod_level >= *chunk_level
                                 }
                             })
                             .map(move |prototype| {
                                 let visibility_range =
-                                    lod_config.get_visibility_range(prototype.lod_level);
+                                    lod_config.get_visibility_range(prototype.properties.lod_level);
                                 (
                                     res.transform,
                                     Mesh3d(prototype.mesh().clone()),

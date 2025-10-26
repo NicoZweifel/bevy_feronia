@@ -25,6 +25,17 @@ pub struct WindAffectedExtension {
     pub noise_texture: Handle<Image>,
 }
 
+impl WindAffectedExtension {
+    pub fn new(properties: &ScatterAssetProperties, noise_texture: Handle<Image>) -> Self {
+        Self {
+            wind: properties.wind,
+            aabb: properties.aabb,
+            options: properties.options,
+            noise_texture,
+        }
+    }
+}
+
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)

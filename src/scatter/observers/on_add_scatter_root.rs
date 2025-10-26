@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::scatter::observers::{hierarchical_scatter, scatter_root};
+use crate::scatter::observers::{hierarchical_scatter, scatter_observer, scatter_root};
 use bevy::prelude::*;
 
 pub fn on_add_scatter_root<TOut, TIn>(trigger: On<Add, ScatterRoot>, mut cmd: Commands)
@@ -13,5 +13,6 @@ where
 
     cmd.entity(root)
         .observe(scatter_root::<TOut, TIn>)
-        .observe(hierarchical_scatter::<TOut, TIn>);
+        .observe(hierarchical_scatter::<TOut, TIn>)
+        .observe(scatter_observer::<TOut, TIn>);
 }

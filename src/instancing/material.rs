@@ -29,6 +29,17 @@ pub struct InstancedWindAffectedMaterial {
     pub noise_texture: Handle<Image>,
 }
 
+impl InstancedWindAffectedMaterial {
+    pub fn new(properties: &ScatterAssetProperties, noise_texture: Handle<Image>) -> Self {
+        Self {
+            wind: properties.wind,
+            aabb: properties.aabb,
+            options: properties.options,
+            noise_texture,
+        }
+    }
+}
+
 #[derive(Component, Clone, Debug)]
 pub struct InstancedWindAffectedMeshMaterial(pub Handle<InstancedWindAffectedMaterial>);
 
@@ -78,17 +89,10 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
 impl ScatterMaterial for InstancedWindAffectedMaterial {
     fn create_material(
         _base: Option<StandardMaterial>,
-        wind: Wind,
         noise_texture: Handle<Image>,
-        aabb: Aabb,
-        options: MaterialOptions,
+        properties: &ScatterAssetProperties,
     ) -> InstancedWindAffectedMaterial {
-        InstancedWindAffectedMaterial {
-            wind,
-            noise_texture,
-            aabb,
-            options,
-        }
+        InstancedWindAffectedMaterial::new(properties, noise_texture)
     }
 
     fn update_material(
@@ -136,7 +140,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 HashMap::new();
 
             prototypes.iter().for_each(|p| {
-                let name = p.name.clone().unwrap_or_else(|| Name::new(""));
+                let name = p.properties.name.clone().unwrap_or_else(|| Name::new(""));
                 name_map.entry(name).or_default().push(*p);
             });
 
@@ -160,13 +164,16 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 } else {
                     name_map
                         .get(*chosen_name)
-                        .and_then(|group| group.iter().map(|p| *p.lod_level).min())
+                        .and_then(|group| group.iter().map(|p| *p.properties.lod_level).min())
                         .unwrap_or_default()
                 };
 
                 if name_map
                     .get(*chosen_name)
-                    .and_then(|g| g.iter().find(|p| *p.lod_level == target_lod_level))
+                    .and_then(|g| {
+                        g.iter()
+                            .find(|p| *p.properties.lod_level == target_lod_level)
+                    })
                     .is_some()
                 {
                     let instance_data = InstanceData {
@@ -196,16 +203,16 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         .get(&name)
                         .unwrap()
                         .iter()
-                        .map(|p| *p.lod_level)
+                        .map(|p| *p.properties.lod_level)
                         .min()
                         .unwrap_or_default()
                 };
 
                 let prototypes = name_map.get(&name).unwrap().iter().filter(|p| {
                     if is_chunked {
-                        *p.lod_level == target_lod
+                        *p.properties.lod_level == target_lod
                     } else {
-                        *p.lod_level >= target_lod
+                        *p.properties.lod_level >= target_lod
                     }
                 });
 
@@ -213,7 +220,8 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     let mesh_handle = prototype.mesh().clone();
                     let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-                    let visibility_range = lod_config.get_visibility_range(prototype.lod_level);
+                    let visibility_range =
+                        lod_config.get_visibility_range(prototype.properties.lod_level);
 
                     let instances_with_offset = instances
                         .iter()

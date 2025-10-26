@@ -16,10 +16,8 @@ where
     // TODO refactor
     fn create_material(
         base: Option<TIn>,
-        wind: Wind,
         noise_texture: Handle<Image>,
-        aabb: Aabb,
-        options: MaterialOptions,
+        properties: &ScatterAssetProperties,
     ) -> Self;
     fn update_material(material: &mut Self, wind: Wind, options: MaterialOptions);
 
@@ -38,10 +36,8 @@ where
 impl ScatterMaterial for StandardMaterial {
     fn create_material(
         base: Option<StandardMaterial>,
-        _wind: Wind,
         _noise_texture: Handle<Image>,
-        _aabb: Aabb,
-        _options: MaterialOptions,
+        _properties: &ScatterAssetProperties,
     ) -> StandardMaterial {
         base.unwrap_or_default()
     }
@@ -83,7 +79,7 @@ impl ScatterMaterial for StandardMaterial {
             let mut name_map: HashMap<Name, Vec<&ScatterAsset<_>>> = HashMap::new();
 
             prototypes.iter().for_each(|p| {
-                let name = p.name.clone().unwrap_or_else(|| Name::new(""));
+                let name = p.properties.name.clone().unwrap_or_else(|| Name::new(""));
                 name_map.entry(name).or_default().push(*p);
             });
 
@@ -121,18 +117,18 @@ impl ScatterMaterial for StandardMaterial {
                             .iter()
                             .filter(|p| {
                                 if is_chunked {
-                                    *p.lod_level == *chunk_level
+                                    *p.properties.lod_level == *chunk_level
                                 } else {
-                                    *p.lod_level >= *chunk_level
+                                    *p.properties.lod_level >= *chunk_level
                                 }
                             })
-                            .map(move |prototype| {
+                            .map(move |p| {
                                 let visibility_range =
-                                    lod_config.get_visibility_range(prototype.lod_level);
+                                    lod_config.get_visibility_range(p.properties.lod_level);
                                 (
                                     res.transform,
-                                    Mesh3d(prototype.mesh().clone()),
-                                    MeshMaterial3d(prototype.material().clone()),
+                                    Mesh3d(p.mesh().clone()),
+                                    MeshMaterial3d(p.material().clone()),
                                     ChildOf(parent),
                                     visibility_range,
                                     ScatteredInstance(event.trigger.layer),

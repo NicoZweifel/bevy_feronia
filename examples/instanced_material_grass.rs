@@ -3,7 +3,6 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_feronia::chunking::systems::debug::draw_aabbs;
-use bevy_feronia::instancing::observers::instanced_scatter_observer;
 use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -48,8 +47,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 )
             ]
         )],
-    ))
-    .observe(instanced_scatter_observer);
+    ));
 }
 
 fn scatter_on_keypress(
