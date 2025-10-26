@@ -116,6 +116,10 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("FAST_NORMALS".into());
         }
 
+        if key.wind_key.contains(WindAffectedKey::WIND_AFFECTED) {
+            shader_defs.push("WIND_AFFECTED".into());
+        }
+
         if key.wind_key.contains(WindAffectedKey::DEBUG) {
             shader_defs.push("MATERIAL_DEBUG".into());
         }

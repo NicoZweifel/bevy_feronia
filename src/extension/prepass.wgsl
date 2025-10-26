@@ -57,8 +57,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
         // --- DISPLACEMENT ---
         let displaced = displace_vertex_and_calc_normal(
-            wind,
-            noise,
+        wind,
+        noise,
             vertex.position,
             instance,
 #ifdef VERTEX_NORMALS

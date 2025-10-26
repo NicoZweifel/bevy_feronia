@@ -29,23 +29,29 @@ pub fn update_materials<TOut, TIn>(
             continue;
         };
 
-        let Ok((wind_data, material_options, root)) = q_layer.get(asset.properties.layer) else {
+        let Ok((wind_data, _material_options, root)) = q_layer.get(asset.properties.layer) else {
             dbg!("ScatterLayer not found!");
             continue;
         };
 
-        let Ok((root_wind_data, root_material_options)) = q_root.get(**root) else {
+        let Ok((root_wind_data, _root_material_options)) = q_root.get(**root) else {
             dbg!("ScatterRoot not found!");
             continue;
         };
 
         let wind = wind.with(root_wind_data).with(wind_data);
-        let options = MaterialOptions::from(root_material_options).with(material_options);
+
+        // TODO update options
+        /*
+        let options = MaterialOptions::from(root_material_options)
+            .with(material_options)
+            .with_options(asset.properties.options)
+            .with_quality(*asset.properties.lod_level, asset.properties.wind_affected);
+         */
 
         asset.properties.wind = wind;
-        asset.properties.options = options;
 
-        TOut::update_material(material, wind, options);
+        TOut::update_material(material, wind, asset.properties.options);
     }
 }
 

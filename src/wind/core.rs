@@ -143,7 +143,7 @@ impl ScatterMaterial for StandardMaterial {
 }
 
 #[repr(C)]
-#[derive(ShaderType, Clone, Pod, Zeroable, Copy)]
+#[derive(ShaderType, Clone, Zeroable, Copy)]
 pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,
@@ -152,8 +152,6 @@ pub struct WindUniform {
     pub bend_exponent: f32,
     pub curve_factor: f32,
     pub micro_strength: f32,
-    pub micro_noise_scale: f32,
-    pub micro_scroll_speed: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
     pub s_curve_frequency: f32,
@@ -161,7 +159,7 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
 
-    // TODO create another uniform for Options
+    // TODO move to another uniform for Options
     pub edge_correction_factor: f32,
     pub lod_threshold: f32,
     pub aabb_min: Vec3,
@@ -178,8 +176,6 @@ impl From<&Wind> for WindUniform {
             scroll_speed: wind.scroll_speed,
             bend_exponent: wind.bend_exponent,
             micro_strength: wind.micro_strength,
-            micro_noise_scale: wind.micro_noise_scale,
-            micro_scroll_speed: wind.micro_scroll_speed,
             s_curve_speed: wind.s_curve_speed,
             s_curve_strength: wind.s_curve_strength,
             s_curve_frequency: wind.s_curve_frequency,
@@ -236,5 +232,6 @@ bitflags! {
         const WIND_LOW_QUALITY = 1 << 2;
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;
+        const WIND_AFFECTED= 1 << 5;
     }
 }

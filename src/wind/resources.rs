@@ -1,7 +1,4 @@
-use crate::prelude::{
-    BendExponent, BopSpeed, BopStrength, LowQuality, MicroStrengthMultiplier, SCurveFrequency,
-    SCurveSpeed, SCurveStrength, StrengthMultiplier, TwistStrength,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
@@ -17,15 +14,12 @@ pub struct Wind {
     pub scroll_speed: f32,
     pub bend_exponent: f32,
     pub micro_strength: f32,
-    pub micro_noise_scale: f32,
-    pub micro_scroll_speed: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
     pub s_curve_frequency: f32,
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-    pub low_quality: bool,
 }
 
 impl Default for Wind {
@@ -36,9 +30,7 @@ impl Default for Wind {
             strength: 0.2,
             noise_scale: 0.01,
             scroll_speed: 0.1,
-            micro_strength: 0.1,
-            micro_noise_scale: 0.5,
-            micro_scroll_speed: 0.1,
+            micro_strength: 0.05,
             bend_exponent: 2.0,
             s_curve_speed: 2.0,
             s_curve_strength: 0.1,
@@ -46,7 +38,6 @@ impl Default for Wind {
             bop_speed: 1.0,
             bop_strength: 0.05,
             twist_strength: 0.05,
-            low_quality: false,
         }
     }
 }
@@ -61,7 +52,6 @@ pub type WindData<'w> = (
     Option<&'w BopSpeed>,
     Option<&'w TwistStrength>,
     Option<&'w BendExponent>,
-    Option<&'w LowQuality>,
 );
 
 impl Wind {
@@ -77,7 +67,6 @@ impl Wind {
             bop_speed,
             twist_strength,
             bend_exponent,
-            low_quality,
         ): WindData,
     ) -> Self {
         Wind {
@@ -108,7 +97,6 @@ impl Wind {
             bend_exponent: bend_exponent
                 .map(|x| **x * self.bend_exponent)
                 .unwrap_or(self.bend_exponent),
-            low_quality: low_quality.map(|_| true).unwrap_or(self.low_quality),
             ..*self
         }
     }

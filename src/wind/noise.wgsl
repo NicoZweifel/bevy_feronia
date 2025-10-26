@@ -17,6 +17,7 @@
 fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledNoise {
     var noise: SampledNoise;
 
+#ifdef WIND_AFFECTED
 #ifdef BINDLESS
     let slot = mesh[instance.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
     let wind =  wind_material[wind_indices[slot].material];
@@ -30,13 +31,14 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
     let uv_scroll_offset = instance.wrapped_time * wind.scroll_speed * wind.direction;
     let tex_coord = base_uv + uv_scroll_offset;
 
+#ifdef WIND_LOW_QUALITY
+    noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, tex_coord, 0.0).r;
+    noise.micro_noise = 0.0;
+    noise.phase_noise = vec2<f32>(0.0);
+#else
     let packed_noise = textureSampleLevel(noise_texture, noise_texture_sampler, tex_coord, 0.0);
 
     noise.macro_noise = packed_noise.r;
-    noise.micro_noise = 0.0;
-    noise.phase_noise = vec2<f32>(0.0);
-
-#ifndef WIND_LOW_QUALITY
     noise.micro_noise = packed_noise.g;
 
     let seed_x = bitcast<u32>(instance.instance_position.x);
@@ -46,7 +48,12 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
 
     noise.phase_noise.x = rand_f(&seed);
     noise.phase_noise.y = rand_f(&seed);
-#endif
+#endif // WIND_LOW_QUALITY
+#else
+    noise.macro_noise = 0.0;
+    noise.micro_noise = 0.0;
+    noise.phase_noise = vec2<f32>(0.0);
+#endif // WIND_AFFECTED
 
     return noise;
 }

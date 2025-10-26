@@ -10,7 +10,8 @@ use bevy::render::render_resource::*;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
-use rand::{RngCore, rng};
+use rand::{Rng, RngCore, SeedableRng, rng};
+use rand_pcg::Pcg64;
 
 fn main() -> AppExit {
     App::new()
@@ -47,12 +48,14 @@ fn main() -> AppExit {
         .add_systems(
             Update,
             (
+                setup_density_map_inspection.run_if(resource_added::<DensityMap>),
                 setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
                 scatter_on_keypress,
             ),
         )
         .add_observer(scatter_extended)
         .add_observer(scatter_instanced)
+        .add_observer(update_density_map)
         .run()
 }
 
@@ -99,6 +102,23 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
         audio: asset_server
             .load("sounds/birds-singing-in-and-leaves-rustling-with-the-wind-14557.mp3"),
     });
+}
+
+fn setup_density_map_inspection(
+    mut cmd: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    density_map: Res<DensityMap>,
+) {
+    cmd.spawn((
+        Transform::from_xyz(10.0, 7.0, 5.0).looking_at(Vec3::new(0.0, 14.0, 1.0), Vec3::Y),
+        Mesh3d(meshes.add(PlaneMeshBuilder::from_length(1.))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color_texture: Some(density_map.0.clone()),
+            unlit: true,
+            ..default()
+        })),
+    ));
 }
 
 fn setup_height_map_inspection(
@@ -244,21 +264,25 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(200.),
+                DistributionDensity(250.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
                 InstanceJitter::default(),
-                InstanceScale { min: 1., max: 2.5 },
+                InstanceScale { min: 1., max: 1.5 },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
-                EnableBillboarding,
-                EdgeCorrectionFactor::default(),
-                CurveFactor::default(),
-                StrengthMultiplier(1.2),
-                MicroStrengthMultiplier(1.2),
+                (
+                    EnableBillboarding,
+                    EdgeCorrectionFactor::default(),
+                    CurveFactor::default(),
+                    StrengthMultiplier(1.1),
+                    MicroStrengthMultiplier(1.1),
+                    SCurveSpeed(1.5),
+                    BopSpeed(1.5)
+                ),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (
@@ -289,8 +313,9 @@ fn scatter_on_keypress(
     // Clean up all scattered instances.
     mw_clear_root.write((*q_root).into());
 
-    // Generate a different world.
+    // Generate a different world and update the density map.
     **world_seed = rng().next_u64();
+    cmd.trigger(UpdateDensityMap);
 
     // Scatter the rocks.
     cmd.trigger(Scatter::<StandardMaterial>::new(*q_root));
@@ -314,22 +339,86 @@ fn scatter_instanced(
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }
 
-fn setup_density_map(
+// TODO make expressive/descriptive configuration/plugin
+#[derive(Resource)]
+pub struct DensityMapConfig {
+    pub size: u32,
+}
+
+#[derive(Resource, Deref, DerefMut)]
+struct DensityMap(Handle<Image>);
+
+#[derive(Event)]
+struct UpdateDensityMap;
+
+fn setup_density_map(mut commands: Commands) {
+    commands.trigger(UpdateDensityMap);
+}
+
+/// Creates a density map with a Perlin noise base and empty spots stamped on top.
+fn update_density_map(
+    _: On<UpdateDensityMap>,
     mut cmd: Commands,
     mut images: ResMut<Assets<Image>>,
     cfg: Res<DensityMapConfig>,
+    seed: Res<WorldSeed>,
 ) {
     let size = cfg.size;
     let mut data_buffer = vec![0; (size * size) as usize];
-    let perlin = Perlin::new(1);
+    let mut rng = Pcg64::seed_from_u64(**seed);
+
+    let perlin = Perlin::new(**seed as u32);
     let sample_scale = 8.0;
 
     for y in 0..size {
         for x in 0..size {
-            let point = [x as f64 / size as f64, y as f64 / size as f64];
-            let noise_value = perlin.get([point[0] * sample_scale, point[1] * sample_scale]);
+            let point = [
+                x as f64 / size as f64 * sample_scale,
+                y as f64 / size as f64 * sample_scale,
+            ];
+
+            let noise_value = perlin.get(point);
             let byte_value = ((noise_value * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
+
             data_buffer[(y * size + x) as usize] = byte_value;
+        }
+    }
+
+    let num_spots = 100;
+    let max_spot_radius = (size / 8) as f32;
+    let min_spot_radius = (size / 40) as f32;
+
+    // Empty spots
+    for _ in 0..num_spots {
+        let center_x = rng.random_range(0..size) as f32;
+        let center_y = rng.random_range(0..size) as f32;
+
+        let radius = rng.random_range(min_spot_radius..max_spot_radius);
+        let radius_sq = radius * radius;
+
+        // Bounds
+        let x_min = (center_x - radius).floor().max(0.0) as u32;
+        let x_max = (center_x + radius).ceil().min(size as f32) as u32;
+        let y_min = (center_y - radius).floor().max(0.0) as u32;
+        let y_max = (center_y + radius).ceil().min(size as f32) as u32;
+
+        for y in y_min..y_max {
+            for x in x_min..x_max {
+                let dx = x as f32 - center_x;
+                let dy = y as f32 - center_y;
+                let dist_sq = dx * dx + dy * dy;
+
+                if dist_sq < radius_sq {
+                    // falloff
+                    let t = dist_sq / radius_sq;
+                    let intensity = (1.0 - t).clamp(0.0, 1.0);
+
+                    let byte_value = ((1.0 - intensity) * 255.0) as u8;
+
+                    let index = (y * size + x) as usize;
+                    data_buffer[index] = data_buffer[index].min(byte_value);
+                }
+            }
         }
     }
 
@@ -355,15 +444,6 @@ fn setup_density_map(
     let handle = images.add(density_image);
     cmd.insert_resource(DensityMap(handle));
 }
-
-// TODO make expressive/descriptive configuration/plugin
-#[derive(Resource)]
-pub struct DensityMapConfig {
-    pub size: u32,
-}
-
-#[derive(Resource, Deref, DerefMut)]
-struct DensityMap(Handle<Image>);
 
 /// Generates a 3D texture with a spherical density gradient.
 ///

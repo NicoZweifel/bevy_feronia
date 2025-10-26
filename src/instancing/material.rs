@@ -23,7 +23,6 @@ pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,
     pub aabb: Aabb,
     pub options: MaterialOptions,
-
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,
@@ -236,8 +235,14 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                             InstancedWindAffectedMeshMaterial(prototype.material().clone()),
                             Mesh3d(mesh_handle),
                             InstanceMaterialData {
-                                color: LinearRgba::from(Color::hsla(78., 0.98, 0.5, 1.0))
-                                    .to_f32_array(),
+                                color: LinearRgba::from(
+                                    prototype
+                                        .properties
+                                        .options
+                                        .color
+                                        .unwrap_or(Color::hsla(78., 0.98, 0.5, 1.0)),
+                                )
+                                .to_f32_array(),
                                 visibility_range: [
                                     visibility_range.start_margin.start,
                                     visibility_range.start_margin.end,

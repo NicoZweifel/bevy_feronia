@@ -93,6 +93,10 @@ impl MaterialExtension for WindAffectedExtension {
             shader_defs.push("FAST_NORMALS".into());
         }
 
+        if key.bind_group_data.contains(WindAffectedKey::WIND_AFFECTED) {
+            shader_defs.push("WIND_AFFECTED".into());
+        }
+
         if key.bind_group_data.contains(WindAffectedKey::DEBUG) {
             shader_defs.push("MATERIAL_DEBUG".into());
             descriptor
@@ -112,6 +116,10 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
         let mut key = WindAffectedKey::empty();
         key.set(WindAffectedKey::DEBUG, material.options.debug);
         key.set(
+            WindAffectedKey::WIND_AFFECTED,
+            material.options.wind_affected,
+        );
+        key.set(
             WindAffectedKey::ENABLE_BILLBOARDING,
             material.options.enable_billboarding,
         );
@@ -119,7 +127,10 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
-        key.set(WindAffectedKey::WIND_LOW_QUALITY, material.wind.low_quality);
+        key.set(
+            WindAffectedKey::WIND_LOW_QUALITY,
+            material.options.low_quality,
+        );
         key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
 
         key

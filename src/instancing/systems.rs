@@ -41,8 +41,15 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
-        key.set(WindAffectedKey::WIND_LOW_QUALITY, material.wind.low_quality);
+        key.set(
+            WindAffectedKey::WIND_LOW_QUALITY,
+            material.options.low_quality,
+        );
         key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
+        key.set(
+            WindAffectedKey::WIND_AFFECTED,
+            material.options.wind_affected,
+        );
         key.set(WindAffectedKey::DEBUG, material.options.debug);
 
         commands

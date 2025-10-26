@@ -13,6 +13,10 @@ fn calculate_vertex_displacement(
     instance: InstanceInfo,
     lod_fade: f32
 ) -> vec3<f32> {
+    var pos = local_pos;
+    var total_world_offset = vec3<f32>(0.0);
+
+   #ifdef WIND_AFFECTED
     let clamped_macro_noise = clamp(noise.macro_noise, 0.001, 1.0 - 0.001);
     let macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
 
@@ -21,29 +25,26 @@ fn calculate_vertex_displacement(
 
     let c_curve_shape = pow(normalized_height, wind.bend_exponent);
 
-    var pos = local_pos;
-
-#ifndef WIND_BILLBOARDING
-    pos = calculate_twist(wind, macro_wind_factor, c_curve_shape, pos);
-#endif
+    #ifndef WIND_BILLBOARDING
+        pos = calculate_twist(wind, macro_wind_factor, c_curve_shape, pos);
+    #endif
 
     let macro_displacement = macro_wind_factor * wind.strength * c_curve_shape;
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
-    var total_world_offset = horizontal_dir * macro_displacement;
+    total_world_offset = horizontal_dir * macro_displacement;
 
-#ifndef WIND_LOW_QUALITY
-    let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
-    let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
-    let micro_displacement = micro_wind_factor * wind.micro_strength * c_curve_shape;
-    let micro_wind = horizontal_dir * micro_displacement;
+    #ifndef WIND_LOW_QUALITY
+        let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
+        let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
+        let micro_displacement = micro_wind_factor * wind.micro_strength * c_curve_shape;
+        let micro_wind = horizontal_dir * micro_displacement;
 
-    let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
+        let s_curve = calculate_s_curve_displacement(wind, c_curve_shape, normalized_height, instance.wrapped_time, noise.phase_noise.x);
+        let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
 
-    let bop = calculate_bop_displacement(wind, c_curve_shape, instance.wrapped_time, noise.phase_noise.y);
-
-    total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
+        total_world_offset += (micro_wind + s_curve + bop) * lod_fade;
+    #endif
 #endif
-
     var final_world_pos = (instance.world_from_local * vec4<f32>(pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
 
@@ -92,11 +93,10 @@ fn displace_vertex_and_calc_normal(
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
     let small_offset = 0.01;
-#ifndef WIND_LOW_QUALITY
+#ifdef WIND_AFFECTED && ifndef WIND_LOW_QUALITY
     let dist_to_camera = distance(instance.instance_position.xyz, view.world_position.xyz);
     let lod_fade = smoothstep(wind.lod_threshold * 2.0, wind.lod_threshold, dist_to_camera);
 #else
-    let dist_to_camera:f32 = 0.0;
     let lod_fade:f32 = 0.0;
 #endif
 
@@ -104,16 +104,24 @@ fn displace_vertex_and_calc_normal(
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
 #ifdef VERTEX_NORMALS
-    // TODO use chunk index / 0 instead of instance_index for instanced material (and try Automatic Batching)
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
+   #ifdef VERTEX_TANGENTS
+        let mesh_tangent = mesh_tangent_local_to_world(instance.world_from_local, tangent, instance.instance_index);
+    #endif
 
     #ifdef FAST_NORMALS
-        // --- OPTIMIZED PATH ---
         #ifndef WIND_LOW_QUALITY
-            // TODO approximation methods and/or pre-defined geometry calculations for normals / tangents
+            // TODO approximation methods
+            out.world_normal = mesh_normal;
+            #ifdef VERTEX_TANGENTS
+                out.world_tangent = mesh_tangent;
+            #endif
         #else
             out.world_normal = mesh_normal;
-        #endif
+            #ifdef VERTEX_TANGENTS
+                out.world_tangent = mesh_tangent;
+            #endif
+        #endif // WIND_LOW_QUALITY
     #else
         #ifndef WIND_LOW_QUALITY
             let neighbor_pos_x = calculate_vertex_displacement(vertex_pos + vec3<f32>(small_offset, 0.0, 0.0), wind, noise, instance, lod_fade);
@@ -138,13 +146,14 @@ fn displace_vertex_and_calc_normal(
 
             #ifdef VERTEX_TANGENTS
                 let new_world_tangent = normalize(tangent.x * dPdx + tangent.z * dPdz);
-
                 let reorthogonalized_tangent = normalize(new_world_tangent - dot(new_world_tangent, out.world_normal) * out.world_normal);
-
                 out.world_tangent = vec4<f32>(reorthogonalized_tangent, tangent.w);
             #endif
         #else
                 out.world_normal = mesh_normal;
+            #ifdef VERTEX_TANGENTS
+                out.world_tangent = mesh_tangent;
+            #endif
         #endif // WIND_LOW_QUALITY
     #endif // FAST_NORMALS
 #endif // VERTEX_NORMALS

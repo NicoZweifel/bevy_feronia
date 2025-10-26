@@ -18,7 +18,7 @@ pub type CollectableQueryData<'w, T> = (
 
 pub fn queue_material_creation_requests<TOut, TIn>(
     mut cmd: Commands,
-    q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
+    q_roots: Query<(Entity, &ScatterRoot, MaterialOptionData), Without<ScatterRootProcessed>>,
     q_layers: Query<
         (&Children, MaterialOptionData, WindData),
         (
@@ -39,7 +39,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
     TIn: Material,
     TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
-    for (root, children) in &q_roots {
+    for (root, children, root_material_data) in &q_roots {
         debug!(
             "Queueing ScatterAsset creation requests in root {:?}...",
             root
@@ -52,7 +52,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
             };
 
             wind = wind.with(wind_data);
-            let options = MaterialOptions::from(material_option_data);
+            let options = MaterialOptions::from(root_material_data).with(material_option_data);
 
             for item in scatter_items {
                 queue_requests_recursive::<TOut, TIn>(
@@ -108,22 +108,18 @@ where
 
     let lod = lod.map_or(current_lod_level.unwrap_or_default(), |x| *x);
 
-    if !controlled {
-        wind = Wind {
-            low_quality: *lod != 0,
-            ..wind
-        }
-    };
-
     let name = current_name.map_or(name.cloned(), Some);
 
     let hue = (entity.index() * 30) as f32 % 360.0;
     let debug_color = Color::hsl(hue, 1.0, 0.5);
 
-    let options = options
+    let mut options = options
         .with(material_option_data)
-        .with_debug_color(debug_color)
-        .with_controlled(controlled);
+        .with_debug_color(debug_color);
+
+    if !controlled {
+        options = options.with_quality(*lod, options.wind_affected);
+    };
 
     let mut has_children_with_materials = false;
     if let Some(children) = children {

@@ -37,6 +37,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
     let wind =  wind_material[wind_indices[slot].material];
 #endif
+
     let world_from_local = get_world_from_local(vertex.instance_index);
 
 
