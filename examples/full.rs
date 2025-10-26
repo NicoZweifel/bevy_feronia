@@ -280,8 +280,8 @@ fn spawn_scene(
                     CurveFactor::default(),
                     StrengthMultiplier(1.1),
                     MicroStrengthMultiplier(1.1),
-                    SCurveSpeed(1.5),
-                    BopSpeed(1.5)
+                    SCurveStrength(0.2),
+                    BopStrength(0.2)
                 ),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
