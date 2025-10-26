@@ -16,13 +16,13 @@ use camera_controller::*;
 
 #[cfg(not(feature = "dlss"))]
 use bevy::anti_alias::taa::TemporalAntiAliasing;
+use bevy::diagnostic::*;
+use bevy::render::diagnostic::RenderDiagnosticsPlugin;
 #[cfg(all(feature = "dlss"))]
 use bevy::{
     anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
     asset::uuid,
 };
-use bevy::diagnostic::*;
-use bevy::render::diagnostic::RenderDiagnosticsPlugin;
 use iyes_perf_ui::prelude::*;
 
 #[derive(Resource, Default)]

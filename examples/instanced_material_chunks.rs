@@ -53,7 +53,6 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LevelOfDetail(2),
                 )
-
             ]
         )],
     ));
