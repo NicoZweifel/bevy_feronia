@@ -21,6 +21,9 @@ use bevy::{
     anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
     asset::uuid,
 };
+use bevy::diagnostic::*;
+use bevy::render::diagnostic::RenderDiagnosticsPlugin;
+use iyes_perf_ui::prelude::*;
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
@@ -38,6 +41,13 @@ impl Plugin for ExamplePlugin {
 
         app.init_resource::<ExamplePluginOptions>()
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
+            .add_plugins((
+                FrameTimeDiagnosticsPlugin::default(),
+                EntityCountDiagnosticsPlugin::default(),
+                RenderDiagnosticsPlugin,
+                SystemInformationDiagnosticsPlugin,
+                PerfUiPlugin,
+            ))
             .add_plugins((
                 EguiPlugin::default(),
                 ResourceInspectorPlugin::<Wind>::default(),
@@ -120,6 +130,8 @@ pub fn setup(
         .build(),
         Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+
+    cmd.spawn(PerfUiDefaultEntries::default());
 }
 
 fn anisotropic_filtering(

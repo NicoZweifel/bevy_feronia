@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.2.0"
+version = "0.2.1"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -28,7 +28,7 @@ rand_pcg = "0.9.0"
 bevy = { version = "0.17", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher", "asset_processor","basis-universal","mp3"] }
 
 bytemuck = "1.23.1"
-#iyes_perf_ui = "0.5.0"
+iyes_perf_ui = "0.5.0"
 # Set max log levels. This helps avoid unwanted low-severity log spam, which can affect performance.
 log = { version = "0.4", features = [
     "max_level_debug",
@@ -75,5 +75,5 @@ default = []
 # Enables the "dlss" feature in the bevy crate.
 dlss = ["bevy/dlss"]
 
-
-
+[patch.crates-io]
+iyes_perf_ui = { git = "https://github.com/mgi388/iyes_perf_ui", branch = "bevy-0.17" }

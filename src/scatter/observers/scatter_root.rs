@@ -48,6 +48,7 @@ pub fn scatter_root<TOut, TIn>(
         },));
 
     let first_layer_entity = ordered_layers[0];
+
     cmd.trigger(Scatter::<TOut, TIn>::new(first_layer_entity));
 }
 

@@ -159,20 +159,22 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     continue;
                 };
 
-                let target_lod_level = if is_chunked {
-                    *chunk_level
-                } else {
-                    name_map
-                        .get(*chosen_name)
-                        .and_then(|group| group.iter().map(|p| *p.properties.lod_level).min())
-                        .unwrap_or_default()
-                };
+let min_lod_level = name_map
+                    .get(*chosen_name)
+                    .and_then(|group| group.iter().map(|p| *p.properties.lod_level).min())
+                    .unwrap_or_default();
 
                 if name_map
                     .get(*chosen_name)
                     .and_then(|g| {
                         g.iter()
-                            .find(|p| *p.properties.lod_level == target_lod_level)
+                            .find(|p|
+                                if is_chunked {
+                                    *p.properties.lod_level ==min_lod_level
+                                } else {
+                                    *p.properties.lod_level >=min_lod_level
+                                }
+)
                     })
                     .is_some()
                 {
@@ -196,17 +198,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             };
 
             for (name, instances) in instance_groups {
-                let target_lod = if is_chunked {
-                    *chunk_level
-                } else {
-                    name_map
-                        .get(&name)
-                        .unwrap()
-                        .iter()
-                        .map(|p| *p.properties.lod_level)
-                        .min()
-                        .unwrap_or_default()
-                };
+let target_lod = *chunk_level;
 
                 let prototypes = name_map.get(&name).unwrap().iter().filter(|p| {
                     if is_chunked {

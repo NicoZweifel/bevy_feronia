@@ -45,7 +45,7 @@ struct Scenes {
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Scenes {
-        landscape: asset_server.load("landscape_flat_large.glb#Scene0"),
+        landscape: asset_server.load("landscape_flat.glb#Scene0"),
         lod_high: asset_server.load("foliage_complex.glb#Scene0"),
         lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
         lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
@@ -88,13 +88,12 @@ fn spawn_scene(
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
-            DistributionDensity(50.),
+            DistributionDensity(10.),
             InstanceRotationYaw {
                 min: 0.,
                 max: std::f32::consts::PI * 2.
             },
             InstanceScale { min: 2., max: 5. },
-            Avoidance::default(),
             WindAffected,
             children![
                 // TODO figure out what's wrong with highest detail models

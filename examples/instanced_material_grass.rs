@@ -40,10 +40,17 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             EdgeCorrectionFactor::default(),
             CurveFactor::default(),
             children![
-                SceneRoot(assets.load("grass.glb#Scene0")),
+                (
+                    SceneRoot(assets.load("grass.glb#Scene0")),
+                    LevelOfDetail(0),
+                ),
+                (
+                    SceneRoot(assets.load("grass_medium_lod.glb#Scene0")),
+                    LevelOfDetail(1),
+                ),
                 (
                     SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
-                    LevelOfDetail(1),
+                    LevelOfDetail(2),
                 )
             ]
         )],

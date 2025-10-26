@@ -85,7 +85,7 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Scenes {
         landscape: asset_server.load("landscape_large.glb#Scene0"),
         grass_lod_high: asset_server.load("grass.glb#Scene0"),
-        grass_lod_medium: asset_server.load("grass_low_lod.glb#Scene0"),
+        grass_lod_medium: asset_server.load("grass_medium_lod.glb#Scene0"),
         grass_lod_low: asset_server.load("grass_low_lod.glb#Scene0"),
         foliage_lod_high: asset_server.load("foliage_complex.glb#Scene0"),
         foliage_lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
@@ -193,11 +193,11 @@ fn spawn_scene(
                 Name::new("Rock Layer"),
                 ScatterLayer::default(),
                 ScatterLayerType::<StandardMaterial>::default(),
-                DistributionDensity(5.0),
+                DistributionDensity(10.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 2., max: 8. },
+                InstanceScale { min: 1., max: 4. },
                 InstanceJitter::default(),
-                Avoidance(3.),
+                Avoidance(2.),
                 children![
                     SceneRoot(handles.rocks_lod_high.clone()),
                     (
@@ -209,11 +209,11 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
-                DistributionDensity(6.0),
+                DistributionDensity(8.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 6., max: 8. },
+                InstanceScale { min: 4., max: 6. },
                 InstanceJitter::default(),
-                Avoidance(1.),
+                Avoidance(1.2),
                 WindAffected,
                 children![
                     SceneRoot(handles.trees_lod_high.clone()),
@@ -226,38 +226,39 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(12.0),
+                DistributionDensity(20.0),
                 InstanceRotationYaw::default(),
-                InstanceScale { min: 15., max: 25. },
+                InstanceScale { min: 8., max: 18. },
                 InstanceJitter::default(),
                 Avoidance(0.2),
                 WindAffected,
                 children![
                     // TODO figure out what's wrong with highest detail models
+                        SceneRoot(handles.foliage_lod_medium.clone()),
                     (
                         SceneRoot(handles.foliage_lod_medium.clone()),
-                        LevelOfDetail(0)
+                        LevelOfDetail(1)
                     ),
-                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(1))
+                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
                 ]
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(120.),
+                DistributionDensity(200.),
                 DistributionPattern {
                     density_map: density_map.clone(),
                     scale: 1.0
                 },
                 InstanceJitter::default(),
-                InstanceScale { min: 2., max: 4. },
+                InstanceScale { min: 1., max: 2.5 },
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
                 EnableBillboarding,
                 EdgeCorrectionFactor::default(),
                 CurveFactor::default(),
-                StrengthMultiplier(1.5),
-                MicroStrengthMultiplier(1.5),
+                StrengthMultiplier(1.2),
+                MicroStrengthMultiplier(1.2),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
                     (

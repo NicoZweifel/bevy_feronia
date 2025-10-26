@@ -61,8 +61,12 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    SceneRoot(assets.load("grass_medium_lod.glb#Scene0")),
                     LevelOfDetail(1),
+                ),
+                (
+                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    LevelOfDetail(2),
                 )
             ]
         )],

@@ -15,9 +15,9 @@ impl Default for LodConfig {
             distance:
             // LODs are ordered from High (0) to Low (n).
             vec![
-                60.0.into(),
+                30.0.into(),
                 // Level 1: Medium
-                120.0.into(),
+                60.0.into(),
                 // Level 2: Low
                 default(),
             ],
@@ -104,11 +104,11 @@ impl Default for ChunkLodConfig {
         Self(
             // LODs are ordered from High (0) to Low (n).
             vec![
-                100.0.into(),
+                60.0.into(),
                 // Level 1: Medium
-                200.0.into(),
+                120.0.into(),
                 // Level 2: Low
-                400.0.into(),
+                250.0.into(),
                 LodLevelDistance::default(),
             ],
         )
