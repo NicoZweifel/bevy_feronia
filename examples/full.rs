@@ -277,7 +277,9 @@ fn spawn_scene(
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
                 // Scatter Options
                 (
-                    DistributionDensity(250.),
+                    // Very dense
+                    DistributionDensity(300.),
+                    // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),
                     InstanceScale { min: 1., max: 3. },
@@ -371,6 +373,8 @@ fn setup_density_map(mut commands: Commands) {
 }
 
 /// Creates a density map with a Perlin noise base and empty spots stamped on top.
+///
+/// Basically simulates an artist drawing density until proper tooling is ready.
 fn update_density_map(
     _: On<UpdateDensityMap>,
     mut cmd: Commands,
