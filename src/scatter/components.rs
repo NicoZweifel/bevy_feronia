@@ -49,7 +49,7 @@ pub struct AvoidanceData {
 
 /// Collection of all necessary data and configuration for a single scatter task.
 ///
-/// Sent to a CPU task for processing.
+/// Sent to a [`CpuScatterTask`] task for processing.
 #[derive(Clone)]
 pub struct ScatterTaskData {
     /// The scattering [`Container`] (e.g., AABB) to scatter within.
