@@ -1,47 +1,68 @@
 
 ### Examples
 
-- Press `SPACE` to scatter plants.
+- Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
 
-#### Grass
+The examples all use `TAA` and `SSAO` by default, you can however run it with `DLSS` by using `--features dlss`.
+How to set up `DLSS` can be found [here](https://github.com/bevyengine/dlss_wgpu).
 
-`cargo run --example extended_material_grass`
+### Full
 
-https://github.com/user-attachments/assets/b6adb502-aa99-412f-8c6c-67418d59aa3a
-
-### Foliage
-
-`cargo run --example extended_material_foliage`
-
-https://github.com/user-attachments/assets/4b71415e-63d7-4a5b-b85a-9cb4408abdab
-
-### Foliage complex
-
-`cargo run --example extended_material_foliage_complex`
-
-https://github.com/user-attachments/assets/63d6d98a-6b5a-47a6-853c-0c336a89f3e6
-
-### Manually instanced grass
-
-`cargo run --example instanced_material_grass`
-
-https://github.com/user-attachments/assets/486b3df2-3669-4ac5-850d-0826d1f881a1
-
-### Manually instanced grass split into chunks
-
-`cargo run --example instanced_material_chunks`
-
-https://github.com/user-attachments/assets/6c1e64ad-004a-4a38-8034-eb5c25ce7f8a
-
-### Manually instanced grass with a cpu-sampled density map and chunks
-
-`cargo run --example instanced_density_map`
-
-https://github.com/user-attachments/assets/3141e4ac-24ff-4519-8ba5-afadf8f6a2ad
-
-### Full example WIP
+A complex scene with rocks, trees, foliage and grass.
+This example demonstrates ordered scattering (rocks -> trees/foliage -> grass) and combines all three scatter plugins.
 
 `cargo run --example full`
 
-https://github.com/user-attachments/assets/2b81a6d2-cd6a-4baa-85c3-1dc814114a37
+https://github.com/user-attachments/assets/970e69d9-6a05-4897-9cff-754c845814fe
+
+The other examples are mostly for demonstration and testing purposes:
+
+### Materials (Standalone)
+These show how to use the wind-affected materials directly without any scattering plugins.
+Useful if you want to apply wind effects to individual, non-scattered meshes, i.e. manually placed entities.
+
+`cargo run --example extension`
+
+- Demonstrates applying wind effects to a single cuboid.
+
+`cargo run --example instanced`
+
+- Demonstrates applying wind effects to a set of instanced cuboids.
+
+#### Grass
+
+`cargo run --example scatter_extended_grass`
+
+- Demonstrates scattering non-instanced grass. Mostly for testing/reference. 
+
+`cargo run --example scatter_instanced_grass`
+
+- A basic example of high-density, wind-affected grass.
+ 
+`cargo run --example scatter_instanced_chunks`
+
+- Scatters high-density instanced grass in chunks on a large landscape.
+
+`cargo run --example scatter_instanced_density_map`
+
+- Shows how to control instanced grass placement using a DensityMap .
+
+### Foliage
+
+`cargo run --example scatter_extended_foliage`
+
+- Demonstrates scattering wind-affected foliage.
+
+### Trees
+`cargo run --example scatter_extended_trees`
+
+- Demonstrates scattering wind-affected trees.
+
+### Scatter
+`cargo run --example scatter`
+
+- A minimal example showing how to scatter cuboids.
+
+
+
