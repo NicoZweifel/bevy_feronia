@@ -14,7 +14,6 @@ fn main() -> AppExit {
         .insert_resource(Wind { ..default() })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
-        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()
@@ -40,7 +39,7 @@ fn setup(
             InstanceJitter::default(),
             children![
                 (
-                    // Only make lod 0 wind affected
+                    // Only make lod 0 wind affected, this will make the scattered instances use a Material Extension for displacement.
                     WindAffected,
                     MeshMaterial3d(materials.add(StandardMaterial::default())),
                     Mesh3d(mesh.clone()),

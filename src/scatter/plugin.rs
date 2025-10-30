@@ -108,7 +108,11 @@ impl Plugin for StandardScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SpawnProtoTypes<StandardMaterial>>()
             .add_plugins(ScatterMaterialPlugin::<StandardMaterial>::default())
-            .add_systems(Update, StandardMaterial::spawn)
+            .add_systems(
+                Update,
+                StandardMaterial::spawn
+                    .run_if(resource_exists::<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>),
+            )
             .add_message::<SpawnProtoTypes<StandardMaterial>>()
             .add_plugins((ScatterAssetPlugin::<StandardMaterial>::new(),))
             .add_systems(

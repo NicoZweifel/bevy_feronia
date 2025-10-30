@@ -13,7 +13,11 @@ impl Plugin for ExtendedWindAffectedPlugin {
         app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
             .add_message::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
             .add_plugins(ScatterMaterialPlugin::<ExtendedWindAffectedMaterial>::default())
-            .add_systems(Update, ExtendedWindAffectedMaterial::spawn);
+            .add_systems(
+                Update,
+                ExtendedWindAffectedMaterial::spawn
+                    .run_if(resource_exists::<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>),
+            );
     }
 }
 
