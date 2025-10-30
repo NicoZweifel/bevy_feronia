@@ -43,8 +43,8 @@ impl Default for Wind {
 }
 
 pub type WindData<'w> = (
-    Option<&'w StrengthMultiplier>,
-    Option<&'w MicroStrengthMultiplier>,
+    Option<&'w Strength>,
+    Option<&'w MicroStrength>,
     Option<&'w SCurveStrength>,
     Option<&'w SCurveSpeed>,
     Option<&'w SCurveFrequency>,
@@ -83,7 +83,7 @@ impl Wind {
                 .map(|x| **x * self.s_curve_speed)
                 .unwrap_or(self.s_curve_speed),
             s_curve_frequency: s_curve_frequency
-                .map(|x| **x)
+                .map(|x| **x * self.s_curve_frequency)
                 .unwrap_or(self.s_curve_frequency),
             bop_strength: bop_strength
                 .map(|x| **x * self.bop_strength)

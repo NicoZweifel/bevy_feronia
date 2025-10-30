@@ -37,30 +37,30 @@ pub struct WindConfig {
 /// Corresponds to `wind.strength` in shaders, controlling the main macro wind displacement strength.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct StrengthMultiplier(pub f32);
+pub struct Strength(pub f32);
 
 /// Component to multiply the `micro_strength` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.micro_strength` in shaders, controlling the high-frequency noise displacement.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct MicroStrengthMultiplier(pub f32);
+pub struct MicroStrength(pub f32);
 
-/// Component to override the `s_curve_strength` field of an entity's [`Wind`] settings.
+/// Component to multiply the `s_curve_strength` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.s_curve_strength` in shaders, controlling the 'S' shape wiggle size.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct SCurveStrength(pub f32);
 
-/// Component to override the `s_curve_speed` field of an entity's [`Wind`] settings.
+/// Component to multiply the `s_curve_speed` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.s_curve_speed` in shaders, controlling the 'S' shape wiggle animation speed.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct SCurveSpeed(pub f32);
 
-/// Component to override the `s_curve_frequency` field of an entity's [`Wind`] settings.
+/// Component to multiply the `s_curve_frequency` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.s_curve_frequency` in shaders, controlling the spatial frequency (tiling)
 /// of the 'S' shape wiggles along the Y-axis.
@@ -68,21 +68,21 @@ pub struct SCurveSpeed(pub f32);
 #[reflect(Component)]
 pub struct SCurveFrequency(pub f32);
 
-/// Component to override the `bop_strength` field of an entity's [`Wind`] settings.
+/// Component to multiply the `bop_strength` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.bop_strength` in shaders, controlling the size of the vertical 'bop' animation.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct BopStrength(pub f32);
 
-/// Component to override the `bop_speed` field of an entity's [`Wind`] settings.
+/// Component to multiply the `bop_speed` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.bop_speed` in shaders, controlling the speed of the vertical 'bop' animation.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct BopSpeed(pub f32);
 
-/// Component to override the `twist_strength` field of an entity's [`Wind`] settings.
+/// Component to multiply the `twist_strength` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.twist_strength` in shaders, controlling the twist applied by the macro wind.
 ///
@@ -91,7 +91,7 @@ pub struct BopSpeed(pub f32);
 #[reflect(Component)]
 pub struct TwistStrength(pub f32);
 
-/// Component to override the `bend_exponent` field of an entity's [`Wind`] settings.
+/// Component to multiply the `bend_exponent` field of an entity's [`Wind`] settings.
 ///
 /// Corresponds to `wind.bend_exponent` in shaders, controlling the bend curve i.e.,
 /// how much the wind affects the mesh based on height.

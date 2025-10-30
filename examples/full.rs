@@ -1,3 +1,13 @@
+//! Showcases how to build a complex scene by scattering different types
+//! of assets (rocks, trees, foliage, and grass) onto a large landscape model.
+//!
+//! Ordered Scattering with:
+//! * `StandardScatterPlugin` (for rocks)
+//! * `ExtendedWindAffectedScatterPlugin` (for wind-affected trees and foliage)
+//! * `InstancedWindAffectedScatterPlugin` (for high-density, wind-affected grass)
+//!
+//! The instanced grass layer is controlled by a procedurally generated `DensityMap`
+//! (using Perlin noise) to create natural, patchy placement.
 #[path = "utils/example.rs"]
 mod example;
 
@@ -283,10 +293,10 @@ fn spawn_scene(
                     WindAffected,
                     EdgeCorrectionFactor::default(),
                     CurveFactor::default(),
-                    StrengthMultiplier(1.1),
-                    MicroStrengthMultiplier(1.1),
-                    SCurveStrength(1.),
-                    BopStrength(1.),
+                    Strength(1.1),
+                    MicroStrength(1.1),
+                    SCurveStrength(1.5),
+                    BopStrength(1.5),
                     AnalyticalNormals,
                     InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
                     StaticBendStrength::default(),
