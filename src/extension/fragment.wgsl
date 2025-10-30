@@ -88,7 +88,8 @@ fn fragment(
 // Source: Barré-Brisebois, C., & Bouchard, M. (2011). Approximating Translucency for a
 // Fast, Cheap and Convincing Subsurface Scattering Look. Game Developers Conference.
 
-// TODO expose
+// TODO expose / unify with lighting in instancing shader before exposing fields in `MaterialOptions`
+// TODO allow use of thickness texture
 // Controls how much the surface normal influences the scattered light direction.
 // A value of 0.0 makes light appear to pass straight through.
 // A value of 1.0 makes light appear to be heavily scattered by the surface.

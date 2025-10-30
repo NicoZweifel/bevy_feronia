@@ -208,7 +208,7 @@ fn fragment(
     //    Communications of the ACM.
     // ---
 
-    // TODO expose
+    // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
     const SPECULAR_POWER: f32 = 32.0;
     const AMBIENT_FACTOR: f32 = 0.1;
 
