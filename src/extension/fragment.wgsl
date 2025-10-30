@@ -95,10 +95,6 @@ fn fragment(
 // A value of 1.0 makes light appear to be heavily scattered by the surface.
 const SSS_DISTORTION: f32 = 0.5;
 
-// Controls the tightness of the back-scattering highlight. Higher values create a smaller,
-// more focused glow.
-const SSS_POWER: f32 = 8.0;
-
 // A multiplier for the overall intensity of the back-scattering effect.
 const SSS_SCALE: f32 = 1.5;
 
@@ -153,6 +149,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
 
         let back_scatter_dot = saturate(dot(pbr_input.V, -H));
 
+        // pow(dot, 8) * SSS_SCALE
         let t = back_scatter_dot * back_scatter_dot;
         let t2 = t * t;
         let back_scatter = t2 * t2 * SSS_SCALE;
@@ -177,6 +174,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
         let H = normalize(L + pbr_input.world_normal * SSS_DISTORTION);
         let back_scatter_dot = saturate(dot(pbr_input.V, -H));
 
+        // pow(dot, 8) * SSS_SCALE
         let t = back_scatter_dot * back_scatter_dot;
         let t2 = t * t;
         let back_scatter = t2 * t2 * SSS_SCALE;
