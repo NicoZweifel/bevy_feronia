@@ -1,4 +1,3 @@
-use crate::prelude::ScatterItem;
 use bevy::color::Color;
 use bevy::prelude::*;
 
@@ -38,6 +37,8 @@ pub struct AnalyticalNormals;
 /// Controls the edge correction effect (makes vegetation look fuller).
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
+///
+/// Doesn't currently work correctly with [`EnableBillboarding`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct EdgeCorrectionFactor(pub f32);
@@ -77,6 +78,8 @@ impl Default for StaticBendStrength {
 /// Marker component to enable simulated subsurface scattering.
 ///
 /// Enables `#ifdef SUBSURFACE_SCATTERING` in shaders.
+///
+/// Only supported with [`ExtendedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component)]
 pub struct SubsurfaceScattering;

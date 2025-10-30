@@ -42,8 +42,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 WindAffected,
                 ScaleDensity,
                 ScatterChunked,
-                EnableBillboarding,
-                EdgeCorrectionFactor::default()
+                EdgeCorrectionFactor::default(),
+                AnalyticalNormals,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
