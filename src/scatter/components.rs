@@ -228,7 +228,6 @@ pub struct ScatteredInstance(pub Entity);
 #[reflect(Component)]
 pub struct DistributionPattern(Handle<Image>);
 
-
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]

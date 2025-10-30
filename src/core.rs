@@ -336,7 +336,6 @@ pub struct SubsurfaceScattering;
 #[reflect(Component)]
 pub struct InstanceColor(pub Color);
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

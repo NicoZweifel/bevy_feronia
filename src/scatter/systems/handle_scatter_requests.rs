@@ -79,9 +79,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             density, request.layer_entity,
         );
 
-        let density_map_image = pattern_dist
-            .and_then(|x| images.get(&**x))
-            .cloned();
+        let density_map_image = pattern_dist.and_then(|x| images.get(&**x)).cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
