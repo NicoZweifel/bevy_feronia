@@ -8,6 +8,7 @@ use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
+use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
@@ -16,6 +17,7 @@ fn main() -> AppExit {
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
+        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
@@ -23,25 +25,19 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
-        ChunkRoot::default(),
         children![(
             scatter_layer("Wind affected Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(15.),
+                DistributionDensity(100.),
                 DistributionPattern(density_map.clone()),
-                InstanceRotationYaw {
-                    min: 0.,
-                    max: std::f32::consts::PI * 2.
-                },
-                InstanceScale { min: 1., max: 1.5 },
-                InstanceJitter::default(),
+                InstanceRotationYaw::default(),
+                InstanceScale::default(),
+                ScaleDensity,
             ),
             // Material options
             (
                 WindAffected,
-                ScaleDensity,
-                ScatterChunked,
                 EdgeCorrectionFactor::default(),
                 AnalyticalNormals,
             ),
@@ -60,6 +56,22 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
     ));
 }
 
+fn scatter_on_keypress(
+    mut cmd: Commands,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut world_seed: ResMut<WorldSeed>,
+    q_root: Single<Entity, With<ScatterRoot>>,
+) {
+    if !keyboard_input.just_pressed(KeyCode::Space) {
+        return;
+    };
+
+    **world_seed = rng().next_u64();
+
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
+}
+
+/// Simulates an artist drawing density until tooling to do that is ready.
 fn setup_density_map(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,

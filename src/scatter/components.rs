@@ -257,6 +257,12 @@ pub struct InstanceScale {
     pub max: f32,
 }
 
+impl Default for InstanceScale {
+    fn default() -> Self {
+        Self { min: 0.5, max: 3. }
+    }
+}
+
 /// Specifies a random positional offset (jitter) applied to scattered instances.
 #[derive(Component, Reflect, Deref, DerefMut, Clone)]
 #[reflect(Component)]

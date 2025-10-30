@@ -24,15 +24,6 @@ fn main() -> AppExit {
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
-        /*   .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![
-                RED_500.into(),
-                ORANGE_500.into(),
-                YELLOW_500.into(),
-                WHITE.into(),
-            ],
-            aabb_color: GREEN_500.into(),
-        })*/
         .add_plugins((
             ExamplePlugin,
             StandardScatterPlugin,
@@ -279,11 +270,11 @@ fn spawn_scene(
                 // Scatter options
                 (
                     // Very dense
-                    DistributionDensity(300.),
+                    DistributionDensity(200.),
                     // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),
-                    InstanceScale { min: 0.5, max: 3.5 },
+                    InstanceScale::default(),
                     ScaleDensity,
                     ScatterChunked,
                 ),
@@ -374,7 +365,7 @@ fn setup_density_map(mut commands: Commands) {
 
 /// Creates a density map with a Perlin noise base and empty spots stamped on top.
 ///
-/// Basically simulates an artist drawing density until proper tooling is ready.
+/// Simulates an artist drawing density until tooling to do that is ready.
 fn update_density_map(
     _: On<UpdateDensityMap>,
     mut cmd: Commands,

@@ -78,7 +78,7 @@ pub struct ScatterResult {
 }
 
 impl ScatterResult {
-    // TODO refactor into async CPU/GPU pipelines
+    // TODO add GPU pipeline
     pub fn try_create<R: Rng + ?Sized>(
         container: &Container,
         modifiers: &InstanceModifiers,
@@ -101,21 +101,25 @@ impl ScatterResult {
                 local_cell_z_idx * cell_depth,
             );
 
-        let cell_center_world_pos =
+        let mut final_world_pos =
             snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
 
-        let jitter_strength = modifiers.jitter.map_or(1.0, |j| **j).clamp(0.0, 1.0);
+        let jitter_strength = modifiers
+            .jitter.map_or(0., |x| **x)
+            .clamp(0.0, 1.0);
 
-        let max_offset_x = (cell_width * jitter_strength) / 2.0;
-        let max_offset_z = (cell_depth * jitter_strength) / 2.0;
+        if jitter_strength > 0. {
+            let max_offset_x = (cell_width * jitter_strength) / 2.0;
+            let max_offset_z = (cell_depth * jitter_strength) / 2.0;
 
-        let random_offset = Vec3::new(
-            rng.random_range(-max_offset_x..max_offset_x),
-            0.0,
-            rng.random_range(-max_offset_z..max_offset_z),
-        );
+            let random_offset = Vec3::new(
+                rng.random_range(-max_offset_x..max_offset_x),
+                0.0,
+                rng.random_range(-max_offset_z..max_offset_z),
+            );
 
-        let final_world_pos = cell_center_world_pos + random_offset;
+            final_world_pos += random_offset;
+        };
 
         if let Some(sampler) = &modifiers.density_sampler {
             if rng.random::<f32>() > sampler.sample(final_world_pos) {
