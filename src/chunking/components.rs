@@ -269,7 +269,7 @@ impl From<f32> for LodDistance {
 
 /// Wrapper type for `f32` representing the density multiplier for an LOD.
 ///
-/// This value should typically be between 0.0 (no items) and 1.0 (full density).
+/// This value should be between 0.0 (nothing) and 1.0 (full density).
 #[derive(Reflect, Debug, Deref, DerefMut, Clone)]
 pub struct LodDensity(pub f32);
 
