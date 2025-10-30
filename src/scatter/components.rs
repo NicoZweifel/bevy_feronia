@@ -13,11 +13,11 @@ where
 {
     /// The entity that triggered the scatter (e.g., a chunk or the root).
     pub target_entity: Entity,
-    /// The [`ScatterLayer`] entity that defines what to scatter.
+    /// The [`ScatterLayer`] entity that this request belongs to.
     pub layer_entity: Entity,
     /// The [`Chunk`] entity this request is for, if any (for chunked scattering).
     pub chunk_entity: Option<Entity>,
-    /// Marker for the material types.
+
     _phantom: PhantomData<(TOut, TIn)>,
 }
 
