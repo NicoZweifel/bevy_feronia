@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",

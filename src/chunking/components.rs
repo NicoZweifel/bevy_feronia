@@ -72,9 +72,6 @@ pub trait LodConfiguration {
     }
 
     /// Calculates the [`VisibilityRange`] for a given `lod`.
-    ///
-    /// This defines the near and far distances at which an entity at this LOD
-    /// will be visible, including a "fade band" to allow for smooth transitions.
     fn get_visibility_range(&self, lod: LevelOfDetail) -> VisibilityRange {
         let current_lod_dist = self
             .get()
@@ -130,7 +127,7 @@ impl Default for ChunkLodConfig {
                 120.0.into(),
                 // Level 2: Low
                 250.0.into(),
-                // Level 3: Root/Fallback
+                // Level 3: Root
                 LodDistance::default(), // f32::MAX
             ],
         )
@@ -148,9 +145,9 @@ impl LodConfiguration for ChunkLodConfig {
 #[reflect(Component)]
 pub struct ChunkSizeScalarConfig(pub Vec<ChunkSizeScalar>);
 
-/// The size of a `ChunkRoot` dimension in top-level (Low LOD) chunks.
+/// Size of a `ChunkRoot` dimension in top-level (Low LOD) chunks.
 ///
-/// This defines how many root-level chunks exist (e.g., 2 means a 2x2 grid).
+/// Defines how many root-level chunks exist (e.g., 2 means a 2x2 grid).
 // TODO use/sync with ChunkSizeScalar (depends on correct configuration at the moment)
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
@@ -194,12 +191,12 @@ pub struct CanMerge;
 #[reflect(Component)]
 pub struct ChunkLevel(pub u32);
 
-/// Component storing the side length (size) of this chunk in world units.
+/// Component storing the scalar size in [`BaseChunkSize`] units of this chunk.
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct ChunkSize(pub u32);
 
-/// Component storing the base size of a level 0 (highest detail) chunk.
+/// Component storing the base size of a level 0 (the highest detail) chunk.
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct BaseChunkSize(pub Vec3);
@@ -270,14 +267,13 @@ impl From<f32> for LodDistance {
     }
 }
 
-/// A wrapper type for `f32` representing the density multiplier for an LOD.
+/// Wrapper type for `f32` representing the density multiplier for an LOD.
 ///
 /// This value should typically be between 0.0 (no items) and 1.0 (full density).
 #[derive(Reflect, Debug, Deref, DerefMut, Clone)]
 pub struct LodDensity(pub f32);
 
 impl Default for LodDensity {
-    /// Defaults to 0.0 (no items).
     fn default() -> Self {
         0.0.into()
     }
@@ -291,7 +287,7 @@ impl From<f32> for LodDensity {
 
 /// A wrapper type for `u32` representing the size scalar for a chunk at a specific LOD.
 ///
-/// This is a multiplier relative to the [`BaseChunkSize`].
+/// This is a multiplier relative to the [`BaseChunkSize`]. See also [`ChunkSize`].
 #[derive(Reflect, Debug, Deref, DerefMut)]
 pub struct ChunkSizeScalar(pub u32);
 
@@ -321,7 +317,7 @@ impl Default for ChunkSizeScalarConfig {
 }
 
 impl ChunkSizeScalarConfig {
-    /// Gets the size scalar `u32` for a given LOD `level`, if it exists.
+    /// Gets the size scalar `u32` for a given LOD `level` if it exists.
     pub fn get_size_scalar(&self, level: u32) -> Option<u32> {
         self.0.get(level as usize).map(|x| **x)
     }
