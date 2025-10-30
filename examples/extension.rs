@@ -36,7 +36,28 @@ fn setup(
     wind: Res<Wind>,
     noise_texture: Res<WindTexture>,
 ) {
-    let mesh = meshes.add(Cuboid::new(0.5, 3.0, 0.5));
+    let mesh_handle = meshes.add(Cuboid::new(0.5, 3.0, 0.5));
+
+    let material_handle = extended_materials.add(ExtendedMaterial {
+        base: StandardMaterial {
+            base_color: GREEN_500.into(),
+            ..default()
+        },
+        extension: WindAffectedExtension {
+            wind: *wind,
+            aabb: Aabb {
+                half_extents: Vec3A::new(0.5, 3., 0.5),
+                center: Vec3A::new(0.0, 0.0, 0.0),
+            },
+            options: MaterialOptions {
+                // make it affected by wind
+                wind_affected: true,
+                // can also tweak other settings here
+                ..default()
+            },
+            noise_texture: (**noise_texture).clone(),
+        },
+    });
 
     cmd.spawn((
         MeshMaterial3d(materials.add(StandardMaterial {
@@ -44,28 +65,7 @@ fn setup(
             ..default()
         })),
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
-        children![(
-            MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-                base: StandardMaterial {
-                    base_color: GREEN_500.into(),
-                    ..default()
-                },
-                extension: WindAffectedExtension {
-                    wind: *wind,
-                    aabb: Aabb {
-                        half_extents: Vec3A::new(0.5, 3., 0.5),
-                        center: Vec3A::new(0.0, 0.0, 0.0),
-                    },
-                    options: MaterialOptions {
-                        // make it affected by wind
-                        wind_affected: true,
-                        // can also tweak other settings here
-                        ..default()
-                    },
-                    noise_texture: (**noise_texture).clone(),
-                },
-            })),
-            Mesh3d(mesh.clone()),
-        )],
     ));
+
+    cmd.spawn((MeshMaterial3d(material_handle), Mesh3d(mesh_handle.clone())));
 }
