@@ -117,14 +117,14 @@ impl ScatterMaterial for StandardMaterial {
                             .iter()
                             .filter(|p| {
                                 if is_chunked {
-                                    *p.properties.lod_level == *chunk_level
+                                    *p.properties.lod == *chunk_level
                                 } else {
-                                    *p.properties.lod_level >= *chunk_level
+                                    *p.properties.lod >= *chunk_level
                                 }
                             })
                             .map(move |p| {
                                 let visibility_range =
-                                    lod_config.get_visibility_range(p.properties.lod_level);
+                                    lod_config.get_visibility_range(p.properties.lod);
                                 (
                                     res.transform,
                                     Mesh3d(p.mesh().clone()),
@@ -159,9 +159,8 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
 
-    // TODO move to another uniform for Options
+    // TODO move to uniform for Options/InstanceData
     pub edge_correction_factor: f32,
-    pub lod_threshold: f32,
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
     pub debug_color: Vec4,
@@ -182,9 +181,6 @@ impl From<&Wind> for WindUniform {
             bop_speed: wind.bop_speed,
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
-            // TODO sync/cleanup with LOD systems / chunks systems
-            lod_threshold: 50.,
-            // TODO create another uniform for Options
             edge_correction_factor: 0.,
             curve_factor: 0.,
             aabb_max: Vec3::splat(1.),
@@ -194,13 +190,7 @@ impl From<&Wind> for WindUniform {
     }
 }
 
-// TODO create another uniform for Options
 impl WindUniform {
-    pub fn with_lod_threshold(mut self, lod_threshold: f32) -> Self {
-        self.lod_threshold = lod_threshold;
-        self
-    }
-
     pub fn with_curve_factor(mut self, curve_factor: f32) -> Self {
         self.curve_factor = curve_factor;
         self
@@ -233,5 +223,8 @@ bitflags! {
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;
         const WIND_AFFECTED= 1 << 5;
+        const SUBSURFACE_SCATTERING = 1 << 6;
+        const STATIC_BEND = 1 << 7;
+        const ANALYTICAL_NORMALS = 1 << 8;
     }
 }

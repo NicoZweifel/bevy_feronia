@@ -40,6 +40,8 @@ fn setup(
             InstanceJitter::default(),
             children![
                 (
+                    // Only make lod 0 wind affected
+                    WindAffected,
                     MeshMaterial3d(materials.add(StandardMaterial::default())),
                     Mesh3d(mesh.clone()),
                 ),

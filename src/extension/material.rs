@@ -103,14 +103,14 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
                             .iter()
                             .filter(|p| {
                                 if is_chunked {
-                                    *p.properties.lod_level == *chunk_level
+                                    *p.properties.lod == *chunk_level
                                 } else {
-                                    *p.properties.lod_level >= *chunk_level
+                                    *p.properties.lod >= *chunk_level
                                 }
                             })
                             .map(move |prototype| {
                                 let visibility_range =
-                                    lod_config.get_visibility_range(prototype.properties.lod_level);
+                                    lod_config.get_visibility_range(prototype.properties.lod);
                                 (
                                     res.transform,
                                     Mesh3d(prototype.mesh().clone()),

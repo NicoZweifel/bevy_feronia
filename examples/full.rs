@@ -213,11 +213,14 @@ fn spawn_scene(
                 Name::new("Rock Layer"),
                 ScatterLayer::default(),
                 ScatterLayerType::<StandardMaterial>::default(),
-                DistributionDensity(10.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 4. },
-                InstanceJitter::default(),
-                Avoidance(2.),
+                // Scatter options
+                (
+                    DistributionDensity(10.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 1., max: 4. },
+                    InstanceJitter::default(),
+                    Avoidance(2.)
+                ),
                 children![
                     SceneRoot(handles.rocks_lod_high.clone()),
                     (
@@ -229,12 +232,16 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
-                DistributionDensity(8.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 4., max: 6. },
-                InstanceJitter::default(),
-                Avoidance(1.2),
-                WindAffected,
+                // Scatter options
+                (
+                    DistributionDensity(8.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 4., max: 6. },
+                    InstanceJitter::default(),
+                    Avoidance(1.2)
+                ),
+                // Material options
+                (SubsurfaceScattering, WindAffected),
                 children![
                     SceneRoot(handles.trees_lod_high.clone()),
                     (
@@ -246,12 +253,16 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(20.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 8., max: 18. },
-                InstanceJitter::default(),
-                Avoidance(0.2),
-                WindAffected,
+                // Scatter options
+                (
+                    DistributionDensity(20.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 8., max: 18. },
+                    InstanceJitter::default(),
+                    Avoidance(0.2)
+                ),
+                // Material options
+                (SubsurfaceScattering, WindAffected),
                 children![
                     // TODO figure out what's wrong with highest detail models
                     SceneRoot(handles.foliage_lod_medium.clone()),
@@ -264,24 +275,31 @@ fn spawn_scene(
             ),
             (
                 bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(250.),
-                DistributionPattern {
-                    density_map: density_map.clone(),
-                    scale: 1.0
-                },
-                InstanceJitter::default(),
-                InstanceScale { min: 1., max: 1.5 },
-                WindAffected,
-                ScaleDensity,
-                ScatterChunked,
+                // Scatter Options
                 (
-                    EnableBillboarding,
+                    DistributionDensity(250.),
+                    DistributionPattern {
+                        density_map: density_map.clone(),
+                        scale: 1.0
+                    },
+                    InstanceJitter::default(),
+                    InstanceScale { min: 1., max: 3. },
+                    ScaleDensity,
+                    ScatterChunked,
+                ),
+                // Material Options
+                (
+                    SubsurfaceScattering,
+                    WindAffected,
                     EdgeCorrectionFactor::default(),
                     CurveFactor::default(),
                     StrengthMultiplier(1.1),
                     MicroStrengthMultiplier(1.1),
-                    SCurveStrength(0.2),
-                    BopStrength(0.2)
+                    SCurveStrength(1.),
+                    BopStrength(1.),
+                    AnalyticalNormals,
+                    InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
+                    StaticBendStrength::default(),
                 ),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
@@ -289,7 +307,7 @@ fn spawn_scene(
                         SceneRoot(handles.grass_lod_medium.clone()),
                         LevelOfDetail(1),
                     ),
-                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2)),
+                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2),),
                 ],
             )
         ],

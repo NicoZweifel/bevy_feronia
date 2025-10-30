@@ -18,7 +18,6 @@ fn main() -> AppExit {
         })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
-        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
         .run()
@@ -28,7 +27,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
-        LodConfig::from(vec![LodLevelDistance::default()]),
+        LodConfig::from(vec![LodDistance::default()]),
         children![(
             scatter_layer("Foliage Layer"),
             DistributionDensity(15.),
@@ -39,6 +38,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceScale { min: 1., max: 3. },
             InstanceJitter(1.),
             WindAffected,
+            SubsurfaceScattering,
             children![SceneRoot(assets.load("foliage.glb#Scene0"))]
         )],
     ));

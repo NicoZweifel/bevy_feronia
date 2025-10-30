@@ -18,7 +18,7 @@ pub type CollectableQueryData<'w, T> = (
 
 pub fn queue_material_creation_requests<TOut, TIn>(
     mut cmd: Commands,
-    q_roots: Query<(Entity, &ScatterRoot, MaterialOptionData), Without<ScatterRootProcessed>>,
+    q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
         (&Children, MaterialOptionData, WindData),
         (
@@ -39,7 +39,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
     TIn: Material,
     TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
-    for (root, children, root_material_data) in &q_roots {
+    for (root, children) in &q_roots {
         debug!(
             "Queueing ScatterAsset creation requests in root {:?}...",
             root
@@ -52,7 +52,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
             };
 
             wind = wind.with(wind_data);
-            let options = MaterialOptions::from(root_material_data).with(material_option_data);
+            let options = MaterialOptions::from(material_option_data);
 
             for item in scatter_items {
                 queue_requests_recursive::<TOut, TIn>(
@@ -70,7 +70,7 @@ fn queue_requests_recursive<TOut, TIn>(
     wind: &Wind,
     options: &MaterialOptions,
     current_name: Option<Name>,
-    current_lod_level: Option<LevelOfDetail>,
+    current_lod: Option<LevelOfDetail>,
     q_children: &Query<
         CollectableQueryData<TIn>,
         (
@@ -100,26 +100,22 @@ where
         return false;
     };
 
-    let (mut wind, controlled) = wind_component
-        .and_then(|x| x.wind_override.clone().map(|x| (x.clone(), true)))
-        .unwrap_or_else(|| ((*wind).clone(), false));
+    let mut wind = wind_component
+        .and_then(|x| x.wind_override)
+        .unwrap_or_else(|| *wind);
 
     wind = wind.with(wind_data);
 
-    let lod = lod.map_or(current_lod_level.unwrap_or_default(), |x| *x);
+    let lod = lod.map_or(current_lod.unwrap_or_default(), |x| *x);
 
     let name = current_name.map_or(name.cloned(), Some);
 
     let hue = (entity.index() * 30) as f32 % 360.0;
     let debug_color = Color::hsl(hue, 1.0, 0.5);
 
-    let mut options = options
+    let options = options
         .with(material_option_data)
         .with_debug_color(debug_color);
-
-    if !controlled {
-        options = options.with_quality(*lod, options.wind_affected);
-    };
 
     let mut has_children_with_materials = false;
     if let Some(children) = children {
@@ -158,7 +154,7 @@ where
                 mesh_handle: mesh.0.clone(),
                 aabb: *aabb,
                 name,
-                lod_level: lod,
+                lod: lod,
                 layer,
                 wind_affected: wind_affected.is_some(),
             },

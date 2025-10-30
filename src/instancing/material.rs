@@ -158,9 +158,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     continue;
                 };
 
-                let min_lod_level = name_map
+                let min_lod = name_map
                     .get(*chosen_name)
-                    .and_then(|group| group.iter().map(|p| *p.properties.lod_level).min())
+                    .and_then(|group| group.iter().map(|p| *p.properties.lod).min())
                     .unwrap_or_default();
 
                 if name_map
@@ -168,9 +168,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .and_then(|g| {
                         g.iter().find(|p| {
                             if is_chunked {
-                                *p.properties.lod_level == min_lod_level
+                                *p.properties.lod == min_lod
                             } else {
-                                *p.properties.lod_level >= min_lod_level
+                                *p.properties.lod >= min_lod
                             }
                         })
                     })
@@ -200,9 +200,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                 let prototypes = name_map.get(&name).unwrap().iter().filter(|p| {
                     if is_chunked {
-                        *p.properties.lod_level == target_lod
+                        *p.properties.lod == target_lod
                     } else {
-                        *p.properties.lod_level >= target_lod
+                        *p.properties.lod >= target_lod
                     }
                 });
 
@@ -211,7 +211,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
                     let visibility_range =
-                        lod_config.get_visibility_range(prototype.properties.lod_level);
+                        lod_config.get_visibility_range(prototype.properties.lod);
 
                     let instances_with_offset = instances
                         .iter()
@@ -240,7 +240,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                         .properties
                                         .options
                                         .color
-                                        .unwrap_or(Color::hsla(78., 0.98, 0.5, 1.0)),
+                                        .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
                                 )
                                 .to_f32_array(),
                                 visibility_range: [
@@ -250,6 +250,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     visibility_range.end_margin.end,
                                 ],
                                 instances: instances_with_offset,
+                                static_bend_strength: prototype
+                                    .properties
+                                    .options
+                                    .static_bend_strength,
                             },
                             NoAutomaticBatching,
                             WindAffected,
@@ -279,7 +283,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
     fn from(material: &'a InstancedWindAffectedMaterial) -> Self {
         WindUniform::from(&material.wind)
-            .with_lod_threshold(material.options.lod_threshold)
             .with_curve_factor(material.options.curve_factor)
             .with_edge_correction_factor(material.options.edge_correction_factor)
             .with_aabb(&material.aabb)

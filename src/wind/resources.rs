@@ -35,7 +35,7 @@ impl Default for Wind {
             s_curve_speed: 2.0,
             s_curve_strength: 0.1,
             s_curve_frequency: PI,
-            bop_speed: 1.0,
+            bop_speed: 0.1,
             bop_strength: 0.05,
             twist_strength: 0.05,
         }

@@ -51,7 +51,7 @@ pub struct ScatterTaskData {
     pub height_map_config: Option<HeightMapConfig>,
     pub density_map_image: Option<Image>,
     pub external_avoidance_data: Vec<AvoidanceData>,
-    pub density: Option<LodLevelDensity>,
+    pub density: Option<LodDensity>,
 }
 
 #[derive(Component)]
@@ -249,7 +249,7 @@ where
     pub ordered_layers: Vec<Entity>,
     /// Index of the layer currently being processed.
     pub current_layer_index: usize,
-    pub(crate) _phantom: PhantomData<(TOut, TIn)>,
+    pub _phantom: PhantomData<(TOut, TIn)>,
 }
 
 impl<TOut, TIn> Default for HierarchicalScatterState<TOut, TIn>

@@ -79,7 +79,6 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
-    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
@@ -88,13 +87,17 @@ fn spawn_scene(
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
-            DistributionDensity(10.),
-            InstanceRotationYaw {
-                min: 0.,
-                max: std::f32::consts::PI * 2.
-            },
-            InstanceScale { min: 2., max: 5. },
-            WindAffected,
+            // Scatter options
+            (
+                DistributionDensity(10.),
+                InstanceRotationYaw {
+                    min: 0.,
+                    max: std::f32::consts::PI * 2.
+                },
+                InstanceScale { min: 2., max: 5. }
+            ),
+            // Material options
+            (SubsurfaceScattering, WindAffected),
             children![
                 // TODO figure out what's wrong with highest detail models
                 (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
@@ -103,7 +106,6 @@ fn spawn_scene(
         )],
     ));
 
-    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 

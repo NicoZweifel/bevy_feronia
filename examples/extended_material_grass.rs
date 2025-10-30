@@ -28,7 +28,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             InstanceJitter::default(),
             WindAffected,
             EnableBillboarding,
-            EdgeCorrectionFactor::default(),
+            SubsurfaceScattering,
             CurveFactor::default(),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

@@ -12,7 +12,7 @@ pub struct ScatterAssetProperties {
     pub mesh_handle: Handle<Mesh>,
     pub aabb: Aabb,
     pub name: Option<Name>,
-    pub lod_level: LevelOfDetail,
+    pub lod: LevelOfDetail,
     pub layer: Entity,
     pub wind_affected: bool,
 }
@@ -44,7 +44,7 @@ where
         (
             ScatterItem,
             ScatterItemAsset::<T>(asset_handle.clone()),
-            self.properties.lod_level,
+            self.properties.lod,
             ChildOf(self.properties.layer),
             ScatterItemOf(self.properties.layer),
             // TODO should remove or use in editor after registration is complete.
@@ -81,7 +81,7 @@ impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
     }
 
     fn lod(&self) -> &LevelOfDetail {
-        &self.properties.lod_level
+        &self.properties.lod
     }
 
     fn material_options(&self) -> &MaterialOptions {

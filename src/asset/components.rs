@@ -13,7 +13,7 @@ where
 {
     pub source_material_handle: Handle<TIn>,
     pub properties: ScatterAssetProperties,
-    pub(crate) _phantom: PhantomData<TOut>,
+    pub _phantom: PhantomData<TOut>,
 }
 
 impl<TOut, TIn> ScatterMaterialCreationRequest<TOut, TIn>

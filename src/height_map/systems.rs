@@ -22,14 +22,8 @@ pub fn setup_config(
     mut cmd: Commands,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
     q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
-    mut next_state: ResMut<NextState<HeightMapState>>,
 ) {
     if !q_pending_landscapes.is_empty() {
-        return;
-    }
-
-    if q_processed_landscapes.is_empty() {
-        next_state.set(HeightMapState::Loading);
         return;
     }
 

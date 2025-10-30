@@ -98,7 +98,7 @@ pub fn handle_split(
                         .insert(SplitDistance(**child_lod_config));
                 }
 
-                if child_level < lod_cfg.get_max_lod_level() {
+                if child_level < lod_cfg.get_max_lod() {
                     cmd.entity(child_entity)
                         .insert(MergeDistance(**lod_cfg.get_lod_config(child_level)));
                 }

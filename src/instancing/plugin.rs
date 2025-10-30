@@ -17,7 +17,6 @@ pub struct InstancedWindAffectedPlugin;
 impl Plugin for InstancedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
         embedded_asset!(app, "instancing.wgsl");
-        embedded_asset!(app, "instancing_prepass.wgsl");
 
         app.init_asset::<InstancedWindAffectedMaterial>()
             .add_message::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();

@@ -76,6 +76,8 @@ pub fn prepare_instance_uniform_buffer(
         let uniforms = InstanceUniforms {
             color: instance_data.color,
             visibility_range: instance_data.visibility_range,
+            static_bend_strength: instance_data.static_bend_strength,
+            ..default()
         };
         let contents = bytes_of(&uniforms);
 

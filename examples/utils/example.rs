@@ -27,7 +27,7 @@ use iyes_perf_ui::prelude::*;
 
 #[derive(Resource, Default)]
 pub struct ExamplePluginOptions {
-    // add options here if needed again
+    // left in case individual example options are needed again
 }
 
 pub struct ExamplePlugin;
@@ -54,7 +54,7 @@ impl Plugin for ExamplePlugin {
             ))
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup)
-            .add_systems(Update, anisotropic_filtering);
+            .add_systems(Update, (anisotropic_filtering, rotate_sun));
     }
 }
 
@@ -110,14 +110,18 @@ pub fn setup(
         Transform::from_xyz(0., 5., 0.),
     ))
     .with_child(PointLight {
-        radius: 3.,
+        radius: 3.0,
         color: Color::srgb(0.1, 0.1, 1.),
+        shadows_enabled: false,
+        range: 20.,
+        intensity: 500_000.,
         ..default()
     });
 
     cmd.spawn((
         DirectionalLight {
-            // NOTE: Direct sunlight has over-exposure with the SkyBox, FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
+            // NOTE: Direct sunlight has over-exposure with the SkyBox ambient
+            // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
             shadows_enabled: true,
             ..default()
@@ -159,5 +163,35 @@ fn anisotropic_filtering(
                 })
             }
         };
+    }
+}
+
+const SUN_ROTATION_SPEED: f32 = 0.5;
+
+fn rotate_sun(
+    keys: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
+    mut sun_query: Query<&mut Transform, With<DirectionalLight>>,
+    mut sky_query: Query<&mut Skybox>,
+) {
+    let mut rotation_direction = 0.0;
+    if keys.pressed(KeyCode::KeyQ) {
+        rotation_direction += 1.0;
+    }
+    if keys.pressed(KeyCode::KeyE) {
+        rotation_direction -= 1.0;
+    }
+
+    if rotation_direction != 0.0 {
+        let rotation_amount = rotation_direction * SUN_ROTATION_SPEED * time.delta_secs();
+        let rotation = Quat::from_rotation_y(rotation_amount);
+
+        for mut transform in &mut sun_query {
+            transform.rotate_around(Vec3::ZERO, rotation);
+        }
+
+        for mut transform in &mut sky_query {
+            transform.rotation = rotation * transform.rotation;
+        }
     }
 }

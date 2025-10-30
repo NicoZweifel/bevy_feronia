@@ -14,6 +14,7 @@ impl Plugin for WindPlugin {
         load_shader_library!(app, "bindings.wgsl");
         load_shader_library!(app, "noise.wgsl");
         load_shader_library!(app, "displace.wgsl");
+        load_shader_library!(app, "sss_io.wgsl");
 
         app.init_resource::<Wind>()
             .register_type::<Wind>()

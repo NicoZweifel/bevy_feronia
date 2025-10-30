@@ -74,6 +74,8 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             ds.depth_compare = CompareFunction::GreaterEqual;
         }
 
+        descriptor.primitive.cull_mode = None;
+
         if let Some(fragment) = descriptor.fragment.as_mut() {
             if let Some(target) = fragment.targets.get_mut(0) {
                 if let Some(target) = target {
@@ -122,6 +124,14 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
         if key.wind_key.contains(WindAffectedKey::DEBUG) {
             shader_defs.push("MATERIAL_DEBUG".into());
+        }
+
+        if key.wind_key.contains(WindAffectedKey::STATIC_BEND) {
+            shader_defs.push("STATIC_BEND".into());
+        }
+
+        if key.wind_key.contains(WindAffectedKey::ANALYTICAL_NORMALS) {
+            shader_defs.push("ANALYTICAL_NORMALS".into());
         }
 
         descriptor.vertex.shader = self.shader.clone();

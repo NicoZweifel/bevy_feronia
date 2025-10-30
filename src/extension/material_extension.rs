@@ -39,7 +39,6 @@ impl WindAffectedExtension {
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
-            .with_lod_threshold(material_extension.options.lod_threshold)
             .with_curve_factor(material_extension.options.curve_factor)
             .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
@@ -47,10 +46,72 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+enum ShaderStage {
+    Vertex,
+    Fragment,
+    Both,
+}
+
+struct ShaderDefMap {
+    flag: WindAffectedKey,
+    def: &'static str,
+    stage: ShaderStage,
+}
+
+const SHADER_DEFS: &[ShaderDefMap] = &[
+    ShaderDefMap {
+        flag: WindAffectedKey::ENABLE_BILLBOARDING,
+        def: "WIND_BILLBOARDING",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::ENABLE_EDGE_CORRECTION,
+        def: "WIND_EDGE_CORRECTION",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::WIND_LOW_QUALITY,
+        def: "WIND_LOW_QUALITY",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::FAST_NORMALS,
+        def: "FAST_NORMALS",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::DEBUG,
+        def: "MATERIAL_DEBUG",
+        stage: ShaderStage::Both,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::SUBSURFACE_SCATTERING,
+        def: "SUBSURFACE_SCATTERING",
+        stage: ShaderStage::Both,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::WIND_AFFECTED,
+        def: "WIND_AFFECTED",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::STATIC_BEND,
+        def: "STATIC BEND",
+        stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::ANALYTICAL_NORMALS,
+        def: "ANALYTICAL_NORMALS",
+        stage: ShaderStage::Vertex,
+    },
+];
+
 impl MaterialExtension for WindAffectedExtension {
     fn vertex_shader() -> ShaderRef {
         ShaderRef::Path(
-            AssetPath::from_path_buf(embedded_path!("main.wgsl")).with_source("embedded"),
+            AssetPath::from_path_buf(embedded_path!("vertex.wgsl")).with_source("embedded"),
         )
     }
 
@@ -60,51 +121,37 @@ impl MaterialExtension for WindAffectedExtension {
         )
     }
 
+    fn fragment_shader() -> ShaderRef {
+        ShaderRef::Path(
+            AssetPath::from_path_buf(embedded_path!("fragment.wgsl")).with_source("embedded"),
+        )
+    }
+
     fn specialize(
         _pipeline: &MaterialExtensionPipeline,
         descriptor: &mut RenderPipelineDescriptor,
         _layout: &MeshVertexBufferLayoutRef,
         key: MaterialExtensionKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
-        let shader_defs = &mut descriptor.vertex.shader_defs;
+        let vertex_shader_defs = &mut descriptor.vertex.shader_defs;
+        let mut fragment_shader_defs = descriptor.fragment.as_mut().map(|f| &mut f.shader_defs);
 
-        if key
-            .bind_group_data
-            .contains(WindAffectedKey::ENABLE_BILLBOARDING)
-        {
-            shader_defs.push("WIND_BILLBOARDING".into());
-        }
+        for mapping in SHADER_DEFS {
+            if !key.bind_group_data.contains(mapping.flag) {
+                continue;
+            };
 
-        if key
-            .bind_group_data
-            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
-        {
-            shader_defs.push("WIND_EDGE_CORRECTION".into());
-        }
+            if matches!(mapping.stage, ShaderStage::Vertex | ShaderStage::Both) {
+                vertex_shader_defs.push(mapping.def.into());
+            }
 
-        if key
-            .bind_group_data
-            .contains(WindAffectedKey::WIND_LOW_QUALITY)
-        {
-            shader_defs.push("WIND_LOW_QUALITY".into());
-        }
+            let Some(fragment_shader_defs) = &mut fragment_shader_defs else {
+                continue;
+            };
 
-        if key.bind_group_data.contains(WindAffectedKey::FAST_NORMALS) {
-            shader_defs.push("FAST_NORMALS".into());
-        }
-
-        if key.bind_group_data.contains(WindAffectedKey::WIND_AFFECTED) {
-            shader_defs.push("WIND_AFFECTED".into());
-        }
-
-        if key.bind_group_data.contains(WindAffectedKey::DEBUG) {
-            shader_defs.push("MATERIAL_DEBUG".into());
-            descriptor
-                .fragment
-                .as_mut()
-                .unwrap()
-                .shader_defs
-                .push("MATERIAL_DEBUG".into());
+            if matches!(mapping.stage, ShaderStage::Fragment | ShaderStage::Both) {
+                fragment_shader_defs.push(mapping.def.into());
+            }
         }
 
         Ok(())
@@ -127,11 +174,23 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             WindAffectedKey::ENABLE_EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
+        key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
+        key.set(
+            WindAffectedKey::SUBSURFACE_SCATTERING,
+            material.options.subsurface_scattering,
+        );
         key.set(
             WindAffectedKey::WIND_LOW_QUALITY,
             material.options.low_quality,
         );
-        key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
+        key.set(
+            WindAffectedKey::STATIC_BEND,
+            material.options.static_bend_strength > 0.,
+        );
+        key.set(
+            WindAffectedKey::ANALYTICAL_NORMALS,
+            material.options.analytical_normals,
+        );
 
         key
     }

@@ -22,7 +22,6 @@ fn main() -> AppExit {
         })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
-        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
         .run()
 }
@@ -32,17 +31,25 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
-        MapHeight,
         children![(
             scatter_layer("Grass Layer"),
-            DistributionDensity(150.0),
-            InstanceScale { min: 2., max: 4. },
-            InstanceJitter(1.),
-            WindAffected,
-            ScaleDensity,
-            ScatterChunked,
-            EnableBillboarding,
-            EdgeCorrectionFactor::default(),
+            // Scatter Options
+            (
+                DistributionDensity(150.0),
+                InstanceScale { min: 2., max: 4. },
+                InstanceJitter(1.),
+                ScaleDensity,
+            ),
+            // Material Options
+            (
+                WindAffected,
+                ScatterChunked,
+                EdgeCorrectionFactor::default(),
+                AnalyticalNormals,
+                InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
+                StaticBendStrength::default(),
+                CurveFactor::default(),
+            ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (
