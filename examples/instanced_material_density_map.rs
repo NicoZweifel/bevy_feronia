@@ -43,10 +43,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         children![(
             scatter_layer("Wind affected Grass Layer"),
             DistributionDensity(15.),
-            DistributionPattern {
-                density_map: density_map.clone(),
-                scale: 1.
-            },
+            DistributionPattern(density_map.clone()),
             InstanceRotationYaw {
                 min: 0.,
                 max: std::f32::consts::PI * 2.

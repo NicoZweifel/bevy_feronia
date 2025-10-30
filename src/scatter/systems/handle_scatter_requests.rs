@@ -80,7 +80,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
         );
 
         let density_map_image = pattern_dist
-            .and_then(|x| images.get(&x.density_map))
+            .and_then(|x| images.get(&**x))
             .cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {

@@ -278,10 +278,7 @@ fn spawn_scene(
                 // Scatter Options
                 (
                     DistributionDensity(250.),
-                    DistributionPattern {
-                        density_map: density_map.clone(),
-                        scale: 1.0
-                    },
+                    DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),
                     InstanceScale { min: 1., max: 3. },
                     ScaleDensity,

@@ -19,6 +19,8 @@ where
 pub struct WindAffected;
 
 /// Component for configuring wind behavior on a per-entity basis.
+///
+/// Might be deprecated/removed in the future, once the API is more mature.
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct WindConfig {
@@ -32,7 +34,7 @@ pub struct WindConfig {
 
 /// Component to multiply the `strength` field of an entity's [`Wind`] settings.
 ///
-/// Corresponds to `wind.strength` in shaders, controlling the main macro wind displacement magnitude.
+/// Corresponds to `wind.strength` in shaders, controlling the main macro wind displacement strength.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct StrengthMultiplier(pub f32);
@@ -46,7 +48,7 @@ pub struct MicroStrengthMultiplier(pub f32);
 
 /// Component to override the `s_curve_strength` field of an entity's [`Wind`] settings.
 ///
-/// Corresponds to `wind.s_curve_strength` in shaders, controlling the 'S' shape wiggle magnitude.
+/// Corresponds to `wind.s_curve_strength` in shaders, controlling the 'S' shape wiggle size.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct SCurveStrength(pub f32);

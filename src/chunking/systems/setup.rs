@@ -29,7 +29,7 @@ pub fn setup_chunks(
 
         let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
 
-        let top_LOD = chunk_cfg.get_max_lod();
+        let top_lod = chunk_cfg.get_max_lod();
         let top_scalar_config = scalar_config.get_scalar_config(top_lod);
 
         let base_chunk_size = top_chunk_size / **top_scalar_config as f32;
