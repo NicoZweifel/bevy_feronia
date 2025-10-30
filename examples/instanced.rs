@@ -38,7 +38,7 @@ fn setup(
 ) {
     let mesh_handle = meshes.add(Cuboid::new(0.5, 3.0, 0.5));
     let aabb = Aabb {
-        half_extents: Vec3A::new(0.25, 1.5, 0.25), 
+        half_extents: Vec3A::new(0.25, 1.5, 0.25),
         center: Vec3A::new(0.0, 0.0, 0.0),
     };
 
@@ -62,19 +62,20 @@ fn setup(
         noise_texture: (**noise_texture).clone(),
     });
 
-
-    let instances = (0..10).map(|x| InstanceData{
-        position: Vec3::new(x as f32, 1.5, 0.0),
-        scale: 1.0,
-        index: 0,
-        ..default()
-    }).collect();
+    let instances = (0..10)
+        .map(|x| InstanceData {
+            position: Vec3::new(x as f32, 1.5, 0.0),
+            scale: 1.0,
+            index: 0,
+            ..default()
+        })
+        .collect();
 
     let instance_material_data = InstanceMaterialData {
         color: GREEN_500.to_f32_array(),
-        visibility_range: [0.0, 0.0, 1000.0, 1000.0], 
+        visibility_range: [0.0, 0.0, 1000.0, 1000.0],
         instances,
-        static_bend_strength: 0.1, 
+        static_bend_strength: 0.1,
     };
 
     cmd.spawn((
