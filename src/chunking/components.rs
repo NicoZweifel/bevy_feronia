@@ -34,7 +34,7 @@ impl Default for LodConfig {
                 0.3.into(),
                 // Level 2: Low
                 0.1.into(),
-                // Fallback
+                // Root
                 default() // 0.0
             ]
         }
