@@ -90,6 +90,8 @@ fn fragment(
 
 // TODO expose / unify with lighting in instancing shader before exposing fields in `MaterialOptions`
 // TODO allow use of thickness texture
+const SSS_INTENSITY = 2.0;
+
 // Controls how much the surface normal influences the scattered light direction.
 // A value of 0.0 makes light appear to pass straight through.
 // A value of 1.0 makes light appear to be heavily scattered by the surface.
@@ -100,6 +102,7 @@ const SSS_SCALE: f32 = 1.5;
 
 const SSS_WRAP: f32 = 0.2;
 const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
+
 
 // Scale down light rgb
 const LIGHT_INTENSITY_SCALE = 0.00005;
