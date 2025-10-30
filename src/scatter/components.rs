@@ -226,7 +226,7 @@ pub struct ScatteredInstance(pub Entity);
 /// Defines a texture-based density map for scattering.
 #[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
-pub struct DistributionPattern(Handle<Image>);
+pub struct DistributionPattern(pub Handle<Image>);
 
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
 #[derive(Component, Reflect, Clone)]
