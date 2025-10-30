@@ -89,7 +89,6 @@ fn fragment(
 // Fast, Cheap and Convincing Subsurface Scattering Look. Game Developers Conference.
 
 // TODO expose
-
 // Controls how much the surface normal influences the scattered light direction.
 // A value of 0.0 makes light appear to pass straight through.
 // A value of 1.0 makes light appear to be heavily scattered by the surface.
@@ -102,11 +101,10 @@ const SSS_POWER: f32 = 8.0;
 // A multiplier for the overall intensity of the back-scattering effect.
 const SSS_SCALE: f32 = 1.5;
 
-// A final multiplier for the SSS effect.
-const SSS_INTENSITY: f32 = 0.0001;
-
 const SSS_WRAP: f32 = 0.2;
 const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
+
+const LIGHT_INTENSITY_SCALE = 0.00005;
 
 fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
     var sss_light = vec3<f32>(0.0);
@@ -131,7 +129,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
 
         // Skip invalid range lights
         let light_position = light.position_radius.xyz;
-        let light_color_and_intensity = light.color_inverse_square_range.rgb;
+        let light_color_and_intensity = light.color_inverse_square_range.rgb * LIGHT_INTENSITY_SCALE;
         let inverse_square_range = light.color_inverse_square_range.w;
 
         if (inverse_square_range <= 0.0) { continue; }
@@ -185,7 +183,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
         let front_scatter = saturate((dot(pbr_input.world_normal, L) + SSS_WRAP) * SSS_WRAP_INV);
 
         let sss_factor = back_scatter + front_scatter;
-        let light_contribution = sun.color.rgb;
+        let light_contribution = sun.color.rgb * LIGHT_INTENSITY_SCALE;
 
         sss_light += sss_factor * light_contribution * shadow;
     }
