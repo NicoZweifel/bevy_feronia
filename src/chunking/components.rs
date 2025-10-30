@@ -285,7 +285,7 @@ impl From<f32> for LodDensity {
     }
 }
 
-/// A wrapper type for `u32` representing the size scalar for a chunk at a specific LOD.
+/// Wrapper type for `u32` representing the size scalar for a chunk at a specific LOD.
 ///
 /// This is a multiplier relative to the [`BaseChunkSize`]. See also [`ChunkSize`].
 #[derive(Reflect, Debug, Deref, DerefMut)]
