@@ -21,14 +21,14 @@ Feel free to copy the grass assets. All the other assets used in the examples ar
 
 ### Credits/Inspirations/References
 
-- [Graswald](https://gscatter.com/gallery) for their amazing assets.
-- [Other Assets](/assets/LICENSE)
+- [Graswald](https://gscatter.com/gallery) for their amazing assets and [`GScatter`](https://gscatter.com/gscatter), which served as inspiration for the scatter tools.
 - Sucker Punch Productions for their Procedural Grass and Wind simulation in 'Ghost of Tsushima'
   and [GDC Talks](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
 - [bevy_procedural_grass](https://github.com/jadedbay/bevy_procedural_grass) by jadedbay
 - [warbler_grass](https://github.com/EmiOnGit/warbler_grass) by EmiOnGit
 - [GDC 2011 "Approximating Translucency"](https://www.gdcvault.com/play/1014538/Approximating-Translucency-for-a-Fast)
 - [Blinn–Phong reflection model](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model)
+- [All the other assets](/assets/LICENSE)
 
 ### Roadmap
 
