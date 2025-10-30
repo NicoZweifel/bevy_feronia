@@ -206,7 +206,7 @@ pub struct ScatterRoot(Vec<Entity>);
 #[reflect(Component)]
 pub struct ScatterLayerEnabled(pub bool);
 
-/// Overrides the density for a specific [`ScatterLayer`] or [`ScatterItem`].
+/// Controls the density for a specific [`ScatterLayer`].
 #[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct DistributionDensity(pub f32);
