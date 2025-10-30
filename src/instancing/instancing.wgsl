@@ -153,8 +153,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let gradient_factor = 1.0;
 #endif // VERTEX_NORMALS
 
+    // Fake ambient occlusion
     let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.1, instance_uniforms.color.a);
-
     out.color = mix(dark_color, instance_uniforms.color, normalized_height);
 
 #ifdef VISIBILITY_RANGE_DITHER

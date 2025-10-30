@@ -101,6 +101,7 @@ const SSS_SCALE: f32 = 1.5;
 const SSS_WRAP: f32 = 0.2;
 const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
 
+// Scale down light rgb
 const LIGHT_INTENSITY_SCALE = 0.00005;
 
 fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {

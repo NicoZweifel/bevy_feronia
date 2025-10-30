@@ -3,21 +3,10 @@
 Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity.
 
 > [!CAUTION]
-> This package is in very early development, api's will most likely change and be modularized.
+> This package is in very early development and in an experimentation stage.
 >
-> The performance isn't great for most scenarios atm and in general it is not stable.
->
-> The dev branch points at bevy's main branch for the time being because the manual instancing example uses new API's.
-> The main branch will stay on 0.16.x until 0.17.0 releases.
 
-### Roadmap
 
-- Chunking of landscape/meshes
-- Texture-based Scattering on top of landscape/meshes
-- Performance Improvements (e.g., LODs) / Shortcuts (e.g., more efficient calculations for procedural geometry)
-- Make physics-based entities impact the displacement
-- Make use of compute shaders (Allow scattering/sampling of foliage on CPU and GPU to get scattering of high-quality
-  assets and procedural geometry)
 
 ### Examples
 
@@ -71,6 +60,16 @@ https://github.com/user-attachments/assets/2b81a6d2-cd6a-4baa-85c3-1dc814114a37
 - [Graswald](https://gscatter.com/gallery) for their amazing assets.
 - Sucker Punch Productions for their Procedural Grass and Wind simulation in 'Ghost of Tsushima'
   and [GDC Talks](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
+- [bevy_procedural_grass](https://github.com/jadedbay/bevy_procedural_grass) by jadedbay
+
+
+
+### Roadmap
+
+There are a bunch of issues already open, but some of the larger milestones left would be:
+
+- Allow physics-based and other entities to impact the displacement/wind.
+- Make use of compute shaders (Allow scattering on CPU and GPU, improve culling).
 
 
 
