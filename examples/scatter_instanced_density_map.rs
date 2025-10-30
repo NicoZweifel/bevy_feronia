@@ -1,11 +1,10 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500};
-use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::image::*;
 use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy_feronia::instancing::scatter::scatter_layer;
+use bevy::render::render_resource::*;
+use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
@@ -14,13 +13,8 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
-        .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![RED_500.into(), ORANGE_500.into()],
-            aabb_color: GREEN_500.into(),
-        })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
         .insert_state(ScatterState::Setup)
-        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
         .run()
 }
@@ -30,31 +24,27 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         ChunkRoot::default(),
-        ChunkRootSizeDim(4),
-        ChunkLodConfig(vec![30.0.into(), f32::MAX.into()]),
-        ChunkSizeScalarConfig(vec![1.into(), 2.into()]),
-        MapHeight,
-        LodConfig::from(vec![
-            // Level 0: High
-            30.0.into(),
-            // Level 2: Low
-            f32::MAX.into(),
-        ]),
         children![(
             scatter_layer("Wind affected Grass Layer"),
-            DistributionDensity(15.),
-            DistributionPattern(density_map.clone()),
-            InstanceRotationYaw {
-                min: 0.,
-                max: std::f32::consts::PI * 2.
-            },
-            InstanceScale { min: 1., max: 1.5 },
-            InstanceJitter::default(),
-            WindAffected,
-            ScaleDensity,
-            ScatterChunked,
-            EnableBillboarding,
-            EdgeCorrectionFactor::default(),
+            // Scatter options
+            (
+                DistributionDensity(15.),
+                DistributionPattern(density_map.clone()),
+                InstanceRotationYaw {
+                    min: 0.,
+                    max: std::f32::consts::PI * 2.
+                },
+                InstanceScale { min: 1., max: 1.5 },
+                InstanceJitter::default(),
+            ),
+            // Material options
+            (
+                WindAffected,
+                ScaleDensity,
+                ScatterChunked,
+                EnableBillboarding,
+                EdgeCorrectionFactor::default()
+            ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
                 (

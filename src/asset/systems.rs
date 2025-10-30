@@ -1,3 +1,4 @@
+use crate::core::components::LevelOfDetail;
 use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::prelude::*;

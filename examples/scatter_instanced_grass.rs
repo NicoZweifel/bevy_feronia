@@ -2,8 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::chunking::systems::debug::draw_aabbs;
-use bevy_feronia::instancing::scatter::scatter_layer;
+use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
@@ -12,15 +11,9 @@ fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
-        .insert_state(ScatterState::Setup)
         .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                scatter_on_keypress,
-                draw_aabbs.run_if(resource_exists::<ChunkDebugConfig>),
-            ),
-        )
+        .insert_state(ScatterState::Setup)
+        .add_systems(Update, (scatter_on_keypress,))
         .run()
 }
 
@@ -28,7 +21,6 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
-        LodConfig::from(vec![10.0.into(), 20.0.into(), f32::MAX.into()]),
         children![(
             scatter_layer("Grass Layer"),
             // Scatter Options

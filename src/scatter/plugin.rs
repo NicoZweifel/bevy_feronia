@@ -1,6 +1,7 @@
 use crate::asset::systems::{
     process_same_type_material_requests, queue_material_creation_requests,
 };
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use crate::scatter::observers::*;
 use crate::scatter::systems::prelude::*;
@@ -110,8 +111,7 @@ impl Plugin for StandardScatterPlugin {
             .add_plugins(ScatterMaterialPlugin::<StandardMaterial>::default())
             .add_systems(
                 Update,
-                StandardMaterial::spawn
-                    .run_if(resource_exists::<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>),
+                StandardMaterial::spawn.run_if(resource_exists::<Assets<ScatterAsset>>),
             )
             .add_message::<SpawnProtoTypes<StandardMaterial>>()
             .add_plugins((ScatterAssetPlugin::<StandardMaterial>::new(),))

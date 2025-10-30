@@ -8,6 +8,7 @@ use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::*;
 use bevy_feronia::prelude::*;
+use bevy_feronia::{extension, instancing};
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, RngCore, SeedableRng, rng};
@@ -231,7 +232,7 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
+                extension::scatter_layer("Tree Layer"),
                 // Scatter options
                 (
                     DistributionDensity(8.0),
@@ -252,7 +253,7 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
+                extension::scatter_layer("Foliage Complex Layer"),
                 // Scatter options
                 (
                     DistributionDensity(20.0),
@@ -274,21 +275,20 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                // Scatter Options
+                instancing::scatter_layer("Instanced Grass Layer"),
+                // Scatter options
                 (
                     // Very dense
                     DistributionDensity(300.),
                     // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),
-                    InstanceScale { min: 1., max: 3. },
+                    InstanceScale { min: 0.5, max: 3.5 },
                     ScaleDensity,
                     ScatterChunked,
                 ),
-                // Material Options
+                // Material options
                 (
-                    SubsurfaceScattering,
                     WindAffected,
                     EdgeCorrectionFactor::default(),
                     CurveFactor::default(),
@@ -356,7 +356,7 @@ fn scatter_instanced(
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }
 
-// TODO make expressive/descriptive configuration/plugin
+// TODO create density map plugin
 #[derive(Resource)]
 pub struct DensityMapConfig {
     pub size: u32,

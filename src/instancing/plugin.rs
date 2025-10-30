@@ -1,7 +1,6 @@
-use super::prepare::{
-    prepare_indirect_draw_buffer, prepare_instance_buffer, prepare_instance_uniform_buffer,
-};
+use super::prepare::*;
 use super::{draw::DrawInstancedWindAffected, pipeline::InstancedWindAffectedPipeline, systems::*};
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::AlphaMask3d;
@@ -30,7 +29,7 @@ impl Plugin for InstancedWindAffectedPlugin {
         .add_systems(
             Update,
             InstancedWindAffectedMaterial::spawn
-                .run_if(resource_exists::<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>),
+                .run_if(resource_exists::<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>),
         )
         .add_systems(PostUpdate, add_instance_key_component);
 

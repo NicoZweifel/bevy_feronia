@@ -1,3 +1,4 @@
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::platform::collections::HashMap;

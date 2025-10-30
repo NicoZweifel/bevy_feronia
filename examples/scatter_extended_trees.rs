@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::scatter::scatter_layer;
+use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};

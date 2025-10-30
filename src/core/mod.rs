@@ -1,18 +1,12 @@
+pub mod components;
+pub mod events;
+
+pub use components::*;
+pub use events::*;
+
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
-
-/// Event used to trigger the spawning of a batch of prototypes.
-#[derive(Event, Message, Debug, Clone)]
-pub struct SpawnProtoTypes<T>
-where
-    T: Asset + Clone,
-{
-    /// A list of asset definitions to be scattered.
-    pub items: Vec<ScatterItemAsset<T>>,
-    /// Where and why the spawn was triggered.
-    pub trigger: SpawnTrigger,
-}
 
 /// Trigger of the [`SpawnProtoTypes`] Event.
 /// Contains the scattered positions and information about the container as well as other scatter system relevant entities.
@@ -202,29 +196,6 @@ impl MaterialOptions {
     }
 }
 
-impl<T> SpawnProtoTypes<T>
-where
-    T: Asset + Clone,
-{
-    pub fn new(items: Vec<ScatterItemAsset<T>>, trigger: SpawnTrigger) -> Self {
-        Self { items, trigger }
-    }
-
-    pub fn with_items(mut self, items: Vec<ScatterItemAsset<T>>) -> Self {
-        self.items = items;
-        self
-    }
-}
-
-impl<T> From<SpawnTrigger> for SpawnProtoTypes<T>
-where
-    T: Asset + Clone,
-{
-    fn from(value: SpawnTrigger) -> Self {
-        Self::new(Vec::new(), value)
-    }
-}
-
 /// Trait defining the required properties for a spawnable prototype.
 pub trait ProtoType<T>
 where
@@ -249,92 +220,6 @@ pub trait Sampler {
     /// Samples the underlying data at `world_pos`.
     fn sample(&self, world_pos: Vec3) -> f32;
 }
-
-/// Component specifying the LOD for a [`ScatterItem`].
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
-#[reflect(Component)]
-pub struct LevelOfDetail(pub u32);
-
-/// Marker component for debug visualization.
-///
-/// Enables `#ifdef MATERIAL_DEBUG` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct EnableDebug;
-
-/// Marker component to make instances always face the camera.
-///
-/// Enables `#ifdef WIND_BILLBOARDING` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct EnableBillboarding;
-
-/// Marker component to force simple, non-analytical normal calculation.
-///
-/// Enables `#ifdef FAST_NORMALS` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct FastNormals;
-
-/// Marker component to enable high-quality, mathematically derived normals.
-///
-/// Enables `#ifdef ANALYTICAL_NORMALS` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct AnalyticalNormals;
-
-/// Controls the edge correction effect (makes vegetation look fuller).
-///
-/// Corresponds to `wind.edge_correction_factor` in shaders.
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct EdgeCorrectionFactor(pub f32);
-
-impl Default for EdgeCorrectionFactor {
-    fn default() -> Self {
-        Self(0.1)
-    }
-}
-
-/// Controls the normal curving effect (simulates curved blades).
-///
-/// Corresponds to `wind.curve_factor` in shaders.
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct CurveFactor(pub f32);
-
-impl Default for CurveFactor {
-    fn default() -> Self {
-        Self(0.1)
-    }
-}
-
-/// Controls a persistent, non-wind bend.
-///
-/// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct StaticBendStrength(pub f32);
-
-impl Default for StaticBendStrength {
-    fn default() -> Self {
-        Self(0.3)
-    }
-}
-
-/// Marker component to enable simulated subsurface scattering.
-///
-/// Enables `#ifdef SUBSURFACE_SCATTERING` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct SubsurfaceScattering;
-
-/// Sets a material color tint.
-///
-/// Corresponds to `instance_uniforms.color` in shaders.
-#[derive(Component, Clone, Debug, Reflect, Deref, Default, DerefMut)]
-#[reflect(Component)]
-pub struct InstanceColor(pub Color);
 
 #[cfg(test)]
 mod tests {

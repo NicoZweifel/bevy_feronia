@@ -74,7 +74,9 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             ds.depth_compare = CompareFunction::GreaterEqual;
         }
 
-        descriptor.primitive.cull_mode = None;
+        if !key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
+            descriptor.primitive.cull_mode = None;
+        }
 
         if let Some(fragment) = descriptor.fragment.as_mut() {
             if let Some(target) = fragment.targets.get_mut(0) {

@@ -1,4 +1,4 @@
-use crate::core::LevelOfDetail;
+use crate::core::components::LevelOfDetail;
 use bevy::camera::visibility::VisibilityRange;
 use bevy::prelude::*;
 

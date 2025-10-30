@@ -33,14 +33,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         ScatterRoot::default(),
         children![(
             scatter_layer("Grass Layer"),
-            // Scatter Options
+            // Scatter options
             (
                 DistributionDensity(150.0),
                 InstanceScale { min: 2., max: 4. },
                 InstanceJitter(1.),
                 ScaleDensity,
             ),
-            // Material Options
+            // Material options
             (
                 WindAffected,
                 ScatterChunked,

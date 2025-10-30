@@ -1,3 +1,4 @@
+use crate::core::components::LevelOfDetail;
 use crate::core::*;
 use crate::prelude::*;
 use bevy::asset::{Asset, Handle};
@@ -18,7 +19,7 @@ pub struct ScatterAssetProperties {
 }
 
 #[derive(Asset, TypePath, Clone, Debug)]
-pub struct ScatterAsset<T>
+pub struct ScatterAsset<T = StandardMaterial>
 where
     T: Asset + Clone,
 {

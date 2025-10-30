@@ -1,3 +1,4 @@
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
 use bevy::prelude::*;

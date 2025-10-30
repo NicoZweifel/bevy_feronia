@@ -1,3 +1,4 @@
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;

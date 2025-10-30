@@ -5,6 +5,8 @@ pub mod scatter;
 
 pub use plugin::ExtendedWindAffectedPlugin;
 
+pub use scatter::scatter_layer;
+
 pub mod prelude {
     pub use super::material::*;
     pub use super::material_extension::*;
