@@ -95,12 +95,12 @@ pub fn handle_split(
                 if child_level > 0 {
                     let child_lod_config = lod_cfg.get_lod_config(child_level - 1);
                     cmd.entity(child_entity)
-                        .insert(SplitDistance(**child_lod_config));
+                        .insert(SplitDistance(*child_lod_config));
                 }
 
                 if child_level < lod_cfg.get_max_lod() {
                     cmd.entity(child_entity)
-                        .insert(MergeDistance(**lod_cfg.get_lod_config(child_level)));
+                        .insert(MergeDistance(*lod_cfg.get_lod_config(child_level)));
                 }
             }
         }

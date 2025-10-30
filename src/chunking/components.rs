@@ -67,17 +67,13 @@ pub trait LodConfiguration {
     }
 
     /// Gets the [`LodDistance`] for a specific LOD `level`.
-    fn get_lod_config(&self, level: u32) -> &LodDistance {
-        &self.get()[level as usize]
+    fn get_lod_config(&self, level: u32) -> LodDistance {
+        self.get().get(level as usize).cloned().unwrap_or_default()
     }
 
     /// Calculates the [`VisibilityRange`] for a given `lod`.
     fn get_visibility_range(&self, lod: LevelOfDetail) -> VisibilityRange {
-        let current_lod_dist = self
-            .get()
-            .get(*lod as usize)
-            .map(|x| **x)
-            .unwrap_or(*LodDistance::default());
+        let current_lod_dist = *self.get_lod_config(*lod);
 
         let fade_band_multiplier = 0.1;
 
@@ -251,7 +247,7 @@ pub struct ChunkOf(pub Entity);
 pub struct ChunkRoot(Vec<Entity>);
 
 /// A wrapper type for `f32` representing the distance threshold for an LOD.
-#[derive(Reflect, Debug, Deref, DerefMut)]
+#[derive(Reflect, Debug, Deref, DerefMut, Clone, Copy)]
 pub struct LodDistance(pub f32);
 
 impl Default for LodDistance {

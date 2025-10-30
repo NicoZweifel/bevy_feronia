@@ -55,7 +55,7 @@ pub fn setup_chunks(
                     Transform::from_translation(world_pos),
                     ChildOf(entity),
                     ChunkOf(entity),
-                    SplitDistance(**child_lod_config),
+                    SplitDistance(*child_lod_config),
                     ChunkCoord(IVec2::new(x as i32, z as i32)),
                 ));
             }
