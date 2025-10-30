@@ -55,13 +55,15 @@ https://github.com/user-attachments/assets/3141e4ac-24ff-4519-8ba5-afadf8f6a2ad
 
 https://github.com/user-attachments/assets/2b81a6d2-cd6a-4baa-85c3-1dc814114a37
 
-### Credits/Inspirations
+### Credits/Inspirations/References
 
 - [Graswald](https://gscatter.com/gallery) for their amazing assets.
 - Sucker Punch Productions for their Procedural Grass and Wind simulation in 'Ghost of Tsushima'
   and [GDC Talks](https://www.youtube.com/watch?v=Ibe1JBF5i5Y).
 - [bevy_procedural_grass](https://github.com/jadedbay/bevy_procedural_grass) by jadedbay
-
+- [warbler_grass](https://github.com/EmiOnGit/warbler_grass) by EmiOnGit
+- [GDC 2011 "Approximating Translucency"](https://www.gdcvault.com/play/1014538/Approximating-Translucency-for-a-Fast)
+- [Blinn–Phong reflection model](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model)
 
 
 ### Roadmap
