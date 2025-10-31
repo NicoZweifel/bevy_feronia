@@ -89,11 +89,8 @@ pub fn setup(
             },
         ),
         #[cfg(not(feature = "dlss"))]
-        (
-            Msaa::Off,
-            bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
-            TemporalAntiAliasing::default(),
-        ),
+        (Msaa::Off, TemporalAntiAliasing::default()),
+        bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
         bevy::light::VolumetricFog {
             ambient_intensity: 0.1,
             ..default()

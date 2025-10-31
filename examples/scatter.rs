@@ -35,16 +35,25 @@ fn setup(
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind Affected Layer"),
+            // Scatter Options
             DistributionDensity(50.),
             InstanceJitter::default(),
+            // You can define material options on the full layer here.
+            WindAffected,
             children![
                 (
-                    // Only make lod 0 wind affected, this will make the scattered instances use a Material Extension for displacement.
-                    WindAffected,
+                    // Or overwrite on the item, e.g.,
+                    // WindAffected,
+                    // CAUTION: If you have multiple assets, all lods that belong to each other need to have the same name!
+
+                    // You can have multiple types in each layer; as long as all LODs have the same name, they will be matched correctly.
+                    Name::new("Wind Affected Item"),
                     MeshMaterial3d(materials.add(StandardMaterial::default())),
                     Mesh3d(mesh.clone()),
                 ),
                 (
+                    Name::new("Wind Affected Item"),
+                    // We need to specify the LOD Level if it is not 0 (Highest level)
                     LevelOfDetail(1),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: RED_500.into(),
@@ -53,6 +62,7 @@ fn setup(
                     Mesh3d(mesh.clone()),
                 ),
                 (
+                    Name::new("Wind Affected Item"),
                     LevelOfDetail(2),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: GREEN_500.into(),

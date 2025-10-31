@@ -12,7 +12,7 @@ All examples have an inspector window to control the global `Wind` resource and 
 ### Full
 
 A complex scene with rocks, trees, foliage and grass.
-This example demonstrates ordered scattering (rocks -> trees/foliage -> grass) and combines all three scatter plugins.
+This example demonstrates ordered scattering (rocks → trees/foliage → grass) and combines all three scatter plugins.
 
 `cargo run --example full`
 
@@ -20,9 +20,17 @@ https://github.com/user-attachments/assets/970e69d9-6a05-4897-9cff-754c845814fe
 
 The other examples are mostly for demonstration and testing purposes:
 
+### Scatter
+
+Shows and demonstrates some of the scatter logic.
+
+`cargo run --example scatter`
+
+- A minimal example showing how to scatter cuboids.
+
 ### Materials (Standalone)
 These show how to use the wind-affected materials directly without any scattering plugins.
-Useful if you want to apply wind effects to individual, non-scattered meshes, i.e. manually placed entities.
+Useful if you want to apply wind effects to individual, non-scattered meshes, i.e., manually placed entities.
 
 `cargo run --example extension`
 
@@ -61,10 +69,6 @@ Useful if you want to apply wind effects to individual, non-scattered meshes, i.
 
 - Demonstrates scattering wind-affected trees.
 
-### Scatter
-`cargo run --example scatter`
-
-- A minimal example showing how to scatter cuboids.
 
 
 
