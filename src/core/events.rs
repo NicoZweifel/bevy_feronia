@@ -11,7 +11,7 @@ where
 {
     /// A list of asset definitions to be scattered.
     pub items: Vec<ScatterItemAsset<T>>,
-    /// Where and why the spawn was triggered.
+    /// Contains the computed scatter results (`data`) and contextual information.
     pub trigger: SpawnTrigger,
 }
 
