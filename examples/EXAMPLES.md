@@ -1,5 +1,5 @@
 
-### Examples
+## Examples
 
 - Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
