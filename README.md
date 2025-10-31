@@ -1,6 +1,6 @@
 # bevy_feronia ![crates.io](https://img.shields.io/crates/v/bevy_feronia.svg)
 
-Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
+Environment Scattering tools and shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
 
 > [!CAUTION]
 > This package is in early development and in an experimentation stage. 
