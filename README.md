@@ -26,7 +26,7 @@ app.add_plugins((
 ));
 ```
 
-The Scatter system needs to know when it can set up since it can depend on height mapping. You need to insert the setup state at some point.
+The Scatter system needs to know when it can setup since it can depend on height mapping. You need to insert the setup state at some point.
 
 > [!NOTE]  
 > In complex setups that load assets and bake a height map this can be after the `Startup`.
