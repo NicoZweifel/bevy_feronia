@@ -46,7 +46,7 @@ These show how to use the wind-affected materials directly without any scatterin
 
 - Demonstrates applying wind effects to a set of instanced cuboids.
 
-#### Grass
+### Grass
 
 `cargo run --example scatter_extended_grass`
 
