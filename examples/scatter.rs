@@ -4,7 +4,7 @@ mod example;
 use bevy::color::palettes::tailwind::*;
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
-use bevy_feronia::extension::scatter::scatter_layer;
+use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
@@ -34,7 +34,9 @@ fn setup(
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
         ScatterRoot::default(),
         children![(
-            scatter_layer("Wind Affected Layer"),
+            // Make sure you use the correct `ScatterLayer` with the desired `ScatterLayerType`, e.g.,
+            // Standard, Extended or Instanced Material/Layer.
+            extension::scatter_layer("Wind Affected Layer"),
             // Scatter Options
             DistributionDensity(50.),
             InstanceJitter::default(),

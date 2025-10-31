@@ -59,7 +59,9 @@ cmd.spawn((
     ScatterRoot::default(),
     // Scatter layers
     children![(
-            scatter_layer("Wind Affected Layer"),
+            // Make sure you use the correct `ScatterLayer` with the desired `ScatterLayerType`, e.g.,
+            // Standard, Extended or Instanced Material/Layer.
+            extension::scatter_layer("Wind Affected Layer"),
             // Scatter Options
             DistributionDensity(50.),
             InstanceJitter::default(),
