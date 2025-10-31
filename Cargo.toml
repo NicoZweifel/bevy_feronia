@@ -25,7 +25,7 @@ xxh3 = "0.1.1"
 rand_pcg = "0.9.0"
 
 [dev-dependencies]
-bevy = { version = "0.17", features = ["file_watcher", "jpeg", "dynamic_linking", "embedded_watcher", "asset_processor", "basis-universal", "mp3"] }
+bevy = { version = "0.17", features = ["file_watcher","dynamic_linking", "jpeg", "dynamic_linking", "embedded_watcher", "asset_processor", "basis-universal", "mp3"] }
 
 bytemuck = "1.23.1"
 iyes_perf_ui = "0.5.0"
