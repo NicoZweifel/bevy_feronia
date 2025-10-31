@@ -4,8 +4,11 @@
 - Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
 
-The examples all use `TAA` and `SSAO` by default, you can however run it with `DLSS` by using `--features dlss`.
-How to set up `DLSS` can be found [here](https://github.com/bevyengine/dlss_wgpu).
+> [!TIP]  
+>
+> The examples all use `TAA` and `SSAO` by default, you can however run it with `DLSS` by using `--features dlss`.
+>
+> How to set up `DLSS` can be found [here](https://github.com/bevyengine/dlss_wgpu).
 
 All examples have an inspector window to control the global `Wind` resource and a performance overlay.
 
@@ -22,15 +25,18 @@ The other examples are mostly for demonstration and testing purposes:
 
 ### Scatter
 
-Shows and demonstrates some of the scatter logic.
+Shows the basic scatter logic. This is the `Getting started`/`Setup` section as an example. 
 
 `cargo run --example scatter`
 
 - A minimal example showing how to scatter cuboids.
 
 ### Materials (Standalone)
+
 These show how to use the wind-affected materials directly without any scattering plugins.
-Useful if you want to apply wind effects to individual, non-scattered meshes, i.e., manually placed entities.
+
+> [!NOTE]
+> Useful if you want to apply wind effects to individual, non-scattered meshes, i.e., manually placed entities.
 
 `cargo run --example extension`
 
