@@ -1,6 +1,7 @@
 use crate::asset::systems::{
     process_same_type_material_requests, queue_material_creation_requests,
 };
+use crate::core::events::SpawnProtoTypes;
 use crate::prelude::*;
 use crate::scatter::observers::*;
 use crate::scatter::systems::prelude::*;
@@ -107,13 +108,13 @@ pub struct StandardScatterPlugin;
 impl Plugin for StandardScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<SpawnProtoTypes<StandardMaterial>>()
-            .add_plugins(ScatterMaterialPlugin::<StandardMaterial>::default())
-            .add_systems(Update, StandardMaterial::spawn)
             .add_message::<SpawnProtoTypes<StandardMaterial>>()
+            .add_plugins(ScatterMaterialPlugin::<StandardMaterial>::default())
             .add_plugins((ScatterAssetPlugin::<StandardMaterial>::new(),))
             .add_systems(
                 Update,
                 (
+                    StandardMaterial::spawn.run_if(resource_exists::<Assets<ScatterAsset>>),
                     queue_material_creation_requests::<StandardMaterial, StandardMaterial>,
                     process_same_type_material_requests::<StandardMaterial>.after(
                         queue_material_creation_requests::<StandardMaterial, StandardMaterial>,

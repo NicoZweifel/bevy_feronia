@@ -37,7 +37,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 #ifdef BINDLESS
         let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-        let noise_texture = bindless_textures_2d[wind_indices[slot].noise_texture];
         let wind =  wind_material[wind_indices[slot].material];
 #endif
 
@@ -57,13 +56,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
         // --- DISPLACEMENT ---
         let displaced = displace_vertex_and_calc_normal(
-        wind,
-        noise,
+            wind,
+            noise,
             vertex.position,
             instance,
 #ifdef VERTEX_NORMALS
             vertex.normal,
-            vertex.uv,
 #endif
 #ifdef VERTEX_TANGENTS
             vertex.tangent,
@@ -126,7 +124,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
             instance_prev,
 #ifdef VERTEX_NORMALS
             vertex.normal,
-            vertex.uv,
 #endif
 #ifdef VERTEX_TANGENTS
             vertex.tangent,
@@ -139,4 +136,5 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     return out;
 }
+
 

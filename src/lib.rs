@@ -1,13 +1,11 @@
+pub mod asset;
 pub mod chunking;
 pub mod core;
 pub mod density_map;
 pub mod extension;
 pub mod height_map;
 pub mod instancing;
-
 pub mod scatter;
-
-pub mod asset;
 pub mod wind;
 
 pub mod prelude {

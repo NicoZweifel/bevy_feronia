@@ -79,9 +79,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             density, request.layer_entity,
         );
 
-        let density_map_image = pattern_dist
-            .and_then(|x| images.get(&x.density_map))
-            .cloned();
+        let density_map_image = pattern_dist.and_then(|x| images.get(&**x)).cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
@@ -125,7 +123,13 @@ pub fn handle_scatter_requests<TOut, TIn>(
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.occupied_zones.clone(),
-                density: Some(lod_config.density[**chunk_level as usize].clone()),
+                density: Some(
+                    lod_config
+                        .density
+                        .get(**chunk_level as usize)
+                        .cloned()
+                        .unwrap_or_default(),
+                ),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,

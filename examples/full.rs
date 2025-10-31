@@ -1,3 +1,13 @@
+//! Showcases how to build a complex scene by scattering different types
+//! of assets (rocks, trees, foliage, and grass) onto a large landscape model.
+//!
+//! Ordered Scattering with:
+//! * `StandardScatterPlugin` (for rocks)
+//! * `ExtendedWindAffectedScatterPlugin` (for wind-affected trees and foliage)
+//! * `InstancedWindAffectedScatterPlugin` (for high-density, wind-affected grass)
+//!
+//! The instanced grass layer is controlled by a procedurally generated `DensityMap`
+//! (using Perlin noise) to create natural, patchy placement.
 #[path = "utils/example.rs"]
 mod example;
 
@@ -8,6 +18,7 @@ use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
 use bevy::render::render_resource::*;
 use bevy_feronia::prelude::*;
+use bevy_feronia::{extension, instancing};
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, RngCore, SeedableRng, rng};
@@ -23,15 +34,6 @@ fn main() -> AppExit {
             ..default()
         })
         .insert_resource(DensityMapConfig { size: 128 })
-        /*   .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![
-                RED_500.into(),
-                ORANGE_500.into(),
-                YELLOW_500.into(),
-                WHITE.into(),
-            ],
-            aabb_color: GREEN_500.into(),
-        })*/
         .add_plugins((
             ExamplePlugin,
             StandardScatterPlugin,
@@ -213,11 +215,14 @@ fn spawn_scene(
                 Name::new("Rock Layer"),
                 ScatterLayer::default(),
                 ScatterLayerType::<StandardMaterial>::default(),
-                DistributionDensity(10.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 4. },
-                InstanceJitter::default(),
-                Avoidance(2.),
+                // Scatter options
+                (
+                    DistributionDensity(10.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 1., max: 4. },
+                    InstanceJitter::default(),
+                    Avoidance(2.)
+                ),
                 children![
                     SceneRoot(handles.rocks_lod_high.clone()),
                     (
@@ -228,13 +233,17 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::extension::scatter::scatter_layer("Tree Layer"),
-                DistributionDensity(8.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 4., max: 6. },
-                InstanceJitter::default(),
-                Avoidance(1.2),
-                WindAffected,
+                extension::scatter_layer("Tree Layer"),
+                // Scatter options
+                (
+                    DistributionDensity(8.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 4., max: 6. },
+                    InstanceJitter::default(),
+                    Avoidance(1.2)
+                ),
+                // Material options
+                (SubsurfaceScattering, WindAffected),
                 children![
                     SceneRoot(handles.trees_lod_high.clone()),
                     (
@@ -245,13 +254,17 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::extension::scatter::scatter_layer("Foliage Complex Layer"),
-                DistributionDensity(20.0),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 8., max: 18. },
-                InstanceJitter::default(),
-                Avoidance(0.2),
-                WindAffected,
+                extension::scatter_layer("Foliage Complex Layer"),
+                // Scatter options
+                (
+                    DistributionDensity(20.0),
+                    InstanceRotationYaw::default(),
+                    InstanceScale { min: 8., max: 18. },
+                    InstanceJitter::default(),
+                    Avoidance(0.2)
+                ),
+                // Material options
+                (SubsurfaceScattering, WindAffected),
                 children![
                     // TODO figure out what's wrong with highest detail models
                     SceneRoot(handles.foliage_lod_medium.clone()),
@@ -263,25 +276,30 @@ fn spawn_scene(
                 ]
             ),
             (
-                bevy_feronia::instancing::scatter::scatter_layer("Instanced Grass Layer"),
-                DistributionDensity(250.),
-                DistributionPattern {
-                    density_map: density_map.clone(),
-                    scale: 1.0
-                },
-                InstanceJitter::default(),
-                InstanceScale { min: 1., max: 1.5 },
-                WindAffected,
-                ScaleDensity,
-                ScatterChunked,
+                instancing::scatter_layer("Instanced Grass Layer"),
+                // Scatter options
                 (
-                    EnableBillboarding,
+                    // Very dense
+                    DistributionDensity(300.),
+                    // But with noise pattern and empty spots/patches
+                    DistributionPattern(density_map.clone()),
+                    InstanceJitter::default(),
+                    InstanceScale::default(),
+                    ScaleDensity,
+                    ScatterChunked,
+                ),
+                // Material options
+                (
+                    WindAffected,
                     EdgeCorrectionFactor::default(),
                     CurveFactor::default(),
-                    StrengthMultiplier(1.1),
-                    MicroStrengthMultiplier(1.1),
-                    SCurveStrength(0.2),
-                    BopStrength(0.2)
+                    Strength(1.1),
+                    MicroStrength(1.1),
+                    SCurveStrength(1.5),
+                    BopStrength(1.5),
+                    AnalyticalNormals,
+                    InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
+                    StaticBendStrength::default(),
                 ),
                 children![
                     SceneRoot(handles.grass_lod_high.clone()),
@@ -289,7 +307,7 @@ fn spawn_scene(
                         SceneRoot(handles.grass_lod_medium.clone()),
                         LevelOfDetail(1),
                     ),
-                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2)),
+                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2),),
                 ],
             )
         ],
@@ -339,7 +357,7 @@ fn scatter_instanced(
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
 }
 
-// TODO make expressive/descriptive configuration/plugin
+// TODO create density map plugin
 #[derive(Resource)]
 pub struct DensityMapConfig {
     pub size: u32,
@@ -356,6 +374,8 @@ fn setup_density_map(mut commands: Commands) {
 }
 
 /// Creates a density map with a Perlin noise base and empty spots stamped on top.
+///
+/// Simulates an artist drawing density until tooling to do that is ready.
 fn update_density_map(
     _: On<UpdateDensityMap>,
     mut cmd: Commands,

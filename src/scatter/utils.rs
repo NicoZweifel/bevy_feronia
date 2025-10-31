@@ -71,7 +71,7 @@ pub struct InstanceModifiers<'a> {
     pub rotation: Option<&'a InstanceRotationYaw>,
     pub jitter: Option<&'a InstanceJitter>,
     pub avoidance: Option<&'a Avoidance>,
-    pub density: Option<&'a LodLevelDensity>,
+    pub density: Option<&'a LodDensity>,
 }
 
 #[derive(Clone)]

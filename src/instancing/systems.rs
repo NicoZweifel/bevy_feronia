@@ -50,7 +50,15 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::WIND_AFFECTED,
             material.options.wind_affected,
         );
+        key.set(
+            WindAffectedKey::STATIC_BEND,
+            material.options.static_bend_strength > 0.,
+        );
         key.set(WindAffectedKey::DEBUG, material.options.debug);
+        key.set(
+            WindAffectedKey::ANALYTICAL_NORMALS,
+            material.options.analytical_normals,
+        );
 
         commands
             .entity(entity)

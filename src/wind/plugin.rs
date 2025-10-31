@@ -14,6 +14,7 @@ impl Plugin for WindPlugin {
         load_shader_library!(app, "bindings.wgsl");
         load_shader_library!(app, "noise.wgsl");
         load_shader_library!(app, "displace.wgsl");
+        load_shader_library!(app, "sss_io.wgsl");
 
         app.init_resource::<Wind>()
             .register_type::<Wind>()
@@ -50,8 +51,11 @@ where
         app.add_systems(
             Update,
             (
-                replace_materials::<TOut, TIn>,
-                update_materials::<TOut, TIn>.run_if(resource_changed::<Wind>),
+                replace_materials::<TOut, TIn>
+                    .run_if(resource_exists::<Assets<ScatterAsset<TOut>>>),
+                update_materials::<TOut, TIn>.run_if(
+                    resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<TOut>>>),
+                ),
             ),
         );
     }

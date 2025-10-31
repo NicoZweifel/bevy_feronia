@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::scatter::scatter_layer;
+use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
@@ -45,10 +45,10 @@ struct Scenes {
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Scenes {
-        landscape: asset_server.load("landscape_flat_large.glb#Scene0"),
-        lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
-        lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
-        lod_low: asset_server.load("trees_low_lod.glb#Scene0"),
+        landscape: asset_server.load("landscape_flat.glb#Scene0"),
+        lod_high: asset_server.load("foliage_complex.glb#Scene0"),
+        lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
+        lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
     });
 }
 
@@ -79,7 +79,6 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
-    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
@@ -87,24 +86,26 @@ fn spawn_scene(
         ChunkRoot::default(),
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
-            scatter_layer("Tree Layer"),
-            DistributionDensity(10.),
-            InstanceRotationYaw {
-                min: 0.,
-                max: std::f32::consts::PI * 2.
-            },
-            InstanceScale { min: 1., max: 4. },
-            WindAffected,
-            Avoidance(3.),
+            scatter_layer("Foliage Layer"),
+            // Scatter options
+            (
+                DistributionDensity(10.),
+                InstanceRotationYaw {
+                    min: 0.,
+                    max: std::f32::consts::PI * 2.
+                },
+                InstanceScale { min: 2., max: 5. }
+            ),
+            // Material options
+            (SubsurfaceScattering, WindAffected),
             children![
-                (SceneRoot(handles.lod_high.clone()),),
-                (LevelOfDetail(1), SceneRoot(handles.lod_medium.clone()),),
-                (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()),)
+                // TODO figure out what's wrong with highest detail models
+                (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
+                (LevelOfDetail(1), SceneRoot(handles.lod_low.clone()),)
             ]
         )],
     ));
 
-    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 

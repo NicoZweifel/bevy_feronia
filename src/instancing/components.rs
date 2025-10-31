@@ -33,6 +33,7 @@ pub struct InstanceMaterialData {
     pub instances: Vec<InstanceData>,
     pub color: [f32; 4],
     pub visibility_range: [f32; 4],
+    pub static_bend_strength: f32,
 }
 
 impl ExtractComponent for InstanceMaterialData {
@@ -62,6 +63,8 @@ pub struct GpuDrawIndexedIndirect {
 pub struct InstanceUniforms {
     pub color: [f32; 4],
     pub visibility_range: [f32; 4],
+    pub static_bend_strength: f32,
+    pub _padding: [f32; 3],
 }
 
 #[derive(Component)]

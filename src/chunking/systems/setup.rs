@@ -29,8 +29,8 @@ pub fn setup_chunks(
 
         let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
 
-        let top_lod_level = chunk_cfg.get_max_lod_level();
-        let top_scalar_config = scalar_config.get_scalar_config(top_lod_level);
+        let top_lod = chunk_cfg.get_max_lod();
+        let top_scalar_config = scalar_config.get_scalar_config(top_lod);
 
         let base_chunk_size = top_chunk_size / **top_scalar_config as f32;
 
@@ -46,16 +46,16 @@ pub fn setup_chunks(
 
                 world_pos.y = height_sampler.sample(world_pos);
 
-                let child_lod_config = chunk_cfg.get_lod_config(chunk_cfg.get_max_lod_level() - 1);
+                let child_lod_config = chunk_cfg.get_lod_config(chunk_cfg.get_max_lod() - 1);
 
                 cmd.spawn((
                     Chunk,
-                    ChunkLevel(top_lod_level),
+                    ChunkLevel(top_lod),
                     ChunkSize(**top_scalar_config),
                     Transform::from_translation(world_pos),
                     ChildOf(entity),
                     ChunkOf(entity),
-                    SplitDistance(**child_lod_config),
+                    SplitDistance(*child_lod_config),
                     ChunkCoord(IVec2::new(x as i32, z as i32)),
                 ));
             }

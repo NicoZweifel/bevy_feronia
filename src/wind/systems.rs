@@ -14,7 +14,7 @@ pub fn update_materials<TOut, TIn>(
         (WindData, MaterialOptionData, &ScatterLayerOf),
         (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>),
     >,
-    q_root: Query<(WindData, MaterialOptionData), With<ScatterRoot>>,
+    q_root: Query<WindData, With<ScatterRoot>>,
 ) where
     TIn: Material,
     TOut: ScatterMaterial<TIn> + Asset + Clone,
@@ -34,7 +34,7 @@ pub fn update_materials<TOut, TIn>(
             continue;
         };
 
-        let Ok((root_wind_data, _root_material_options)) = q_root.get(**root) else {
+        let Ok(root_wind_data) = q_root.get(**root) else {
             dbg!("ScatterRoot not found!");
             continue;
         };
@@ -46,7 +46,7 @@ pub fn update_materials<TOut, TIn>(
         let options = MaterialOptions::from(root_material_options)
             .with(material_options)
             .with_options(asset.properties.options)
-            .with_quality(*asset.properties.lod_level, asset.properties.wind_affected);
+            .with_quality(*asset.properties.lod, asset.properties.wind_affected);
          */
 
         asset.properties.wind = wind;
