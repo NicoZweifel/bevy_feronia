@@ -46,7 +46,7 @@ fn setup(
                     // WindAffected,
                     // CAUTION: If you have multiple assets, all lods that belong to each other need to have the same name!
 
-                    // You can have multiple types in each layer; as long as all LODs have the same name, they will be matched correctly.
+                    // You can have multiple assets in each layer; as long as all LODs have the same name, they will be matched correctly.
                     Name::new("Wind Affected Item"),
                     MeshMaterial3d(materials.add(StandardMaterial::default())),
                     Mesh3d(mesh.clone()),
