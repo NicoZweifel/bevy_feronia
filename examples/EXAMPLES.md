@@ -8,7 +8,7 @@ All examples have the window and a performance overlay.
 
 > [!TIP]  
 >
-> The examples all use `TAA` and `SSAO` by default, you can however run it with `DLSS` by using `--features dlss`.
+> The examples all use `TAA` by default, you can however run it with `DLSS` by using `--features dlss`.
 >
 > How to set up `DLSS` can be found [here](https://github.com/bevyengine/dlss_wgpu).
 
