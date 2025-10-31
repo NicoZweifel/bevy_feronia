@@ -46,7 +46,7 @@ ns_scatter.set(ScatterState::Setup);
 A `ScatterItem`'s `LOD`'s are grouped by `Name`.
 
 > [!CAUTION]
-> When defining multiple assets per layer without names, a different Asset will render when `LODs` are changing, leading to visual bugs.
+> When defining multiple `ScatterItems` per `ScatterLayer` without names, a different asset will render when `LODs` are changing, leading to visual bugs.
 
 ```rust
 // Landscape
@@ -103,11 +103,15 @@ Now you can start scattering! 🌱 🍃 🌿 🍀 🌳 🌲 🌴 🌺
 ```rust
 cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
 ```
+> [!NOTE]
+> `ScatterLayers` and their `ScatterItems` of the same `ScatterType` are always scattered in order, but layers of different `ScatterTypes` can be scattered at the same time.
 
-A `ScatterLayer` is always scattered in hierarchical order, but layers of different types can run in parallel.
+#### Ordered Scattering
+
+In complex scenes it is often required to scatter a complete hierarchy in order (rocks → trees/foliage → grass).
 
 > [!TIP]
-> If a hierarchical scatter is still required, observers need to be used to chain the scattering of types in order.
+> If a ordered scatter is still required and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
 
 ```rust
 fn scatter_on_keypress(
