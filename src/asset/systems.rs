@@ -21,7 +21,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
-        (&Children, MaterialOptionData, WindData),
+        (Entity, &Children, MaterialOptionData, WindData),
         (
             With<ScatterLayer>,
             Without<ScatterLayerProcessed>,
@@ -46,13 +46,12 @@ pub fn queue_material_creation_requests<TOut, TIn>(
             root
         );
 
-        for layer in children.iter() {
+        for (layer, scatter_items, material_option_data, wind_data) in
+            children.iter().filter_map(|layer| q_layers.get(layer).ok())
+        {
             let mut wind = wind.clone();
-            let Ok((scatter_items, material_option_data, wind_data)) = q_layers.get(layer) else {
-                continue;
-            };
-
             wind = wind.with(wind_data);
+
             let options = MaterialOptions::from(material_option_data);
 
             for item in scatter_items {
@@ -155,7 +154,7 @@ where
                 mesh_handle: mesh.0.clone(),
                 aabb: *aabb,
                 name,
-                lod: lod,
+                lod,
                 layer,
                 wind_affected: wind_affected.is_some(),
             },
@@ -246,8 +245,8 @@ pub fn process_same_type_material_requests<T>(
     }
 }
 
-fn insert_bundle<'a, T>(
-    cmd: &'a mut Commands,
+fn insert_bundle<'w, T>(
+    cmd: &'w mut Commands,
     entity: Entity,
     asset_handle: Handle<ScatterAsset<T>>,
     asset: ScatterAsset<T>,
