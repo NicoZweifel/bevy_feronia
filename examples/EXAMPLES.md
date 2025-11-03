@@ -4,7 +4,8 @@
 - Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
 
-All examples have the window and a performance overlay. 
+All examples have the window and a performance overlay.
+Most examples (except `extension`, `instanced` and `scatter`) use assets that are tracked with [Git LFS](https://git-lfs.com/).
 
 > [!TIP]  
 >
@@ -17,6 +18,9 @@ All examples have the window and a performance overlay.
 
 A complex scene with rocks, trees, foliage and grass.
 This example demonstrates ordered scattering (rocks → trees/foliage → grass) and combines all three scatter plugins.
+
+> [!IMPORTANT]  
+> Doesn't work without LFS tracked assets!
 
 `cargo run --example full`
 
@@ -49,32 +53,45 @@ These show how to use the wind-affected materials directly without any scatterin
 
 ### Grass
 
+These demonstrate methods and options related to grass scattering.
+
+> [!IMPORTANT]  
+> These don't work without LFS tracked assets!
+
+- Demonstrates scattering non-instanced grass. Mostly for testing/reference.
+
 `cargo run --example scatter_extended_grass`
-
-- Demonstrates scattering non-instanced grass. Mostly for testing/reference. 
-
-`cargo run --example scatter_instanced_grass`
 
 - A basic example of high-density, wind-affected grass.
  
-`cargo run --example scatter_instanced_chunks`
+`cargo run --example scatter_instanced_grass`
 
 - Scatters high-density instanced grass in chunks on a large landscape.
-
-`cargo run --example scatter_instanced_density_map`
+ 
+`cargo run --example scatter_instanced_chunks`
 
 - Shows how to control instanced grass placement using a DensityMap .
 
+`cargo run --example scatter_instanced_density_map`
+
+
 ### Foliage
+
+Demonstrates scattering wind-affected foliage.
+
+> [!IMPORTANT]  
+> Doesn't work without LFS tracked assets!
 
 `cargo run --example scatter_extended_foliage`
 
-- Demonstrates scattering wind-affected foliage.
-
 ### Trees
-`cargo run --example scatter_extended_trees`
 
-- Demonstrates scattering wind-affected trees.
+Demonstrates scattering wind-affected trees.
+
+> [!IMPORTANT]  
+> Doesn't work without LFS tracked assets!
+
+`cargo run --example scatter_extended_trees`
 
 
 
