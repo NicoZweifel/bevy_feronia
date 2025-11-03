@@ -78,8 +78,8 @@ fn queue_requests_recursive<TOut, TIn>(
     cmd: &mut Commands,
     wind: &Wind,
     options: &MaterialOptions,
-    current_name: Option<Name>,
-    current_lod: Option<LevelOfDetail>,
+    o_current_name: Option<Name>,
+    o_current_lod: Option<LevelOfDetail>,
     q_children: &Query<
         CollectableQueryData<TIn>,
         (
@@ -95,14 +95,14 @@ where
 {
     let Ok((
         entity,
-        material,
-        mesh,
-        aabb,
-        children,
-        wind_component,
-        name,
-        lod,
-        wind_affected,
+        o_material,
+        o_mesh,
+        o_aabb,
+        o_children,
+        o_wind,
+        o_name,
+        o_lod,
+        o_wind_affected,
         material_option_data,
         wind_data,
     )) = q_children.get(entity)
@@ -110,14 +110,14 @@ where
         return false;
     };
 
-    let mut wind = wind_component
+    let mut wind = o_wind
         .and_then(|x| x.wind_override)
         .unwrap_or_else(|| *wind);
 
     wind = wind.with(wind_data);
 
-    let lod = lod.map_or(current_lod.unwrap_or_default(), |x| *x);
-    let name = current_name.map_or(name.cloned(), Some);
+    let lod = o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
+    let name = o_current_name.map_or(o_name.cloned(), Some);
 
     // TODO expose in some way
     let hue = (entity.index() * 30) as f32 % 360.0;
@@ -127,12 +127,13 @@ where
         .with(material_option_data)
         .with_debug_color(debug_color);
 
-    let mut has_children_with_materials = false;
-    if let Some(children) = children {
-        for child in children {
-            let found_material = queue_requests_recursive::<TOut, TIn>(
+    let has_children_with_materials = o_children
+        .map(|children| children.iter())
+        .unwrap_or_default()
+        .map(|child| {
+            queue_requests_recursive::<TOut, TIn>(
                 layer,
-                *child,
+                child,
                 cmd,
                 &wind,
                 &options,
@@ -140,22 +141,20 @@ where
                 Some(lod),
                 q_children,
                 meshes,
-            );
-
-            has_children_with_materials = has_children_with_materials || found_material;
-        }
-    }
+            )
+        })
+        .fold(false, |acc, has_material| acc || has_material);
 
     if has_children_with_materials {
         cmd.entity(entity).insert(ScatterLayerChildProcessed);
     }
 
-    let Some(mesh) = mesh else {
+    let Some(mesh) = o_mesh else {
         // TODO allow/create adapter/backends logic to allow more than just mesh
         return has_children_with_materials;
     };
 
-    let aabb = aabb.cloned().unwrap_or_else(|| {
+    let aabb = o_aabb.cloned().unwrap_or_else(|| {
         meshes
             .get(&mesh.0)
             .map(|x| x.compute_aabb())
@@ -164,7 +163,7 @@ where
     });
 
     let request = ScatterMaterialCreationRequest::<TOut, TIn>::new(
-        material.map(|x| x.0.clone()),
+        o_material.map(|x| x.0.clone()),
         ScatterAssetProperties {
             wind,
             options,
@@ -173,7 +172,7 @@ where
             name,
             lod,
             layer,
-            wind_affected: wind_affected.is_some(),
+            wind_affected: o_wind_affected.is_some(),
         },
     );
 
