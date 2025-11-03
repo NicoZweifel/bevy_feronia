@@ -196,7 +196,7 @@ fn fragment(
     #endif
 #endif
 
-   var normal = in.world_normal;
+    var normal = in.world_normal;
 #ifndef WIND_BILLBOARDING
     if (!is_front) {
         normal = -normal;
@@ -239,7 +239,7 @@ fn fragment(
         view.view_from_world[3].z
     ), vec4<f32>(in.world_position, 1.0));
 
-   // --- Directional Lights (Sun) ---
+    // --- Directional Lights (Sun) ---
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         let sun = lights.directional_lights[i];
         let L = sun.direction_to_light;
@@ -280,5 +280,6 @@ fn fragment(
 #ifdef MATERIAL_DEBUG
     final_color = wind.debug_color;
 #endif
+
     return final_color;
 }
