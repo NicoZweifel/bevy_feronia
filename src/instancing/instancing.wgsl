@@ -196,6 +196,7 @@ fn fragment(
     #endif
 #endif
 
+   var normal = in.world_normal;
 #ifndef WIND_BILLBOARDING
     if (!is_front) {
         normal = -normal;
@@ -225,8 +226,6 @@ fn fragment(
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
     const TRANSLUCENCY: f32 = 0.2;
-
-    var normal = in.world_normal;
 
     let V = normalize(view.world_position.xyz - in.world_position);
 
