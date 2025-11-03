@@ -117,7 +117,6 @@ where
     wind = wind.with(wind_data);
 
     let lod = lod.map_or(current_lod.unwrap_or_default(), |x| *x);
-
     let name = current_name.map_or(name.cloned(), Some);
 
     // TODO expose in some way
