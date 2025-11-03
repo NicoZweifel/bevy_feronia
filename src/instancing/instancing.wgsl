@@ -196,6 +196,12 @@ fn fragment(
     #endif
 #endif
 
+#ifndef WIND_BILLBOARDING
+    if (!is_front) {
+        normal = -normal;
+    }
+#endif
+
     // --- LIGHTING MODEL ---
     // Implements a simplified Blinn-Phong reflection model
     // for specular highlights, combined with a standard Lambertian diffuse term.
@@ -221,12 +227,6 @@ fn fragment(
     const TRANSLUCENCY: f32 = 0.2;
 
     var normal = in.world_normal;
-
-#ifndef WIND_BILLBOARDING
-    if (!is_front) {
-        normal = -normal;
-    }
-#endif
 
     let V = normalize(view.world_position.xyz - in.world_position);
 
