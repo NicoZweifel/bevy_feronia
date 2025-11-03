@@ -101,7 +101,7 @@ cmd.spawn((
 Now you can start scattering! 🌱 🍃 🌿 🍀 🌳 🌲 🌴 🌺
 
 ```rust
-cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
+cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root));
 ```
 > [!NOTE]
 > `ScatterLayers` and their `ScatterItems` of the same `ScatterType` are always scattered in order, but layers of different `ScatterTypes` can be scattered at the same time.
@@ -117,32 +117,32 @@ In complex scenes it is often required to scatter a complete hierarchy in order 
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    q_root: Single<Entity, With<ScatterRoot>>
+    root: Single<Entity, With<ScatterRoot>>
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
     // Scatter the rocks.
-    cmd.trigger(Scatter::<StandardMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<StandardMaterial>::new(q_root));
 }
 
 fn scatter_extended(
     _: On<ScatterFinished<StandardMaterial>>,
     mut cmd: Commands,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
 ) {
     // Scatter the foliage after the rocks.
-    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root));
 }
 
 fn scatter_instanced(
     _: On<ScatterFinished<ExtendedWindAffectedMaterial>>,
     mut cmd: Commands,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
 ) {
     // Scatter the grass last so it doesn't grow on occupied areas.
-    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
 }
 
 ```

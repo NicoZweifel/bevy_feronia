@@ -321,7 +321,7 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut world_seed: ResMut<WorldSeed>,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
     mut mw_clear_root: MessageWriter<ClearScatterRoot>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
@@ -329,32 +329,32 @@ fn scatter_on_keypress(
     };
 
     // Clean up all scattered instances.
-    mw_clear_root.write((*q_root).into());
+    mw_clear_root.write((*root).into());
 
     // Generate a different world and update the density map.
     **world_seed = rng().next_u64();
     cmd.trigger(UpdateDensityMap);
 
     // Scatter the rocks.
-    cmd.trigger(Scatter::<StandardMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<StandardMaterial>::new(*root));
 }
 
 fn scatter_extended(
     _: On<ScatterFinished<StandardMaterial>>,
     mut cmd: Commands,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
 ) {
     // Scatter the foliage after the rocks.
-    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root));
 }
 
 fn scatter_instanced(
     _: On<ScatterFinished<ExtendedWindAffectedMaterial>>,
     mut cmd: Commands,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
 ) {
     // Scatter the grass last so it doesn't grow on occupied areas.
-    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
 }
 
 // TODO create density map plugin

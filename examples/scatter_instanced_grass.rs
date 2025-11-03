@@ -56,7 +56,7 @@ fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut world_seed: ResMut<WorldSeed>,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
@@ -64,5 +64,5 @@ fn scatter_on_keypress(
 
     **world_seed = rng().next_u64();
 
-    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*q_root));
+    cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
 }

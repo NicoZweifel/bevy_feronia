@@ -80,7 +80,7 @@ fn setup(
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    q_root: Single<Entity, With<ScatterRoot>>,
+    root: Single<Entity, With<ScatterRoot>>,
     mut world_seed: ResMut<WorldSeed>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
@@ -91,5 +91,5 @@ fn scatter_on_keypress(
 
     println!("Scattering");
 
-    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*q_root))
+    cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root))
 }
