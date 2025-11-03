@@ -50,7 +50,7 @@ fn setup(
 
                     // You can have multiple assets in each layer; as long as all LODs have the same name, they will be matched correctly.
                     Name::new("Wind Affected Item"),
-                    MeshMaterial3d(materials.add(StandardMaterial::default())),
+                    // Material will default if no material is given, but we always do need a mesh:
                     Mesh3d(mesh.clone()),
                 ),
                 (
