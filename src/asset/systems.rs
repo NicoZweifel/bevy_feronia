@@ -36,6 +36,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
         ),
     >,
     wind: Res<Wind>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) where
     TIn: Material,
     TOut: ScatterMaterial<TIn> + Asset + Clone,
@@ -56,7 +57,15 @@ pub fn queue_material_creation_requests<TOut, TIn>(
 
             for item in scatter_items {
                 queue_requests_recursive::<TOut, TIn>(
-                    layer, *item, &mut cmd, &wind, &options, None, None, &q_collect,
+                    layer,
+                    *item,
+                    &mut cmd,
+                    &wind,
+                    &options,
+                    None,
+                    None,
+                    &q_collect,
+                    &mut meshes,
                 );
             }
         }
@@ -78,6 +87,7 @@ fn queue_requests_recursive<TOut, TIn>(
             Without<ScatterMaterialCreationRequest<TOut, TIn>>,
         ),
     >,
+    meshes: &mut ResMut<Assets<Mesh>>,
 ) -> bool
 where
     TIn: Material,
@@ -110,6 +120,7 @@ where
 
     let name = current_name.map_or(name.cloned(), Some);
 
+    // TODO expose in some way
     let hue = (entity.index() * 30) as f32 % 360.0;
     let debug_color = Color::hsl(hue, 1.0, 0.5);
 
@@ -129,11 +140,10 @@ where
                 name.clone(),
                 Some(lod),
                 q_children,
+                meshes,
             );
 
-            if found_material {
-                has_children_with_materials = true;
-            }
+            has_children_with_materials = has_children_with_materials || found_material;
         }
     }
 
@@ -141,60 +151,64 @@ where
         cmd.entity(entity).insert(ScatterLayerChildProcessed);
     }
 
-    let (Some(material), Some(mesh), Some(aabb)) = (material, mesh, aabb) else {
+    let Some(mesh) = mesh else {
+        // TODO allow/create adapter/backends logic to allow more than just mesh combo
         return has_children_with_materials;
     };
 
-    cmd.entity(entity)
-        .insert(ScatterMaterialCreationRequest::<TOut, TIn>::new(
-            material.0.clone(),
-            ScatterAssetProperties {
-                wind,
-                options,
-                mesh_handle: mesh.0.clone(),
-                aabb: *aabb,
-                name,
-                lod,
-                layer,
-                wind_affected: wind_affected.is_some(),
-            },
-        ));
+    let aabb = aabb.cloned().unwrap_or_else(|| {
+        meshes
+            .get(&mesh.0)
+            .map(|x| x.compute_aabb())
+            .flatten()
+            .unwrap_or_default()
+    });
+
+    let request = ScatterMaterialCreationRequest::<TOut, TIn>::new(
+        material.map(|x| x.0.clone()),
+        ScatterAssetProperties {
+            wind,
+            options,
+            mesh_handle: mesh.0.clone(),
+            aabb,
+            name,
+            lod,
+            layer,
+            wind_affected: wind_affected.is_some(),
+        },
+    );
+
+    cmd.entity(entity).insert(request);
 
     true
 }
 
 pub fn process_distinct_material_requests<TOut, TIn>(
     mut cmd: Commands,
-    mut requests_query: Query<(Entity, &mut ScatterMaterialCreationRequest<TOut, TIn>)>,
+    requests_query: Query<(Entity, &ScatterMaterialCreationRequest<TOut, TIn>)>,
     materials_in: Res<Assets<TIn>>,
     mut materials_out: ResMut<Assets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
     TOut: ScatterMaterial<TIn> + Asset + Clone,
 {
-    for (entity, mut request) in &mut requests_query {
-        let source_material = materials_in.get(&request.source_material_handle);
+    for (entity, request) in &requests_query {
+        let source_material = request
+            .source_material_handle
+            .clone()
+            .map(|x| materials_in.get(&x))
+            .flatten();
 
         let new_material = TOut::create_material(
             source_material.cloned(),
             wind_noise_texture.0.clone(),
             &request.properties,
         );
+
         let material_handle = materials_out.add(new_material);
-
-        let mesh = meshes
-            .get(&request.properties.mesh_handle)
-            .cloned()
-            .unwrap();
-        let mesh_handle = meshes.add(mesh);
-        let mesh_aabb = meshes.get(&mesh_handle).unwrap().compute_aabb().unwrap();
-        request.properties.aabb = mesh_aabb;
-
         let asset = ScatterAsset::new(material_handle, &request);
-
         let asset_handle = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
@@ -207,35 +221,28 @@ pub fn process_distinct_material_requests<TOut, TIn>(
 
 pub fn process_same_type_material_requests<T>(
     mut cmd: Commands,
-    mut requests: Query<(Entity, &mut ScatterMaterialCreationRequest<T, T>)>,
+    requests: Query<(Entity, &ScatterMaterialCreationRequest<T, T>)>,
     mut materials: ResMut<Assets<T>>,
     wind_noise_texture: Res<WindTexture>,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut prototype_assets: ResMut<Assets<ScatterAsset<T>>>,
 ) where
     T: ScatterMaterial<T> + Material + Clone,
 {
-    for (entity, mut request) in &mut requests {
-        let source_material = materials.get(&request.source_material_handle).cloned();
+    for (entity, request) in &requests {
+        let source_material = request
+            .source_material_handle
+            .clone()
+            .map(|x| materials.get(&x))
+            .flatten();
 
         let new_material = T::create_material(
-            source_material,
+            source_material.cloned(),
             wind_noise_texture.0.clone(),
             &request.properties,
         );
+
         let material_handle = materials.add(new_material);
-
-        let mesh = meshes
-            .get(&request.properties.mesh_handle)
-            .cloned()
-            .unwrap();
-        let mesh_handle = meshes.add(mesh);
-        let mesh_aabb = meshes.get(&mesh_handle).unwrap().compute_aabb().unwrap();
-
-        request.properties.aabb = mesh_aabb;
-
         let asset = ScatterAsset::new(material_handle, &request);
-
         let asset_handle = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
