@@ -152,7 +152,7 @@ where
     }
 
     let Some(mesh) = mesh else {
-        // TODO allow/create adapter/backends logic to allow more than just mesh combo
+        // TODO allow/create adapter/backends logic to allow more than just mesh
         return has_children_with_materials;
     };
 
