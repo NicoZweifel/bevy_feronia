@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::asset::{Asset, Assets};
+use bevy::asset::Assets;
 use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
 use bevy::pbr::Material;
 use bevy::prelude::*;
@@ -17,7 +17,7 @@ pub fn update_materials<TOut, TIn>(
     q_root: Query<WindData, With<ScatterRoot>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     for (_, asset) in scatter_assets.iter_mut() {
         let Some(material) = materials.get_mut(&asset.material) else {
@@ -61,7 +61,7 @@ pub fn replace_materials<TOut, TIn>(
     scatter_assets: Res<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     for (entity, wind_affected) in &q {
         let Some(scatter_asset) = scatter_assets.get(&**wind_affected) else {

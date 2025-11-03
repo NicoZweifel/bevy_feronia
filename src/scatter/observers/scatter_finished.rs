@@ -5,7 +5,7 @@ pub fn scatter_finished<TOut, TIn>(
     trigger: On<Remove, HierarchicalScatterState<TOut, TIn>>,
     mut cmd: Commands,
 ) where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     println!("Scatter finished");

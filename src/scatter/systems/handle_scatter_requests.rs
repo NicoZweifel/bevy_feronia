@@ -43,7 +43,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
     images: Res<Assets<Image>>,
 ) where
     TIn: Material + Send + 'static,
-    TOut: ScatterMaterial<TIn> + Asset + Clone + Send + 'static,
+    TOut: ScatterMaterial<TIn> + Send + 'static,
 {
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
@@ -190,7 +190,7 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
     q_target: Query<Entity, Without<Merging>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     for (entity, mut task) in &mut tasks {
         let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {

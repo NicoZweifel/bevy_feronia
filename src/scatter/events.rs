@@ -3,7 +3,6 @@ use crate::density_map::DensityMapSampler;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::asset::Asset;
 use bevy::pbr::Material;
 use bevy::prelude::*;
 use rand::Rng;
@@ -16,7 +15,7 @@ use std::slice::Iter;
 #[derive(EntityEvent, Message, Component, Reflect)]
 pub struct Scatter<TOut = StandardMaterial, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub entity: Entity,
@@ -25,7 +24,7 @@ where
 
 impl<TOut, TIn> Scatter<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub fn new(entity: Entity) -> Self {
@@ -38,7 +37,7 @@ where
 
 impl<TOut, TIn> From<Entity> for Scatter<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     fn from(value: Entity) -> Self {
@@ -49,7 +48,7 @@ where
 #[derive(EntityEvent, Message, Component, Reflect)]
 pub struct ScatterChunk<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub entity: Entity,
@@ -59,7 +58,7 @@ where
 
 impl<TOut, TIn> ScatterChunk<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub fn new(entity: Entity, scatter_layer: Entity) -> Self {
@@ -184,7 +183,7 @@ impl Hash for ScatterResult {
 #[derive(EntityEvent, Message, Clone, Debug)]
 pub struct ScatterResults<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub entity: Entity,
@@ -200,7 +199,7 @@ where
 impl<TOut, TIn> From<ScatterTaskData> for ScatterResults<TOut, TIn>
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     fn from(task_data: ScatterTaskData) -> Self {
         let density_sampler = task_data
@@ -239,7 +238,7 @@ where
 impl<TOut, TIn> From<On<'_, '_, ScatterResults<TOut, TIn>>> for SpawnTrigger
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     fn from(value: On<ScatterResults<TOut, TIn>>) -> Self {
         Self {
@@ -255,7 +254,7 @@ where
 
 impl<TOut, TIn> ScatterResults<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub fn get(&self) -> &Vec<ScatterResult> {
@@ -299,7 +298,7 @@ where
     ) -> ScatterResults<TOut, TIn>
     where
         TIn: Material,
-        TOut: ScatterMaterial<TIn> + Asset + Clone,
+        TOut: ScatterMaterial<TIn>,
     {
         let mut rng = Pcg64::seed_from_u64(container.seed);
         let mut results = Vec::new();
@@ -329,7 +328,7 @@ where
 
 impl<TOut, TIn> From<&Container> for ScatterResults<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     fn from(value: &Container) -> Self {
@@ -348,7 +347,7 @@ where
 #[derive(EntityEvent, Message, Clone)]
 pub struct ScatterFinished<TOut, TIn = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub entity: Entity,
@@ -357,7 +356,7 @@ where
 
 impl<TOut, TIn> From<Entity> for ScatterFinished<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     fn from(value: Entity) -> Self {
@@ -367,7 +366,7 @@ where
 
 impl<TOut, TIn> ScatterFinished<TOut, TIn>
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     pub fn new(entity: Entity) -> Self {

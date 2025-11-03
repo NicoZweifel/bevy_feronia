@@ -39,7 +39,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
     mut meshes: ResMut<Assets<Mesh>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     for (root, children) in &q_roots {
         debug!(
@@ -91,7 +91,7 @@ fn queue_requests_recursive<TOut, TIn>(
 ) -> bool
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     let Ok((
         entity,
@@ -191,7 +191,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
     mut prototype_assets: ResMut<Assets<ScatterAsset<TOut>>>,
 ) where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     for (entity, request) in &requests_query {
         let source_material = request

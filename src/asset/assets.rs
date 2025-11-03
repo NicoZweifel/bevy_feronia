@@ -31,7 +31,7 @@ impl<T> ScatterAsset<T>
 where
     T: Asset + Clone,
 {
-    pub fn new<TIn: Material, TOut: ScatterMaterial<TIn> + Asset + Clone>(
+    pub fn new<TIn: Material, TOut: ScatterMaterial<TIn>>(
         material_handle: Handle<T>,
         request: &ScatterMaterialCreationRequest<TOut, TIn>,
     ) -> Self {

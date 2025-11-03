@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 pub fn on_add_scatter_root<TOut, TIn>(trigger: On<Add, ScatterRoot>, mut cmd: Commands)
 where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     let root = trigger.entity;

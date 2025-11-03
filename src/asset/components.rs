@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::asset::{Asset, Handle};
+use bevy::asset::Handle;
 use bevy::pbr::Material;
 use bevy::prelude::*;
 use std::marker::PhantomData;
@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 pub struct ScatterMaterialCreationRequest<TOut, TIn>
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     pub source_material_handle: Option<Handle<TIn>>,
     pub properties: ScatterAssetProperties,
@@ -19,7 +19,7 @@ where
 impl<TOut, TIn> ScatterMaterialCreationRequest<TOut, TIn>
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
 {
     pub fn new(
         source_material_handle: Option<Handle<TIn>>,

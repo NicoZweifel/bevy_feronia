@@ -8,7 +8,7 @@ pub fn scatter_root<TOut, TIn>(
     q_root: Query<(&ScatterRoot, Option<&HierarchicalScatterState<TOut, TIn>>)>,
     q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>)>,
 ) where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     let root_entity = trigger.entity;
@@ -62,7 +62,7 @@ pub fn hierarchical_scatter<TOut, TIn>(
     )>,
     q_avoidance: Query<&Avoidance>,
 ) where
-    TOut: ScatterMaterial<TIn> + Asset + Clone,
+    TOut: ScatterMaterial<TIn>,
     TIn: Material,
 {
     let finished_layer = trigger.layer;

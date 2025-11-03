@@ -5,7 +5,7 @@ use std::{borrow::Cow, fmt::Debug};
 pub fn scatter_layer<TOut, TIn>(name: impl Into<Cow<'static, str>>) -> impl Bundle
 where
     TIn: Material,
-    TOut: ScatterMaterial<TIn> + Asset + Clone + Debug,
+    TOut: ScatterMaterial<TIn> + Debug,
 {
     (
         Name::new(name),
