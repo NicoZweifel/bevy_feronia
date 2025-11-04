@@ -80,9 +80,10 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
         if let Some(fragment) = descriptor.fragment.as_mut()
             && let Some(target) = fragment.targets.get_mut(0)
-                && let Some(target) = target {
-                    target.blend = None;
-                }
+            && let Some(target) = target
+        {
+            target.blend = None;
+        }
 
         let shader_defs = &mut descriptor.vertex.shader_defs;
 
