@@ -58,7 +58,8 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
             let chunk_level = event
                 .trigger
                 .chunk
-                .and_then(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
+                .and_then(|x| q_chunks.get(x).ok())
+                .map(|(_, lvl)| lvl)
                 .cloned()
                 .unwrap_or_default();
 
