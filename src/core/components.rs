@@ -16,6 +16,8 @@ pub struct EnableDebug;
 /// Marker component to make instances always face the camera.
 ///
 /// Enables `#ifdef WIND_BILLBOARDING` in shaders.
+///
+/// Not supported in combination with [`EdgeCorrectionFactor`].
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component)]
 pub struct EnableBillboarding;
@@ -38,7 +40,7 @@ pub struct AnalyticalNormals;
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
 ///
-/// Doesn't currently work correctly with [`EnableBillboarding`].
+/// Not supported in combination with [`EnableBillboarding`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct EdgeCorrectionFactor(pub f32);
