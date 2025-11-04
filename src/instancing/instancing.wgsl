@@ -81,7 +81,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(translation, 1.0)
     );
 #else
-    // TODO pre-calculate
+    // TODO pre-calculate / expose
 
     let angle = rand_f(&rand_state) * 6.2831853;
 

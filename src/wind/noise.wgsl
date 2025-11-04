@@ -35,7 +35,7 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
     noise.macro_noise = textureSampleLevel(noise_texture, noise_texture_sampler, tex_coord, 0.0).r;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);
-#else
+#else // NOT WIND_LOW_QUALITY
     let packed_noise = textureSampleLevel(noise_texture, noise_texture_sampler, tex_coord, 0.0);
 
     noise.macro_noise = packed_noise.r;
@@ -49,7 +49,8 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
     noise.phase_noise.x = rand_f(&seed);
     noise.phase_noise.y = rand_f(&seed);
 #endif // WIND_LOW_QUALITY
-#else
+
+#else // NOT WIND_AFFECTED
     noise.macro_noise = 0.0;
     noise.micro_noise = 0.0;
     noise.phase_noise = vec2<f32>(0.0);

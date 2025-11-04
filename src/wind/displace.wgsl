@@ -66,62 +66,46 @@ fn displace_vertex_and_calc_normal(
     #endif
 
     var normal_data: DisplacedVertex;
-    var normal_fallback = false;
 
     #ifdef FAST_NORMALS
-        normal_fallback = true;
-    #else
-        #ifdef ANALYTICAL_NORMALS
-            normal_fallback = false;
-        #else
-            #ifdef WIND_AFFECTED
-                normal_fallback = false;
-            #endif
-            #ifdef STATIC_BEND
-                normal_fallback = false;
-            #endif
-        #endif // ANALYTICAL_NORMALS
+    normal_data = calculate_fallback_normal(
+        mesh_normal,
+    #ifdef VERTEX_TANGENTS
+        mesh_tangent,
+    #endif
+        vertex_pos,
+        wind
+    );
+    #else // NOT FAST_NORMALS
+    #ifdef ANALYTICAL_NORMALS
+    normal_data = calculate_analytical_normal(
+        cache,
+        wind,
+        instance,
+        vertex_pos,
+        normal,
+    #ifdef STATIC_BEND
+        static_bend,
+    #endif
+    #ifdef VERTEX_TANGENTS
+        tangent,
+    #endif
+    );
+    #else // NOT ANALYTICAL_NORMALS
+    normal_data = calculate_numerical_normal(
+        final_pos_xyz,
+        vertex_pos,
+        wind,
+        instance,
+    #ifdef STATIC_BEND
+        static_bend,
+    #endif
+    #ifdef VERTEX_TANGENTS
+        tangent
+    #endif
+    );
+    #endif // ANALYTICAL_NORMALS
     #endif // FAST_NORMALS
-
-    if normal_fallback {
-        normal_data = calculate_fallback_normal(
-            mesh_normal,
-        #ifdef VERTEX_TANGENTS
-            mesh_tangent,
-        #endif
-            vertex_pos,
-            wind
-        );
-    } else {
-        #ifdef ANALYTICAL_NORMALS
-            normal_data = calculate_analytical_normal(
-                cache,
-                wind,
-                instance,
-                vertex_pos,
-                normal,
-            #ifdef STATIC_BEND
-                static_bend,
-            #endif
-            #ifdef VERTEX_TANGENTS
-                tangent,
-            #endif
-            );
-        #else
-            normal_data = calculate_numerical_normal(
-                final_pos_xyz,
-                vertex_pos,
-                wind,
-                instance,
-            #ifdef STATIC_BEND
-                static_bend,
-            #endif
-            #ifdef VERTEX_TANGENTS
-                tangent
-            #endif
-            );
-        #endif // ANALYTICAL_NORMALS
-    }
 
     out.world_normal = normal_data.world_normal;
 #ifdef VERTEX_TANGENTS
@@ -197,18 +181,18 @@ fn displacement_cache(
     let clamped_macro_noise = clamp(noise.macro_noise, 0.001, 1.0 - 0.001);
     cache.macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
 
-    #ifndef WIND_BILLBOARDING
-        let twist = cache.macro_wind_factor * wind.twist_strength;
-        cache.twist_angle = twist * cache.height_attenuation_factor;
+#ifndef WIND_BILLBOARDING
+    let twist = cache.macro_wind_factor * wind.twist_strength;
+    cache.twist_angle = twist * cache.height_attenuation_factor;
 
-        let cos_a = cos(cache.twist_angle);
-        let sin_a = sin(cache.twist_angle);
+    let cos_a = cos(cache.twist_angle);
+    let sin_a = sin(cache.twist_angle);
 
-        let rotated_x = pos.x * cos_a - pos.z * sin_a;
-        let rotated_z = pos.x * sin_a + pos.z * cos_a;
-        pos = vec3<f32>(rotated_x, pos.y, rotated_z);
-    #endif
-#endif
+    let rotated_x = pos.x * cos_a - pos.z * sin_a;
+    let rotated_z = pos.x * sin_a + pos.z * cos_a;
+    pos = vec3<f32>(rotated_x, pos.y, rotated_z);
+#endif // NOT WIND_BILLBOARDING
+#endif // WIND_AFFECTED
 
     cache.bent_twisted_local_pos = pos;
 
@@ -230,18 +214,18 @@ fn finish_vertex_displacement(
     let macro_displacement = cache.macro_wind_factor * wind.strength * cache.height_attenuation_factor;
     total_world_offset = horizontal_dir * macro_displacement;
 
-    #ifndef WIND_LOW_QUALITY
-        let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
-        let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
-        let micro_displacement = micro_wind_factor * wind.micro_strength * cache.height_attenuation_factor;
-        let micro_wind = horizontal_dir * micro_displacement;
+#ifndef WIND_LOW_QUALITY
+    let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
+    let micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
+    let micro_displacement = micro_wind_factor * wind.micro_strength * cache.height_attenuation_factor;
+    let micro_wind = horizontal_dir * micro_displacement;
 
-        let s_curve = calculate_s_curve_displacement(wind, cache.height_attenuation_factor, cache.normalized_height, instance.wrapped_time, noise.phase_noise.x);
-        let bop = calculate_bop_displacement(wind, cache.height_attenuation_factor, instance.wrapped_time, noise.phase_noise.y);
+    let s_curve = calculate_s_curve_displacement(wind, cache.height_attenuation_factor, cache.normalized_height, instance.wrapped_time, noise.phase_noise.x);
+    let bop = calculate_bop_displacement(wind, cache.height_attenuation_factor, instance.wrapped_time, noise.phase_noise.y);
 
-        total_world_offset += micro_wind + s_curve + bop;
-    #endif // WIND_LOW_QUALITY
-#endif
+    total_world_offset += micro_wind + s_curve + bop;
+#endif // NOT WIND_LOW_QUALITY
+#endif // WIND_AFFECTED
 
     var final_world_pos = (instance.world_from_local * vec4<f32>(pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
@@ -343,10 +327,10 @@ fn calculate_analytical_normal(
         local_tangent_dir.y,
         local_tangent_dir.z + local_tangent_dir.y * static_bend.y * cache.bend_curve_derivative
     ));
-#else
+#else // NOT STATIC_BEND
     let bent_local_normal = local_normal_dir;
     let bent_local_tangent = local_tangent_dir;
-#endif
+#endif // STATIC_BEND
 
     // Twist
     let cos_a = cos(cache.twist_angle);
@@ -367,23 +351,23 @@ fn calculate_analytical_normal(
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
 
     #ifdef WIND_BILLBOARDING
-        let macro_displacement = cache.macro_wind_factor * wind.strength * cache.height_attenuation_factor;
-        let macro_world_offset = horizontal_dir * macro_displacement;
+    let macro_displacement = cache.macro_wind_factor * wind.strength * cache.height_attenuation_factor;
+    let macro_world_offset = horizontal_dir * macro_displacement;
 
-        let billboard_anchor = instance.instance_position + vec4<f32>(macro_world_offset.x, 0.0, macro_world_offset.z, 0.0);
+    let billboard_anchor = instance.instance_position + vec4<f32>(macro_world_offset.x, 0.0, macro_world_offset.z, 0.0);
 
-        model_3x3 = calculate_billboard_matrix(
-            billboard_anchor,
-            view.world_position.xyz,
-            instance.world_from_local
-        );
-    #else
-        model_3x3 = mat3x3<f32>(
-            instance.world_from_local[0].xyz,
-            instance.world_from_local[1].xyz,
-            instance.world_from_local[2].xyz
-        );
-    #endif
+    model_3x3 = calculate_billboard_matrix(
+        billboard_anchor,
+        view.world_position.xyz,
+        instance.world_from_local
+    );
+    #else // NOT WIND_BILLBOARDING
+    model_3x3 = mat3x3<f32>(
+        instance.world_from_local[0].xyz,
+        instance.world_from_local[1].xyz,
+        instance.world_from_local[2].xyz
+    );
+    #endif // WIND_BILLBOARDING
 
     let world_normal_dir = normalize(model_3x3 * twisted_local_normal);
     let world_tangent_dir = normalize(model_3x3 * twisted_local_tangent);
