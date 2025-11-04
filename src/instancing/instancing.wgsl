@@ -1,5 +1,8 @@
 #import bevy_pbr::mesh_view_bindings::{view, lights, globals, clusterable_objects}
 #import bevy_pbr::shadows::fetch_directional_shadow
+#import bevy_pbr::shadows::fetch_point_shadow
+#import bevy_pbr::mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT
+#import bevy_pbr::clustered_forward::{fragment_cluster_index, unpack_clusterable_object_index_ranges, get_clusterable_object_id}
 
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
 #import bevy_pbr::utils::rand_f
@@ -155,7 +158,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #endif // VERTEX_NORMALS
 
     // Fake ambient occlusion
-    let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.1, instance_uniforms.color.a);
+    let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.3, instance_uniforms.color.a);
     out.color = mix(dark_color, instance_uniforms.color, normalized_height);
 
 #ifdef VISIBILITY_RANGE_DITHER
@@ -213,7 +216,6 @@ fn fragment(
 
     // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
     const SPECULAR_POWER: f32 = 32.0;
-    const AMBIENT_FACTOR: f32 = 0.4;
 
     // TODO tweak/fix && expose
     const SPECULAR_STRENGTH: f32 = 0.1;
@@ -221,11 +223,12 @@ fn fragment(
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
+    const AMBIENT_INTENSITY_SCALE: f32 = 0.01;
     const TRANSLUCENCY: f32 = 0.2;
 
     let V = normalize(view.world_position.xyz - in.world_position);
 
-    var final_color_rgb = in.color.rgb * AMBIENT_FACTOR;
+    var final_color_rgb = in.color.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.0);
 
     let view_z = dot(vec4<f32>(
@@ -239,7 +242,7 @@ fn fragment(
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         let sun = lights.directional_lights[i];
         let L = sun.direction_to_light;
-        let light_color = sun.color.rgb * LIGHT_INTENSITY_SCALE;
+        let scaled_light_color = sun.color.rgb * LIGHT_INTENSITY_SCALE;
 
         // Translucency
         let NdotL_raw = dot(normal, L);
@@ -261,11 +264,64 @@ fn fragment(
         let final_shadow = clamp(shadow, 0.1, 1.0);
 
         // Accumulate Diffuse
-        final_color_rgb += in.color.rgb * light_color * NdotL * final_shadow * DIFFUSE_SCALING;
+        final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
         if (NdotL_raw > 0.0) {
-            final_specular += light_color * specular_factor * SPECULAR_STRENGTH * shadow;
+            final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
+        }
+    }
+
+    let is_orthographic = view.clip_from_view[3].w == 1.0;
+    let cluster_index = fragment_cluster_index(
+        in.clip_position.xy,
+        view_z,
+        is_orthographic
+    );
+    let ranges = unpack_clusterable_object_index_ranges(cluster_index);
+
+    for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
+        let light_id = get_clusterable_object_id(i);
+        let light = clusterable_objects.data[light_id];
+
+        let light_position = light.position_radius.xyz;
+        let scaled_light_color = light.color_inverse_square_range.rgb * LIGHT_INTENSITY_SCALE;
+        let inverse_square_range = light.color_inverse_square_range.w;
+
+        if (inverse_square_range <= 0.0) { continue; }
+
+        // Skip out of range lights
+        let range_sq = 1.0 / inverse_square_range;
+        let light_vector = light_position - in.world_position.xyz;
+        let distance_sq = dot(light_vector, light_vector);
+
+        if (distance_sq > range_sq) { continue; }
+
+        let L = normalize(light_vector);
+
+        // Translucency
+        let NdotL_raw = dot(normal, L);
+        let NdotL_front = saturate(NdotL_raw);
+        let NdotL_back = saturate(-NdotL_raw) * TRANSLUCENCY;
+        let NdotL = NdotL_front + NdotL_back;
+
+        // Specular Term
+        let H = normalize(V + L);
+        let NdotH = saturate(dot(normal, H));
+        let specular_factor = pow(NdotH, SPECULAR_POWER);
+
+        var shadow = 1.0;
+        if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
+            shadow = fetch_point_shadow(light_id, vec4<f32>(in.world_position, 1.0), normal);
+        }
+        let final_shadow = clamp(shadow, 0.1, 1.0);
+
+        // Accumulate Diffuse
+        final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
+
+        //  Accumulate Specular
+        if (NdotL_raw > 0.0) {
+            final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
         }
     }
 
