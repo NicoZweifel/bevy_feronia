@@ -375,21 +375,21 @@ fn calculate_analytical_normal(
     // Macro Wind
     let macro_wind_derivative = horizontal_dir * wind.strength * cache.macro_wind_factor * cache.bend_curve_derivative;
 
-    let leaned_world_normal = normalize(vec3<f32>(
+    let final_world_normal = normalize(vec3<f32>(
         world_normal_dir.x - world_normal_dir.y * macro_wind_derivative.x,
         world_normal_dir.y,
         world_normal_dir.z - world_normal_dir.y * macro_wind_derivative.z
     ));
-    let leaned_world_tangent = normalize(vec3<f32>(
+    let final_world_tangent = normalize(vec3<f32>(
         world_tangent_dir.x + world_tangent_dir.y * macro_wind_derivative.x,
         world_tangent_dir.y,
         world_tangent_dir.z + world_tangent_dir.y * macro_wind_derivative.z
     ));
 
-    out.world_normal = curve_normal(leaned_world_normal, leaned_world_tangent, vertex_pos, wind);
+    out.world_normal = curve_normal(final_world_normal, final_world_tangent, vertex_pos, wind);
 
 #ifdef VERTEX_TANGENTS
-    out.world_tangent = vec4<f32>(leaned_world_tangent, tangent.w);
+    out.world_tangent = vec4<f32>(final_world_tangent, tangent.w);
 #endif
 
     return out;

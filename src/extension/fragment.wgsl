@@ -130,7 +130,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
 
         // Skip invalid range lights
         let light_position = light.position_radius.xyz;
-        let light_color_and_intensity = light.color_inverse_square_range.rgb * LIGHT_INTENSITY_SCALE;
+        let scaled_light_color = light.color_inverse_square_range.rgb * LIGHT_INTENSITY_SCALE;
         let inverse_square_range = light.color_inverse_square_range.w;
 
         if (inverse_square_range <= 0.0) { continue; }
@@ -146,7 +146,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
 
         let att_factor = saturate(1.0 - distance_sq / range_sq);
         let attenuation = att_factor * att_factor;
-        let light_contribution = light_color_and_intensity * attenuation;
+        let light_contribution = scaled_light_color * attenuation;
 
         // --- GDC 2011 SSS MODEL ---
         let H = normalize(L + pbr_input.world_normal * SSS_DISTORTION);

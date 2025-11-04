@@ -102,6 +102,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(rot_scale_matrix[2], 0.0),
         vec4<f32>(translation, 1.0)
     );
+
 #endif
 
     instance.world_from_local = world_from_local_matrix;
@@ -197,11 +198,6 @@ fn fragment(
 #endif
 
     var normal = in.world_normal;
-#ifndef WIND_BILLBOARDING
-    if (!is_front) {
-        normal = -normal;
-    }
-#endif
 
     // --- LIGHTING MODEL ---
     // Implements a simplified Blinn-Phong reflection model
@@ -217,10 +213,10 @@ fn fragment(
 
     // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
     const SPECULAR_POWER: f32 = 32.0;
-    const AMBIENT_FACTOR: f32 = 0.1;
+    const AMBIENT_FACTOR: f32 = 0.4;
 
     // TODO tweak/fix && expose
-    const SPECULAR_STRENGTH: f32 = 0.4;
+    const SPECULAR_STRENGTH: f32 = 0.1;
     const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
