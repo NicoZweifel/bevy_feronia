@@ -125,7 +125,6 @@ where
         .with(material_option_data)
         .with_debug_color(debug_color);
 
-    #[allow(clippy::unnecessary_fold)]
     let has_children_with_materials = o_children
         .map(|children| children.iter())
         .unwrap_or_default()
@@ -142,7 +141,8 @@ where
                 meshes,
             )
         })
-        .fold(false, |acc, has_material| acc || has_material);
+        .reduce(|acc, has_material| acc || has_material)
+        .unwrap_or_default();
 
     if has_children_with_materials {
         cmd.entity(entity).insert(ScatterLayerChildProcessed);
