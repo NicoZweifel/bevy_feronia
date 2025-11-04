@@ -55,8 +55,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             let (chunk_gtf, chunk_level) = event
                 .trigger
                 .chunk
-                .map(|x| q_chunks.get(x).ok())
-                .flatten()
+                .and_then(|x| q_chunks.get(x).ok())
                 .map(|(gtf, level)| (*gtf, level.clone()))
                 .unwrap_or_default();
 

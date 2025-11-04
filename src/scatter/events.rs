@@ -118,11 +118,10 @@ impl ScatterResult {
             final_world_pos += random_offset;
         };
 
-        if let Some(sampler) = &modifiers.density_sampler {
-            if rng.random::<f32>() > sampler.sample(final_world_pos) {
+        if let Some(sampler) = &modifiers.density_sampler
+            && rng.random::<f32>() > sampler.sample(final_world_pos) {
                 return None;
             }
-        }
 
         if external_avoidance_data.iter().any(|obstacle| {
             final_world_pos

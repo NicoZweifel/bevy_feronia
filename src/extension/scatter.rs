@@ -26,7 +26,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
     ) -> ExtendedWindAffectedMaterial {
         ExtendedMaterial {
             base: base.unwrap_or_default(),
-            extension: WindAffectedExtension::new(&properties, noise_texture),
+            extension: WindAffectedExtension::new(properties, noise_texture),
         }
     }
 
@@ -58,8 +58,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
             let chunk_level = event
                 .trigger
                 .chunk
-                .map(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
-                .flatten()
+                .and_then(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
                 .cloned()
                 .unwrap_or_default();
 

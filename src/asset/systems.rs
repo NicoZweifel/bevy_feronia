@@ -50,7 +50,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
         for (layer, scatter_items, material_option_data, wind_data) in
             children.iter().filter_map(|layer| q_layers.get(layer).ok())
         {
-            let mut wind = wind.clone();
+            let mut wind = *wind;
             wind = wind.with(wind_data);
 
             let options = MaterialOptions::from(material_option_data);
