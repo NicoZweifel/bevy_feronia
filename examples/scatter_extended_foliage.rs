@@ -83,8 +83,6 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        ChunkRoot::default(),
-        LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             scatter_layer("Foliage Layer"),
             // Scatter options
@@ -94,6 +92,7 @@ fn spawn_scene(
                     min: 0.,
                     max: std::f32::consts::PI * 2.
                 },
+                InstanceJitter::default(),
                 InstanceScale { min: 2., max: 5. }
             ),
             // Material options
