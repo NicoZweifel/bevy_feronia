@@ -187,7 +187,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     .properties
                                     .options
                                     .static_bend_strength,
-                                curve_factor: prototype.properties.options.curve_factor
+                                curve_factor: prototype.properties.options.curve_factor,
                             },
                             NoAutomaticBatching,
                             WindAffected,

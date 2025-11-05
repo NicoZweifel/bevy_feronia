@@ -34,7 +34,7 @@ pub struct InstanceMaterialData {
     pub color: [f32; 4],
     pub visibility_range: [f32; 4],
     pub static_bend_strength: f32,
-    pub curve_factor: f32
+    pub curve_factor: f32,
 }
 
 impl ExtractComponent for InstanceMaterialData {

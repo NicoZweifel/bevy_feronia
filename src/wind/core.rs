@@ -189,7 +189,6 @@ impl From<&Wind> for WindUniform {
 }
 
 impl WindUniform {
-
     pub fn with_edge_correction_factor(mut self, edge_correction_factor: f32) -> Self {
         self.edge_correction_factor = edge_correction_factor;
         self

@@ -54,7 +54,7 @@ impl Default for EdgeCorrectionFactor {
 /// Controls the normal curving effect (simulates curved blades).
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
-/// 
+///
 /// Only supported in `[InstancedWindAffectedMaterial]`.`
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
