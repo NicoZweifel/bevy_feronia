@@ -76,6 +76,7 @@ fn setup(
         visibility_range: [0.0, 0.0, 1000.0, 1000.0],
         instances,
         static_bend_strength: 0.1,
+        curve_factor: 0.2
     };
 
     cmd.spawn((

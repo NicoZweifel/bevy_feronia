@@ -11,13 +11,14 @@
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::bindings::wind
-#import bevy_feronia::displace::displace_vertex_and_calc_normal
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal, curve_normal}
 #import bevy_feronia::noise::sample_noise
 
 struct InstanceUniforms {
     color: vec4<f32>,
     visibility_range: vec4<f32>,
-    static_bend_strength: f32
+    static_bend_strength: f32,
+    curve_factor: f32,
 };
 
 @group(4) @binding(0)
@@ -61,6 +62,8 @@ struct VertexOutput {
     @location(2) world_position: vec3<f32>,
     @location(3) world_normal: vec3<f32>,
     @location(4) uv: vec2<f32>,
+    @location(5) local_pos: vec3<f32>,
+    @location(6) world_tangent: vec4<f32>,
 };
 
 @vertex
@@ -106,6 +109,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(translation, 1.0)
     );
 
+
+
 #endif
 
     instance.world_from_local = world_from_local_matrix;
@@ -118,7 +123,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
     let static_bend_strength = rand_f(&rand_state) * instance_uniforms.static_bend_strength;
 
-    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
+    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength ;
 #endif
 
     let noise = sample_noise(instance, vertex.position);
@@ -145,6 +150,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 #ifdef VERTEX_NORMALS
     out.world_normal = displaced.world_normal;
+    out.local_pos = vertex.position;
+    out.world_tangent = displaced.world_tangent;
 
 #ifdef VERTEX_UVS_A
     out.uv = vertex.uv;
@@ -200,7 +207,21 @@ fn fragment(
     #endif
 #endif
 
-    var normal = in.world_normal;
+    var base_normal = in.world_normal;
+
+    if (!is_front) {
+        base_normal = -base_normal;
+    }
+
+    // TODO broken
+    let normal = curve_normal(
+        base_normal,
+        in.world_tangent.xyz,
+        in.local_pos,
+        instance_uniforms.curve_factor,
+        wind.aabb_min,
+        wind.aabb_max
+    );
 
     // --- LIGHTING MODEL ---
     // Implements a simplified Blinn-Phong reflection model

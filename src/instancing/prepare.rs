@@ -77,6 +77,7 @@ pub fn prepare_instance_uniform_buffer(
             color: instance_data.color,
             visibility_range: instance_data.visibility_range,
             static_bend_strength: instance_data.static_bend_strength,
+            curve_factor: instance_data.curve_factor,
             ..default()
         };
         let contents = bytes_of(&uniforms);

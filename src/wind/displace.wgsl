@@ -127,18 +127,20 @@ fn curve_normal(
     base_normal_world: vec3<f32>,
     tangent_world: vec3<f32>,
     local_pos: vec3<f32>,
-    wind: Wind
+    curve_factor:f32,
+    aabb_min: vec3<f32>,
+    aabb_max:vec3<f32>
 ) -> vec3<f32> {
-    if (wind.curve_factor <= 0.0) {
+    if (curve_factor <= 0.0) {
         return base_normal_world;
     }
 
-    let center_x = (wind.aabb_max.x + wind.aabb_min.x) * 0.5;
-    let half_width = (wind.aabb_max.x - wind.aabb_min.x) * 0.5;
+    let center_x = (aabb_max.x + aabb_min.x) * 0.5;
+    let half_width = (aabb_max.x - aabb_min.x) * 0.5;
 
     let signed_norm_x = (local_pos.x - center_x) / max(half_width, 0.0001);
 
-    let curve_angle =  wind.curve_factor * abs(signed_norm_x);
+    let curve_angle =  curve_factor * abs(signed_norm_x);
 
     let clamped_angle = clamp(curve_angle, 0.0, 1.4); // ~80 deg
     let offset_mag = sin(clamped_angle);
@@ -182,6 +184,7 @@ fn displacement_cache(
     cache.macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
 
 #ifndef WIND_BILLBOARDING
+
     let twist = cache.macro_wind_factor * wind.twist_strength;
     cache.twist_angle = twist * cache.height_attenuation_factor;
 
@@ -191,6 +194,7 @@ fn displacement_cache(
     let rotated_x = pos.x * cos_a - pos.z * sin_a;
     let rotated_z = pos.x * sin_a + pos.z * cos_a;
     pos = vec3<f32>(rotated_x, pos.y, rotated_z);
+
 #endif // NOT WIND_BILLBOARDING
 #endif // WIND_AFFECTED
 
@@ -315,81 +319,72 @@ fn calculate_analytical_normal(
     let local_tangent_dir = vec3<f32>(1.0, 0.0, 0.0);
 #endif
 
+    var local_normal = local_normal_dir;
+    var local_tangent = local_tangent_dir;
+
     // Static Bend
 #ifdef STATIC_BEND
-    let bent_local_normal = normalize(vec3<f32>(
-        local_normal_dir.x,
-        local_normal_dir.y - local_normal_dir.x * static_bend.x * cache.bend_curve_derivative - local_normal_dir.z * static_bend.y * cache.bend_curve_derivative,
-        local_normal_dir.z
+    local_normal = normalize(vec3<f32>(
+        local_normal.x + local_normal.y * static_bend.x * cache.bend_curve_derivative,
+        local_normal.y,
+        local_normal.z + local_normal.y * static_bend.y * cache.bend_curve_derivative
     ));
-    let bent_local_tangent = normalize(vec3<f32>(
-        local_tangent_dir.x + local_tangent_dir.y * static_bend.x * cache.bend_curve_derivative,
-        local_tangent_dir.y,
-        local_tangent_dir.z + local_tangent_dir.y * static_bend.y * cache.bend_curve_derivative
+    local_tangent = normalize(vec3<f32>(
+        local_tangent.x + local_tangent.y * static_bend.x * cache.bend_curve_derivative,
+        local_tangent.y,
+        local_tangent.z + local_tangent.y * static_bend.y * cache.bend_curve_derivative
     ));
-#else // NOT STATIC_BEND
-    let bent_local_normal = local_normal_dir;
-    let bent_local_tangent = local_tangent_dir;
 #endif // STATIC_BEND
 
-    // Twist
+    // Twist // TODO
     let cos_a = cos(cache.twist_angle);
     let sin_a = sin(cache.twist_angle);
 
-    let twisted_local_normal = normalize(vec3<f32>(
-        bent_local_normal.x * cos_a - bent_local_normal.z * sin_a,
-        bent_local_normal.y,
-        bent_local_normal.x * sin_a + bent_local_normal.z * cos_a
+    local_normal = normalize(vec3<f32>(
+        local_normal.x * cos_a - local_normal.z * sin_a,
+        local_normal.y,
+        local_normal.x * sin_a + local_normal.z * cos_a
     ));
-    let twisted_local_tangent = normalize(vec3<f32>(
-        bent_local_tangent.x * cos_a - bent_local_tangent.z * sin_a,
-        bent_local_tangent.y,
-        bent_local_tangent.x * sin_a + bent_local_tangent.z * cos_a
+
+    local_tangent = normalize(vec3<f32>(
+        local_tangent.x * cos_a - local_tangent.z * sin_a,
+        local_tangent.y,
+        local_tangent.x * sin_a + local_tangent.z * cos_a
     ));
 
     var model_3x3: mat3x3<f32>;
+
     let horizontal_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
 
-    #ifdef WIND_BILLBOARDING
-    let macro_displacement = cache.macro_wind_factor * wind.strength * cache.height_attenuation_factor;
-    let macro_world_offset = horizontal_dir * macro_displacement;
-
-    let billboard_anchor = instance.instance_position + vec4<f32>(macro_world_offset.x, 0.0, macro_world_offset.z, 0.0);
-
-    model_3x3 = calculate_billboard_matrix(
-        billboard_anchor,
-        view.world_position.xyz,
-        instance.world_from_local
-    );
-    #else // NOT WIND_BILLBOARDING
     model_3x3 = mat3x3<f32>(
         instance.world_from_local[0].xyz,
         instance.world_from_local[1].xyz,
         instance.world_from_local[2].xyz
     );
-    #endif // WIND_BILLBOARDING
 
-    let world_normal_dir = normalize(model_3x3 * twisted_local_normal);
-    let world_tangent_dir = normalize(model_3x3 * twisted_local_tangent);
+    let world_normal_dir = normalize(model_3x3 * local_normal);
+    let world_tangent_dir = normalize(model_3x3 * local_tangent);
 
-    // Macro Wind
     let macro_wind_derivative = horizontal_dir * wind.strength * cache.macro_wind_factor * cache.bend_curve_derivative;
 
-    let final_world_normal = normalize(vec3<f32>(
-        world_normal_dir.x - world_normal_dir.y * macro_wind_derivative.x,
+    let world_normal = normalize(vec3<f32>(
+        world_normal_dir.x + world_normal_dir.y * macro_wind_derivative.x,
         world_normal_dir.y,
-        world_normal_dir.z - world_normal_dir.y * macro_wind_derivative.z
+        world_normal_dir.z + world_normal_dir.y * macro_wind_derivative.z
     ));
-    let final_world_tangent = normalize(vec3<f32>(
+
+    let world_tangent = normalize(vec3<f32>(
         world_tangent_dir.x + world_tangent_dir.y * macro_wind_derivative.x,
         world_tangent_dir.y,
         world_tangent_dir.z + world_tangent_dir.y * macro_wind_derivative.z
     ));
 
-    out.world_normal = curve_normal(final_world_normal, final_world_tangent, vertex_pos, wind);
+    out.world_normal = world_normal;
 
 #ifdef VERTEX_TANGENTS
-    out.world_tangent = vec4<f32>(final_world_tangent, tangent.w);
+    out.world_tangent = vec4<f32>(world_tangent, tangent.w);
+#else
+    out.world_tangent = vec4<f32>(world_tangent, 1.0);
 #endif
 
     return out;
@@ -443,11 +438,11 @@ fn calculate_numerical_normal(
     let approximated_world_tangent = normalize(tangent.x * surface_delta_x + tangent.z * surface_delta_z);
     let orthogonalized_tangent = normalize(approximated_world_tangent - dot(approximated_world_tangent, approximated_world_normal) * approximated_world_normal);
 
-    out.world_normal = curve_normal(approximated_world_normal, orthogonalized_tangent, vertex_pos, wind);
     out.world_tangent = vec4<f32>(orthogonalized_tangent, tangent.w);
 #else
-    out.world_normal = approximated_world_normal;
+    out.world_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
 #endif
+    out.world_normal = approximated_world_normal;
 
     return out;
 }
@@ -463,12 +458,11 @@ fn calculate_fallback_normal(
     var out: DisplacedVertex;
 
 #ifdef VERTEX_TANGENTS
-    let world_tangent_dir = mesh_tangent.xyz;
-    out.world_normal = curve_normal(mesh_normal, world_tangent_dir, vertex_pos, wind);
     out.world_tangent = mesh_tangent;
 #else
-    out.world_normal = mesh_normal;
+    out.world_tangent = vec3<f32>(1.0, 0.0, 0.0);
 #endif
+    out.world_normal = mesh_normal;
 
     return out;
 }
