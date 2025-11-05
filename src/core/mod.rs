@@ -9,7 +9,6 @@ use bevy::camera::primitives::Aabb;
 use bevy::prelude::*;
 
 /// Trigger of the [`SpawnProtoTypes`] Event.
-
 /// Contains the scattered positions and contextual information (like `layer`, `chunk`, `root`).
 #[derive(Clone, Debug)]
 pub struct SpawnTrigger {

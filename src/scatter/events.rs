@@ -82,7 +82,7 @@ impl ScatterResult {
         container: &Container,
         modifiers: &InstanceModifiers,
         rng: &mut R,
-        external_avoidance_data: &Vec<AvoidanceData>,
+        external_avoidance_data: &[AvoidanceData],
     ) -> Option<ScatterResult> {
         let instances_dim_f = container.instances_dim;
         let cell_width = container.size.x / instances_dim_f;
@@ -118,10 +118,10 @@ impl ScatterResult {
             final_world_pos += random_offset;
         };
 
-        if let Some(sampler) = &modifiers.density_sampler {
-            if rng.random::<f32>() > sampler.sample(final_world_pos) {
-                return None;
-            }
+        if let Some(sampler) = &modifiers.density_sampler
+            && rng.random::<f32>() > sampler.sample(final_world_pos)
+        {
+            return None;
         }
 
         if external_avoidance_data.iter().any(|obstacle| {
@@ -294,7 +294,7 @@ where
     pub fn from_container_with_data(
         container: Container,
         modifiers: InstanceModifiers,
-        external_avoidance_data: &Vec<AvoidanceData>,
+        external_avoidance_data: &[AvoidanceData],
     ) -> ScatterResults<TOut, TIn>
     where
         TIn: Material,
