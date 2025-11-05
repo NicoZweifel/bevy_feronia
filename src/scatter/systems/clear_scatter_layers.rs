@@ -28,7 +28,7 @@ pub fn clear_scatter_layers(
         }
     }
 
-    if layers.len() == 0 {
+    if layers.is_empty() {
         return;
     }
 

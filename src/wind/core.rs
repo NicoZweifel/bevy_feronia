@@ -63,8 +63,7 @@ impl ScatterMaterial for StandardMaterial {
             let chunk_level = event
                 .trigger
                 .chunk
-                .map(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
-                .flatten()
+                .and_then(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
                 .cloned()
                 .unwrap_or_default();
 

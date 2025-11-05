@@ -50,7 +50,7 @@ pub fn queue_material_creation_requests<TOut, TIn>(
         for (layer, scatter_items, material_option_data, wind_data) in
             children.iter().filter_map(|layer| q_layers.get(layer).ok())
         {
-            let mut wind = wind.clone();
+            let mut wind = *wind;
             wind = wind.with(wind_data);
 
             let options = MaterialOptions::from(material_option_data);
@@ -110,9 +110,7 @@ where
         return false;
     };
 
-    let mut wind = o_wind
-        .and_then(|x| x.wind_override)
-        .unwrap_or_else(|| *wind);
+    let mut wind = o_wind.and_then(|x| x.wind_override).unwrap_or(*wind);
 
     wind = wind.with(wind_data);
 
@@ -143,7 +141,8 @@ where
                 meshes,
             )
         })
-        .fold(false, |acc, has_material| acc || has_material);
+        .reduce(|acc, has_material| acc || has_material)
+        .unwrap_or_default();
 
     if has_children_with_materials {
         cmd.entity(entity).insert(ScatterLayerChildProcessed);
@@ -157,8 +156,7 @@ where
     let aabb = o_aabb.cloned().unwrap_or_else(|| {
         meshes
             .get(&mesh.0)
-            .map(|x| x.compute_aabb())
-            .flatten()
+            .and_then(|x| x.compute_aabb())
             .unwrap_or_default()
     });
 
@@ -196,8 +194,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
         let source_material = request
             .source_material_handle
             .clone()
-            .map(|x| materials_in.get(&x))
-            .flatten();
+            .and_then(|x| materials_in.get(&x));
 
         let new_material = TOut::create_material(
             source_material.cloned(),
@@ -206,7 +203,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
         );
 
         let material_handle = materials_out.add(new_material);
-        let asset = ScatterAsset::new(material_handle, &request);
+        let asset = ScatterAsset::new(material_handle, request);
         let asset_handle = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
@@ -230,8 +227,7 @@ pub fn process_same_type_material_requests<T>(
         let source_material = request
             .source_material_handle
             .clone()
-            .map(|x| materials.get(&x))
-            .flatten();
+            .and_then(|x| materials.get(&x));
 
         let new_material = T::create_material(
             source_material.cloned(),
@@ -240,7 +236,7 @@ pub fn process_same_type_material_requests<T>(
         );
 
         let material_handle = materials.add(new_material);
-        let asset = ScatterAsset::new(material_handle, &request);
+        let asset = ScatterAsset::new(material_handle, request);
         let asset_handle = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
@@ -250,8 +246,8 @@ pub fn process_same_type_material_requests<T>(
     }
 }
 
-fn insert_bundle<'w, T>(
-    cmd: &'w mut Commands,
+fn insert_bundle<T>(
+    cmd: &mut Commands,
     entity: Entity,
     asset_handle: Handle<ScatterAsset<T>>,
     asset: ScatterAsset<T>,
