@@ -36,6 +36,15 @@ pub struct FastNormals;
 #[reflect(Component)]
 pub struct AnalyticalNormals;
 
+/// Marker component to enable point lights.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+///
+/// Enables `#ifdef POINT_LIGHTS` in shaders.
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(Component)]
+pub struct PointLights;
+
 /// Controls the edge correction effect (makes vegetation look fuller).
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
@@ -47,13 +56,15 @@ pub struct EdgeCorrectionFactor(pub f32);
 
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
-        Self(0.1)
+        Self(0.05)
     }
 }
 
 /// Controls the normal curving effect (simulates curved blades).
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
+///
+/// Currently only supported in `[InstancedWindAffectedMaterial]`.`
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct CurveFactor(pub f32);

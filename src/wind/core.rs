@@ -150,7 +150,6 @@ pub struct WindUniform {
     pub noise_scale: f32,
     pub scroll_speed: f32,
     pub bend_exponent: f32,
-    pub curve_factor: f32,
     pub micro_strength: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
@@ -182,7 +181,6 @@ impl From<&Wind> for WindUniform {
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
             edge_correction_factor: 0.,
-            curve_factor: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
             debug_color: Vec4::splat(1.),
@@ -191,11 +189,6 @@ impl From<&Wind> for WindUniform {
 }
 
 impl WindUniform {
-    pub fn with_curve_factor(mut self, curve_factor: f32) -> Self {
-        self.curve_factor = curve_factor;
-        self
-    }
-
     pub fn with_edge_correction_factor(mut self, edge_correction_factor: f32) -> Self {
         self.edge_correction_factor = edge_correction_factor;
         self
@@ -226,5 +219,7 @@ bitflags! {
         const SUBSURFACE_SCATTERING = 1 << 6;
         const STATIC_BEND = 1 << 7;
         const ANALYTICAL_NORMALS = 1 << 8;
+        const CURVE_NORMALS = 1 << 9;
+        const POINT_LIGHTS = 1 << 10;
     }
 }

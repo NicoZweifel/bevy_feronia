@@ -59,6 +59,14 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::ANALYTICAL_NORMALS,
             material.options.analytical_normals,
         );
+        key.set(
+            WindAffectedKey::CURVE_NORMALS,
+            material.options.curve_factor > 0.,
+        );
+        key.set(
+            WindAffectedKey::POINT_LIGHTS,
+            material.options.curve_factor > 0.,
+        );
 
         commands
             .entity(entity)

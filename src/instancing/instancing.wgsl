@@ -17,7 +17,8 @@
 struct InstanceUniforms {
     color: vec4<f32>,
     visibility_range: vec4<f32>,
-    static_bend_strength: f32
+    static_bend_strength: f32,
+    curve_factor: f32,
 };
 
 @group(4) @binding(0)
@@ -61,6 +62,11 @@ struct VertexOutput {
     @location(2) world_position: vec3<f32>,
     @location(3) world_normal: vec3<f32>,
     @location(4) uv: vec2<f32>,
+    @location(5) local_pos: vec3<f32>,
+    @location(6) world_tangent: vec4<f32>,
+    @location(7) curve_factor: f32,
+    @location(8) aabb_min_x: f32,
+    @location(9) aabb_max_x: f32,
 };
 
 @vertex
@@ -143,22 +149,18 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.clip_position = view.clip_from_world * displaced.world_position;
     out.world_position = displaced.world_position.xyz;
 
-#ifdef VERTEX_NORMALS
     out.world_normal = displaced.world_normal;
+    out.local_pos = vertex.position;
+    out.world_tangent = displaced.world_tangent;
 
 #ifdef VERTEX_UVS_A
     out.uv = vertex.uv;
 #endif    
     let height_range = wind.aabb_max.y - wind.aabb_min.y;
     let normalized_height = saturate((vertex.position.y - wind.aabb_min.y) / max(height_range, 0.0001));
-#else
-    out.world_normal = vec3<f32>(0.0, 1.0, 0.0);
-    out.uv = vec2<f32>(0.0, 0.0);
-    let gradient_factor = 1.0;
-#endif // VERTEX_NORMALS
 
     // Fake ambient occlusion
-    let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.3, instance_uniforms.color.a);
+    let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.1, instance_uniforms.color.a);
     out.color = mix(dark_color, instance_uniforms.color, normalized_height);
 
 #ifdef VISIBILITY_RANGE_DITHER
@@ -166,8 +168,15 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance_uniforms.visibility_range, instance.world_from_local[3]);
 #endif
 
+    out.curve_factor = instance_uniforms.curve_factor;
+
+    out.aabb_min_x = wind.aabb_min.x;
+    out.aabb_max_x = wind.aabb_max.x;
+
     return out;
 }
+
+
 
 
 #ifdef VISIBILITY_RANGE_DITHER
@@ -183,8 +192,41 @@ fn get_visibility_range_dither_level(lod_range: vec4<f32>, world_position: vec4<
 
     let offset = select(-16, 0, camera_distance >= lod_range.z);
     let bounds = select(lod_range.xy, lod_range.zw, camera_distance >= lod_range.z);
-    let level = i32(round((camera_distance - bounds.x) / (bounds.y - bounds.x) * 16.0));
+    let level = i32(round((camera_distance - bounds.x) / (bounds.y - bounds.x) * 16.));
     return offset + clamp(level, 0, 16);
+}
+#endif
+
+
+#ifdef CURVE_NORMALS
+// Adjusts the world normal to simulate a "curved" blade surface by
+// pushing the normal outwards along the tangent based on the
+// vertex's distance from the local X-axis center.
+fn curve_normal(
+    base_normal_world: vec3<f32>,
+    tangent_world: vec3<f32>,
+    local_pos: vec3<f32>,
+    curve_factor:f32,
+    aabb_min_x: f32,
+    aabb_max_x: f32
+) -> vec3<f32> {
+    if curve_factor <= 0. {
+        return base_normal_world;
+    }
+
+    let center_x = (aabb_max_x + aabb_min_x) * 0.5;
+    let half_width = (aabb_max_x - aabb_min_x) * 0.5;
+
+    let signed_norm_x = (local_pos.x - center_x) / max(half_width, 0.0001);
+
+    let curve_angle =  curve_factor * abs(signed_norm_x);
+
+    let clamped_angle = clamp(curve_angle, 0., 1.4); // ~80 deg
+    let offset_mag = sin(clamped_angle);
+
+    let curve_offset_world = tangent_world * offset_mag * sign(signed_norm_x);
+
+    return normalize(base_normal_world + curve_offset_world);
 }
 #endif
 
@@ -194,6 +236,7 @@ fn fragment(
     @builtin(front_facing) is_front: bool,
 ) -> @location(0) vec4<f32> {
 
+
 #ifdef VISIBILITY_RANGE_DITHER
     #ifndef SHADOW_PASS
         bevy_pbr::pbr_functions::visibility_range_dither(in.clip_position, in.visibility_range_dither);
@@ -201,6 +244,23 @@ fn fragment(
 #endif
 
     var normal = in.world_normal;
+
+    if !is_front {
+        normal = -normal;
+    }
+
+    let tangent = in.world_tangent.xyz;
+
+#ifdef CURVE_NORMALS
+     normal = curve_normal(
+        normal,
+        tangent,
+        in.local_pos,
+        in.curve_factor,
+        in.aabb_min_x,
+        in.aabb_max_x,
+    );
+#endif
 
     // --- LIGHTING MODEL ---
     // Implements a simplified Blinn-Phong reflection model
@@ -215,28 +275,29 @@ fn fragment(
     // ---
 
     // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
-    const SPECULAR_POWER: f32 = 32.0;
+    const SPECULAR_POWER: f32 = 32.;
 
-    // TODO tweak/fix && expose
+    // TODO tweak && expose
     const SPECULAR_STRENGTH: f32 = 0.1;
-    const DIFFUSE_SCALING: f32 = 1.0;
+    const DIFFUSE_SCALING: f32 = 0.5;
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
-    const AMBIENT_INTENSITY_SCALE: f32 = 0.01;
+    const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
+
     const TRANSLUCENCY: f32 = 0.2;
 
     let V = normalize(view.world_position.xyz - in.world_position);
 
     var final_color_rgb = in.color.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
-    var final_specular = vec3<f32>(0.0);
+    var final_specular = vec3<f32>(0.);
 
     let view_z = dot(vec4<f32>(
         view.view_from_world[0].z,
         view.view_from_world[1].z,
         view.view_from_world[2].z,
         view.view_from_world[3].z
-    ), vec4<f32>(in.world_position, 1.0));
+    ), vec4<f32>(in.world_position, 1.));
 
     // --- Directional Lights (Sun) ---
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
@@ -257,22 +318,23 @@ fn fragment(
 
         let shadow = fetch_directional_shadow(
             i,
-            vec4<f32>(in.world_position, 1.0),
+            vec4<f32>(in.world_position, 1.),
             normal,
             view_z
         );
-        let final_shadow = clamp(shadow, 0.1, 1.0);
+        let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
         final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
-        if (NdotL_raw > 0.0) {
+        if NdotL_raw > 0. {
             final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
         }
     }
 
-    let is_orthographic = view.clip_from_view[3].w == 1.0;
+#ifdef POINT_LIGHTS
+    let is_orthographic = view.clip_from_view[3].w == 1.;
     let cluster_index = fragment_cluster_index(
         in.clip_position.xy,
         view_z,
@@ -288,10 +350,10 @@ fn fragment(
         let scaled_light_color = light.color_inverse_square_range.rgb * LIGHT_INTENSITY_SCALE;
         let inverse_square_range = light.color_inverse_square_range.w;
 
-        if (inverse_square_range <= 0.0) { continue; }
+        if (inverse_square_range <= 0.) { continue; }
 
         // Skip out of range lights
-        let range_sq = 1.0 / inverse_square_range;
+        let range_sq = 1. / inverse_square_range;
         let light_vector = light_position - in.world_position.xyz;
         let distance_sq = dot(light_vector, light_vector);
 
@@ -310,20 +372,21 @@ fn fragment(
         let NdotH = saturate(dot(normal, H));
         let specular_factor = pow(NdotH, SPECULAR_POWER);
 
-        var shadow = 1.0;
+        var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
-            shadow = fetch_point_shadow(light_id, vec4<f32>(in.world_position, 1.0), normal);
+            shadow = fetch_point_shadow(light_id, vec4<f32>(in.world_position, 1.), normal);
         }
-        let final_shadow = clamp(shadow, 0.1, 1.0);
+        let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
         final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
-        if (NdotL_raw > 0.0) {
+        if NdotL_raw > 0. {
             final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
         }
     }
+#endif // POINT_LIGHTS
 
     final_color_rgb += final_specular;
 

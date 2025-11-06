@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::camera::primitives::Aabb;
+use bevy::camera::visibility::NoFrustumCulling;
 use bevy::color::palettes::tailwind::*;
 use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
@@ -36,7 +37,11 @@ fn setup(
     wind: Res<Wind>,
     noise_texture: Res<WindTexture>,
 ) {
-    let mesh_handle = meshes.add(Cuboid::new(0.5, 3.0, 0.5));
+    let mesh_handle = meshes.add(Triangle3d::new(
+        Vec3::new(0.0, -0.75, 0.0),
+    Vec3::new(0.0, 1.5, 0.0),
+        Vec3::new(0.0, -0.75, 0.5),
+    ));
     let aabb = Aabb {
         half_extents: Vec3A::new(0.25, 1.5, 0.25),
         center: Vec3A::new(0.0, 0.0, 0.0),
@@ -57,6 +62,8 @@ fn setup(
             // make it affected by wind
             wind_affected: true,
             // can also tweak other settings here
+            analytical_normals: true,
+            curve_factor: 0.2,
             ..default()
         },
         noise_texture: (**noise_texture).clone(),
@@ -64,7 +71,7 @@ fn setup(
 
     let instances = (0..10)
         .map(|x| InstanceData {
-            position: Vec3::new(x as f32, 1.5, 0.0),
+            position: Vec3::new(x as f32, 0.75, x as f32),
             scale: 1.0,
             index: 0,
             ..default()
@@ -76,6 +83,7 @@ fn setup(
         visibility_range: [0.0, 0.0, 1000.0, 1000.0],
         instances,
         static_bend_strength: 0.1,
+        curve_factor: 0.2,
     };
 
     cmd.spawn((
@@ -85,6 +93,10 @@ fn setup(
         NoAutomaticBatching,
         Transform::default(),
         Visibility::Visible,
-        aabb,
+        NoFrustumCulling,
+        Aabb{
+           center:aabb.center,
+            half_extents:aabb.half_extents * 10.,
+        },
     ));
 }
