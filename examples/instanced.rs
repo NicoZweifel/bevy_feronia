@@ -39,7 +39,7 @@ fn setup(
 ) {
     let mesh_handle = meshes.add(Triangle3d::new(
         Vec3::new(0.0, -0.75, 0.0),
-    Vec3::new(0.0, 1.5, 0.0),
+        Vec3::new(0.0, 1.5, 0.0),
         Vec3::new(0.0, -0.75, 0.5),
     ));
     let aabb = Aabb {
@@ -94,9 +94,9 @@ fn setup(
         Transform::default(),
         Visibility::Visible,
         NoFrustumCulling,
-        Aabb{
-           center:aabb.center,
-            half_extents:aabb.half_extents * 10.,
+        Aabb {
+            center: aabb.center,
+            half_extents: aabb.half_extents * 10.,
         },
     ));
 }
