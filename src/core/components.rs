@@ -62,6 +62,9 @@ impl Default for EdgeCorrectionFactor {
 
 /// Controls the normal curving effect (simulates curved blades).
 ///
+/// This value represents the maximum curve angle (in radians).
+/// A value of `1.4` would result in a maximum curve of ~80 degrees.
+///
 /// Corresponds to `wind.curve_factor` in shaders.
 ///
 /// Currently only supported in `[InstancedWindAffectedMaterial]`.`

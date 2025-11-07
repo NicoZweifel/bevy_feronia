@@ -198,37 +198,7 @@ fn get_visibility_range_dither_level(lod_range: vec4<f32>, world_position: vec4<
 #endif
 
 
-#ifdef CURVE_NORMALS
-// Adjusts the world normal to simulate a "curved" blade surface by
-// pushing the normal outwards along the tangent based on the
-// vertex's distance from the local X-axis center.
-fn curve_normal(
-    base_normal_world: vec3<f32>,
-    tangent_world: vec3<f32>,
-    local_pos: vec3<f32>,
-    curve_factor:f32,
-    aabb_min_x: f32,
-    aabb_max_x: f32
-) -> vec3<f32> {
-    if curve_factor <= 0. {
-        return base_normal_world;
-    }
 
-    let center_x = (aabb_max_x + aabb_min_x) * 0.5;
-    let half_width = (aabb_max_x - aabb_min_x) * 0.5;
-
-    let signed_norm_x = (local_pos.x - center_x) / max(half_width, 0.0001);
-
-    let curve_angle =  curve_factor * abs(signed_norm_x);
-
-    let clamped_angle = clamp(curve_angle, 0., 1.4); // ~80 deg
-    let offset_mag = sin(clamped_angle);
-
-    let curve_offset_world = tangent_world * offset_mag * sign(signed_norm_x);
-
-    return normalize(base_normal_world + curve_offset_world);
-}
-#endif
 
 @fragment
 fn fragment(
@@ -243,23 +213,24 @@ fn fragment(
     #endif
 #endif
 
+
     var normal = in.world_normal;
 
     if !is_front {
         normal = -normal;
     }
 
-    let tangent = in.world_tangent.xyz;
-
+// TODO move out / re-use
 #ifdef CURVE_NORMALS
-     normal = curve_normal(
-        normal,
-        tangent,
-        in.local_pos,
-        in.curve_factor,
-        in.aabb_min_x,
-        in.aabb_max_x,
-    );
+    let signed_norm_x = in.uv.x * 2.0 - 1.0;
+
+    let curve_angle = in.curve_factor * abs(signed_norm_x);
+    let clamped_angle = clamp(curve_angle, 0.0, 1.4); // ~80 deg
+    let offset_mag = sin(clamped_angle);
+
+    let curve_offset_world = in.world_tangent.xyz * offset_mag * sign(signed_norm_x);
+
+    normal = normalize(normal + curve_offset_world);
 #endif
 
     // --- LIGHTING MODEL ---
