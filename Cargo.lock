@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.4.3"
+version = "0.4.4"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
@@ -2765,7 +2765,7 @@ dependencies = [
  "vec_map",
  "wasm-bindgen",
  "web-sys",
- "windows 0.61.3",
+ "windows 0.54.0",
 ]
 
 [[package]]
