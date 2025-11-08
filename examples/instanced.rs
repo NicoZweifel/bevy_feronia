@@ -99,7 +99,7 @@ fn setup(
     ));
 }
 
-/// Creates a triangle mesh with UVs.
+/// Creates a triangle mesh on the x and y-axis with UVs.
 fn create_triangle_with_foliage_uvs() -> Mesh {
     let positions = vec![[0.0, -0.75, 0.0], [0.0, 1.5, 0.0], [0.5, -0.75, 0.0]];
 
@@ -115,6 +115,7 @@ fn create_triangle_with_foliage_uvs() -> Mesh {
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
 
     // Generate tangents, which are required by the shader for normal mapping and the curve effect.
+    // These default correctly for this triangle (on x-axis), but you may need to tweak them for another mesh.
     mesh.generate_tangents().unwrap();
     mesh.insert_indices(indices);
     mesh
