@@ -74,7 +74,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             ds.depth_compare = CompareFunction::GreaterEqual;
         }
 
-        if !key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
+        if !key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
             descriptor.primitive.cull_mode = None;
         }
 
@@ -93,22 +93,12 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
         shader_defs.push("VISIBILITY_RANGE_DITHER".into());
 
-        descriptor
-            .fragment
-            .as_mut()
-            .unwrap()
-            .shader_defs
-            .push("VISIBILITY_RANGE_DITHER".into());
-
-        if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
-            shader_defs.push("WIND_BILLBOARDING".into());
+        if key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
+            shader_defs.push("BILLBOARDING".into());
         }
 
-        if key
-            .wind_key
-            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
-        {
-            shader_defs.push("WIND_EDGE_CORRECTION".into());
+        if key.wind_key.contains(WindAffectedKey::EDGE_CORRECTION) {
+            shader_defs.push("EDGE_CORRECTION".into());
         }
 
         if key.wind_key.contains(WindAffectedKey::WIND_LOW_QUALITY) {
@@ -133,6 +123,18 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
         if key.wind_key.contains(WindAffectedKey::ANALYTICAL_NORMALS) {
             shader_defs.push("ANALYTICAL_NORMALS".into());
+        }
+
+        if let Some(fragment) = descriptor.fragment.as_mut() {
+            fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
+
+            if key.wind_key.contains(WindAffectedKey::CURVE_NORMALS) {
+                fragment.shader_defs.push("CURVE_NORMALS".into());
+            }
+
+            if key.wind_key.contains(WindAffectedKey::POINT_LIGHTS) {
+                fragment.shader_defs.push("POINT_LIGHTS".into());
+            }
         }
 
         descriptor.vertex.shader = self.shader.clone();

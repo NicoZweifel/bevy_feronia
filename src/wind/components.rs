@@ -5,12 +5,6 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct WindAffectedReady;
 
-/// Component used to track that a material `T` for a [`WindAffected`] entity has been registered and processed.
-#[derive(Component, Deref)]
-pub struct WindAffectedRegistered<T>(pub Handle<T>)
-where
-    T: Asset + Clone;
-
 /// Marker component to enable wind effects for an entity.
 ///
 /// Enables `#ifdef WIND_AFFECTED` in shaders, applying all wind-related vertex displacements.
@@ -86,7 +80,7 @@ pub struct BopSpeed(pub f32);
 ///
 /// Corresponds to `wind.twist_strength` in shaders, controlling the twist applied by the macro wind.
 ///
-/// This effect is disabled if `WIND_BILLBOARDING` is active.
+/// This effect is disabled if `BILLBOARDING` is active.
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct TwistStrength(pub f32);

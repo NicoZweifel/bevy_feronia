@@ -50,13 +50,9 @@ where
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (
-                replace_materials::<TOut, TIn>
-                    .run_if(resource_exists::<Assets<ScatterAsset<TOut>>>),
-                update_materials::<TOut, TIn>.run_if(
-                    resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<TOut>>>),
-                ),
-            ),
+            (update_materials::<TOut, TIn>.run_if(
+                resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<TOut>>>),
+            ),),
         );
     }
 }

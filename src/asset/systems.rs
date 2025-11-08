@@ -170,7 +170,7 @@ where
             name,
             lod,
             layer,
-            wind_affected: o_wind_affected.is_some(),
+            wind_affected: options.wind_affected || o_wind_affected.is_some(),
         },
     );
 
@@ -207,8 +207,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
         let asset_handle = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
-            .remove::<ScatterMaterialCreationRequest<TOut, TIn>>()
-            .remove::<MeshMaterial3d<TIn>>();
+            .remove::<ScatterMaterialCreationRequest<TOut, TIn>>();
 
         insert_bundle::<TOut>(&mut cmd, entity, asset_handle, asset, &request.properties);
     }
@@ -221,7 +220,7 @@ pub fn process_same_type_material_requests<T>(
     wind_noise_texture: Res<WindTexture>,
     mut prototype_assets: ResMut<Assets<ScatterAsset<T>>>,
 ) where
-    T: ScatterMaterial<T> + Material + Clone,
+    T: ScatterMaterial<T> + Material,
 {
     for (entity, request) in &requests {
         let source_material = request

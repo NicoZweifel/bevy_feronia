@@ -55,28 +55,6 @@ pub fn update_materials<TOut, TIn>(
     }
 }
 
-pub fn replace_materials<TOut, TIn>(
-    mut cmd: Commands,
-    q: Query<(Entity, &WindAffectedRegistered<ScatterAsset<TOut>>), Without<WindAffectedReady>>,
-    scatter_assets: Res<Assets<ScatterAsset<TOut>>>,
-) where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn>,
-{
-    for (entity, wind_affected) in &q {
-        let Some(scatter_asset) = scatter_assets.get(&**wind_affected) else {
-            continue;
-        };
-
-        debug!("Replacing Material with WindAffected material...");
-
-        cmd.entity(entity).insert((
-            TOut::component(scatter_asset.material.clone()),
-            WindAffectedReady,
-        ));
-    }
-}
-
 pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let texture_size = 512;
     let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4) as usize);

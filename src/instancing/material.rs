@@ -83,7 +83,6 @@ impl RenderAsset for PreparedInstancedWindAffectedMaterial {
 impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
     fn from(material: &'a InstancedWindAffectedMaterial) -> Self {
         WindUniform::from(&material.wind)
-            .with_curve_factor(material.options.curve_factor)
             .with_edge_correction_factor(material.options.edge_correction_factor)
             .with_aabb(&material.aabb)
             .with_debug_color(material.options.debug_color.to_linear().to_vec4())

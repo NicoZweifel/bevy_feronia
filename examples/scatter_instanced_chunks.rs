@@ -36,7 +36,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Scatter options
             (
                 DistributionDensity(150.0),
-                InstanceScale { min: 2., max: 4. },
+                InstanceScale::default(),
                 InstanceJitter(1.),
                 ScaleDensity,
             ),

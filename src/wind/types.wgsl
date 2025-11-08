@@ -9,9 +9,7 @@ struct SampledNoise {
 struct DisplacedVertex {
     world_position: vec4<f32>,
     world_normal: vec3<f32>,
-#ifdef VERTEX_TANGENTS
     world_tangent: vec4<f32>
-#endif
 }
 
 struct InstanceInfo {

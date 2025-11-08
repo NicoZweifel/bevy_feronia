@@ -141,12 +141,20 @@ impl ScatterResult {
             }
         };
 
-        let final_scale = modifiers
-            .scale
-            .map_or(1.0, |s| rng.random_range(s.min..s.max));
+        let final_scale = modifiers.scale.map_or(1.0, |s| {
+            if s.min == s.max {
+                s.min
+            } else {
+                rng.random_range(s.min..s.max)
+            }
+        });
 
         let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
-            Quat::from_rotation_y(rng.random_range(r.min..r.max))
+            Quat::from_rotation_y(if r.min == r.max {
+                r.min
+            } else {
+                rng.random_range(r.min..r.max)
+            })
         });
 
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);

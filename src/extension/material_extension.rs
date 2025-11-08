@@ -39,7 +39,6 @@ impl WindAffectedExtension {
 impl<'a> From<&'a WindAffectedExtension> for WindUniform {
     fn from(material_extension: &'a WindAffectedExtension) -> Self {
         WindUniform::from(&material_extension.wind)
-            .with_curve_factor(material_extension.options.curve_factor)
             .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
             .with_debug_color(material_extension.options.debug_color.to_linear().to_vec4())
@@ -62,13 +61,13 @@ struct ShaderDefMap {
 
 const SHADER_DEFS: &[ShaderDefMap] = &[
     ShaderDefMap {
-        flag: WindAffectedKey::ENABLE_BILLBOARDING,
-        def: "WIND_BILLBOARDING",
+        flag: WindAffectedKey::BILLBOARDING,
+        def: "BILLBOARDING",
         stage: ShaderStage::Vertex,
     },
     ShaderDefMap {
-        flag: WindAffectedKey::ENABLE_EDGE_CORRECTION,
-        def: "WIND_EDGE_CORRECTION",
+        flag: WindAffectedKey::EDGE_CORRECTION,
+        def: "EDGE_CORRECTION",
         stage: ShaderStage::Vertex,
     },
     ShaderDefMap {
@@ -105,6 +104,11 @@ const SHADER_DEFS: &[ShaderDefMap] = &[
         flag: WindAffectedKey::ANALYTICAL_NORMALS,
         def: "ANALYTICAL_NORMALS",
         stage: ShaderStage::Vertex,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::CURVE_NORMALS,
+        def: "CURVE_NORMALS",
+        stage: ShaderStage::Fragment,
     },
 ];
 
@@ -167,11 +171,11 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             material.options.wind_affected,
         );
         key.set(
-            WindAffectedKey::ENABLE_BILLBOARDING,
+            WindAffectedKey::BILLBOARDING,
             material.options.enable_billboarding,
         );
         key.set(
-            WindAffectedKey::ENABLE_EDGE_CORRECTION,
+            WindAffectedKey::EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
         key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);
@@ -190,6 +194,10 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
         key.set(
             WindAffectedKey::ANALYTICAL_NORMALS,
             material.options.analytical_normals,
+        );
+        key.set(
+            WindAffectedKey::CURVE_NORMALS,
+            material.options.curve_factor > 0.,
         );
 
         key
