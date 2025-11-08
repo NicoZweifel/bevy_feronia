@@ -522,5 +522,5 @@ fn calculate_billboard_matrix(
     let new_y = vec3<f32>(0.0, 1.0, 0.0);
     let new_x = normalize(cross(new_y, new_z));
 
-    return mat3x3<f32>(new_x * scale.x, new_y * scale.y, new_z * scale.z);
+    return mat3x3<f32>(new_z * scale.x, new_y * scale.y, new_x * scale.z);
 }
