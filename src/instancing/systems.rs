@@ -65,10 +65,7 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::CURVE_NORMALS,
             material.options.curve_factor > 0.,
         );
-        key.set(
-            WindAffectedKey::POINT_LIGHTS,
-            material.options.point_lights,
-        );
+        key.set(WindAffectedKey::POINT_LIGHTS, material.options.point_lights);
 
         commands
             .entity(entity)

@@ -90,7 +90,7 @@ pub struct CurveFactor(pub f32);
 
 impl Default for CurveFactor {
     fn default() -> Self {
-        Self(0.2)
+        Self(0.1)
     }
 }
 

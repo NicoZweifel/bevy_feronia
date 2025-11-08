@@ -28,6 +28,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Material options
             (
                 WindAffected,
+                // TODO: Currently only works in this example, with this mesh
+                // https://github.com/NicoZweifel/bevy_feronia/issues/37
                 EnableBillboarding,
                 SubsurfaceScattering,
                 CurveFactor::default()

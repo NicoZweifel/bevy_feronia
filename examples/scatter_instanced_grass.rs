@@ -1,6 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use bevy::pbr::LightEntity::Point;
 use bevy::prelude::*;
 use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
@@ -36,6 +37,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 CurveFactor::default(),
                 StaticBendStrength::default(),
                 AnalyticalNormals,
+                PointLights,
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),

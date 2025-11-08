@@ -56,6 +56,7 @@ fn setup(
         // can also tweak other settings here
         analytical_normals: true,
         curve_factor: 0.2,
+        point_lights: true,
         ..default()
     };
 

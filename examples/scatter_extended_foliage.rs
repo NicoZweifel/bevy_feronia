@@ -6,6 +6,7 @@ use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
+use std::f32::consts::TAU;
 
 fn main() -> AppExit {
     App::new()
@@ -88,10 +89,7 @@ fn spawn_scene(
             // Scatter options
             (
                 DistributionDensity(10.),
-                InstanceRotationYaw {
-                    min: 0.,
-                    max: std::f32::consts::PI * 2.
-                },
+                InstanceRotationYaw { min: 0., max: TAU },
                 InstanceJitter::default(),
                 InstanceScale { min: 2., max: 5. }
             ),

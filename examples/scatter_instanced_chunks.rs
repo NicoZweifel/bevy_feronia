@@ -49,6 +49,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
                 StaticBendStrength::default(),
                 CurveFactor::default(),
+                PointLights,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

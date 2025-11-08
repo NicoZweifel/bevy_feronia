@@ -120,6 +120,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.instance_index = vertex.i_index;
 
 
+// TODO change to use quadratic cubic bezier
+// https://github.com/NicoZweifel/bevy_feronia/issues/38
 #ifdef STATIC_BEND
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
     let static_bend_strength = rand_f(&rand_state) * instance_uniforms.static_bend_strength;
@@ -248,7 +250,7 @@ fn fragment(
     const SPECULAR_POWER: f32 = 32.;
 
     // TODO tweak && expose
-    const SPECULAR_STRENGTH: f32 = 0.1;
+    const SPECULAR_STRENGTH: f32 = 0.2;
     const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
