@@ -99,7 +99,7 @@ fn setup(
     ));
 }
 
-/// Creates a triangle mesh UVs.
+/// Creates a triangle mesh with UVs.
 fn create_triangle_with_foliage_uvs() -> Mesh {
     let positions = vec![[0.0, -0.75, 0.0], [0.0, 1.5, 0.0], [0.5, -0.75, 0.0]];
 
