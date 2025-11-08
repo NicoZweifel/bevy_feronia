@@ -506,6 +506,8 @@ fn calculate_bop_displacement(
     return vec3<f32>(0.0, vertical_amount, 0.0);
 }
 
+// TODO this doesn't currently work universally
+// Need to make sure all meshes/model are on x axis, even gltf imports etc.
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
