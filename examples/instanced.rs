@@ -2,9 +2,8 @@
 mod example;
 
 use bevy::camera::primitives::Aabb;
-use bevy::camera::visibility::NoFrustumCulling;
 use bevy::color::palettes::tailwind::*;
-use bevy::mesh::PlaneMeshBuilder;
+use bevy::mesh::{Indices, PlaneMeshBuilder, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::render::batching::NoAutomaticBatching;
 use bevy_feronia::prelude::*;
@@ -37,14 +36,10 @@ fn setup(
     wind: Res<Wind>,
     noise_texture: Res<WindTexture>,
 ) {
-    let mesh_handle = meshes.add(Triangle3d::new(
-        Vec3::new(0.0, -0.75, 0.0),
-        Vec3::new(0.0, 1.5, 0.0),
-        Vec3::new(0.0, -0.75, 0.5),
-    ));
+    let mesh_handle = meshes.add(create_triangle_with_foliage_uvs());
     let aabb = Aabb {
-        half_extents: Vec3A::new(0.25, 1.5, 0.25),
-        center: Vec3A::new(0.0, 0.0, 0.0),
+        center: Vec3A::new(0.25, 0.375, 0.0),
+        half_extents: Vec3A::new(0.25, 1.125, 0.0),
     };
 
     cmd.spawn((
@@ -55,24 +50,26 @@ fn setup(
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
     ));
 
+    let options = MaterialOptions {
+        // make it affected by wind
+        wind_affected: true,
+        // can also tweak other settings here
+        analytical_normals: true,
+        curve_factor: 0.2,
+        ..default()
+    };
+
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
         wind: *wind,
         aabb,
-        options: MaterialOptions {
-            // make it affected by wind
-            wind_affected: true,
-            // can also tweak other settings here
-            analytical_normals: true,
-            curve_factor: 0.2,
-            ..default()
-        },
+        options,
         noise_texture: (**noise_texture).clone(),
     });
 
     let instances = (0..10)
         .map(|x| InstanceData {
-            position: Vec3::new(x as f32, 0.75, x as f32),
-            scale: 1.0,
+            position: Vec3::new(x as f32, 0.75 * 4., x as f32),
+            scale: 4.0,
             index: 0,
             ..default()
         })
@@ -82,8 +79,8 @@ fn setup(
         color: GREEN_500.to_f32_array(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0],
         instances,
-        static_bend_strength: 0.1,
-        curve_factor: 0.2,
+        static_bend_strength: options.static_bend_strength,
+        curve_factor: options.curve_factor,
     };
 
     cmd.spawn((
@@ -93,10 +90,32 @@ fn setup(
         NoAutomaticBatching,
         Transform::default(),
         Visibility::Visible,
-        NoFrustumCulling,
+        // Disable frustum culling or provide aabb.
+        // NoFrustumCulling,
         Aabb {
             center: aabb.center,
             half_extents: aabb.half_extents * 10.,
         },
     ));
+}
+
+/// Creates a triangle mesh UVs.
+fn create_triangle_with_foliage_uvs() -> Mesh {
+    let positions = vec![[0.0, -0.75, 0.0], [0.0, 1.5, 0.0], [0.5, -0.75, 0.0]];
+
+    let normals = vec![[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]];
+
+    let uvs = vec![[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]];
+
+    let indices = Indices::U32(vec![0, 1, 2]);
+
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, Default::default());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+
+    // Generate tangents, which are required by the shader for normal mapping and the curve effect.
+    mesh.generate_tangents().unwrap();
+    mesh.insert_indices(indices);
+    mesh
 }

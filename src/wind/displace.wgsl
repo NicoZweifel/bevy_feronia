@@ -8,6 +8,8 @@
 #define_import_path bevy_feronia::displace
 #import bevy_pbr::mesh_functions::{mesh_normal_local_to_world, mesh_tangent_local_to_world}
 #import bevy_pbr::mesh_view_bindings::view
+#import bevy_render::view::{position_world_to_view, position_view_to_world}
+
 
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
@@ -92,6 +94,12 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
+#ifdef VERTEX_NORMALS
+        normal,
+#endif
+#ifdef VERTEX_TANGENTS
+        tangent
+#endif
     );
 #else // NOT ANALYTICAL_NORMALS
     normal_data = calculate_numerical_normal(
@@ -115,6 +123,10 @@ fn displace_vertex_and_calc_normal(
 #else // NOT VERTEX_NORMALS
     out.world_normal = vec3<f32>(1.0, 0.0, 0.0);
 #endif // VERTEX_NORMALS
+
+#ifdef EDGE_CORRECTION
+    // TODO
+#endif
 
     return out;
 }
@@ -171,7 +183,7 @@ fn displacement_cache(
         * cache.macro_wind_factor
         * cache.height_attenuation_factor;
 
-#ifndef WIND_BILLBOARDING
+#ifndef BILLBOARDING
 
     let twist = cache.macro_wind_factor * wind.twist_strength;
     cache.twist_angle = twist * cache.height_attenuation_factor;
@@ -183,7 +195,7 @@ fn displacement_cache(
     let rotated_z = pos.x * sin_a + pos.z * cos_a;
     pos = vec3<f32>(rotated_x, pos.y, rotated_z);
 
-#endif // NOT WIND_BILLBOARDING
+#endif // NOT BILLBOARDING
 #endif // WIND_AFFECTED
 
     cache.bent_twisted_local_pos = pos;
@@ -232,17 +244,8 @@ fn finish_vertex_displacement(
     var final_world_pos = (instance.world_from_local * vec4<f32>(pos, 1.0)).xyz;
     final_world_pos += total_world_offset;
 
-#ifdef WIND_BILLBOARDING
+#ifdef BILLBOARDING
     final_world_pos = billboarding(wind, instance, pos, total_world_offset);
-#endif
-
-#ifdef WIND_EDGE_CORRECTION
-    final_world_pos = calculate_edge_correction(
-        final_world_pos,
-        original_local_pos,
-        wind,
-        instance
-    );
 #endif
 
     return final_world_pos;
@@ -296,7 +299,6 @@ fn billboarding(
     return billboard_base + vec3(0.0, total_world_offset.y, 0.0);
 }
 
-
 #ifdef ANALYTICAL_NORMALS
 fn calculate_analytical_normal(
     cache: DisplacementCache,
@@ -306,11 +308,26 @@ fn calculate_analytical_normal(
 #ifdef STATIC_BEND
     static_bend:vec2<f32>,
 #endif
+#ifdef VERTEX_NORMALS
+    in_normal: vec3<f32>,
+#endif
+#ifdef VERTEX_TANGENTS
+    in_tangent: vec4<f32>,
+#endif
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
 
-    let normal = vec3<f32>(1.0, 0.0, 0.0);
-    let tangent = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+// NOTE: gltf imported normals seem to be correct even though the mesh is not on the x axis in blender.
+#ifdef VERTEX_NORMALS
+    let normal = in_normal;
+#else
+    let normal = vec3<f32>(0.0, 0.0, 1.0);
+#endif
+#ifdef VERTEX_TANGENTS
+    let tangent = in_tangent;
+#else
+    let tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+#endif
 
     var local_tangent = tangent.xyz;
     var local_normal = normal;
@@ -326,7 +343,7 @@ fn calculate_analytical_normal(
     local_tangent = normalize(cross(bent_vector, local_normal));
 #endif // STATIC_BEND
 
-#ifndef WIND_BILLBOARDING
+#ifndef BILLBOARDING
     let cos_a = cos(cache.twist_angle);
     let sin_a = sin(cache.twist_angle);
 
@@ -341,9 +358,10 @@ fn calculate_analytical_normal(
         local_tangent.y,
         local_tangent.x * sin_a + local_tangent.z * cos_a
     ));
-#endif // NOT WIND_BILLBOARDING
+#endif // NOT BILLBOARDING
 
-    // bill boarding not supported
+    // Wind displacement is in world space.
+    // Bill boarding not supported
     let model_3x3 = mat3x3<f32>(
         instance.world_from_local[0].xyz,
         instance.world_from_local[1].xyz,
@@ -354,7 +372,7 @@ fn calculate_analytical_normal(
     let world_tangent_dir = normalize(model_3x3 * local_tangent);
 
 #ifdef WIND_AFFECTED
-    let macro_wind= cache.macro_wind;
+    let macro_wind = cache.macro_wind;
 
     let world_bitangent = cross(world_normal_dir, world_tangent_dir) ;
 
@@ -454,48 +472,7 @@ fn calculate_fallback_normal(
     return out;
 }
 
-#ifdef WIND_EDGE_CORRECTION
-// Calculates a view-dependent offset for vegetation (like grass)
-// to make it appear fuller when viewed from sharp angles.
-fn calculate_edge_correction(
-    world_pos: vec3<f32>,
-    local_pos: vec3<f32>,
-    wind: Wind,
-    instance: InstanceInfo,
-) -> vec3<f32> {
-    // Normal orthogonal to view vector
-    let camera_to_pos = world_pos - view.world_position.xyz;
-    let view_vector = normalize(camera_to_pos);
 
-    let instance_right_world = normalize(instance.world_from_local[0].xyz);
-    let instance_up_world = normalize(instance.world_from_local[1].xyz);
-    let instance_forward_world = normalize(instance.world_from_local[2].xyz);
-
-    let ortho_factor_for_edge = 1.0 - abs(dot(view_vector, instance_forward_world));
-    let smooth_factor_edge = pow(ortho_factor_for_edge, 2.0);
-
-    // Fade out the effect when looking straight down or up
-    let dot_view_up = abs(dot(view_vector, instance_up_world));
-    let top_down_fade = pow(1.0 - dot_view_up, 0.5);
-
-    let smooth_factor = smooth_factor_edge * top_down_fade;
-
-    // Shift
-    let center_x = (wind.aabb_max.x + wind.aabb_min.x) * 0.5;
-    let signed_local_x_dist = local_pos.x - center_x;
-
-    let max_distance_x = (wind.aabb_max.x - wind.aabb_min.x) * 0.5;
-    let normalized_x_distance = abs(signed_local_x_dist) / max(max_distance_x, 0.0001);
-
-    let final_offset_magnitude = normalized_x_distance * wind.edge_correction_factor * smooth_factor;
-
-    let final_shift_direction = instance_right_world * sign(signed_local_x_dist);
-
-    let final_offset = final_shift_direction * final_offset_magnitude;
-
-    return world_pos + final_offset;
-}
-#endif
 
 fn calculate_s_curve_displacement(
     wind: Wind,

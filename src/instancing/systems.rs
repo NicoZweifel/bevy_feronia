@@ -32,13 +32,15 @@ pub(crate) fn add_instance_key_component(
         let Some(material) = materials.get(&material_handle.0) else {
             continue;
         };
+
         let mut key = WindAffectedKey::empty();
+
         key.set(
-            WindAffectedKey::ENABLE_BILLBOARDING,
+            WindAffectedKey::BILLBOARDING,
             material.options.enable_billboarding,
         );
         key.set(
-            WindAffectedKey::ENABLE_EDGE_CORRECTION,
+            WindAffectedKey::EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
         key.set(

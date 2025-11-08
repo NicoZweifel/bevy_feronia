@@ -210,8 +210,8 @@ bitflags! {
     #[repr(C)]
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
     pub struct WindAffectedKey: u64 {
-        const ENABLE_BILLBOARDING    = 1 << 0;
-        const ENABLE_EDGE_CORRECTION = 1 << 1;
+        const BILLBOARDING    = 1 << 0;
+        const EDGE_CORRECTION = 1 << 1;
         const WIND_LOW_QUALITY = 1 << 2;
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;

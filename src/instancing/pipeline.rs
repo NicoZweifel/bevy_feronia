@@ -74,7 +74,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             ds.depth_compare = CompareFunction::GreaterEqual;
         }
 
-        if !key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
+        if !key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
             descriptor.primitive.cull_mode = None;
         }
 
@@ -93,15 +93,12 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
         shader_defs.push("VISIBILITY_RANGE_DITHER".into());
 
-        if key.wind_key.contains(WindAffectedKey::ENABLE_BILLBOARDING) {
-            shader_defs.push("WIND_BILLBOARDING".into());
+        if key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
+            shader_defs.push("BILLBOARDING".into());
         }
 
-        if key
-            .wind_key
-            .contains(WindAffectedKey::ENABLE_EDGE_CORRECTION)
-        {
-            shader_defs.push("WIND_EDGE_CORRECTION".into());
+        if key.wind_key.contains(WindAffectedKey::EDGE_CORRECTION) {
+            shader_defs.push("EDGE_CORRECTION".into());
         }
 
         if key.wind_key.contains(WindAffectedKey::WIND_LOW_QUALITY) {

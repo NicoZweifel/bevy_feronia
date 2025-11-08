@@ -156,6 +156,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                 + Vec3::from(prototype.aabb().min() * instance.scale);
                             let instance_max = instance.position
                                 + Vec3::from(prototype.aabb().max() * instance.scale);
+
                             min_point = min_point.min(instance_min);
                             max_point = max_point.max(instance_max);
 

@@ -82,7 +82,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var world_from_local_matrix: mat4x4<f32>;
 
     var rand_state = vertex.i_index;
-#ifdef WIND_BILLBOARDING
+#ifdef BILLBOARDING
     world_from_local_matrix = mat4x4<f32>(
         vec4<f32>(scale, 0.0, 0.0, 0.0),
         vec4<f32>(0.0, scale, 0.0, 0.0),
@@ -142,7 +142,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vertex.normal,
 #endif
 #ifdef VERTEX_TANGENTS
-        vertex.tangents
+        vertex.tangent
 #endif
     );
 
@@ -213,7 +213,6 @@ fn fragment(
     #endif
 #endif
 
-
     var normal = in.world_normal;
 
     if !is_front {
@@ -250,7 +249,7 @@ fn fragment(
 
     // TODO tweak && expose
     const SPECULAR_STRENGTH: f32 = 0.1;
-    const DIFFUSE_SCALING: f32 = 0.5;
+    const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;

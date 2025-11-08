@@ -15,7 +15,7 @@ pub struct EnableDebug;
 
 /// Marker component to make instances always face the camera.
 ///
-/// Enables `#ifdef WIND_BILLBOARDING` in shaders.
+/// Enables `#ifdef BILLBOARDING` in shaders.
 ///
 /// Not supported in combination with [`EdgeCorrectionFactor`].
 #[derive(Component, Clone, Debug, Reflect)]
@@ -50,31 +50,47 @@ pub struct PointLights;
 /// Corresponds to `wind.edge_correction_factor` in shaders.
 ///
 /// Not supported in combination with [`EnableBillboarding`].
+///
+/// TODO: disabled at the moment
+/// https://github.com/NicoZweifel/bevy_feronia/issues/36
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct EdgeCorrectionFactor(pub f32);
 
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
-        Self(0.05)
+        Self(0.01)
     }
 }
 
 /// Controls the normal curving effect (simulates curved blades).
 ///
-/// This value represents the maximum curve angle (in radians).
-/// A value of `1.4` would result in a maximum curve of ~80 degrees.
+/// This is a multiplier that determines how strongly the blade curves from its
+/// center (0.0) to its edges (1.0), using the **`uv.x`** coordinate of the mesh.
+/// The final curve angle is hard-capped at **1.4 radians (~80°)**.
+///
+/// The behavior changes significantly depending on the value:
+///
+/// - **`CurveFactor < 1.4`**: Creates a gentle, shallow curve. The blade will
+///   never reach the 80° maximum, resulting in a softer look.
+///
+/// - **`CurveFactor = 1.4`**: Creates a full, linear curve. The blade
+///   bends smoothly from 0° at the center to the 80° maximum exactly at the edge.
+///
+/// - **`CurveFactor > 1.4`**: The blade hits the 80° cap *before* reaching the edge.
+///   This creates a sharp "crease" or "spine" down the center, with the rest
+///   of the blade remaining flat at the maximum angle.
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
 ///
-/// Currently only supported in `[InstancedWindAffectedMaterial]`.`
+/// Currently only supported in [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct CurveFactor(pub f32);
 
 impl Default for CurveFactor {
     fn default() -> Self {
-        Self(0.1)
+        Self(0.2)
     }
 }
 

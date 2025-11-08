@@ -61,13 +61,13 @@ struct ShaderDefMap {
 
 const SHADER_DEFS: &[ShaderDefMap] = &[
     ShaderDefMap {
-        flag: WindAffectedKey::ENABLE_BILLBOARDING,
-        def: "WIND_BILLBOARDING",
+        flag: WindAffectedKey::BILLBOARDING,
+        def: "BILLBOARDING",
         stage: ShaderStage::Vertex,
     },
     ShaderDefMap {
-        flag: WindAffectedKey::ENABLE_EDGE_CORRECTION,
-        def: "WIND_EDGE_CORRECTION",
+        flag: WindAffectedKey::EDGE_CORRECTION,
+        def: "EDGE_CORRECTION",
         stage: ShaderStage::Vertex,
     },
     ShaderDefMap {
@@ -171,11 +171,11 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
             material.options.wind_affected,
         );
         key.set(
-            WindAffectedKey::ENABLE_BILLBOARDING,
+            WindAffectedKey::BILLBOARDING,
             material.options.enable_billboarding,
         );
         key.set(
-            WindAffectedKey::ENABLE_EDGE_CORRECTION,
+            WindAffectedKey::EDGE_CORRECTION,
             material.options.edge_correction_factor > 0.,
         );
         key.set(WindAffectedKey::FAST_NORMALS, material.options.fast_normals);

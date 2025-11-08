@@ -48,19 +48,13 @@ where
             self.properties.lod,
             ChildOf(self.properties.layer),
             ScatterItemOf(self.properties.layer),
-            // TODO should remove or use in editor after registration is complete.
             Visibility::Hidden,
             ScatterLayerChildProcessed,
         )
     }
 
     pub fn wind_affected_bundle(&self, asset_handle: Handle<ScatterAsset<T>>) -> impl Bundle {
-        (
-            // TODO only insert if actually wind affected
-            WindAffectedRegistered(asset_handle.clone()),
-            WindAffected,
-            self.bundle(asset_handle.clone()),
-        )
+        (WindAffected, self.bundle(asset_handle.clone()))
     }
 }
 

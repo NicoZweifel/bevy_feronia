@@ -280,7 +280,7 @@ fn spawn_scene(
                 // Scatter options
                 (
                     // Very dense
-                    DistributionDensity(300.),
+                    DistributionDensity(200.),
                     // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),

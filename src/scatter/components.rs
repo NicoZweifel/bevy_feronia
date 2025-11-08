@@ -259,7 +259,7 @@ pub struct InstanceScale {
 
 impl Default for InstanceScale {
     fn default() -> Self {
-        Self { min: 0.5, max: 3. }
+        Self { min: 1., max: 3. }
     }
 }
 
