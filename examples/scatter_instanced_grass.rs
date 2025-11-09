@@ -1,7 +1,6 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::pbr::LightEntity::Point;
 use bevy::prelude::*;
 use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;

@@ -1,6 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use std::f32::consts::TAU;
 use bevy::prelude::*;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
@@ -30,9 +31,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 WindAffected,
                 // TODO: Currently only works in this example, with this mesh
                 // https://github.com/NicoZweifel/bevy_feronia/issues/37
-                EnableBillboarding,
+            InstanceRotationYaw {
+                min: 0.,
+                max: TAU
+            },
                 SubsurfaceScattering,
-                CurveFactor::default()
+                CurveFactor::default(),
+                AnalyticalNormals,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

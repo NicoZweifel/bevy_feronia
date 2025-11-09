@@ -110,6 +110,9 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
+#ifdef VERTEX_NORMALS
+        normal,
+#endif
 #ifdef VERTEX_TANGENTS
         tangent
 #endif
@@ -317,7 +320,6 @@ fn calculate_analytical_normal(
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
 
-// NOTE: gltf imported normals seem to be correct even though the mesh is not on the x axis in blender.
 #ifdef VERTEX_NORMALS
     let normal = in_normal;
 #else
@@ -326,7 +328,7 @@ fn calculate_analytical_normal(
 #ifdef VERTEX_TANGENTS
     let tangent = in_tangent;
 #else
-    let tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    let tangent = vec4<f32>(0.0, 1.0, 0.0, 1.0);
 #endif
 
     var local_tangent = tangent.xyz;
@@ -337,10 +339,12 @@ fn calculate_analytical_normal(
     let bend_x = static_bend.x * cache.bend_curve;
     let bend_z = static_bend.y * cache.bend_curve;
 
-    let bent_vector = vec3<f32>(bend_x, 1.0, bend_z);
+    let bent_tangent_vec = vec3<f32>(bend_x, 1.0, bend_z);
 
-    local_normal = normalize(vec3<f32>(1.0, -bend_z, 0.0));
-    local_tangent = normalize(cross(bent_vector, local_normal));
+    let local_bitangent = cross(local_normal, local_tangent);
+
+    local_normal = normalize(cross(bent_tangent_vec, local_bitangent));
+    local_tangent = normalize(bent_tangent_vec);
 #endif // STATIC_BEND
 
 #ifndef BILLBOARDING
@@ -361,7 +365,6 @@ fn calculate_analytical_normal(
 #endif // NOT BILLBOARDING
 
     // Wind displacement is in world space.
-    // Bill boarding not supported
     let model_3x3 = mat3x3<f32>(
         instance.world_from_local[0].xyz,
         instance.world_from_local[1].xyz,
@@ -373,14 +376,12 @@ fn calculate_analytical_normal(
 
 #ifdef WIND_AFFECTED
     let macro_wind = cache.macro_wind;
-
-    let world_bitangent = cross(world_normal_dir, world_tangent_dir) ;
+    let world_bitangent = cross(world_normal_dir, world_tangent_dir);
 
     let final_bitangent = world_bitangent + macro_wind;
     let final_world_normal = normalize(
         world_normal_dir + cross(world_tangent_dir, macro_wind)
     );
-
     let final_world_tangent = normalize(cross(final_bitangent, final_world_normal));
 
     out.world_normal = final_world_normal;
@@ -402,6 +403,9 @@ fn calculate_numerical_normal(
 #ifdef STATIC_BEND
     static_bend: vec2<f32>,
 #endif
+#ifdef VERTEX_NORMALS
+    normal: vec3<f32>,
+#endif
 #ifdef VERTEX_TANGENTS
     tangent: vec4<f32>,
 #endif
@@ -409,45 +413,57 @@ fn calculate_numerical_normal(
     var out: DisplacedVertex;
     let small_offset = 0.01;
 
-    let local_pos_x = vertex_pos + vec3<f32>(small_offset, 0.0, 0.0);
-    let noise_x = sample_noise(instance, local_pos_x);
-    let neighbor_pos_x = calculate_vertex_displacement(
-        vertex_pos + vec3<f32>(small_offset, 0.0, 0.0),
-        wind,
-        noise_x,
-        instance,
-    #ifdef STATIC_BEND
-        static_bend,
-    #endif
-    );
-
-    let local_pos_z = vertex_pos + vec3<f32>(0.0, 0.0, small_offset);
-    let noise_z = sample_noise(instance, local_pos_z);
-    let neighbor_pos_z = calculate_vertex_displacement(
-        vertex_pos + vec3<f32>(0.0, 0.0, small_offset),
-        wind,
-        noise_z,
-        instance,
-    #ifdef STATIC_BEND
-        static_bend,
-    #endif
-    );
-
-    let surface_delta_x = neighbor_pos_x - final_pos_xyz;
-    let surface_delta_z = neighbor_pos_z - final_pos_xyz;
-
-    let approximated_world_normal = normalize(cross(surface_delta_z, surface_delta_x));
+#ifdef VERTEX_NORMALS
+    let local_normal = normal;
+#else
+    let local_normal = vec3<f32>(0.0, 0.0, 1.0);
+#endif
 
 #ifdef VERTEX_TANGENTS
-    let approximated_world_tangent = normalize(tangent.x * surface_delta_x + tangent.z * surface_delta_z);
-    let orthogonalized_tangent = normalize(approximated_world_tangent
-        - dot(approximated_world_tangent, approximated_world_normal) * approximated_world_normal);
-
-    out.world_tangent = vec4<f32>(orthogonalized_tangent, tangent.w);
+    let local_tangent_vec4 = tangent;
 #else
-    out.world_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    let local_tangent_vec4 = vec4<f32>(0.0, 1.0, 0.0, 1.0);
 #endif
-    out.world_normal = approximated_world_normal;
+
+    let local_tangent = local_tangent_vec4.xyz;
+    let local_bitangent = cross(local_normal, local_tangent) * local_tangent_vec4.w;
+
+    let local_pos_tangent = vertex_pos + local_tangent * small_offset;
+    let noise_tangent = sample_noise(instance, local_pos_tangent);
+
+    let neighbor_pos_tangent = calculate_vertex_displacement(
+        local_pos_tangent,
+        wind,
+        noise_tangent,
+        instance,
+    #ifdef STATIC_BEND
+        static_bend,
+    #endif
+    );
+
+    let local_pos_bitangent = vertex_pos + local_bitangent * small_offset;
+    let noise_bitangent = sample_noise(instance, local_pos_bitangent);
+
+    let neighbor_pos_bitangent = calculate_vertex_displacement(
+        local_pos_bitangent,
+        wind,
+        noise_bitangent,
+        instance,
+    #ifdef STATIC_BEND
+        static_bend,
+    #endif
+    );
+
+    let surface_delta_tangent_dir = neighbor_pos_tangent - final_pos_xyz;
+    let surface_delta_bitangent_dir = neighbor_pos_bitangent - final_pos_xyz;
+
+    out.world_normal = normalize(cross(surface_delta_tangent_dir, surface_delta_bitangent_dir));
+
+    let approximated_world_tangent = normalize(surface_delta_tangent_dir);
+    let orthogonalized_tangent = normalize(approximated_world_tangent
+        - dot(approximated_world_tangent, out.world_normal) * out.world_normal);
+
+    out.world_tangent = vec4<f32>(orthogonalized_tangent, local_tangent_vec4.w);
 
     return out;
 }

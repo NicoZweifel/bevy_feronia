@@ -37,6 +37,21 @@ fn fragment(
     standard_in.world_position = in.world_position;
 #ifdef VERTEX_NORMALS
     standard_in.world_normal = in.world_normal;
+
+    if !is_front {
+        standard_in.world_normal = -standard_in.world_normal;
+    }
+
+    let signed_norm_x = in.uv.x * 2.0 - 1.0;
+
+    let curve_angle = 1. * abs(signed_norm_x);
+    let clamped_angle = clamp(curve_angle, 0.0, 1.4); // ~80 deg
+    let offset_mag = sin(clamped_angle);
+
+    let curve_offset_world = in.world_tangent.xyz * offset_mag * sign(signed_norm_x);
+
+    standard_in.world_normal = normalize(standard_in.world_normal + curve_offset_world);
+
     standard_in.uv = in.uv;
 #endif
 #ifdef VERTEX_TANGENTS

@@ -126,7 +126,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
     let static_bend_strength = rand_f(&rand_state) * instance_uniforms.static_bend_strength;
 
-    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
+    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength * 0.;
 #endif
 
     let noise = sample_noise(instance, vertex.position);
