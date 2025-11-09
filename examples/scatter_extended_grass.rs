@@ -1,12 +1,12 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use std::f32::consts::TAU;
 use bevy::prelude::*;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
+use std::f32::consts::TAU;
 
 fn main() -> AppExit {
     App::new()
@@ -34,7 +34,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 // This example is mainly for testing lighting and bill boarding.
                 // AnalyticalNormals, // or
                 // FastNormals,
-                InstanceRotationYaw { min: 0., max: TAU }, // or
+                InstanceRotationYaw { min: 0., max: TAU },
+                // or
                 // EnableBillboarding,
             ),
             children![
