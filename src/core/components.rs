@@ -27,6 +27,11 @@ pub struct EnableBillboarding;
 /// Will have incorrect lighting on displaced vertices,
 /// as the normals will not match the displaced vertex positions.
 ///
+/// **Note: ** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
+/// the shader defaults to the numerical path, which is the most accurate, but most expensive path,
+/// as it runs the full displacement logic on the neighbors to find the surface direction,
+/// which should only be used for complex foliage like non-billboarded bushes, trees.
+///
 /// **Note: ** For correct fallback behavior (if the mesh lacks tangents or normals),
 /// the mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
 /// and its "face" pointing along Z-Up (`+Z`).
@@ -44,10 +49,10 @@ pub struct FastNormals;
 /// as it only accounts for `static_bend`, `twist`,
 /// and `macro_wind`, ignoring high-frequency displacements.
 ///
-/// **Note: ** If neither `FastNormals` nor `AnalyticalNormals` is present,
+/// **Note: ** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
 /// the shader defaults to the numerical path, which is the most accurate, but most expensive path,
 /// as it runs the full displacement logic on the neighbors to find the surface direction,
-/// which should be used for complex foliage like non-billboarded bushes, trees.
+/// which should only be used for complex foliage like non-billboarded bushes, trees.
 ///
 /// **Note: ** For correct fallback behavior (if the mesh lacks tangents or normals),
 /// the mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
