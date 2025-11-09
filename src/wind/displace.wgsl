@@ -99,7 +99,7 @@ fn displace_vertex_and_calc_normal(
     // Calculates normals using a mathematical approximation of the
     // displacement.
     //
-    // It should be faster than numerical sampling but less
+    // Should be faster than numerical sampling but less
     // accurate, as it only accounts for static_bend, twist,
     // and macro_wind, ignoring high-frequency displacements.
     //

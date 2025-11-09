@@ -40,7 +40,7 @@ pub struct FastNormals;
 
 /// Marker component to enable approximated, mathematically derived normals.
 ///
-/// Faster than numerical sampling but less accurate,
+/// Should be faster than numerical sampling but less accurate,
 /// as it only accounts for `static_bend`, `twist`,
 /// and `macro_wind`, ignoring high-frequency displacements.
 ///
