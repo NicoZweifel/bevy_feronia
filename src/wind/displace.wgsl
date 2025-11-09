@@ -75,9 +75,13 @@ fn displace_vertex_and_calc_normal(
 
 #ifdef FAST_NORMALS
     // Uses the original, un-displaced world-space normals.
-    // This is the fastest option but will have incorrect lighting
-    // as the normals will not match the displaced vertex positions.
-
+    //
+    // Will have incorrect lighting as the normals will not match the displaced vertex positions.
+    //
+    // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
+    // and its "face" pointing along Z-Up (`+Z`).
+    //
+    // Should be used for performance reasons and/or on static or barely wind affected objects.
     normal_data.world_normal = mesh_normal;
 
 #ifdef VERTEX_TANGENTS
@@ -92,6 +96,17 @@ fn displace_vertex_and_calc_normal(
 
 #else // NOT FAST_NORMALS
 #ifdef ANALYTICAL_NORMALS
+    // Calculates normals using a mathematical approximation of the
+    // displacement.
+    //
+    // It should be faster than numerical sampling but less
+    // accurate, as it only accounts for static_bend, twist,
+    // and macro_wind, ignoring high-frequency displacements.
+    //
+    // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
+    // and its "face" pointing along Z-Up (`+Z`).
+    //
+    // Typically used for bill boarded wind-affected foliage or flat meshes like grass.
     normal_data = calculate_analytical_normal(
         cache,
         wind,
@@ -108,6 +123,12 @@ fn displace_vertex_and_calc_normal(
 #endif
     );
 #else // NOT ANALYTICAL_NORMALS
+    // Calculates normals numerically by sampling neighboring positions.
+    //
+    // Should be the most accurate, but most expensive path, as it runs the full
+    // displacement logic on the neighbors to find the surface direction.
+    //
+    // Typically used for complex foliage like non-billboarded bushes, trees.
     normal_data = calculate_numerical_normal(
         final_pos_xyz,
         vertex_pos,
@@ -130,7 +151,7 @@ fn displace_vertex_and_calc_normal(
     out.world_tangent = normal_data.world_tangent;
 
 #else // NOT VERTEX_NORMALS
-    out.world_normal = vec3<f32>(1.0, 0.0, 0.0);
+    out.world_normal = vec3<f32>(0.0, 0.0, 1.0);
 #endif // VERTEX_NORMALS
 
 #ifdef EDGE_CORRECTION
