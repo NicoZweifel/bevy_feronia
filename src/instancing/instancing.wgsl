@@ -168,9 +168,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance_uniforms.visibility_range, instance.world_from_local[3]);
 #endif
 
-#ifdef CURVE_NORMALS 
+#ifdef CURVE_NORMALS
     out.curve_factor = instance_uniforms.curve_factor;
-#endif    
+#endif
 
     return out;
 }
