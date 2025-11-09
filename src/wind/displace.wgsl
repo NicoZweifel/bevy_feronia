@@ -106,7 +106,7 @@ fn displace_vertex_and_calc_normal(
     // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
     // and its "face" pointing along Z-Up (`+Z`).
     //
-    // Typically used for bill boarded wind-affected foliage or flat meshes like grass.
+    // Typically used for billboarded foliage or flat meshes like grass.
     normal_data = calculate_analytical_normal(
         cache,
         wind,
