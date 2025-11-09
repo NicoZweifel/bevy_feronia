@@ -1,6 +1,7 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use std::f32::consts::TAU;
 use bevy::prelude::*;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
@@ -33,8 +34,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 // This example is mainly for testing lighting and bill boarding.
                 // AnalyticalNormals, // or
                 // FastNormals,
-                EnableBillboarding, // or
-                                    // InstanceRotationYaw { min: 0., max: TAU },
+                InstanceRotationYaw { min: 0., max: TAU }, // or
+                // EnableBillboarding,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),
