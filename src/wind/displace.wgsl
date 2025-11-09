@@ -74,16 +74,22 @@ fn displace_vertex_and_calc_normal(
     var normal_data: DisplacedVertex;
 
 #ifdef FAST_NORMALS
-    normal_data = calculate_fallback_normal(
-#ifdef VERTEX_NORMALS
-        mesh_normal,
-#endif,
+    // Uses the original, un-displaced world-space normals.
+    // This is the fastest option but will have incorrect lighting
+    // as the normals will not match the displaced vertex positions.
+
+    normal_data.world_normal = mesh_normal;
+
 #ifdef VERTEX_TANGENTS
-        mesh_tangent,
+    normal_data.world_tangent = mesh_tangent;
+#else
+    let local_fallback_tangent = vec4<f32>(0.0, 1.0, 0.0, 1.0);
+
+    let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
+
+    normal_data.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
 #endif
-        vertex_pos,
-        wind
-    );
+
 #else // NOT FAST_NORMALS
 #ifdef ANALYTICAL_NORMALS
     normal_data = calculate_analytical_normal(
@@ -468,28 +474,6 @@ fn calculate_numerical_normal(
     return out;
 }
 
-fn calculate_fallback_normal(
-    mesh_normal: vec3<f32>,
-#ifdef VERTEX_TANGENTS
-    mesh_tangent: vec4<f32>,
-#endif
-    vertex_pos: vec3<f32>,
-    wind: Wind
-) -> DisplacedVertex {
-    var out: DisplacedVertex;
-
-#ifdef VERTEX_TANGENTS
-    out.world_tangent = mesh_tangent;
-#else
-    out.world_tangent = vec3<f32>(1.0, 0.0, 0.0);
-#endif
-    out.world_normal = mesh_normal;
-
-    return out;
-}
-
-
-
 fn calculate_s_curve_displacement(
     wind: Wind,
     height_attenuation_factor: f32,
@@ -522,9 +506,6 @@ fn calculate_bop_displacement(
     return vec3<f32>(0.0, vertical_amount, 0.0);
 }
 
-// TODO this doesn't currently work universally
-// Need to make sure all meshes/model are on x axis, even gltf imports etc.
-// https://github.com/NicoZweifel/bevy_feronia/issues/37
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
@@ -541,5 +522,5 @@ fn calculate_billboard_matrix(
     let new_y = vec3<f32>(0.0, 1.0, 0.0);
     let new_x = normalize(cross(new_y, new_z));
 
-    return mat3x3<f32>(new_z * scale.x, new_y * scale.y, new_x * scale.z);
+    return mat3x3<f32>(new_x * scale.x, new_y * scale.y, new_z * scale.z);
 }

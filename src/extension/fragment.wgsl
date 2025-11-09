@@ -1,7 +1,7 @@
 #import bevy_pbr::mesh_view_bindings::{view, lights, clusterable_objects}
 #import bevy_pbr::mesh_bindings::mesh
 #import bevy_pbr::pbr_types::PbrInput
-#import bevy_pbr::forward_io::{VertexOutput, FragmentOutput}
+#import bevy_pbr::forward_io::{FragmentOutput}
 #import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
 #import bevy_pbr::pbr_functions::{
     alpha_discard,
@@ -17,7 +17,7 @@
     get_clusterable_object_id
 }
 
-#import bevy_feronia::sss_io::SSSVertexOutput
+#import bevy_feronia::sss_io::VertexOutput
 #import bevy_feronia::wind::Wind
 
 #ifdef BINDLESS
@@ -28,10 +28,10 @@
 
 @fragment
 fn fragment(
-    in: SSSVertexOutput,
+    in: VertexOutput,
     @builtin(front_facing) is_front: bool,
 ) -> FragmentOutput {
-    var standard_in: VertexOutput;
+    var standard_in: bevy_pbr::forward_io::VertexOutput;
 
     standard_in.position = in.position;
     standard_in.world_position = in.world_position;
@@ -41,16 +41,6 @@ fn fragment(
     if !is_front {
         standard_in.world_normal = -standard_in.world_normal;
     }
-
-    let signed_norm_x = in.uv.x * 2.0 - 1.0;
-
-    let curve_angle = 1. * abs(signed_norm_x);
-    let clamped_angle = clamp(curve_angle, 0.0, 1.4); // ~80 deg
-    let offset_mag = sin(clamped_angle);
-
-    let curve_offset_world = in.world_tangent.xyz * offset_mag * sign(signed_norm_x);
-
-    standard_in.world_normal = normalize(standard_in.world_normal + curve_offset_world);
 
     standard_in.uv = in.uv;
 #endif

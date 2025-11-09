@@ -5,7 +5,7 @@
 #import bevy_pbr::forward_io::Vertex
 
 
-#import bevy_feronia::sss_io::SSSVertexOutput
+#import bevy_feronia::sss_io::VertexOutput
 #import bevy_feronia::wind::Wind
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::displace::{displace_vertex_and_calc_normal}
@@ -19,8 +19,8 @@
 
 
 @vertex
-fn vertex(vertex: Vertex) -> SSSVertexOutput {
-    var out: SSSVertexOutput;
+fn vertex(vertex: Vertex) -> VertexOutput {
+    var out: VertexOutput;
 
 #ifdef BINDLESS
     let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;

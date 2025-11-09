@@ -65,8 +65,6 @@ struct VertexOutput {
     @location(5) local_pos: vec3<f32>,
     @location(6) world_tangent: vec4<f32>,
     @location(7) curve_factor: f32,
-    @location(8) aabb_min_x: f32,
-    @location(9) aabb_max_x: f32,
 };
 
 @vertex
@@ -126,7 +124,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
     let static_bend_strength = rand_f(&rand_state) * instance_uniforms.static_bend_strength;
 
-    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength * 0.;
+    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
 #endif
 
     let noise = sample_noise(instance, vertex.position);
@@ -170,10 +168,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance_uniforms.visibility_range, instance.world_from_local[3]);
 #endif
 
+#ifdef CURVE_NORMALS 
     out.curve_factor = instance_uniforms.curve_factor;
-
-    out.aabb_min_x = wind.aabb_min.x;
-    out.aabb_max_x = wind.aabb_max.x;
+#endif    
 
     return out;
 }

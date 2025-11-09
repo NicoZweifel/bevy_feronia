@@ -1,6 +1,6 @@
 #define_import_path bevy_feronia::sss_io
 
-struct SSSVertexOutput {
+struct VertexOutput {
     // Standard Bevy PBR fields
     @builtin(position) position: vec4<f32>,
     @location(0) world_position: vec4<f32>,
