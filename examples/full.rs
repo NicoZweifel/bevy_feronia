@@ -240,7 +240,9 @@ fn spawn_scene(
                     InstanceRotationYaw::default(),
                     InstanceScale { min: 4., max: 6. },
                     InstanceJitter::default(),
-                    Avoidance(1.2)
+                    Avoidance(1.2),
+                    // Displaced numerical normals are a bit buggy for now on complex foliage
+                    FastNormals,
                 ),
                 // Material options
                 (SubsurfaceScattering, WindAffected),
@@ -261,7 +263,9 @@ fn spawn_scene(
                     InstanceRotationYaw::default(),
                     InstanceScale { min: 8., max: 18. },
                     InstanceJitter::default(),
-                    Avoidance(0.2)
+                    Avoidance(0.2),
+                    // Displaced numerical normals are a bit buggy for now on complex foliage
+                    FastNormals,
                 ),
                 // Material options
                 (SubsurfaceScattering, WindAffected),

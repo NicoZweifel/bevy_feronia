@@ -22,7 +22,7 @@ struct DisplacementCache {
     macro_wind_factor: f32,
     twist_angle: f32,
     bent_twisted_local_pos: vec3<f32>,
-    horizontal_wind_dir: vec3<f32>,
+    wind_dir: vec3<f32>,
     micro_wind_factor: f32,
     macro_wind: vec3<f32>,
 }
@@ -115,7 +115,9 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
+#ifdef VERTEX_NORMALS
         normal,
+#endif
 #ifdef VERTEX_TANGENTS
         tangent
 #endif
@@ -135,7 +137,9 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
+#ifdef VERTEX_NORMALS
         normal,
+#endif
 #ifdef VERTEX_TANGENTS
         tangent
 #endif
@@ -154,9 +158,9 @@ fn displace_vertex_and_calc_normal(
     // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
     // and its "face" pointing along Z-Up (`+Z`).
 
-    out.world_normal  = vec4<f32>(0., 0., 1.);
-    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    out.world_normal  = vec3<f32>(0., 0., 1.);
 
+    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
     let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
 
     out.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
@@ -201,12 +205,12 @@ fn displacement_cache(
 
     cache.macro_wind_factor = 0.0;
     cache.twist_angle = 0.0;
-    cache.horizontal_wind_dir = vec3<f32>(0.0);
+    cache.wind_dir = vec3<f32>(0.0);
     cache.micro_wind_factor = 0.0;
     cache.macro_wind = vec3<f32>(0.0);
 
 #ifdef WIND_AFFECTED
-    cache.horizontal_wind_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
+    cache.wind_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
 
     let clamped_macro_noise = clamp(noise.macro_noise, 0.001, 1.0 - 0.001);
     cache.macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
@@ -214,7 +218,7 @@ fn displacement_cache(
     let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
     cache.micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
 
-    cache.macro_wind = cache.horizontal_wind_dir
+    cache.macro_wind = cache.wind_dir
         * wind.strength
         * cache.macro_wind_factor
         * cache.height_attenuation_factor;
@@ -251,11 +255,11 @@ fn finish_vertex_displacement(
 
 #ifdef WIND_AFFECTED
     let macro_displacement = cache.macro_wind;
-    total_world_offset = cache.horizontal_wind_dir * macro_displacement;
+    total_world_offset = cache.wind_dir * macro_displacement;
 
 #ifndef WIND_LOW_QUALITY
     let micro_displacement = cache.micro_wind_factor * wind.micro_strength * cache.height_attenuation_factor;
-    let micro_wind = cache.horizontal_wind_dir * micro_displacement;
+    let micro_wind = cache.wind_dir * micro_displacement;
 
     let s_curve = calculate_s_curve_displacement(
         wind,
@@ -263,7 +267,7 @@ fn finish_vertex_displacement(
         cache.normalized_height,
         instance.wrapped_time,
         noise.phase_noise.x,
-        cache.horizontal_wind_dir
+        cache.wind_dir
     );
 
     let bop = calculate_bop_displacement(
@@ -410,13 +414,13 @@ fn calculate_analytical_normal(
 
 #ifdef WIND_AFFECTED
     let macro_wind = cache.macro_wind;
-    let world_bitangent = cross(world_normal_dir, world_tangent_dir);
+    let world_bitangent = cross(world_tangent_dir, world_normal_dir);
 
     let final_bitangent = world_bitangent + macro_wind;
     let final_world_normal = normalize(
         world_normal_dir + cross(world_tangent_dir, macro_wind)
     );
-    let final_world_tangent = normalize(cross(final_bitangent, final_world_normal));
+    let final_world_tangent = normalize(cross(final_world_normal, final_bitangent));
 
     out.world_normal = final_world_normal;
     out.world_tangent = vec4<f32>(final_world_tangent, local_tangent_w);
@@ -460,7 +464,7 @@ fn calculate_numerical_normal(
 #endif
 
     let local_tangent = local_tangent_vec4.xyz;
-    let local_bitangent = cross(local_normal, local_tangent) * local_tangent_vec4.w;
+    let local_bitangent = cross(local_normal, local_tangent);
 
     let local_pos_tangent = vertex_pos + local_tangent * small_offset;
     let noise_tangent = sample_noise(instance, local_pos_tangent);
@@ -491,7 +495,9 @@ fn calculate_numerical_normal(
     let surface_delta_tangent_dir = neighbor_pos_tangent - final_pos_xyz;
     let surface_delta_bitangent_dir = neighbor_pos_bitangent - final_pos_xyz;
 
-    out.world_normal = normalize(cross(surface_delta_tangent_dir, surface_delta_bitangent_dir));
+    out.world_normal = normalize(
+        cross(surface_delta_tangent_dir, surface_delta_bitangent_dir)
+    );
 
     let approximated_world_tangent = normalize(surface_delta_tangent_dir);
     let orthogonalized_tangent = normalize(approximated_world_tangent
@@ -508,7 +514,7 @@ fn calculate_s_curve_displacement(
     normalized_height: f32,
     wrapped_time: f32,
     s_curve_seed: f32,
-    horizontal_wind_dir: vec3<f32>
+    wind_dir: vec3<f32>
 ) -> vec3<f32> {
     let s_curve_phase_offset = s_curve_seed * 6.28318;
     let s_curve_anim = sin(wrapped_time * wind.s_curve_speed + s_curve_phase_offset);
@@ -518,7 +524,7 @@ fn calculate_s_curve_displacement(
         + (s_curve_wiggles * wind.s_curve_strength * height_attenuation_factor);
     let s_curve_amount = s_curve_anim * wind.s_curve_strength * final_s_curve_shape;
 
-    return horizontal_wind_dir * s_curve_amount;
+    return wind_dir * s_curve_amount;
 }
 
 fn calculate_bop_displacement(
