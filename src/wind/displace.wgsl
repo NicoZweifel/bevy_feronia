@@ -39,7 +39,10 @@ fn displace_vertex_and_calc_normal(
     normal: vec3<f32>,
 #endif
 #ifdef VERTEX_TANGENTS
-    tangent: vec4<f32>
+    tangent: vec4<f32>,
+#endif
+#ifdef VERTEX_UVS_A
+    uv: vec2<f32>
 #endif
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
@@ -64,6 +67,8 @@ fn displace_vertex_and_calc_normal(
 
     out.world_position = vec4<f32>(final_pos_xyz, 1.0);
 
+    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+
 #ifdef VERTEX_NORMALS
     let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
 
@@ -87,8 +92,6 @@ fn displace_vertex_and_calc_normal(
 #ifdef VERTEX_TANGENTS
     normal_data.world_tangent = mesh_tangent;
 #else
-    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
-
     let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
 
     normal_data.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
@@ -160,14 +163,22 @@ fn displace_vertex_and_calc_normal(
 
     out.world_normal  = vec3<f32>(0., 0., 1.);
 
-    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
     let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
 
     out.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
 #endif // VERTEX_NORMALS
 
 #ifdef EDGE_CORRECTION
-    // TODO
+#ifdef VERTEX_UVS_A
+    let edge_offset = calculate_edge_correction(
+        out.world_position.xyz,
+        out.world_normal,
+        uv.x,
+        wind.edge_correction_factor
+    );
+
+    out.world_position += vec4<f32>(edge_offset, 0.);
+#endif
 #endif
 
     return out;
@@ -544,6 +555,9 @@ fn calculate_bop_displacement(
     return vec3<f32>(0.0, vertical_amount, 0.0);
 }
 
+
+
+
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
@@ -561,4 +575,31 @@ fn calculate_billboard_matrix(
     let new_x = normalize(cross(new_y, new_z));
 
     return mat3x3<f32>(new_x * scale.x, new_y * scale.y, new_z * scale.z);
+}
+
+fn calculate_edge_correction(
+    world_pos: vec3<f32>,
+    world_normal: vec3<f32>,
+    uv_x: f32,
+    edge_correction_factor: f32
+) -> vec3<f32> {
+    let signed_edge_factor = uv_x * 2.0 - 1.0;
+
+    let to_camera = normalize(view.world_position.xyz - world_pos);
+
+    let world_up = vec3<f32>(0.0, 1.0, 0.0);
+    let view_side_dir = normalize(cross(to_camera, world_up));
+
+    // Normal orthogonal to camera/view vec
+    let normal_dot_view = dot(world_normal, to_camera);
+    let grazing_angle_factor = pow(1.0 - abs(normal_dot_view), 2.0);
+
+    let top_down_factor = abs(dot(to_camera, world_up));
+    let top_down_fade = pow(1.0 - top_down_factor, 0.5);
+
+    let strength = grazing_angle_factor * edge_correction_factor *  top_down_fade;
+
+    let shift = view_side_dir * -signed_edge_factor;
+
+    return shift * strength;
 }

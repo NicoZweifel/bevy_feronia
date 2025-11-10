@@ -142,20 +142,23 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vertex.normal,
 #endif
 #ifdef VERTEX_TANGENTS
-        vertex.tangent
+        vertex.tangent,
+#endif
+#ifdef VERTEX_UVS_A
+        vertex.uv
 #endif
     );
 
-    out.clip_position = view.clip_from_world * displaced.world_position;
     out.world_position = displaced.world_position.xyz;
-
     out.world_normal = displaced.world_normal;
     out.local_pos = vertex.position;
     out.world_tangent = displaced.world_tangent;
+    out.clip_position = view.clip_from_world * vec4<f32>(out.world_position, 1.0);
 
 #ifdef VERTEX_UVS_A
     out.uv = vertex.uv;
-#endif    
+#endif
+
     let height_range = wind.aabb_max.y - wind.aabb_min.y;
     let normalized_height = saturate((vertex.position.y - wind.aabb_min.y) / max(height_range, 0.0001));
 
@@ -254,7 +257,7 @@ fn fragment(
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
-    const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
+    const AMBIENT_INTENSITY_SCALE: f32 = 0.002;
 
     const TRANSLUCENCY: f32 = 0.2;
 

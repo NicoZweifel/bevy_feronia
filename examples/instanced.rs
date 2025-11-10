@@ -56,10 +56,14 @@ fn setup(
         // can also tweak other settings here
         point_lights: true,
         static_bend_strength: 3.,
+        // or test individual settings
+        edge_correction_factor: 1.0,
         ..default()
     };
 
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
+        // We only clone the wind here once, if we want wind updates to be reflected in the materials,
+        // we need an update system.
         wind: *wind,
         aabb,
         options,

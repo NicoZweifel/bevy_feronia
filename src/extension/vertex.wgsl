@@ -49,7 +49,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vertex.normal,
 #endif
 #ifdef VERTEX_TANGENTS
-        vertex.tangent
+        vertex.tangent,
+#endif
+#ifdef VERTEX_UVS_A
+        vertex.uv
 #endif
     );
 

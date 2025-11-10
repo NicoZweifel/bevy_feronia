@@ -66,6 +66,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #ifdef VERTEX_TANGENTS
             vertex.tangent,
 #endif
+#ifdef VERTEX_UVS_A
+        vertex.uv
+#endif
         );
 
 #ifdef VERTEX_POSITIONS
@@ -127,6 +130,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #endif
 #ifdef VERTEX_TANGENTS
             vertex.tangent,
+#endif
+#ifdef VERTEX_UVS_A
+            vertex.uv
 #endif
         );
 
