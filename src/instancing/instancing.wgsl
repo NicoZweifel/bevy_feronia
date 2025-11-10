@@ -218,8 +218,10 @@ fn fragment(
         normal = -normal;
     }
 
+
 // TODO move out / re-use
 #ifdef CURVE_NORMALS
+
     let signed_norm_x = in.uv.x * 2.0 - 1.0;
 
     let curve_angle = in.curve_factor * abs(signed_norm_x);

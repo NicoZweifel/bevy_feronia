@@ -449,7 +449,11 @@ fn calculate_numerical_normal(
 #endif
 ) -> DisplacedVertex {
     var out: DisplacedVertex;
-    let small_offset = 0.01;
+
+    // NOTE: Offset is sensitive to mesh scale.
+    // Too small: numerical precision issues.
+    // Too large: can cause flickering by sampling "over" details.
+    let small_offset = 0.1;
 
 #ifdef VERTEX_NORMALS
     let local_normal = normal;
@@ -464,7 +468,7 @@ fn calculate_numerical_normal(
 #endif
 
     let local_tangent = local_tangent_vec4.xyz;
-    let local_bitangent = cross(local_normal, local_tangent);
+    let local_bitangent = cross(local_normal, local_tangent) * local_tangent_vec4.w;
 
     let local_pos_tangent = vertex_pos + local_tangent * small_offset;
     let noise_tangent = sample_noise(instance, local_pos_tangent);
