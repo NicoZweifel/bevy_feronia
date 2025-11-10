@@ -108,7 +108,7 @@ const SHADER_DEFS: &[ShaderDefMap] = &[
     ShaderDefMap {
         flag: WindAffectedKey::CURVE_NORMALS,
         def: "CURVE_NORMALS",
-        stage: ShaderStage::Fragment,
+        stage: ShaderStage::Both,
     },
 ];
 

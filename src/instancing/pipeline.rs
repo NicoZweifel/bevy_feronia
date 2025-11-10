@@ -125,6 +125,10 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("ANALYTICAL_NORMALS".into());
         }
 
+        if key.wind_key.contains(WindAffectedKey::ANALYTICAL_NORMALS) {
+            shader_defs.push("CURVE_NORMALS".into());
+        }
+
         if let Some(fragment) = descriptor.fragment.as_mut() {
             fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
 

@@ -55,8 +55,9 @@ fn setup(
         wind_affected: true,
         // can also tweak other settings here
         analytical_normals: true,
-        curve_factor: 0.2,
+        curve_factor: 1.,
         point_lights: true,
+        static_bend_strength: 6.,
         ..default()
     };
 

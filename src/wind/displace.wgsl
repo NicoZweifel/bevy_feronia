@@ -87,7 +87,7 @@ fn displace_vertex_and_calc_normal(
 #ifdef VERTEX_TANGENTS
     normal_data.world_tangent = mesh_tangent;
 #else
-    let local_fallback_tangent = vec4<f32>(0.0, 1.0, 0.0, 1.0);
+    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
 
     let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
 
@@ -115,9 +115,7 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
-#ifdef VERTEX_NORMALS
         normal,
-#endif
 #ifdef VERTEX_TANGENTS
         tangent
 #endif
@@ -137,9 +135,7 @@ fn displace_vertex_and_calc_normal(
 #ifdef STATIC_BEND
         static_bend,
 #endif
-#ifdef VERTEX_NORMALS
         normal,
-#endif
 #ifdef VERTEX_TANGENTS
         tangent
 #endif
@@ -151,7 +147,19 @@ fn displace_vertex_and_calc_normal(
     out.world_tangent = normal_data.world_tangent;
 
 #else // NOT VERTEX_NORMALS
-    out.world_normal = vec3<f32>(0.0, 0.0, 1.0);
+    // Fallback to original, un-displaced world-space normals.
+    //
+    // Will have incorrect lighting as the normals will not match the displaced vertex positions.
+    //
+    // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
+    // and its "face" pointing along Z-Up (`+Z`).
+
+    out.world_normal  = vec4<f32>(0., 0., 1.);
+    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+
+    let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
+
+    out.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
 #endif // VERTEX_NORMALS
 
 #ifdef EDGE_CORRECTION
@@ -160,8 +168,6 @@ fn displace_vertex_and_calc_normal(
 
     return out;
 }
-
-
 
 
 fn displacement_cache(
@@ -355,7 +361,7 @@ fn calculate_analytical_normal(
 #ifdef VERTEX_TANGENTS
     let tangent = in_tangent;
 #else
-    let tangent = vec4<f32>(0.0, 1.0, 0.0, 1.0);
+    let tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
 #endif
 
     var local_tangent = tangent.xyz;
@@ -366,12 +372,13 @@ fn calculate_analytical_normal(
     let bend_x = static_bend.x * cache.bend_curve;
     let bend_z = static_bend.y * cache.bend_curve;
 
-    let bent_tangent_vec = vec3<f32>(bend_x, 1.0, bend_z);
+    let bent_up_vec = normalize(vec3<f32>(bend_x, 1.0, bend_z));
 
-    let local_bitangent = cross(local_normal, local_tangent);
+    let local_sideways_vec = local_tangent;
 
-    local_normal = normalize(cross(bent_tangent_vec, local_bitangent));
-    local_tangent = normalize(bent_tangent_vec);
+    local_normal = normalize(cross(local_sideways_vec, bent_up_vec));
+
+    local_tangent = local_sideways_vec;
 #endif // STATIC_BEND
 
 #ifndef BILLBOARDING
@@ -449,7 +456,7 @@ fn calculate_numerical_normal(
 #ifdef VERTEX_TANGENTS
     let local_tangent_vec4 = tangent;
 #else
-    let local_tangent_vec4 = vec4<f32>(0.0, 1.0, 0.0, 1.0);
+    let local_tangent_vec4 = vec4<f32>(1.0, 0.0, 0.0, 1.0);
 #endif
 
     let local_tangent = local_tangent_vec4.xyz;
