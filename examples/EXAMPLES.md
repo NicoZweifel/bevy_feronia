@@ -5,7 +5,7 @@
 - The `Wind` Resource is configurable in the Inspector Window.
 
 All examples have the window and a performance overlay,
-but the `Wind` resource doesn't automatically sync with all the materials in the examples.
+but the `Wind` resource doesn't automatically sync all the materials in all of the examples.
 
 Most examples (except `extension`, `instanced` and `scatter`) use assets that are tracked with [Git LFS](https://git-lfs.com/).
 
