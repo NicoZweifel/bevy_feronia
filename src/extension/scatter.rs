@@ -42,7 +42,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
     fn spawn(cmd: &mut Commands, request: SpawnRequest<ExtendedWindAffectedMaterial>) {
         cmd.spawn_batch(
             request
-                .material_spawn_batch_iter()
+                .spawn_batch_iter()
                 .map(|x| (x, WindAffected))
                 .collect::<Vec<_>>(),
         );

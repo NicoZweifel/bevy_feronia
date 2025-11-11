@@ -95,7 +95,7 @@ impl<'w, T> SpawnRequest<'w, T>
 where
     T: Material,
 {
-    pub fn material_spawn_batch_iter(
+    pub fn spawn_batch_iter(
         &self,
     ) -> impl Iterator<
         Item = (
@@ -141,7 +141,7 @@ impl ScatterMaterial for StandardMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
-        cmd.spawn_batch(request.material_spawn_batch_iter().collect::<Vec<_>>());
+        cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }
 
