@@ -35,10 +35,15 @@ where
     ) -> HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> {
         let mut name_map: HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> = HashMap::new();
 
-        for (handle, asset) in self
-            .items
-            .iter()
-            .filter_map(|h| prototype_assets.get(&**h).map(|p| ((**h).clone(), p)))
+        for ScatterHandleAsset { handle, asset } in
+            self.items.iter().filter_map(|scatter_item_asset| {
+                prototype_assets
+                    .get(&**scatter_item_asset)
+                    .map(|asset| ScatterHandleAsset {
+                        handle: (**scatter_item_asset).clone(),
+                        asset,
+                    })
+            })
         {
             let name = asset.properties.name.as_ref().map_or_else(
                 || {
