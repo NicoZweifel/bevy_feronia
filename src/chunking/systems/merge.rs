@@ -25,12 +25,12 @@ pub fn merge_check(
 
     for (parent, children) in parents {
         let Ok(root) = q_parent.get(parent) else {
-            warn!("Couldn't get parent Chunk for merge!");
+            warn!("Couldn't get parent Chunk {parent} for merge check!");
             continue;
         };
 
         let Ok(root_size_dim) = q_root.get(**root) else {
-            warn!("Couldn't get ChunkRoot for merge!");
+            warn!("Couldn't get ChunkRoot {} for merge check!", **root);
             continue;
         };
 
@@ -61,14 +61,14 @@ pub fn handle_merge_check(
     for e in mr_check.read() {
         let parent = e.parent;
         let Ok(parent_tf) = q_parent.get(parent) else {
-            warn!("Couldn't get parent Chunk for merge!");
+            warn!("Couldn't get parent Chunk {parent} for merge!");
             continue;
         };
 
         let first_child = e.children[0];
 
         let Ok(merge_distance) = q_chunk.get(first_child) else {
-            warn!("Couldn't get Chunk {first_child} in level for merge!");
+            warn!("Couldn't get Chunk {first_child} for merge!");
             continue;
         };
 
