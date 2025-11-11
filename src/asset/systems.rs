@@ -56,14 +56,13 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
             With<ScatterLayerType<TOut, TIn>>,
         ),
     >,
-    q_collect_search: Query<
+    q_items: Query<
         CollectableQueryData<TIn>,
         (
             Without<ScatterLayerChildProcessed>,
             Without<ScatterAssetCreationRequest<TOut, TIn>>,
         ),
     >,
-    q_collect_all: Query<CollectableQueryData<TIn>>,
     wind: Res<Wind>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) where
@@ -89,7 +88,7 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
         );
 
     for (layer, item_entity, material_option_data, wind_data) in iter {
-        let Ok(item) = q_collect_search.get(item_entity) else {
+        let Ok(item) = q_items.get(item_entity) else {
             continue;
         };
 
@@ -106,8 +105,7 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
             &options,
             name.clone(),
             Some(lod),
-            &q_collect_search,
-            &q_collect_all,
+            &q_items,
             &mut meshes,
         );
 
@@ -125,7 +123,7 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
             lod,
             #[cfg(feature = "avian")]
             item.o_rigid_body.cloned(),
-            &q_collect_all,
+            &q_items,
             &mut meshes,
         );
     }
@@ -146,21 +144,20 @@ fn queue_asset_creation_requests_recursive<TOut, TIn>(
     options: &MaterialOptions,
     o_current_name: Option<Name>,
     o_current_lod: Option<LevelOfDetail>,
-    q_collect_search: &Query<
+    q_items: &Query<
         CollectableQueryData<TIn>,
         (
             Without<ScatterLayerChildProcessed>,
             Without<ScatterAssetCreationRequest<TOut, TIn>>,
         ),
     >,
-    q_collect_all: &Query<CollectableQueryData<TIn>>,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) -> AssetSearchResult
 where
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    let Ok(item) = q_collect_search.get(entity) else {
+    let Ok(item) = q_items.get(entity) else {
         return AssetSearchResult::None;
     };
 
@@ -190,7 +187,7 @@ where
             lod,
             #[cfg(feature = "avian")]
             item.o_rigid_body.cloned(),
-            q_collect_all,
+            q_items,
             meshes,
         );
         return AssetSearchResult::Root;
@@ -211,8 +208,7 @@ where
                 &options,
                 name.clone(),
                 Some(lod),
-                q_collect_search,
-                q_collect_all,
+                q_items,
                 meshes,
             ) {
                 AssetSearchResult::None => {}
@@ -233,7 +229,7 @@ where
             lod,
             #[cfg(feature = "avian")]
             None,
-            q_collect_all,
+            q_items,
             meshes,
         );
         return AssetSearchResult::Root;
@@ -266,7 +262,13 @@ fn collect_and_queue_request<TOut, TIn>(
     o_root_name: Option<Name>,
     root_lod: LevelOfDetail,
     #[cfg(feature = "avian")] o_root_rigid_body: Option<RigidBody>,
-    q_collect_all: &Query<CollectableQueryData<TIn>>,
+    q_items: &Query<
+        CollectableQueryData<TIn>,
+        (
+            Without<ScatterLayerChildProcessed>,
+            Without<ScatterAssetCreationRequest<TOut, TIn>>,
+        ),
+    >,
     meshes: &mut ResMut<Assets<Mesh>>,
 ) where
     TIn: Material,
@@ -280,7 +282,7 @@ fn collect_and_queue_request<TOut, TIn>(
         o_root,
         o_root_name.clone(),
         Some(root_lod),
-        q_collect_all,
+        q_items,
         meshes,
     );
 
@@ -320,7 +322,7 @@ fn collect_and_queue_request<TOut, TIn>(
 ///
 /// This function *must* mark all visited entities with `ScatterLayerChildProcessed`
 /// to prevent them from being re-searched.
-fn collect_parts_recursive_internal<TIn: Material>(
+fn collect_parts_recursive_internal<TOut,TIn>(
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
@@ -328,10 +330,19 @@ fn collect_parts_recursive_internal<TIn: Material>(
     options: &MaterialOptions,
     o_current_name: Option<Name>,
     o_current_lod: Option<LevelOfDetail>,
-    q_collect_all: &Query<CollectableQueryData<TIn>>,
+    q_items: &Query<
+        CollectableQueryData<TIn>,
+        (
+            Without<ScatterLayerChildProcessed>,
+            Without<ScatterAssetCreationRequest<TOut,TIn>>,
+        ),
+    >,
     meshes: &mut ResMut<Assets<Mesh>>,
-) -> Vec<ScatterAssetPart<TIn>> {
-    let Ok(item) = q_collect_all.get(entity) else {
+) -> Vec<ScatterAssetPart<TIn>> where
+    TOut: ScatterMaterial<TIn>,
+    TIn: Material
+{
+    let Ok(item) = q_items.get(entity) else {
         return vec![];
     };
 
@@ -366,7 +377,7 @@ fn collect_parts_recursive_internal<TIn: Material>(
                 &options,
                 name.clone(),
                 Some(lod),
-                q_collect_all,
+                q_items,
                 meshes,
             )
         })
@@ -409,7 +420,7 @@ fn collect_parts_recursive_internal<TIn: Material>(
 /// Creates a *new* `TOut` material for each asset part.
 pub fn process_distinct_material_requests<TOut, TIn>(
     mut cmd: Commands,
-    requests_query: Query<(Entity, &ScatterAssetCreationRequest<TOut, TIn>)>,
+    q_requests: Query<(Entity, &ScatterAssetCreationRequest<TOut, TIn>)>,
     materials_in: Res<Assets<TIn>>,
     mut materials_out: ResMut<Assets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
@@ -427,7 +438,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
             o_rigid_body,
             ..
         },
-    ) in &requests_query
+    ) in &q_requests
     {
         let parts = parts
             .iter()
