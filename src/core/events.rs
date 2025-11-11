@@ -40,14 +40,14 @@ where
             .iter()
             .filter_map(|h| prototype_assets.get(&**h).map(|p| ((**h).clone(), p)))
         {
-            let name = asset.properties.name.clone().map_or_else(
+            let name = asset.properties.name.as_ref().map_or_else(
                 || {
-                    warn!("ScatteringAsset {:?} has no name!", handle);
-
+                    warn!("ScatterAsset {:?} has no name!", handle);
                     Name::new("")
                 },
                 |name| clean_lod_suffix(&name).into(),
             );
+
             name_map
                 .entry(name)
                 .or_default()
