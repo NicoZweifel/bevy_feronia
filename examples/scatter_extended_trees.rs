@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::scatter_layer;
+use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
@@ -79,7 +79,6 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
-    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
@@ -87,7 +86,7 @@ fn spawn_scene(
         ChunkRoot::default(),
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
-            scatter_layer("Tree Layer"),
+            extension::scatter_layer("Tree Layer"),
             DistributionDensity(10.),
             InstanceRotationYaw {
                 min: 0.,
@@ -104,7 +103,6 @@ fn spawn_scene(
         )],
     ));
 
-    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 

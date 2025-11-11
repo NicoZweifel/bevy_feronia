@@ -1,6 +1,6 @@
 use super::prepare::*;
 use super::{draw::DrawInstancedWindAffected, pipeline::InstancedWindAffectedPipeline, systems::*};
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::core_pipeline::core_3d::AlphaMask3d;
@@ -18,7 +18,7 @@ impl Plugin for InstancedWindAffectedPlugin {
         embedded_asset!(app, "instancing.wgsl");
 
         app.init_asset::<InstancedWindAffectedMaterial>()
-            .add_message::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();
+            .add_message::<SpawnScatterAssets<InstancedWindAffectedMaterial>>();
         app.add_plugins((
             ScatterMaterialPlugin::<InstancedWindAffectedMaterial>::default(),
             ExtractComponentPlugin::<InstancePipelineKey>::default(),
@@ -26,11 +26,6 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
-        .add_systems(
-            Update,
-            InstancedWindAffectedMaterial::spawn
-                .run_if(resource_exists::<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>),
-        )
         .add_systems(PostUpdate, add_instance_key_component);
 
         app.sub_app_mut(RenderApp)

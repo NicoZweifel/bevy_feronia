@@ -1,4 +1,4 @@
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
@@ -12,13 +12,8 @@ impl Plugin for ExtendedWindAffectedPlugin {
         embedded_asset!(app, "prepass.wgsl");
 
         app.add_plugins(MaterialPlugin::<ExtendedWindAffectedMaterial>::default())
-            .add_message::<SpawnProtoTypes<ExtendedWindAffectedMaterial>>()
-            .add_plugins(ScatterMaterialPlugin::<ExtendedWindAffectedMaterial>::default())
-            .add_systems(
-                Update,
-                ExtendedWindAffectedMaterial::spawn
-                    .run_if(resource_exists::<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>),
-            );
+            .add_message::<SpawnScatterAssets<ExtendedWindAffectedMaterial>>()
+            .add_plugins(ScatterMaterialPlugin::<ExtendedWindAffectedMaterial>::default());
     }
 }
 

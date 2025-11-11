@@ -177,6 +177,7 @@ fn spawn_scene(
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
     handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
+    asset_server: Res<AssetServer>,
 ) {
     let fog_texture = create_spherical_fog_texture(64);
 
@@ -270,8 +271,7 @@ fn spawn_scene(
                 // Material options
                 (SubsurfaceScattering, WindAffected),
                 children![
-                    // TODO figure out what's wrong with highest detail models
-                    SceneRoot(handles.foliage_lod_medium.clone()),
+                    SceneRoot(handles.foliage_lod_high.clone()),
                     (
                         SceneRoot(handles.foliage_lod_medium.clone()),
                         LevelOfDetail(1)

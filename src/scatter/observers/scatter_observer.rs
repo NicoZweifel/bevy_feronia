@@ -1,4 +1,4 @@
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
 use bevy::prelude::*;
@@ -7,7 +7,7 @@ pub fn scatter_observer<TOut, TIn>(
     trigger: On<ScatterResults<TOut, TIn>>,
     q_layer: Query<&ScatterLayer, With<ScatterLayerType<TOut, TIn>>>,
     q_items: Query<&ScatterItemAsset<TOut>, With<ScatterItem>>,
-    mut mw_spawn: MessageWriter<SpawnProtoTypes<TOut>>,
+    mut mw_spawn: MessageWriter<SpawnScatterAssets<TOut>>,
 ) where
     TOut: ScatterMaterial<TIn>,
     TIn: Material,
@@ -25,7 +25,7 @@ pub fn scatter_observer<TOut, TIn>(
 
     let trigger = SpawnTrigger::from(trigger);
 
-    let event = SpawnProtoTypes::from(trigger).with_items(items.collect());
+    let event = SpawnScatterAssets::from(trigger).with_items(items.collect());
 
     debug!("ScatterObserver triggered! Writing Spawn Events...");
 

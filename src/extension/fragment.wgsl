@@ -42,8 +42,12 @@ fn fragment(
         standard_in.world_normal = -standard_in.world_normal;
     }
 
+#endif
+
+#ifdef VERTEX_UVS_A
     standard_in.uv = in.uv;
 #endif
+
 #ifdef VERTEX_TANGENTS
     standard_in.world_tangent = in.world_tangent;
 #endif

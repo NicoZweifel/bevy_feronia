@@ -22,6 +22,11 @@ pub fn merge_check(
     }
 
     for (parent, children) in parents {
+        // TODO don't hardcode but use ChunkSizeScalarConfig / ChunkRootSizeDim
+        if children.len() < 4 {
+            continue;
+        };
+
         mw_check.write(MergeCheck { parent, children });
     }
 }
@@ -55,11 +60,6 @@ pub fn handle_merge_check(
 
         let Ok(merge_distance) = q_chunk.get(first_child) else {
             warn!("Couldn't get Chunk {first_child} in level for merge!");
-            continue;
-        };
-
-        // TODO don't hardcode but use ChunkSizeScalarConfig / ChunkRootSizeDim
-        if e.children.len() < 4 {
             continue;
         };
 

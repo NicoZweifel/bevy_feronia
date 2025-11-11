@@ -110,7 +110,7 @@ fn setup(
     ));
 }
 
-/// Creates a subdivided triangle mesh on the x and y-axis with UVs.
+/// Creates a subdivided triangle mesh on the x and y-axis with normals/UVs.
 fn create_triangle_with_foliage_uvs() -> Mesh {
     let pos_bottom_left = [0.0, -0.25, 0.0];
     let pos_top_center = [0.25, 0.5, 0.0];

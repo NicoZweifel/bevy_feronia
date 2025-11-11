@@ -1,10 +1,6 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 
-/// Marker component indicating that an entity with [`WindAffected`] is fully processed and ready for wind simulation.
-#[derive(Component)]
-pub struct WindAffectedReady;
-
 /// Marker component to enable wind effects for an entity.
 ///
 /// Enables `#ifdef WIND_AFFECTED` in shaders, applying all wind-related vertex displacements.

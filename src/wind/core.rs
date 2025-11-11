@@ -1,6 +1,7 @@
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 use bevy::camera::primitives::Aabb;
+use bevy::camera::visibility::VisibilityRange;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::render::render_resource::ShaderType;
@@ -14,24 +15,120 @@ pub trait ScatterMaterial<TIn = StandardMaterial>: Asset + Clone
 where
     TIn: Material,
 {
-    // TODO refactor
     fn create_material(
         base: Option<TIn>,
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
     ) -> Self;
-    fn update_material(material: &mut Self, wind: Wind, options: MaterialOptions);
+    
+    fn update_material(_material: &mut StandardMaterial, _wind: Wind, _options: MaterialOptions) {}
 
     fn component(material: Handle<Self>) -> impl Component;
 
-    fn spawn(
-        cmd: Commands,
-        mr_spawn: MessageReader<SpawnProtoTypes<Self>>,
-        prototype_assets: Res<Assets<ScatterAsset<Self>>>,
-        q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
-        q_root: Query<&LodConfig, With<ScatterRoot>>,
-        q_layers: Query<(), With<ScatterChunked>>,
-    );
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<Self>);
+}
+
+pub struct SpawnRequest<'w, T>
+where
+    T: Asset + Clone,
+{
+    pub event: &'w SpawnScatterAssets<T>,
+    pub names: Vec<Name>,
+    pub name_map: &'w HashMap<Name, Vec<ScatterHandleAsset<'w, T>>>,
+    pub is_chunked: bool,
+    pub chunk_level: ChunkLevel,
+    pub chunk_gtf_translation: Vec3,
+    pub lod_config: &'w LodConfig,
+    pub parent: Entity,
+}
+
+pub struct ScatterHandleAsset<'w, T>
+where
+    T: Asset + Clone,
+{
+    pub handle: Handle<ScatterAsset<T>>,
+    pub asset: &'w ScatterAsset<T>,
+}
+
+impl<T> ScatterHandleAsset<'_, T>
+where
+    T: Asset + Clone,
+{
+    pub fn is_lod(&self, chunked: bool, lod: u32) -> bool {
+        if chunked {
+            *self.asset.properties.lod == lod
+        } else {
+            *self.asset.properties.lod >= lod
+        }
+    }
+}
+
+impl<'w, T> SpawnRequest<'w, T>
+where
+    T: Asset + Clone,
+{
+    pub fn prototypes_from_seed(
+        &'w self,
+        seed: u64,
+    ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
+        let mut rng = Pcg64::seed_from_u64(seed);
+
+        self.names
+            .choose(&mut rng)
+            .into_iter()
+            .flat_map(move |name| self.prototypes_from_name(name))
+    }
+
+    pub fn prototypes_from_name(
+        &'w self,
+        name: &Name,
+    ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
+        self.name_map
+            .get(name)
+            .map_or(&[][..], |prototypes| prototypes.as_slice())
+            .iter()
+            .filter(move |&handle_asset| handle_asset.is_lod(self.is_chunked, *self.chunk_level))
+    }
+}
+
+impl<'w, T> SpawnRequest<'w, T>
+where
+    T: Material,
+{
+    pub fn batch_spawn_material(
+        self,
+    ) -> Vec<(
+        Transform,
+        Mesh3d,
+        MeshMaterial3d<T>,
+        ChildOf,
+        VisibilityRange,
+        ScatteredInstance,
+        ScatteredAsset<T>,
+    )> {
+        self.event
+            .trigger
+            .data
+            .iter()
+            .flat_map(|res| {
+                self.prototypes_from_seed(res.seed)
+                    .map(|ScatterHandleAsset { handle, asset }| {
+                        let visibility_range =
+                            self.lod_config.get_visibility_range(asset.properties.lod);
+                        (
+                            res.transform,
+                            Mesh3d(asset.mesh().clone()),
+                            MeshMaterial3d::<T>(asset.material().clone()),
+                            ChildOf(self.parent),
+                            visibility_range,
+                            ScatteredInstance(self.event.trigger.layer),
+                            ScatteredAsset(handle.clone()),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+    }
 }
 
 impl ScatterMaterial for StandardMaterial {
@@ -43,102 +140,13 @@ impl ScatterMaterial for StandardMaterial {
         base.unwrap_or_default()
     }
 
-    fn update_material(_material: &mut StandardMaterial, _wind: Wind, _options: MaterialOptions) {}
 
     fn component(material: Handle<StandardMaterial>) -> impl Component {
         MeshMaterial3d(material)
     }
 
-    fn spawn(
-        mut cmd: Commands,
-        mut mr_spawn: MessageReader<SpawnProtoTypes<StandardMaterial>>,
-        prototype_assets: Res<Assets<ScatterAsset<StandardMaterial>>>,
-        q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
-        q_root: Query<&LodConfig, With<ScatterRoot>>,
-        q_layers: Query<(), With<ScatterChunked>>,
-    ) {
-        for event in mr_spawn.read() {
-            debug!("Spawning extended wind affected!");
-
-            let chunk_level = event
-                .trigger
-                .chunk
-                .and_then(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
-                .cloned()
-                .unwrap_or_default();
-
-            let is_chunked =
-                event.trigger.chunk.is_some() && q_layers.get(event.trigger.layer).is_ok();
-
-            let prototypes: Vec<_> = event
-                .items
-                .iter()
-                .filter_map(|h| prototype_assets.get(&**h))
-                .collect();
-
-            let mut name_map: HashMap<Name, Vec<&ScatterAsset<_>>> = HashMap::new();
-
-            prototypes.iter().for_each(|p| {
-                let name = p.properties.name.clone().unwrap_or_else(|| Name::new(""));
-                name_map.entry(name).or_default().push(*p);
-            });
-
-            if name_map.is_empty() {
-                continue;
-            }
-
-            let mut sorted_names: Vec<&Name> = name_map.keys().collect();
-            sorted_names.sort();
-
-            let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
-
-            let Ok(lod_config) = q_root.get(event.trigger.root) else {
-                warn!("Couldn't get ScatterRoot!");
-                continue;
-            };
-
-            cmd.spawn_batch(
-                event
-                    .trigger
-                    .data
-                    .iter()
-                    .flat_map(|res| {
-                        let mut rng = Pcg64::seed_from_u64(res.seed);
-
-                        let Some(chosen_name) = sorted_names.choose(&mut rng) else {
-                            return vec![];
-                        };
-
-                        let Some(prototypes_to_spawn) = name_map.get(*chosen_name) else {
-                            return vec![];
-                        };
-
-                        prototypes_to_spawn
-                            .iter()
-                            .filter(|p| {
-                                if is_chunked {
-                                    *p.properties.lod == *chunk_level
-                                } else {
-                                    *p.properties.lod >= *chunk_level
-                                }
-                            })
-                            .map(move |p| {
-                                let visibility_range =
-                                    lod_config.get_visibility_range(p.properties.lod);
-                                (
-                                    res.transform,
-                                    Mesh3d(p.mesh().clone()),
-                                    MeshMaterial3d(p.material().clone()),
-                                    ChildOf(parent),
-                                    visibility_range,
-                                    ScatteredInstance(event.trigger.layer),
-                                )
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .collect::<Vec<_>>(),
-            );
-        }
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
+        cmd.spawn_batch(request.batch_spawn_material());
     }
 }
 

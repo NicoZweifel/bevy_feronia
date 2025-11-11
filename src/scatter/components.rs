@@ -101,8 +101,10 @@ pub struct ScatterRootProcessed;
 #[reflect(Component)]
 pub struct ScatterChunked;
 
-/// Component holding a handle to a [`ScatterAsset`], which defines the properties
+/// Component on a [`ScatterLayer`]'s [`ScatterItem`] holding a handle to a [`ScatterAsset`], which defines the properties
 /// (mesh, material, LOD, etc.) of a scatterable object.
+///
+/// This is similar to [`ScatteredAsset`], but this component is on the original [`ScatterItem`] definition, in a [`ScatterLayer`].
 #[derive(Component, Reflect, Debug, Clone, Deref)]
 #[reflect(Component)]
 pub struct ScatterItemAsset<T>(pub Handle<ScatterAsset<T>>)
@@ -222,6 +224,17 @@ pub struct ScaleDensity;
 #[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct ScatteredInstance(pub Entity);
+
+/// Marker component placed on a spawned entity, indicating it was created by a scatter system.
+///
+/// Contains the [`Handle`] of the [`ScatterAsset`] it belongs to.
+///
+/// This is similar to [`ScatterItemAsset`], which is on the original [`ScatterItem`] definition, in a [`ScatterLayer`].
+#[derive(Component, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct ScatteredAsset<T>(pub Handle<ScatterAsset<T>>)
+where
+    T: Asset + Clone;
 
 /// Defines a texture-based density map for scattering.
 #[derive(Component, Reflect, Deref, DerefMut)]

@@ -1,21 +1,31 @@
 use crate::core::components::LevelOfDetail;
 use crate::prelude::*;
 use bevy::camera::primitives::{Aabb, MeshAabb};
+use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-pub type CollectableQueryData<'w, T> = (
-    Entity,
-    Option<&'w MeshMaterial3d<T>>,
-    Option<&'w Mesh3d>,
-    Option<&'w Aabb>,
-    Option<&'w Children>,
-    Option<&'w WindConfig>,
-    Option<&'w Name>,
-    Option<&'w LevelOfDetail>,
-    Option<&'w WindAffected>,
-    MaterialOptionData<'w>,
-    WindData<'w>,
-);
+#[cfg(all(feature = "avian"))]
+use avian3d::prelude::RigidBody;
+
+#[derive(QueryData)]
+#[query_data()]
+pub struct CollectableQueryData<'w, T: Material> {
+    pub entity: Entity,
+    pub o_material: Option<&'w MeshMaterial3d<T>>,
+    pub o_mesh: Option<&'w Mesh3d>,
+    pub o_aabb: Option<&'w Aabb>,
+    pub o_children: Option<&'w Children>,
+    pub o_wind_config: Option<&'w WindConfig>,
+    pub o_name: Option<&'w Name>,
+    pub o_lod: Option<&'w LevelOfDetail>,
+    pub o_wind_affected: Option<&'w WindAffected>,
+
+    #[cfg(all(feature = "avian"))]
+    pub o_rigid_body: Option<&'w RigidBody>,
+
+    pub material_options: MaterialOptionData<'w>,
+    pub wind_data: WindData<'w>,
+}
 
 pub fn queue_material_creation_requests<TOut, TIn>(
     mut cmd: Commands,
@@ -93,39 +103,29 @@ where
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    let Ok((
-        entity,
-        o_material,
-        o_mesh,
-        o_aabb,
-        o_children,
-        o_wind,
-        o_name,
-        o_lod,
-        o_wind_affected,
-        material_option_data,
-        wind_data,
-    )) = q_children.get(entity)
-    else {
+    let Ok(item) = q_children.get(entity) else {
         return false;
     };
 
-    let mut wind = o_wind.and_then(|x| x.wind_override).unwrap_or(*wind);
+    let wind = item
+        .o_wind_config
+        .and_then(|x| x.wind_override)
+        .unwrap_or(*wind)
+        .with(item.wind_data);
 
-    wind = wind.with(wind_data);
-
-    let lod = o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
-    let name = o_current_name.map_or(o_name.cloned(), Some);
+    let lod = item.o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
+    let name = o_current_name.map_or(item.o_name.cloned(), Some);
 
     // TODO expose in some way
-    let hue = (entity.index() * 30) as f32 % 360.0;
+    let hue = (item.entity.index() * 30) as f32 % 360.0;
     let debug_color = Color::hsl(hue, 1.0, 0.5);
 
     let options = options
-        .with(material_option_data)
+        .with(item.material_options)
         .with_debug_color(debug_color);
 
-    let has_children_with_materials = o_children
+    let has_children_with_materials = item
+        .o_children
         .map(|children| children.iter())
         .unwrap_or_default()
         .map(|child| {
@@ -145,15 +145,15 @@ where
         .unwrap_or_default();
 
     if has_children_with_materials {
-        cmd.entity(entity).insert(ScatterLayerChildProcessed);
+        cmd.entity(item.entity).insert(ScatterLayerChildProcessed);
     }
 
-    let Some(mesh) = o_mesh else {
-        // TODO allow/create adapter/backends logic to allow more than just mesh
+    // TODO allow/create adapter/backends logic to allow more than just mesh
+    let Some(mesh) = item.o_mesh else {
         return has_children_with_materials;
     };
 
-    let aabb = o_aabb.cloned().unwrap_or_else(|| {
+    let aabb = item.o_aabb.cloned().unwrap_or_else(|| {
         meshes
             .get(&mesh.0)
             .and_then(|x| x.compute_aabb())
@@ -161,7 +161,7 @@ where
     });
 
     let request = ScatterMaterialCreationRequest::<TOut, TIn>::new(
-        o_material.map(|x| x.0.clone()),
+        item.o_material.map(|x| x.0.clone()),
         ScatterAssetProperties {
             wind,
             options,
@@ -170,11 +170,13 @@ where
             name,
             lod,
             layer,
-            wind_affected: options.wind_affected || o_wind_affected.is_some(),
+            wind_affected: options.wind_affected || item.o_wind_affected.is_some(),
+            #[cfg(all(feature = "avian"))]
+            rigid_body: item.o_rigid_body.cloned(),
         },
     );
 
-    cmd.entity(entity).insert(request);
+    cmd.entity(item.entity).insert(request);
 
     true
 }

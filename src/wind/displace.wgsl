@@ -555,9 +555,6 @@ fn calculate_bop_displacement(
     return vec3<f32>(0.0, vertical_amount, 0.0);
 }
 
-
-
-
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
@@ -597,7 +594,7 @@ fn calculate_edge_correction(
     let top_down_factor = abs(dot(to_camera, world_up));
     let top_down_fade = pow(1.0 - top_down_factor, 0.5);
 
-    let strength = grazing_angle_factor * edge_correction_factor *  top_down_fade;
+    let strength = grazing_angle_factor * edge_correction_factor * top_down_fade;
 
     let shift = view_side_dir * -signed_edge_factor;
 

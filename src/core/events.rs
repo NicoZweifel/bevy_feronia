@@ -1,11 +1,12 @@
 use crate::core::SpawnTrigger;
-use crate::prelude::ScatterItemAsset;
-use bevy::asset::Asset;
-use bevy::prelude::{Event, Message};
+use crate::prelude::{ScatterAsset, ScatterHandleAsset, ScatterItemAsset};
+use bevy::asset::{Asset, Assets, Handle};
+use bevy::platform::collections::HashMap;
+use bevy::prelude::*;
 
-/// Event used to trigger the spawning of a batch of prototypes.
+/// Event used to trigger the spawning of a batch of `[ScatterAssets]`.
 #[derive(Event, Message, Debug, Clone)]
-pub struct SpawnProtoTypes<T>
+pub struct SpawnScatterAssets<T>
 where
     T: Asset + Clone,
 {
@@ -15,7 +16,7 @@ where
     pub trigger: SpawnTrigger,
 }
 
-impl<T> SpawnProtoTypes<T>
+impl<T> SpawnScatterAssets<T>
 where
     T: Asset + Clone,
 {
@@ -27,9 +28,34 @@ where
         self.items = items;
         self
     }
+
+    pub fn create_name_map<'w>(
+        &self,
+        prototype_assets: &'w Res<Assets<ScatterAsset<T>>>,
+    ) -> HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> {
+        let mut name_map: HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> = HashMap::new();
+
+        for (handle, asset) in self
+            .items
+            .iter()
+            .filter_map(|h| prototype_assets.get(&**h).map(|p| ((**h).clone(), p)))
+        {
+            let name = asset.properties.name.clone().unwrap_or_else(|| {
+                warn!("ScatteringAsset {:?} has no name!", handle);
+
+                Name::new("")
+            });
+            name_map
+                .entry(name)
+                .or_default()
+                .push(ScatterHandleAsset { handle, asset });
+        }
+
+        name_map
+    }
 }
 
-impl<T> From<SpawnTrigger> for SpawnProtoTypes<T>
+impl<T> From<SpawnTrigger> for SpawnScatterAssets<T>
 where
     T: Asset + Clone,
 {

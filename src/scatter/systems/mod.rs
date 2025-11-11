@@ -4,6 +4,7 @@ pub mod clear_scatter_root;
 pub mod handle_scatter_requests;
 pub mod init;
 pub mod setup;
+pub mod spawn;
 
 pub mod prelude {
     pub use super::check_unprocessed_layers::*;
@@ -12,4 +13,5 @@ pub mod prelude {
     pub use super::handle_scatter_requests::*;
     pub use super::init::*;
     pub use super::setup::*;
+    pub use super::spawn::*;
 }
