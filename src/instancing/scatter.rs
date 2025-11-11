@@ -92,7 +92,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .map(move |handle_asset| (handle_asset, instances))
             })
         {
-            let mesh_handle = asset.mesh().clone();
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
             let visibility_range = request
@@ -105,10 +104,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     let mut instance = *instance;
                     instance.position += request.chunk_gtf_translation;
 
-                    let instance_min =
-                        instance.position + Vec3::from(asset.aabb().min() * instance.scale);
-                    let instance_max =
-                        instance.position + Vec3::from(asset.aabb().max() * instance.scale);
+                    let instance_min = instance.position
+                        + Vec3::from(asset.properties.aabb.min() * instance.scale);
+                    let instance_max = instance.position
+                        + Vec3::from(asset.properties.aabb.max() * instance.scale);
 
                     min_point = min_point.min(instance_min);
                     max_point = max_point.max(instance_max);
@@ -116,36 +115,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     instance
                 })
                 .collect::<Vec<_>>();
-
-            let entity = cmd
-                .spawn((
-                    InstancedWindAffectedMeshMaterial(asset.material().clone()),
-                    Mesh3d(mesh_handle),
-                    InstanceMaterialData {
-                        color: LinearRgba::from(
-                            asset
-                                .properties
-                                .options
-                                .color
-                                .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
-                        )
-                        .to_f32_array(),
-                        visibility_range: [
-                            visibility_range.start_margin.start,
-                            visibility_range.start_margin.end,
-                            visibility_range.end_margin.start,
-                            visibility_range.end_margin.end,
-                        ],
-                        instances: instances_with_offset,
-                        static_bend_strength: asset.properties.options.static_bend_strength,
-                        curve_factor: asset.properties.options.curve_factor,
-                    },
-                    NoAutomaticBatching,
-                    WindAffected,
-                    ScatteredInstance(request.event.trigger.layer),
-                    ScatteredAsset(handle.clone()),
-                ))
-                .id();
 
             let local_aabb = Aabb::from_min_max(
                 min_point - request.chunk_gtf_translation,
@@ -158,12 +127,53 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 .chunk
                 .unwrap_or(request.event.trigger.layer);
 
-            cmd.entity(entity).insert((
-                Transform::default(),
-                Visibility::Visible,
-                local_aabb,
-                ChildOf(parent),
-            ));
+            for part in &asset.parts {
+                let mesh_handle = part.mesh().clone();
+                let entity = cmd
+                    .spawn((
+                        InstancedWindAffectedMeshMaterial(part.material().clone()),
+                        Mesh3d(mesh_handle),
+                        InstanceMaterialData {
+                            color: LinearRgba::from(
+                                asset
+                                    .properties
+                                    .options
+                                    .color
+                                    .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
+                            )
+                            .to_f32_array(),
+                            visibility_range: [
+                                visibility_range.start_margin.start,
+                                visibility_range.start_margin.end,
+                                visibility_range.end_margin.start,
+                                visibility_range.end_margin.end,
+                            ],
+                            instances: instances_with_offset
+                                .clone()
+                                .into_iter()
+                                .map(|mut instance| {
+                                    instance.position += part.transform.translation;
+                                    instance.scale *= part.transform.scale.element_sum() / 3.0;
+                                    instance
+                                })
+                                .collect(),
+                            static_bend_strength: asset.properties.options.static_bend_strength,
+                            curve_factor: asset.properties.options.curve_factor,
+                        },
+                        NoAutomaticBatching,
+                        WindAffected,
+                        ScatteredInstance(request.event.trigger.layer),
+                        ScatteredAsset(handle.clone()),
+                    ))
+                    .id();
+
+                cmd.entity(entity).insert((
+                    Transform::default(),
+                    Visibility::Visible,
+                    local_aabb,
+                    ChildOf(parent),
+                ));
+            }
         }
     }
 }

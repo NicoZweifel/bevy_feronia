@@ -1,4 +1,3 @@
-use crate::core::components::LevelOfDetail;
 use crate::core::*;
 use crate::prelude::*;
 use bevy::asset::{Asset, Handle};
@@ -7,43 +6,81 @@ use bevy::mesh::Mesh;
 use bevy::prelude::*;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::{Collider, RigidBody};
 
 #[derive(Clone, Debug)]
 pub struct ScatterAssetProperties {
     pub wind: Wind,
     pub options: MaterialOptions,
-    pub mesh_handle: Handle<Mesh>,
     pub aabb: Aabb,
     pub name: Option<Name>,
     pub lod: LevelOfDetail,
     pub layer: Entity,
     pub wind_affected: bool,
+}
+
+#[derive(Asset, Clone, TypePath)]
+pub struct ScatterAsset<T = StandardMaterial>
+where
+    T: Asset + Clone,
+{
+    pub properties: ScatterAssetProperties,
+    pub parts: Vec<ScatterAssetPart<T>>,
 
     #[cfg(feature = "avian")]
     pub rigid_body: Option<RigidBody>,
 }
 
-#[derive(Asset, TypePath, Clone, Debug)]
-pub struct ScatterAsset<T = StandardMaterial>
+#[derive(Debug, Clone)]
+pub struct ScatterAssetPart<T = StandardMaterial>
 where
     T: Asset + Clone,
 {
-    pub material: Handle<T>,
+    pub transform: Transform,
     pub properties: ScatterAssetProperties,
+    pub h_material: Handle<T>,
+    pub h_mesh: Handle<Mesh>,
+
+    #[cfg(feature = "avian")]
+    pub collider: Option<Collider>,
 }
 
 impl<T> ScatterAsset<T>
 where
     T: Asset + Clone,
 {
-    pub fn new<TIn: Material, TOut: ScatterMaterial<TIn>>(
-        material_handle: Handle<T>,
-        request: &ScatterMaterialCreationRequest<TOut, TIn>,
+    pub fn new(
+        parts: Vec<ScatterAssetPart<T>>,
+        properties: ScatterAssetProperties,
+        #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> Self {
         Self {
-            material: material_handle,
-            properties: request.properties.clone(),
+            properties,
+            parts,
+            #[cfg(feature = "avian")]
+            rigid_body,
+        }
+    }
+}
+
+impl<T> ScatterAssetPart<T>
+where
+    T: Asset + Clone,
+{
+    pub fn new(
+        h_material: Handle<T>,
+        h_mesh: Handle<Mesh>,
+        transform: Transform,
+        properties: ScatterAssetProperties,
+        #[cfg(feature = "avian")] collider: Option<Collider>,
+    ) -> Self {
+        Self {
+            transform,
+            h_mesh,
+            h_material,
+            properties,
+            #[cfg(feature = "avian")]
+            collider,
         }
     }
 
@@ -62,15 +99,29 @@ where
     pub fn wind_affected_bundle(&self, asset_handle: Handle<ScatterAsset<T>>) -> impl Bundle {
         (WindAffected, self.bundle(asset_handle.clone()))
     }
+
+    pub fn insert_bundle(
+        self,
+        cmd: &mut Commands,
+        entity: Entity,
+        asset_handle: Handle<ScatterAsset<T>>,
+    ) {
+        if self.properties.wind_affected {
+            cmd.entity(entity)
+                .insert(self.wind_affected_bundle(asset_handle));
+        } else {
+            cmd.entity(entity).insert(self.bundle(asset_handle));
+        }
+    }
 }
 
-impl<T: Asset + Clone> ProtoType<T> for ScatterAsset<T> {
+impl<T: Asset + Clone> ProtoType<T> for ScatterAssetPart<T> {
     fn mesh(&self) -> &Handle<Mesh> {
-        &self.properties.mesh_handle
+        &self.h_mesh
     }
 
     fn material(&self) -> &Handle<T> {
-        &self.material
+        &self.h_material
     }
 
     fn wind(&self) -> &Wind {

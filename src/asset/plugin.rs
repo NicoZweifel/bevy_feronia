@@ -42,9 +42,9 @@ where
         app.add_systems(
             Update,
             (
-                queue_material_creation_requests::<TOut, TIn>,
+                queue_asset_creation_requests::<TOut, TIn>,
                 process_distinct_material_requests::<TOut, TIn>
-                    .after(queue_material_creation_requests::<TOut, TIn>),
+                    .after(queue_asset_creation_requests::<TOut, TIn>),
             )
                 .run_if(in_state(ScatterState::Ready)),
         );

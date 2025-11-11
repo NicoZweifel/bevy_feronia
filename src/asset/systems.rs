@@ -5,12 +5,14 @@ use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::{RigidBody,Collider};
+use crate::scatter::utils::combine_aabbs;
 
 #[derive(QueryData)]
 #[query_data()]
 pub struct CollectableQueryData<'w, T: Material> {
     pub entity: Entity,
+    pub transform: &'w Transform,
     pub o_material: Option<&'w MeshMaterial3d<T>>,
     pub o_mesh: Option<&'w Mesh3d>,
     pub o_aabb: Option<&'w Aabb>,
@@ -22,12 +24,20 @@ pub struct CollectableQueryData<'w, T: Material> {
 
     #[cfg(feature = "avian")]
     pub o_rigid_body: Option<&'w RigidBody>,
+    #[cfg(feature = "avian")]
+    pub o_collider: Option<&'w Collider>,
 
     pub material_options: MaterialOptionData<'w>,
     pub wind_data: WindData<'w>,
 }
 
-pub fn queue_material_creation_requests<TOut, TIn>(
+enum AssetSearchResult {
+    None,
+    Part,
+    Root,
+}
+
+pub fn queue_asset_creation_requests<TOut, TIn>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_layers: Query<
@@ -38,13 +48,14 @@ pub fn queue_material_creation_requests<TOut, TIn>(
             With<ScatterLayerType<TOut, TIn>>,
         ),
     >,
-    q_collect: Query<
+    q_collect_search: Query<
         CollectableQueryData<TIn>,
         (
             Without<ScatterLayerChildProcessed>,
-            Without<ScatterMaterialCreationRequest<TOut, TIn>>,
+            Without<ScatterAssetCreationRequest<TOut, TIn>>,
         ),
     >,
+    q_collect_all: Query<CollectableQueryData<TIn>>,
     wind: Res<Wind>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) where
@@ -60,29 +71,53 @@ pub fn queue_material_creation_requests<TOut, TIn>(
         for (layer, scatter_items, material_option_data, wind_data) in
             children.iter().filter_map(|layer| q_layers.get(layer).ok())
         {
-            let mut wind = *wind;
-            wind = wind.with(wind_data);
+            for &item_entity in scatter_items {
+                let Ok(item) = q_collect_search.get(item_entity) else {
+                    continue;
+                };
 
-            let options = MaterialOptions::from(material_option_data);
+                let wind = (*wind).with(wind_data).with(item.wind_data);
+                let options = MaterialOptions::from(material_option_data)
+                    .with(item.material_options);
+                let lod = item.o_lod.cloned().unwrap_or_default();
+                let name = item.o_name.cloned();
 
-            for item in scatter_items {
-                queue_requests_recursive::<TOut, TIn>(
+                let result = queue_asset_creation_requests_recursive::<TOut, TIn>(
                     layer,
-                    *item,
+                    item_entity,
                     &mut cmd,
                     &wind,
                     &options,
-                    None,
-                    None,
-                    &q_collect,
+                    name.clone(),
+                    Some(lod),
+                    &q_collect_search,
+                    &q_collect_all,
                     &mut meshes,
                 );
+
+                if let AssetSearchResult::Part = result {
+                    collect_and_queue_request::<TOut, TIn>(
+                        layer,
+                        item_entity,
+                        &mut cmd,
+                        &wind,
+                        &options,
+                        name,
+                        lod,
+                        #[cfg(feature = "avian")]
+                        item.o_rigid_body.cloned(),
+                        &q_collect_all,
+                        &mut meshes,
+                    );
+                }
             }
         }
     }
 }
 
-fn queue_requests_recursive<TOut, TIn>(
+/// Recursively searches for "asset roots" and spawns creation requests.
+/// Returns what it found so the parent can react.
+fn queue_asset_creation_requests_recursive<TOut, TIn>(
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
@@ -90,21 +125,22 @@ fn queue_requests_recursive<TOut, TIn>(
     options: &MaterialOptions,
     o_current_name: Option<Name>,
     o_current_lod: Option<LevelOfDetail>,
-    q_children: &Query<
+    q_collect_search: &Query<
         CollectableQueryData<TIn>,
         (
             Without<ScatterLayerChildProcessed>,
-            Without<ScatterMaterialCreationRequest<TOut, TIn>>,
+            Without<ScatterAssetCreationRequest<TOut, TIn>>,
         ),
     >,
+    q_collect_all: &Query<CollectableQueryData<TIn>>,
     meshes: &mut ResMut<Assets<Mesh>>,
-) -> bool
+) -> AssetSearchResult
 where
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    let Ok(item) = q_children.get(entity) else {
-        return false;
+    let Ok(item) = q_collect_search.get(entity) else {
+        return AssetSearchResult::None;
     };
 
     let wind = item
@@ -115,21 +151,38 @@ where
 
     let lod = item.o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
     let name = o_current_name.map_or(item.o_name.cloned(), Some);
+    let options = options.with(item.material_options);
 
-    // TODO expose in some way
-    let hue = (item.entity.index() * 30) as f32 % 360.0;
-    let debug_color = Color::hsl(hue, 1.0, 0.5);
+    #[cfg(feature = "avian")]
+    let is_physics_root = item.o_rigid_body.is_some();
+    #[cfg(not(feature = "avian"))]
+    let is_physics_root = false;
 
-    let options = options
-        .with(item.material_options)
-        .with_debug_color(debug_color);
+    if is_physics_root {
+        collect_and_queue_request::<TOut, TIn>(
+            layer,
+            entity,
+            cmd,
+            &wind,
+            &options,
+            name,
+            lod,
+            #[cfg(feature = "avian")]
+            item.o_rigid_body.cloned(),
+            q_collect_all,
+            meshes,
+        );
+        return AssetSearchResult::Root;
+    }
 
-    let has_children_with_materials = item
-        .o_children
-        .map(|children| children.iter())
-        .unwrap_or_default()
-        .map(|child| {
-            queue_requests_recursive::<TOut, TIn>(
+    let has_mesh_and_material = item.o_mesh.is_some() && item.o_material.is_some();
+
+    let mut found_part = false;
+    let mut found_root = false;
+
+    if let Some(children) = item.o_children {
+        for child in children.iter() {
+            match queue_asset_creation_requests_recursive::<TOut, TIn>(
                 layer,
                 child,
                 cmd,
@@ -137,53 +190,202 @@ where
                 &options,
                 name.clone(),
                 Some(lod),
-                q_children,
+                q_collect_search,
+                q_collect_all,
+                meshes,
+            ) {
+                AssetSearchResult::None => {}
+                AssetSearchResult::Part => found_part = true,
+                AssetSearchResult::Root => found_root = true,
+            }
+        }
+    }
+
+    if found_part && !found_root {
+        collect_and_queue_request::<TOut, TIn>(
+            layer,
+            entity,
+            cmd,
+            &wind,
+            &options,
+            name,
+            lod,
+            #[cfg(feature = "avian")]
+            None,
+            q_collect_all,
+            meshes,
+        );
+        return AssetSearchResult::Root;
+    }
+
+    if has_mesh_and_material {
+        return AssetSearchResult::Part;
+    }
+
+    if found_root {
+        cmd.entity(entity).insert(ScatterLayerChildProcessed);
+        return AssetSearchResult::Root;
+    }
+
+    cmd.entity(entity).insert(ScatterLayerChildProcessed);
+
+    AssetSearchResult::None
+}
+
+/// Collects all parts and queues the [`ScatterAssetCreationRequest`].
+///
+/// This is called *after* a root entity has been identified.
+fn collect_and_queue_request<TOut, TIn>(
+    layer: Entity,
+    root_entity: Entity,
+    cmd: &mut Commands,
+    root_wind: &Wind,
+    o_root: &MaterialOptions,
+    o_root_name: Option<Name>,
+    root_lod: LevelOfDetail,
+    #[cfg(feature = "avian")] o_root_rigid_body: Option<RigidBody>,
+    q_collect_all: &Query<CollectableQueryData<TIn>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+) where
+    TIn: Material,
+    TOut: ScatterMaterial<TIn>,
+{
+    let all_parts = collect_parts_recursive_internal(
+        layer,
+        root_entity,
+        cmd,
+        root_wind,
+        o_root,
+        o_root_name.clone(),
+        Some(root_lod),
+        q_collect_all,
+        meshes,
+    );
+
+    if all_parts.is_empty() {
+        return;
+    }
+
+    let mut union_aabb = all_parts[0].properties.aabb;
+    for part in &all_parts[1..] {
+        union_aabb = combine_aabbs(&union_aabb,&part.properties.aabb);
+    }
+
+    let any_wind_affected = o_root.wind_affected
+        || all_parts
+        .iter()
+        .any(|part| part.properties.wind_affected);
+
+    let global_properties = ScatterAssetProperties {
+        wind: *root_wind,
+        options: *o_root,
+        aabb: union_aabb,
+        name: o_root_name,
+        lod: root_lod,
+        layer,
+        wind_affected: any_wind_affected,
+    };
+
+    let request = ScatterAssetCreationRequest::<TOut, TIn>::new(
+        global_properties,
+        all_parts,
+        #[cfg(feature = "avian")]
+        o_root_rigid_body,
+    );
+
+    cmd.entity(root_entity).insert(request);
+}
+
+/// Internal helper for `collect_and_queue_request` to gather all parts.
+///
+/// This function *must* mark entities with `ScatterLayerChildProcessed`.
+fn collect_parts_recursive_internal<TIn: Material>(
+    layer: Entity,
+    entity: Entity,
+    cmd: &mut Commands,
+    wind: &Wind,
+    options: &MaterialOptions,
+    o_current_name: Option<Name>,
+    o_current_lod: Option<LevelOfDetail>,
+    q_collect_all: &Query<CollectableQueryData<TIn>>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+) -> Vec<ScatterAssetPart<TIn>> {
+    let Ok(item) = q_collect_all.get(entity) else {
+        return vec![];
+    };
+
+    cmd.entity(entity).insert(ScatterLayerChildProcessed);
+
+    let wind = item
+        .o_wind_config
+        .and_then(|x| x.wind_override)
+        .unwrap_or(*wind)
+        .with(item.wind_data);
+
+    let lod = item.o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
+    let name = o_current_name.map_or(item.o_name.cloned(), Some);
+
+    // TODO https://github.com/NicoZweifel/bevy_feronia/issues/16
+    let hue = (item.entity.index() * 30) as f32 % 360.0;
+    let debug_color = Color::hsl(hue, 1.0, 0.5);
+    let options = options
+        .with(item.material_options)
+        .with_debug_color(debug_color);
+
+    let mut all_parts = item
+        .o_children
+        .map(|children| children.iter())
+        .unwrap_or_default()
+        .flat_map(|child| {
+            collect_parts_recursive_internal(
+                layer,
+                child,
+                cmd,
+                &wind,
+                &options,
+                name.clone(),
+                Some(lod),
+                q_collect_all,
                 meshes,
             )
         })
-        .reduce(|acc, has_material| acc || has_material)
-        .unwrap_or_default();
+        .collect::<Vec<_>>();
 
-    if has_children_with_materials {
-        cmd.entity(item.entity).insert(ScatterLayerChildProcessed);
-    }
+    if let (Some(mesh), Some(material)) = (item.o_mesh, item.o_material) {
+        let aabb = item.o_aabb.cloned().unwrap_or_else(|| {
+            meshes
+                .get(&mesh.0)
+                .and_then(|x| x.compute_aabb())
+                .unwrap_or_default()
+        });
 
-    // TODO allow/create adapter/backends logic to allow more than just mesh
-    let Some(mesh) = item.o_mesh else {
-        return has_children_with_materials;
-    };
-
-    let aabb = item.o_aabb.cloned().unwrap_or_else(|| {
-        meshes
-            .get(&mesh.0)
-            .and_then(|x| x.compute_aabb())
-            .unwrap_or_default()
-    });
-
-    let request = ScatterMaterialCreationRequest::<TOut, TIn>::new(
-        item.o_material.map(|x| x.0.clone()),
-        ScatterAssetProperties {
+        let part_properties = ScatterAssetProperties {
             wind,
             options,
-            mesh_handle: mesh.0.clone(),
             aabb,
             name,
             lod,
             layer,
             wind_affected: options.wind_affected || item.o_wind_affected.is_some(),
+        };
+
+        let part = ScatterAssetPart::new(
+            material.0.clone(),
+            mesh.0.clone(),
+            *item.transform,
+            part_properties,
             #[cfg(feature = "avian")]
-            rigid_body: item.o_rigid_body.cloned(),
-        },
-    );
+            item.o_collider.cloned(),
+        );
+        all_parts.push(part);
+    }
 
-    cmd.entity(item.entity).insert(request);
-
-    true
+    all_parts
 }
 
 pub fn process_distinct_material_requests<TOut, TIn>(
     mut cmd: Commands,
-    requests_query: Query<(Entity, &ScatterMaterialCreationRequest<TOut, TIn>)>,
+    requests_query: Query<(Entity, &ScatterAssetCreationRequest<TOut, TIn>)>,
     materials_in: Res<Assets<TIn>>,
     mut materials_out: ResMut<Assets<TOut>>,
     wind_noise_texture: Res<WindTexture>,
@@ -192,74 +394,121 @@ pub fn process_distinct_material_requests<TOut, TIn>(
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    for (entity, request) in &requests_query {
-        let source_material = request
-            .source_material_handle
-            .clone()
-            .and_then(|x| materials_in.get(&x));
+    for (
+        entity,
+        ScatterAssetCreationRequest {
+            parts,
+            properties,
+            #[cfg(feature = "avian")]
+            o_rigid_body,
+            ..
+        },
+    ) in &requests_query
+    {
+        let parts = parts
+            .iter()
+            .map(
+                |ScatterAssetPart {
+                     h_material,
+                     h_mesh,
+                     transform,
+                     properties,
+                     #[cfg(feature = "avian")]
+                     collider,
+                 }| {
+                    let source_material = materials_in.get(h_material);
 
-        let new_material = TOut::create_material(
-            source_material.cloned(),
-            wind_noise_texture.0.clone(),
-            &request.properties,
+                    let material = TOut::create_material(
+                        source_material.cloned(),
+                        wind_noise_texture.0.clone(),
+                        &properties,
+                    );
+
+                    let h_material = materials_out.add(material);
+
+                    ScatterAssetPart {
+                        transform: *transform,
+                        properties: properties.clone(),
+                        h_material,
+                        h_mesh: h_mesh.clone(),
+                        #[cfg(feature = "avian")]
+                        collider: collider.clone(),
+                    }
+                },
+            )
+            .collect::<Vec<_>>();
+
+        let asset = ScatterAsset::new(
+            parts.clone(),
+            properties.clone(),
+            #[cfg(feature = "avian")]
+            *o_rigid_body,
         );
-
-        let material_handle = materials_out.add(new_material);
-        let asset = ScatterAsset::new(material_handle, request);
-        let asset_handle = prototype_assets.add(asset.clone());
+        let h_scatter_asset = prototype_assets.add(asset.clone());
 
         cmd.entity(entity)
-            .remove::<ScatterMaterialCreationRequest<TOut, TIn>>();
+            .remove::<ScatterAssetCreationRequest<TOut, TIn>>();
 
-        insert_bundle::<TOut>(&mut cmd, entity, asset_handle, asset, &request.properties);
+        for part in parts {
+            part.insert_bundle(&mut cmd, entity, h_scatter_asset.clone());
+        }
     }
 }
 
 pub fn process_same_type_material_requests<T>(
     mut cmd: Commands,
-    requests: Query<(Entity, &ScatterMaterialCreationRequest<T, T>)>,
+    requests: Query<(Entity, &ScatterAssetCreationRequest<T, T>)>,
     mut materials: ResMut<Assets<T>>,
     wind_noise_texture: Res<WindTexture>,
-    mut prototype_assets: ResMut<Assets<ScatterAsset<T>>>,
+    mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
 ) where
     T: ScatterMaterial<T> + Material,
 {
-    for (entity, request) in &requests {
-        let source_material = request
-            .source_material_handle
-            .clone()
-            .and_then(|x| materials.get(&x));
+    for (
+        entity,
+        ScatterAssetCreationRequest {
+            parts,
+            properties,
+            #[cfg(feature = "avian")]
+            o_rigid_body,
+            ..
+        },
+    ) in &requests
+    {
+        let parts = parts
+            .iter()
+            .map(|part| {
+                let source_material = materials.get(&part.h_material);
 
-        let new_material = T::create_material(
-            source_material.cloned(),
-            wind_noise_texture.0.clone(),
-            &request.properties,
+                let material = T::create_material(
+                    source_material.cloned(),
+                    wind_noise_texture.0.clone(),
+                    &properties,
+                );
+
+                let h_material = materials.add(material);
+
+                ScatterAssetPart::<T> {
+                    h_material,
+                    ..part.clone()
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let asset = ScatterAsset::new(
+            parts.clone(),
+            properties.clone(),
+            #[cfg(feature = "avian")]
+            *o_rigid_body,
         );
 
-        let material_handle = materials.add(new_material);
-        let asset = ScatterAsset::new(material_handle, request);
-        let asset_handle = prototype_assets.add(asset.clone());
+        let h_scatter_asset = scatter_assets.add(asset.clone());
 
         cmd.entity(entity)
-            .remove::<ScatterMaterialCreationRequest<T, T>>();
+            .remove::<ScatterAssetCreationRequest<T, T>>();
 
-        insert_bundle::<T>(&mut cmd, entity, asset_handle, asset, &request.properties);
-    }
-}
-
-fn insert_bundle<T>(
-    cmd: &mut Commands,
-    entity: Entity,
-    asset_handle: Handle<ScatterAsset<T>>,
-    asset: ScatterAsset<T>,
-    properties: &ScatterAssetProperties,
-) where
-    T: Asset + Clone,
-{
-    if properties.wind_affected {
-        cmd.entity(entity)
-            .insert(asset.wind_affected_bundle(asset_handle));
-    } else {
-        cmd.entity(entity).insert(asset.bundle(asset_handle));
+        for part in parts {
+            part.insert_bundle(&mut cmd, entity, h_scatter_asset.clone());
+        }
     }
 }

@@ -114,9 +114,9 @@ impl Plugin for StandardScatterPlugin {
             .add_systems(
                 Update,
                 (
-                    queue_material_creation_requests::<StandardMaterial, StandardMaterial>,
+                    queue_asset_creation_requests::<StandardMaterial, StandardMaterial>,
                     process_same_type_material_requests::<StandardMaterial>.after(
-                        queue_material_creation_requests::<StandardMaterial, StandardMaterial>,
+                        queue_asset_creation_requests::<StandardMaterial, StandardMaterial>,
                     ),
                 )
                     .run_if(in_state(ScatterState::Ready)),

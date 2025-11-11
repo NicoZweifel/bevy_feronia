@@ -100,29 +100,32 @@ where
     ) -> impl Iterator<
         Item = (
             Transform,
+            VisibilityRange,
             Mesh3d,
             MeshMaterial3d<T>,
             ChildOf,
-            VisibilityRange,
             ScatteredInstance,
             ScatteredAsset<T>,
         ),
     > {
         self.event.trigger.data.iter().flat_map(|res| {
-            self.prototypes_from_seed_iter(res.seed)
-                .map(|ScatterHandleAsset { handle, asset }| {
-                    let visibility_range =
-                        self.lod_config.get_visibility_range(asset.properties.lod);
-                    (
-                        res.transform,
-                        Mesh3d(asset.mesh().clone()),
-                        MeshMaterial3d::<T>(asset.material().clone()),
-                        ChildOf(self.parent),
-                        visibility_range,
-                        ScatteredInstance(self.event.trigger.layer),
-                        ScatteredAsset(handle.clone()),
-                    )
-                })
+            self.prototypes_from_seed_iter(res.seed).flat_map(
+                |ScatterHandleAsset { handle, asset }| {
+                    asset.parts.iter().map(|part| {
+                        (
+                            res.transform
+                                .with_translation(res.transform.translation + part.transform.translation)
+                                .with_scale(res.transform.scale * part.transform.scale),
+                            self.lod_config.get_visibility_range(asset.properties.lod),
+                            Mesh3d(part.h_mesh.clone()),
+                            MeshMaterial3d::<T>(part.h_material.clone()),
+                            ChildOf(self.parent),
+                            ScatteredInstance(self.event.trigger.layer),
+                            ScatteredAsset(handle.clone()),
+                        )
+                    })
+                },
+            )
         })
     }
 }

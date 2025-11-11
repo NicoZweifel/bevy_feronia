@@ -20,11 +20,6 @@ pub fn update_materials<TOut, TIn>(
     TOut: ScatterMaterial<TIn>,
 {
     for (_, asset) in scatter_assets.iter_mut() {
-        let Some(material) = materials.get_mut(&asset.material) else {
-            dbg!("Material not found!");
-            continue;
-        };
-
         if asset.properties.options.controlled {
             continue;
         };
@@ -41,17 +36,24 @@ pub fn update_materials<TOut, TIn>(
 
         let wind = wind.with(root_wind_data).with(wind_data);
 
-        // TODO update options
-        /*
-        let options = MaterialOptions::from(root_material_options)
-            .with(material_options)
-            .with_options(asset.properties.options)
-            .with_quality(*asset.properties.lod, asset.properties.wind_affected);
-         */
-
         asset.properties.wind = wind;
 
-        TOut::update_material(material, wind, asset.properties.options);
+        for part in &asset.parts {
+            let Some(material) = materials.get_mut(&part.h_material) else {
+                dbg!("Material not found!");
+                continue;
+            };
+
+            // TODO update options
+            /*
+            let options = MaterialOptions::from(root_material_options)
+                .with(material_options)
+                .with_options(asset.properties.options)
+                .with_quality(*asset.properties.lod, asset.properties.wind_affected);
+             */
+
+            TOut::update_material(material, wind, asset.properties.options);
+        }
     }
 }
 
