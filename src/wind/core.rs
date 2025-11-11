@@ -68,7 +68,7 @@ where
     T: Asset + Clone,
 {
     pub fn prototypes_from_seed_iter(
-        &'w self,
+        &self,
         seed: u64,
     ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
         let mut rng = Pcg64::seed_from_u64(seed);
@@ -76,18 +76,18 @@ where
         self.names
             .choose(&mut rng)
             .into_iter()
-            .flat_map(move |name| self.prototypes_from_name_iter(name))
+            .flat_map(|name| self.prototypes_from_name_iter(name))
     }
 
     pub fn prototypes_from_name_iter(
-        &'w self,
+        &self,
         name: &Name,
     ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
         self.name_map
             .get(name)
             .map_or(&[][..], |prototypes| prototypes.as_slice())
             .iter()
-            .filter(move |&handle_asset| handle_asset.is_lod(self.is_chunked, *self.chunk_level))
+            .filter(|&handle_asset| handle_asset.is_lod(self.is_chunked, *self.chunk_level))
     }
 }
 
