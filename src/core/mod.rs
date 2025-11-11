@@ -236,7 +236,7 @@ mod tests {
     use bevy::color::palettes::css::*;
 
     #[test]
-    fn test_from_material_option_data_all_some() {
+    fn test_from_material_option_data_all_some_should_set() {
         let debug = EnableDebug;
         let billboarding = EnableBillboarding;
         let edge = EdgeCorrectionFactor(1.1);
@@ -434,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn test_builder_methods() {
+    fn test_builder_methods_should_set() {
         let opts = MaterialOptions::default()
             .with_controlled(true)
             .with_debug_color(GREEN.into());

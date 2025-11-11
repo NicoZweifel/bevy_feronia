@@ -20,8 +20,8 @@ where
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
     ) -> Self;
-    
-    fn update_material(_material: &mut StandardMaterial, _wind: Wind, _options: MaterialOptions) {}
+
+    fn update_material(_material: &mut Self, _wind: Wind, _options: MaterialOptions) {}
 
     fn component(material: Handle<Self>) -> impl Component;
 
@@ -139,7 +139,6 @@ impl ScatterMaterial for StandardMaterial {
     ) -> StandardMaterial {
         base.unwrap_or_default()
     }
-
 
     fn component(material: Handle<StandardMaterial>) -> impl Component {
         MeshMaterial3d(material)

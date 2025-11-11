@@ -1,9 +1,6 @@
 use crate::prelude::*;
 use bevy::pbr::ExtendedMaterial;
 use bevy::prelude::*;
-use rand::SeedableRng;
-use rand::prelude::IndexedRandom;
-use rand_pcg::Pcg64;
 use std::borrow::Cow;
 
 pub fn scatter_layer(name: impl Into<Cow<'static, str>>) -> impl Bundle
