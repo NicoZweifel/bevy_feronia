@@ -24,7 +24,6 @@ pub fn spawn<TOut, TIn>(
         let name_map = &event.create_name_map(&prototype_assets);
         if name_map.is_empty() {
             warn!("No assets found for spawn event!");
-
             continue;
         }
 

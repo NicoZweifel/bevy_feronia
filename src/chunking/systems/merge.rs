@@ -13,6 +13,8 @@ pub fn merge_check(
             Without<ChunkInitialize>,
         ),
     >,
+    q_root: Query<&ChunkRootSizeDim, With<ChunkRoot>>,
+    q_parent: Query<&ChunkOf, With<Chunk>>,
     mut mw_check: MessageWriter<MergeCheck>,
 ) {
     let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
@@ -22,8 +24,17 @@ pub fn merge_check(
     }
 
     for (parent, children) in parents {
-        // TODO don't hardcode but use ChunkSizeScalarConfig / ChunkRootSizeDim
-        if children.len() < 4 {
+        let Ok(root) = q_parent.get(parent) else {
+            warn!("Couldn't get parent Chunk for merge!");
+            continue;
+        };
+
+        let Ok(root_size_dim) = q_root.get(**root) else {
+            warn!("Couldn't get ChunkRoot for merge!");
+            continue;
+        };
+
+        if children.len() < root_size_dim.pow(2) as usize {
             continue;
         };
 
@@ -54,9 +65,7 @@ pub fn handle_merge_check(
             continue;
         };
 
-        let children = e.children.clone();
-
-        let first_child = children[0];
+        let first_child = e.children[0];
 
         let Ok(merge_distance) = q_chunk.get(first_child) else {
             warn!("Couldn't get Chunk {first_child} in level for merge!");

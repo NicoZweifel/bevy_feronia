@@ -112,9 +112,21 @@ mod tests {
     #[test]
     fn test_separator_variations_should_get_handled() {
         assert_eq!(clean_lod_suffix("TreeLOD1"), "Tree", "No separators");
-        assert_eq!(clean_lod_suffix("Tree_LOD1"), "Tree", "Separator before LOD");
-        assert_eq!(clean_lod_suffix("TreeLOD_1"), "Tree", "Separator before digit");
-        assert_eq!(clean_lod_suffix("Tree lod 2"), "Tree", "Whitespace separators");
+        assert_eq!(
+            clean_lod_suffix("Tree_LOD1"),
+            "Tree",
+            "Separator before LOD"
+        );
+        assert_eq!(
+            clean_lod_suffix("TreeLOD_1"),
+            "Tree",
+            "Separator before digit"
+        );
+        assert_eq!(
+            clean_lod_suffix("Tree lod 2"),
+            "Tree",
+            "Whitespace separators"
+        );
         assert_eq!(clean_lod_suffix("Tree_lod 2"), "Tree", "Mixed separators");
     }
 
