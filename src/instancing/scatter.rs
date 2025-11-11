@@ -41,56 +41,56 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
-        let mut instance_groups: HashMap<Name, Vec<InstanceData>> = HashMap::new();
+        let instance_groups: HashMap<Name, Vec<InstanceData>> =
+            request.event.trigger.data.iter().enumerate().fold(
+                HashMap::new(),
+                |mut map, (i, res)| {
+                    let mut rng = Pcg64::seed_from_u64(res.seed);
+                    let Some(name) = request.names.choose(&mut rng) else {
+                        return map;
+                    };
 
-        for (i, res) in request.event.trigger.data.iter().enumerate() {
-            let mut rng = Pcg64::seed_from_u64(res.seed);
-            let Some(name) = request.names.choose(&mut rng) else {
-                continue;
-            };
+                    let min_lod = request
+                        .name_map
+                        .get(name)
+                        .and_then(|group| {
+                            group
+                                .iter()
+                                .map(|ScatterHandleAsset { asset, .. }| *asset.properties.lod)
+                                .min()
+                        })
+                        .unwrap_or_default();
 
-            let min_lod = request
-                .name_map
-                .get(name)
-                .and_then(|group| {
-                    group
-                        .iter()
-                        .map(|ScatterHandleAsset { asset, .. }| *asset.properties.lod)
-                        .min()
-                })
-                .unwrap_or_default();
+                    if request
+                        .name_map
+                        .get(name)
+                        .and_then(|g| {
+                            g.iter().find(|handle_asset| {
+                                handle_asset.is_lod(request.is_chunked, min_lod)
+                            })
+                        })
+                        .is_some()
+                    {
+                        let instance_data = InstanceData {
+                            position: res.transform.translation,
+                            scale: res.transform.scale.element_sum() / 3.0,
+                            index: i as u32,
+                            ..default()
+                        };
 
-            if request
-                .name_map
-                .get(name)
-                .and_then(|g| {
-                    g.iter()
-                        .find(|handle_asset| handle_asset.is_lod(request.is_chunked, min_lod))
-                })
-                .is_some()
-            {
-                let instance_data = InstanceData {
-                    position: res.transform.translation,
-                    scale: res.transform.scale.element_sum() / 3.0,
-                    index: i as u32,
-                    ..default()
-                };
+                        map.entry((*name).clone()).or_default().push(instance_data);
+                    }
 
-                instance_groups
-                    .entry((*name).clone())
-                    .or_default()
-                    .push(instance_data);
-            }
-        }
+                    map
+                },
+            );
 
-        for (ScatterHandleAsset { handle, asset }, instances) in instance_groups
-            .iter()
-            .map(|(name, instances)| {
+        for (ScatterHandleAsset { handle, asset }, instances) in
+            instance_groups.iter().flat_map(|(name, instances)| {
                 request
-                    .prototypes_from_name(name)
+                    .prototypes_from_name_iter(name)
                     .map(move |handle_asset| (handle_asset, instances))
             })
-            .flatten()
         {
             let mesh_handle = asset.mesh().clone();
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);

@@ -67,7 +67,7 @@ impl<'w, T> SpawnRequest<'w, T>
 where
     T: Asset + Clone,
 {
-    pub fn prototypes_from_seed(
+    pub fn prototypes_from_seed_iter(
         &'w self,
         seed: u64,
     ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
@@ -76,10 +76,10 @@ where
         self.names
             .choose(&mut rng)
             .into_iter()
-            .flat_map(move |name| self.prototypes_from_name(name))
+            .flat_map(move |name| self.prototypes_from_name_iter(name))
     }
 
-    pub fn prototypes_from_name(
+    pub fn prototypes_from_name_iter(
         &'w self,
         name: &Name,
     ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
@@ -95,39 +95,35 @@ impl<'w, T> SpawnRequest<'w, T>
 where
     T: Material,
 {
-    pub fn batch_spawn_material(
-        self,
-    ) -> Vec<(
-        Transform,
-        Mesh3d,
-        MeshMaterial3d<T>,
-        ChildOf,
-        VisibilityRange,
-        ScatteredInstance,
-        ScatteredAsset<T>,
-    )> {
-        self.event
-            .trigger
-            .data
-            .iter()
-            .flat_map(|res| {
-                self.prototypes_from_seed(res.seed)
-                    .map(|ScatterHandleAsset { handle, asset }| {
-                        let visibility_range =
-                            self.lod_config.get_visibility_range(asset.properties.lod);
-                        (
-                            res.transform,
-                            Mesh3d(asset.mesh().clone()),
-                            MeshMaterial3d::<T>(asset.material().clone()),
-                            ChildOf(self.parent),
-                            visibility_range,
-                            ScatteredInstance(self.event.trigger.layer),
-                            ScatteredAsset(handle.clone()),
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>()
+    pub fn material_spawn_batch_iter(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            Transform,
+            Mesh3d,
+            MeshMaterial3d<T>,
+            ChildOf,
+            VisibilityRange,
+            ScatteredInstance,
+            ScatteredAsset<T>,
+        ),
+    > {
+        self.event.trigger.data.iter().flat_map(|res| {
+            self.prototypes_from_seed_iter(res.seed)
+                .map(|ScatterHandleAsset { handle, asset }| {
+                    let visibility_range =
+                        self.lod_config.get_visibility_range(asset.properties.lod);
+                    (
+                        res.transform,
+                        Mesh3d(asset.mesh().clone()),
+                        MeshMaterial3d::<T>(asset.material().clone()),
+                        ChildOf(self.parent),
+                        visibility_range,
+                        ScatteredInstance(self.event.trigger.layer),
+                        ScatteredAsset(handle.clone()),
+                    )
+                })
+        })
     }
 }
 
@@ -145,7 +141,7 @@ impl ScatterMaterial for StandardMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
-        cmd.spawn_batch(request.batch_spawn_material());
+        cmd.spawn_batch(request.material_spawn_batch_iter().collect::<Vec<_>>());
     }
 }
 

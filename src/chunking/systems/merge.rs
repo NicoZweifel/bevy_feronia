@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use bevy::ecs::query::QueryFilter;
 use bevy::ecs::relationship::Relationship;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
@@ -17,11 +18,7 @@ pub fn merge_check(
     q_parent: Query<&ChunkOf, With<Chunk>>,
     mut mw_check: MessageWriter<MergeCheck>,
 ) {
-    let mut parents: HashMap<Entity, Vec<Entity>> = HashMap::new();
-
-    for (entity, parent) in &q_chunk {
-        parents.entry(parent.get()).or_default().push(entity);
-    }
+    let parents = get_parent_child_map(q_chunk);
 
     for (parent, children) in parents {
         let Ok(root) = q_parent.get(parent) else {
@@ -87,21 +84,12 @@ pub fn merge(
     q_chunk: Query<(Entity, &ChildOf), (With<Merging>, With<Chunk>)>,
     mut mw_merge: MessageWriter<MergeChunks>,
 ) {
-    let mut merge_chunks_map = HashMap::<Entity, Vec<Entity>>::new();
+    let merge_chunks_map = get_parent_child_map(q_chunk);
 
-    for (child, parent) in q_chunk {
-        if let Some(children) = merge_chunks_map.get_mut(&parent.0) {
-            children.push(child);
-            continue;
-        }
-
-        merge_chunks_map.insert(parent.0, vec![child]);
-    }
-
-    for (parent, children) in &mut merge_chunks_map {
+    for (parent, children) in merge_chunks_map {
         mw_merge.write(MergeChunks {
             children: children.clone(),
-            parent: *parent,
+            parent,
         });
     }
 }
@@ -119,4 +107,15 @@ pub fn handle_merge(mut cmd: Commands, mut mr_merge: MessageReader<MergeChunks>)
 
         cmd.entity(e.parent).insert(CanSplit);
     }
+}
+
+fn get_parent_child_map<T: QueryFilter>(
+    q_chunk: Query<(Entity, &ChildOf), T>,
+) -> HashMap<Entity, Vec<Entity>> {
+    q_chunk
+        .iter()
+        .fold(HashMap::new(), |mut map, (entity, parent)| {
+            map.entry(parent.get()).or_default().push(entity);
+            map
+        })
 }

@@ -6,7 +6,7 @@ use bevy::camera::primitives::Aabb;
 use bevy::mesh::Mesh;
 use bevy::prelude::*;
 
-#[cfg(all(feature = "avian"))]
+#[cfg(feature = "avian")]
 use avian3d::prelude::RigidBody;
 
 #[derive(Clone, Debug)]
@@ -20,7 +20,7 @@ pub struct ScatterAssetProperties {
     pub layer: Entity,
     pub wind_affected: bool,
 
-    #[cfg(all(feature = "avian"))]
+    #[cfg(feature = "avian")]
     pub rigid_body: Option<RigidBody>,
 }
 

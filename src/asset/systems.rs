@@ -4,7 +4,7 @@ use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-#[cfg(all(feature = "avian"))]
+#[cfg(feature = "avian")]
 use avian3d::prelude::RigidBody;
 
 #[derive(QueryData)]
@@ -20,7 +20,7 @@ pub struct CollectableQueryData<'w, T: Material> {
     pub o_lod: Option<&'w LevelOfDetail>,
     pub o_wind_affected: Option<&'w WindAffected>,
 
-    #[cfg(all(feature = "avian"))]
+    #[cfg(feature = "avian")]
     pub o_rigid_body: Option<&'w RigidBody>,
 
     pub material_options: MaterialOptionData<'w>,
@@ -171,7 +171,7 @@ where
             lod,
             layer,
             wind_affected: options.wind_affected || item.o_wind_affected.is_some(),
-            #[cfg(all(feature = "avian"))]
+            #[cfg(feature = "avian")]
             rigid_body: item.o_rigid_body.cloned(),
         },
     );

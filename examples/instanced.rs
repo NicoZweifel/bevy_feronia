@@ -70,17 +70,15 @@ fn setup(
         noise_texture: (**noise_texture).clone(),
     });
 
-    let mut i: u32 = 0;
-
     let instances = (-10..10)
-        .map(|x| {
-            i += 1;
+        .enumerate()
+        .map(|(x, i)| {
             InstanceData {
                 position: Vec3::new(x as f32, 0.25 * 4., x as f32),
                 scale: 4.0,
                 // NOTE:
                 // for testing, to remove rotation, pass the same index (e.g., 0) for all items here.
-                index: i,
+                index: i as u32,
                 ..default()
             }
         })

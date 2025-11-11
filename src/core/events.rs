@@ -33,10 +33,9 @@ where
         &self,
         prototype_assets: &'w Res<Assets<ScatterAsset<T>>>,
     ) -> HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> {
-        let mut name_map: HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> = HashMap::new();
-
-        for ScatterHandleAsset { handle, asset } in
-            self.items.iter().filter_map(|scatter_item_asset| {
+        self.items
+            .iter()
+            .filter_map(|scatter_item_asset| {
                 prototype_assets
                     .get(&**scatter_item_asset)
                     .map(|asset| ScatterHandleAsset {
@@ -44,22 +43,24 @@ where
                         asset,
                     })
             })
-        {
-            let name = asset.properties.name.as_ref().map_or_else(
-                || {
-                    warn!("ScatterAsset {:?} has no name!", handle);
-                    Name::new("")
+            .fold(
+                HashMap::new(),
+                |mut map, ScatterHandleAsset { handle, asset }| {
+                    let name = asset.properties.name.as_ref().map_or_else(
+                        || {
+                            warn!("ScatterAsset {:?} has no name!", handle);
+                            Name::new("")
+                        },
+                        |name| clean_lod_suffix(name).into(),
+                    );
+
+                    map.entry(name)
+                        .or_default()
+                        .push(ScatterHandleAsset { handle, asset });
+
+                    map
                 },
-                |name| clean_lod_suffix(&name).into(),
-            );
-
-            name_map
-                .entry(name)
-                .or_default()
-                .push(ScatterHandleAsset { handle, asset });
-        }
-
-        name_map
+            )
     }
 }
 
