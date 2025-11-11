@@ -30,8 +30,7 @@ where
     pub fn new(
         properties: ScatterAssetProperties,
         parts: Vec<ScatterAssetPart<TIn>>,
-        #[cfg(feature = "avian")]
-        rigid_body: Option<RigidBody>,
+        #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> Self {
         Self {
             properties,

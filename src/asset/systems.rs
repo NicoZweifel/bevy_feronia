@@ -4,9 +4,9 @@ use bevy::camera::primitives::{Aabb, MeshAabb};
 use bevy::ecs::query::QueryData;
 use bevy::prelude::*;
 
-#[cfg(feature = "avian")]
-use avian3d::prelude::{RigidBody,Collider};
 use crate::scatter::utils::combine_aabbs;
+#[cfg(feature = "avian")]
+use avian3d::prelude::{Collider, RigidBody};
 
 #[derive(QueryData)]
 #[query_data()]
@@ -62,56 +62,60 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    for (root, children) in &q_roots {
-        debug!(
-            "Queueing ScatterAsset creation requests in root {:?}...",
-            root
+    for (layer, item_entity, material_option_data, wind_data) in q_roots
+        .iter()
+        .flat_map(|(root, children)| {
+            debug!(
+                "Queueing ScatterAsset creation requests in root {:?}...",
+                root
+            );
+            children.iter().filter_map(|layer| q_layers.get(layer).ok())
+        })
+        .flat_map(move |(layer, children, material_option_data, wind_data)| {
+            children
+                .iter()
+                .map(move |x| (layer, x, material_option_data, wind_data))
+        })
+    {
+        let Ok(item) = q_collect_search.get(item_entity) else {
+            continue;
+        };
+
+        let wind = (*wind).with(wind_data).with(item.wind_data);
+        let options = MaterialOptions::from(material_option_data).with(item.material_options);
+        let lod = item.o_lod.cloned().unwrap_or_default();
+        let name = item.o_name.cloned();
+
+        let result = queue_asset_creation_requests_recursive::<TOut, TIn>(
+            layer,
+            item_entity,
+            &mut cmd,
+            &wind,
+            &options,
+            name.clone(),
+            Some(lod),
+            &q_collect_search,
+            &q_collect_all,
+            &mut meshes,
         );
 
-        for (layer, scatter_items, material_option_data, wind_data) in
-            children.iter().filter_map(|layer| q_layers.get(layer).ok())
-        {
-            for &item_entity in scatter_items {
-                let Ok(item) = q_collect_search.get(item_entity) else {
-                    continue;
-                };
+        let AssetSearchResult::Part = result else {
+            continue;
+        };
 
-                let wind = (*wind).with(wind_data).with(item.wind_data);
-                let options = MaterialOptions::from(material_option_data)
-                    .with(item.material_options);
-                let lod = item.o_lod.cloned().unwrap_or_default();
-                let name = item.o_name.cloned();
-
-                let result = queue_asset_creation_requests_recursive::<TOut, TIn>(
-                    layer,
-                    item_entity,
-                    &mut cmd,
-                    &wind,
-                    &options,
-                    name.clone(),
-                    Some(lod),
-                    &q_collect_search,
-                    &q_collect_all,
-                    &mut meshes,
-                );
-
-                if let AssetSearchResult::Part = result {
-                    collect_and_queue_request::<TOut, TIn>(
-                        layer,
-                        item_entity,
-                        &mut cmd,
-                        &wind,
-                        &options,
-                        name,
-                        lod,
-                        #[cfg(feature = "avian")]
-                        item.o_rigid_body.cloned(),
-                        &q_collect_all,
-                        &mut meshes,
-                    );
-                }
-            }
-        }
+        collect_and_queue_request::<TOut, TIn>(
+            layer,
+            item_entity,
+            &mut cmd,
+            &wind,
+            &options,
+            name,
+            lod,
+            #[cfg(feature = "avian")]
+            item.o_rigid_body.cloned(),
+            &q_collect_all,
+            &mut meshes,
+        );
     }
 }
 
@@ -268,13 +272,11 @@ fn collect_and_queue_request<TOut, TIn>(
 
     let mut union_aabb = all_parts[0].properties.aabb;
     for part in &all_parts[1..] {
-        union_aabb = combine_aabbs(&union_aabb,&part.properties.aabb);
+        union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
     }
 
-    let any_wind_affected = o_root.wind_affected
-        || all_parts
-        .iter()
-        .any(|part| part.properties.wind_affected);
+    let any_wind_affected =
+        o_root.wind_affected || all_parts.iter().any(|part| part.properties.wind_affected);
 
     let global_properties = ScatterAssetProperties {
         wind: *root_wind,
@@ -421,7 +423,7 @@ pub fn process_distinct_material_requests<TOut, TIn>(
                     let material = TOut::create_material(
                         source_material.cloned(),
                         wind_noise_texture.0.clone(),
-                        &properties,
+                        properties,
                     );
 
                     let h_material = materials_out.add(material);
@@ -483,7 +485,7 @@ pub fn process_same_type_material_requests<T>(
                 let material = T::create_material(
                     source_material.cloned(),
                     wind_noise_texture.0.clone(),
-                    &properties,
+                    properties,
                 );
 
                 let h_material = materials.add(material);

@@ -114,7 +114,9 @@ where
                     asset.parts.iter().map(|part| {
                         (
                             res.transform
-                                .with_translation(res.transform.translation + part.transform.translation)
+                                .with_translation(
+                                    res.transform.translation + part.transform.translation,
+                                )
                                 .with_scale(res.transform.scale * part.transform.scale),
                             self.lod_config.get_visibility_range(asset.properties.lod),
                             Mesh3d(part.h_mesh.clone()),
