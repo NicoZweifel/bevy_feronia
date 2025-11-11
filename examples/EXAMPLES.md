@@ -23,7 +23,7 @@ A complex scene with rocks, trees, foliage and grass.
 This example demonstrates ordered scattering (rocks → trees/foliage → grass) and combines all three scatter plugins.
 
 > [!IMPORTANT]  
-> Doesn't work without LFS tracked assets!
+> Doesn't work without [LFS](https://git-lfs.com/) tracked assets!
 
 `cargo run --example full`
 
@@ -59,7 +59,7 @@ These show how to use the wind-affected materials directly without any scatterin
 These demonstrate methods and options related to grass scattering.
 
 > [!IMPORTANT]  
-> These don't work without LFS tracked assets!
+> These don't work without [Git LFS](https://git-lfs.com/) tracked assets!
 
 - Demonstrates scattering non-instanced grass. Mostly for testing/reference.
 
@@ -83,7 +83,7 @@ These demonstrate methods and options related to grass scattering.
 Demonstrates scattering wind-affected foliage.
 
 > [!IMPORTANT]  
-> Doesn't work without LFS tracked assets!
+> Doesn't work without [Git LFS](https://git-lfs.com/) tracked assets!
 
 `cargo run --example scatter_extended_foliage`
 
@@ -92,7 +92,7 @@ Demonstrates scattering wind-affected foliage.
 Demonstrates scattering wind-affected trees.
 
 > [!IMPORTANT]  
-> Doesn't work without LFS tracked assets!
+> Doesn't work without [Git LFS](https://git-lfs.com/) tracked assets!
 
 `cargo run --example scatter_extended_trees`
 
