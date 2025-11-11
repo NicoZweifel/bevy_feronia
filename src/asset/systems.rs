@@ -31,12 +31,20 @@ pub struct CollectableQueryData<'w, T: Material> {
     pub wind_data: WindData<'w>,
 }
 
+/// Internal enum to signal the result of the recursive asset search.
 enum AssetSearchResult {
+    /// Found no parts or roots.
     None,
+    /// Found a renderable part (mesh+material).
     Part,
+    /// Found an asset root.
     Root,
 }
 
+/// System that initiates the asset collection "read" phase.
+///
+/// Iterates all [`ScatterRoot`] and [`ScatterLayer`] entities and begins the
+/// recursive search for logical asset roots within them.
 pub fn queue_asset_creation_requests<TOut, TIn>(
     mut cmd: Commands,
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
@@ -62,21 +70,25 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
     TIn: Material,
     TOut: ScatterMaterial<TIn>,
 {
-    for (layer, item_entity, material_option_data, wind_data) in q_roots
+    let iter = q_roots
         .iter()
-        .flat_map(|(root, children)| {
+        .flat_map(|(root, root_children)| {
             debug!(
                 "Queueing ScatterAsset creation requests in root {:?}...",
                 root
             );
-            children.iter().filter_map(|layer| q_layers.get(layer).ok())
+            root_children.iter()
         })
-        .flat_map(move |(layer, children, material_option_data, wind_data)| {
-            children
-                .iter()
-                .map(move |x| (layer, x, material_option_data, wind_data))
-        })
-    {
+        .filter_map(|layer_entity| q_layers.get(layer_entity).ok())
+        .flat_map(
+            |(layer_entity, layer_children, material_option_data, wind_data)| {
+                layer_children.iter().map(move |item_entity| {
+                    (layer_entity, item_entity, material_option_data, wind_data)
+                })
+            },
+        );
+
+    for (layer, item_entity, material_option_data, wind_data) in iter {
         let Ok(item) = q_collect_search.get(item_entity) else {
             continue;
         };
@@ -120,7 +132,12 @@ pub fn queue_asset_creation_requests<TOut, TIn>(
 }
 
 /// Recursively searches for "asset roots" and spawns creation requests.
-/// Returns what it found so the parent can react.
+///
+/// An asset root is defined as:
+/// 1.  An entity with a `RigidBody`, if the `avian` feature is enabled.
+/// 2.  The parent entity of the first `Part` (mesh+material).
+///
+/// Returns an [`AssetSearchResult`] to signal to the parent what was found.
 fn queue_asset_creation_requests_recursive<TOut, TIn>(
     layer: Entity,
     entity: Entity,
@@ -238,7 +255,8 @@ where
 
 /// Collects all parts and queues the [`ScatterAssetCreationRequest`].
 ///
-/// This is called *after* a root entity has been identified.
+/// This is called *after* a root entity has been identified. It calculates
+/// the final properties (like the combined AABB) and inserts the request component.
 fn collect_and_queue_request<TOut, TIn>(
     layer: Entity,
     root_entity: Entity,
@@ -298,9 +316,10 @@ fn collect_and_queue_request<TOut, TIn>(
     cmd.entity(root_entity).insert(request);
 }
 
-/// Internal helper for `collect_and_queue_request` to gather all parts.
+/// Internal helper to recursively gather all `ScatterAssetPart`s for a root.
 ///
-/// This function *must* mark entities with `ScatterLayerChildProcessed`.
+/// This function *must* mark all visited entities with `ScatterLayerChildProcessed`
+/// to prevent them from being re-searched.
 fn collect_parts_recursive_internal<TIn: Material>(
     layer: Entity,
     entity: Entity,
@@ -385,6 +404,9 @@ fn collect_parts_recursive_internal<TIn: Material>(
     all_parts
 }
 
+/// System that processes asset requests where `TIn` and `TOut` are different.
+///
+/// Creates a *new* `TOut` material for each asset part.
 pub fn process_distinct_material_requests<TOut, TIn>(
     mut cmd: Commands,
     requests_query: Query<(Entity, &ScatterAssetCreationRequest<TOut, TIn>)>,
@@ -457,6 +479,11 @@ pub fn process_distinct_material_requests<TOut, TIn>(
     }
 }
 
+/// System that processes asset requests where `TIn` and `TOut` are the same.
+///
+/// Creates a *new* `T` material for each asset part.
+///
+/// TODO: Reconsider if a new material needs to be created here or if we can always re-use the base.
 pub fn process_same_type_material_requests<T>(
     mut cmd: Commands,
     requests: Query<(Entity, &ScatterAssetCreationRequest<T, T>)>,

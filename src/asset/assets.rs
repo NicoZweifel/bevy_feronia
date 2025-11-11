@@ -8,40 +8,61 @@ use bevy::prelude::*;
 #[cfg(feature = "avian")]
 use avian3d::prelude::{Collider, RigidBody};
 
+/// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug)]
 pub struct ScatterAssetProperties {
+    /// Wind properties applied to this asset/part.
     pub wind: Wind,
+    /// Material properties applied to this asset/part.
     pub options: MaterialOptions,
+    /// The local [`Aabb`] of this specific asset/part.
     pub aabb: Aabb,
+    /// The inherited name.
     pub name: Option<Name>,
+    /// The inherited [`LevelOfDetail`].
     pub lod: LevelOfDetail,
+    /// The [`Entity`] of the layer this asset belongs to.
     pub layer: Entity,
+    /// Whether wind affects this asset/part.
     pub wind_affected: bool,
 }
 
+/// An [`Asset`] that represents a combined, multipart scatterable object.
+///
+/// Holds the final, processed asset data, including the list of
+/// all its component parts and their final material handles.
 #[derive(Asset, Clone, TypePath)]
 pub struct ScatterAsset<T = StandardMaterial>
 where
     T: Asset + Clone,
 {
+    /// Global properties that apply to the asset as a whole.
     pub properties: ScatterAssetProperties,
+    /// The list of individual, renderable parts that make up this asset.
     pub parts: Vec<ScatterAssetPart<T>>,
-
     #[cfg(feature = "avian")]
+    /// Optional physics body for the entire asset.
     pub rigid_body: Option<RigidBody>,
 }
 
+/// A single, renderable part of a [`ScatterAsset`].
+///
+/// This typically represents one mesh+material pair from the original hierarchy.
 #[derive(Debug, Clone)]
 pub struct ScatterAssetPart<T = StandardMaterial>
 where
     T: Asset + Clone,
 {
+    /// The local transform of this part relative to the asset root.
     pub transform: Transform,
+    /// Properties specific to this part (inherited/modified during the collection phase).
     pub properties: ScatterAssetProperties,
+    /// Handle to the final, processed material (`TOut`).
     pub h_material: Handle<T>,
+    /// Handle to the mesh for this part.
     pub h_mesh: Handle<Mesh>,
-
     #[cfg(feature = "avian")]
+    /// Optional physics collider for this specific part.
     pub collider: Option<Collider>,
 }
 
@@ -84,6 +105,7 @@ where
         }
     }
 
+    /// Returns the standard bundle for this asset part.
     pub fn bundle(&self, asset_handle: Handle<ScatterAsset<T>>) -> impl Bundle {
         (
             ScatterItem,
@@ -96,10 +118,12 @@ where
         )
     }
 
+    /// Returns the wind-affected bundle for this asset part.
     pub fn wind_affected_bundle(&self, asset_handle: Handle<ScatterAsset<T>>) -> impl Bundle {
         (WindAffected, self.bundle(asset_handle.clone()))
     }
 
+    /// Inserts the correct bundle (wind-affected or normal) onto the entity.
     pub fn insert_bundle(
         self,
         cmd: &mut Commands,
