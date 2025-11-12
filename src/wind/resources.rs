@@ -71,31 +71,31 @@ impl Wind {
     ) -> Self {
         Wind {
             strength: strength
-                .map(|x| **x * self.strength)
+                .map(|s| **s * self.strength)
                 .unwrap_or(self.strength),
             micro_strength: micro_strength
-                .map(|x| **x * self.micro_strength)
+                .map(|s| **s * self.micro_strength)
                 .unwrap_or(self.micro_strength),
             s_curve_strength: s_curve_strength
-                .map(|x| **x * self.s_curve_strength)
+                .map(|s| **s * self.s_curve_strength)
                 .unwrap_or(self.s_curve_strength),
             s_curve_speed: s_curve_speed
-                .map(|x| **x * self.s_curve_speed)
+                .map(|s| **s * self.s_curve_speed)
                 .unwrap_or(self.s_curve_speed),
             s_curve_frequency: s_curve_frequency
-                .map(|x| **x * self.s_curve_frequency)
+                .map(|f| **f * self.s_curve_frequency)
                 .unwrap_or(self.s_curve_frequency),
             bop_strength: bop_strength
-                .map(|x| **x * self.bop_strength)
+                .map(|b| **b * self.bop_strength)
                 .unwrap_or(self.bop_strength),
             bop_speed: bop_speed
-                .map(|x| **x * self.bop_speed)
+                .map(|b| **b * self.bop_speed)
                 .unwrap_or(self.bop_speed),
             twist_strength: twist_strength
-                .map(|x| **x * self.twist_strength)
+                .map(|t| **t * self.twist_strength)
                 .unwrap_or(self.twist_strength),
             bend_exponent: bend_exponent
-                .map(|x| **x * self.bend_exponent)
+                .map(|b| **b * self.bend_exponent)
                 .unwrap_or(self.bend_exponent),
             ..*self
         }

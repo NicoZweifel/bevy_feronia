@@ -14,6 +14,6 @@ pub fn clear_scatter_roots(
 
         cmd.entity(root).insert(ScatterOccupancyMap::default());
 
-        mw_clear_layers.write_batch(layers.iter().map(|x| x.into()));
+        mw_clear_layers.write_batch(layers.iter().map(|e| e.into()));
     }
 }

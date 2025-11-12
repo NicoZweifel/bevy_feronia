@@ -31,6 +31,6 @@ pub fn scatter_chunks<TOut: ScatterMaterial<TIn>, TIn: Material>(
 
     child_chunks
         .iter()
-        .map(|x| ScatterChunk::<TOut, TIn>::new(x, layer_entity))
-        .for_each(|x| cmd.trigger(x));
+        .map(|c| ScatterChunk::<TOut, TIn>::new(c, layer_entity))
+        .for_each(|c| cmd.trigger(c));
 }

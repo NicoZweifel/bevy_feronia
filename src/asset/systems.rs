@@ -163,11 +163,13 @@ where
 
     let wind = item
         .o_wind_config
-        .and_then(|x| x.wind_override)
+        .and_then(|c| c.wind_override)
         .unwrap_or(*wind)
         .with(item.wind_data);
 
-    let lod = item.o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
+    let lod = item
+        .o_lod
+        .map_or(o_current_lod.unwrap_or_default(), |lod| *lod);
     let name = o_current_name.map_or(item.o_name.cloned(), Some);
     let options = options.with(item.material_options);
 
@@ -351,11 +353,13 @@ where
 
     let wind = item
         .o_wind_config
-        .and_then(|x| x.wind_override)
+        .and_then(|c| c.wind_override)
         .unwrap_or(*wind)
         .with(item.wind_data);
 
-    let lod = item.o_lod.map_or(o_current_lod.unwrap_or_default(), |x| *x);
+    let lod = item
+        .o_lod
+        .map_or(o_current_lod.unwrap_or_default(), |lod| *lod);
     let name = o_current_name.map_or(item.o_name.cloned(), Some);
 
     // TODO https://github.com/NicoZweifel/bevy_feronia/issues/16
@@ -388,7 +392,7 @@ where
         let aabb = item.o_aabb.cloned().unwrap_or_else(|| {
             meshes
                 .get(&mesh.0)
-                .and_then(|x| x.compute_aabb())
+                .and_then(|mesh| mesh.compute_aabb())
                 .unwrap_or_default()
         });
 

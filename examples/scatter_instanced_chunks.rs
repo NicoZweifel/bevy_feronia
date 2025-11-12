@@ -35,15 +35,15 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(120.0),
+                DistributionDensity(100.0),
                 InstanceScale::default(),
                 InstanceJitter(1.),
                 ScaleDensity,
+                ScatterChunked,
             ),
             // Material options
             (
                 WindAffected,
-                ScatterChunked,
                 EdgeCorrectionFactor::default(),
                 AnalyticalNormals,
                 InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),

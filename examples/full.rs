@@ -162,7 +162,7 @@ fn check_assets_loaded(
     .all(|id| {
         asset_server
             .get_load_state(*id)
-            .is_some_and(|x| x.is_loaded())
+            .is_some_and(|s| s.is_loaded())
     });
 
     if all_loaded {
@@ -275,13 +275,13 @@ fn spawn_scene(
                     ),
                     (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
                 ]
-                            ),
+            ),
             (
                 instancing::scatter_layer("Instanced Grass Layer"),
                 // Scatter options
                 (
                     // Very dense
-                    DistributionDensity(150.),
+                    DistributionDensity(120.),
                     // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),

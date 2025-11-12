@@ -13,7 +13,7 @@ pub fn update_chunk_height(
 ) {
     let height_sampler = images
         .get(&height_map.0)
-        .map(|x| HeightMapCpuSampler::new(x, height_map_config.into_inner()));
+        .map(|img| HeightMapCpuSampler::new(img, height_map_config.into_inner()));
 
     let Some(sampler) = height_sampler else {
         return;

@@ -103,7 +103,7 @@ impl ScatterResult {
         let mut final_world_pos =
             snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
 
-        let jitter_strength = modifiers.jitter.map_or(0., |x| **x).clamp(0.0, 1.0);
+        let jitter_strength = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
 
         if jitter_strength > 0. {
             let max_offset_x = (cell_width * jitter_strength) / 2.0;
@@ -213,7 +213,7 @@ where
         let density_sampler = task_data
             .density_map_image
             .as_ref()
-            .map(|x| DensityMapSampler::new(x, task_data.container.root_size));
+            .map(|img| DensityMapSampler::new(img, task_data.container.root_size));
 
         let height_sampler = task_data
             .height_map_config

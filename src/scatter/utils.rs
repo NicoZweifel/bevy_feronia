@@ -14,7 +14,7 @@ pub fn get_height_map_sampler<'a>(
     height_map
         .and_then(|height_map_image| {
             height_map_cfg
-                .and_then(|x| create_height_map_sampler(images.get(&height_map_image.0), x))
+                .and_then(|cfg| create_height_map_sampler(images.get(&height_map_image.0), cfg))
         })
         .unwrap_or(HeightMapSampler::Default(DefaultSampler))
 }

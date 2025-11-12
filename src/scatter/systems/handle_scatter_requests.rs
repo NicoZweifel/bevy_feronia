@@ -79,7 +79,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             density, request.layer_entity,
         );
 
-        let density_map_image = pattern_dist.and_then(|x| images.get(&**x)).cloned();
+        let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
@@ -211,12 +211,12 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
 
         targets
             .iter()
-            .map(|x| {
+            .map(|entity| {
                 let mut results = results.clone();
-                results.entity = *x;
+                results.entity = *entity;
                 results
             })
-            .for_each(|x| cmd.trigger(x));
+            .for_each(|results| cmd.trigger(results));
 
         mw_results.write(results);
     }

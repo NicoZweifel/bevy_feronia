@@ -67,7 +67,7 @@ fn check_assets_loaded(
     .all(|id| {
         asset_server
             .get_load_state(*id)
-            .is_some_and(|x| x.is_loaded())
+            .is_some_and(|s| s.is_loaded())
     });
 
     if all_loaded {

@@ -102,14 +102,14 @@ impl From<MaterialOptionData<'_>> for MaterialOptions {
         Self {
             debug: enable_debug.is_some(),
             enable_billboarding: enable_billboarding.is_some(),
-            edge_correction_factor: edge_correction_factor.map(|x| **x).unwrap_or(0.),
-            curve_factor: curve_factor.map(|x| **x).unwrap_or(0.),
+            edge_correction_factor: edge_correction_factor.map(|e| **e).unwrap_or(0.),
+            curve_factor: curve_factor.map(|c| **c).unwrap_or(0.),
             wind_affected: wind_affected.is_some(),
             low_quality: low_q.is_some(),
             subsurface_scattering: subsurface_scattering.is_some(),
-            color: scatter_material_color.map(|x| **x),
+            color: scatter_material_color.map(|s| **s),
             fast_normals: fast_normals.is_some(),
-            static_bend_strength: static_bend_strength.map(|x| **x).unwrap_or(0.),
+            static_bend_strength: static_bend_strength.map(|s| **s).unwrap_or(0.),
             analytical_normals: analytical_normals.is_some(),
             point_lights: point_lights.is_some(),
             ..default()
@@ -140,20 +140,20 @@ impl MaterialOptions {
             debug: enable_debug.is_some() || self.debug,
             enable_billboarding: enable_billboarding.is_some() || self.enable_billboarding,
             edge_correction_factor: edge_correction_factor
-                .map(|x| **x)
+                .map(|f| **f)
                 .unwrap_or(self.edge_correction_factor),
-            curve_factor: curve_factor.map(|x| **x).unwrap_or(self.curve_factor),
+            curve_factor: curve_factor.map(|f| **f).unwrap_or(self.curve_factor),
             wind_affected: wind_affected.is_some() || self.wind_affected,
             low_quality: low_q.is_some() || self.low_quality,
             subsurface_scattering: subsurface_scattering.is_some() || self.subsurface_scattering,
             color: if scatter_material_color.is_some() {
-                scatter_material_color.map(|x| **x)
+                scatter_material_color.map(|c| **c)
             } else {
                 self.color
             },
             fast_normals: fast_normals.is_some() || self.fast_normals,
             static_bend_strength: static_bend_strength
-                .map(|x| **x)
+                .map(|s| **s)
                 .unwrap_or(self.static_bend_strength),
             analytical_normals: analytical_normals.is_some() || self.analytical_normals,
             point_lights: point_lights.is_some() || self.point_lights,

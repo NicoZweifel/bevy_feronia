@@ -25,7 +25,7 @@ pub fn scatter_root<TOut, TIn>(
         return;
     }
 
-    let ordered_layers: Vec<Entity> = layers.iter().filter_map(|x| q_layer.get(x).ok()).collect();
+    let ordered_layers: Vec<Entity> = layers.iter().filter_map(|e| q_layer.get(e).ok()).collect();
     if ordered_layers.is_empty() {
         return;
     }

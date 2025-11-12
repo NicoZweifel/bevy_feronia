@@ -30,7 +30,7 @@ pub fn spawn<TOut, TIn>(
         let (chunk_gtf_translation, chunk_level) = event
             .trigger
             .chunk
-            .and_then(|x| q_chunks.get(x).ok())
+            .and_then(|e| q_chunks.get(e).ok())
             .map(|(gtf, level)| (gtf.translation(), level.clone()))
             .unwrap_or_default();
 
