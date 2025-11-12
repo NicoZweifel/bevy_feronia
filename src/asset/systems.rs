@@ -322,7 +322,7 @@ fn collect_and_queue_request<TOut, TIn>(
 ///
 /// This function *must* mark all visited entities with `ScatterLayerChildProcessed`
 /// to prevent them from being re-searched.
-fn collect_parts_recursive_internal<TOut,TIn>(
+fn collect_parts_recursive_internal<TOut, TIn>(
     layer: Entity,
     entity: Entity,
     cmd: &mut Commands,
@@ -334,13 +334,14 @@ fn collect_parts_recursive_internal<TOut,TIn>(
         CollectableQueryData<TIn>,
         (
             Without<ScatterLayerChildProcessed>,
-            Without<ScatterAssetCreationRequest<TOut,TIn>>,
+            Without<ScatterAssetCreationRequest<TOut, TIn>>,
         ),
     >,
     meshes: &mut ResMut<Assets<Mesh>>,
-) -> Vec<ScatterAssetPart<TIn>> where
+) -> Vec<ScatterAssetPart<TIn>>
+where
     TOut: ScatterMaterial<TIn>,
-    TIn: Material
+    TIn: Material,
 {
     let Ok(item) = q_items.get(entity) else {
         return vec![];

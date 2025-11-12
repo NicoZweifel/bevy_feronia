@@ -152,7 +152,8 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                 .clone()
                                 .into_iter()
                                 .map(|mut instance| {
-                                    instance.position += part.transform.translation;
+                                    instance.position +=
+                                        part.transform.translation * instance.scale;
                                     instance.scale *= part.transform.scale.element_sum() / 3.0;
                                     instance
                                 })

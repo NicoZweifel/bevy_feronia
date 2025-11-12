@@ -98,10 +98,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
 
             let seed = generate_seed(&world_seed, chunk_coord);
 
-            let instances_dim = density
-                * scale_density
-                    .map(|_| **chunk_level as f32 / 2. + 0.5)
-                    .unwrap_or(1.0);
+            let instances_dim = density * (**chunk_level as f32 * 2.).max(1.);
 
             Some(ScatterTaskData {
                 container: Container {
@@ -123,13 +120,13 @@ pub fn handle_scatter_requests<TOut, TIn>(
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.occupied_zones.clone(),
-                density: Some(
+                density: scale_density.map(|_| {
                     lod_config
                         .density
                         .get(**chunk_level as usize)
                         .cloned()
-                        .unwrap_or_default(),
-                ),
+                        .unwrap_or_default()
+                }),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,

@@ -25,6 +25,7 @@ impl Default for LodConfig {
                 // Level 1: Medium
                 60.0.into(),
                 // Level 2: Low
+                120.0.into(),
                 default(), // f32::MAX
             ],
             density: vec![
@@ -284,6 +285,8 @@ impl From<f32> for LodDensity {
 /// Wrapper type for `u32` representing the size scalar for a chunk at a specific LOD.
 ///
 /// This is a multiplier relative to the [`BaseChunkSize`]. See also [`ChunkSize`].
+///
+/// NOTE: Changing this might cause inconsistent/buggy behavior.
 #[derive(Reflect, Debug, Deref, DerefMut)]
 pub struct ChunkSizeScalar(pub u32);
 

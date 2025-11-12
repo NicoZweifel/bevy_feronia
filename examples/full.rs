@@ -177,7 +177,6 @@ fn spawn_scene(
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
     handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
-    asset_server: Res<AssetServer>,
 ) {
     let fog_texture = create_spherical_fog_texture(64);
 
@@ -218,11 +217,11 @@ fn spawn_scene(
                 ScatterLayerType::<StandardMaterial>::default(),
                 // Scatter options
                 (
-                    DistributionDensity(10.0),
+                    DistributionDensity(15.0),
                     InstanceRotationYaw::default(),
-                    InstanceScale { min: 1., max: 4. },
+                    InstanceScale { min: 1., max: 5. },
                     InstanceJitter::default(),
-                    Avoidance(2.)
+                    Avoidance(2.5),
                 ),
                 children![
                     SceneRoot(handles.rocks_lod_high.clone()),
@@ -237,13 +236,11 @@ fn spawn_scene(
                 extension::scatter_layer("Tree Layer"),
                 // Scatter options
                 (
-                    DistributionDensity(8.0),
+                    DistributionDensity(20.0),
                     InstanceRotationYaw::default(),
-                    InstanceScale { min: 4., max: 6. },
+                    InstanceScale { min: 1., max: 3. },
                     InstanceJitter::default(),
                     Avoidance(1.2),
-                    // Displaced numerical normals are a bit buggy for now on complex foliage
-                    FastNormals,
                 ),
                 // Material options
                 (SubsurfaceScattering, WindAffected),
@@ -257,16 +254,16 @@ fn spawn_scene(
                 ]
             ),
             (
+                // In a large map you'd probably want to use a different scatter layer for each foliage model and scatter them in chunks.
+                // https://github.com/NicoZweifel/bevy_feronia/issues/42
                 extension::scatter_layer("Foliage Complex Layer"),
                 // Scatter options
                 (
-                    DistributionDensity(20.0),
+                    DistributionDensity(5.0),
                     InstanceRotationYaw::default(),
-                    InstanceScale { min: 8., max: 18. },
+                    InstanceScale { min: 4., max: 12. },
                     InstanceJitter::default(),
                     Avoidance(0.2),
-                    // Displaced numerical normals are a bit buggy for now on complex foliage
-                    FastNormals,
                 ),
                 // Material options
                 (SubsurfaceScattering, WindAffected),
@@ -278,13 +275,13 @@ fn spawn_scene(
                     ),
                     (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
                 ]
-            ),
+                            ),
             (
                 instancing::scatter_layer("Instanced Grass Layer"),
                 // Scatter options
                 (
                     // Very dense
-                    DistributionDensity(200.),
+                    DistributionDensity(150.),
                     // But with noise pattern and empty spots/patches
                     DistributionPattern(density_map.clone()),
                     InstanceJitter::default(),
