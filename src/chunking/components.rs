@@ -412,7 +412,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_chunk_radius_scaled_3d_should_scale() {
+    fn test_get_chunk_radius_should_scale() {
         let base_size_3d = BaseChunkSize(Vec3::new(10.0, 10.0, 10.0));
 
         // sqrt(10^2 + 10^2 + 10^2) / 2 = sqrt(300) / 2 = 8.66025...
