@@ -388,7 +388,7 @@ impl LodConfiguration for ChunkLodConfig {
 mod tests {
     use super::*;
 
-    // Epsilon for floating point comparisons
+    // For floating point comparisons
     const EPSILON: f32 = 0.0001;
 
     #[test]
