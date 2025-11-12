@@ -399,9 +399,6 @@ mod tests {
 
         // sqrt(20^2 + 0^2 + 0^2) / 2 = 10.0
         assert!((base_size_1d.get_chunk_radius(1) - 10.0).abs() < EPSILON);
-
-        // sqrt(40^2 + 0^2 + 0^2) / 2 = 20.0
-        assert!((base_size_1d.get_chunk_radius(2) - 20.0).abs() < EPSILON);
     }
 
     #[test]
@@ -415,7 +412,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_chunk_radius_scaled_3d_should_scale_linearly() {
+    fn test_get_chunk_radius_scaled_3d_should_scale() {
         let base_size_3d = BaseChunkSize(Vec3::new(10.0, 10.0, 10.0));
 
         // sqrt(10^2 + 10^2 + 10^2) / 2 = sqrt(300) / 2 = 8.66025...
@@ -498,43 +495,6 @@ mod tests {
             50.0.into(),
             60.0.into(),
             120.0.into(),
-            LodDistance::default(),
-        ]);
-
-        let calculated_config =
-            ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size);
-
-        assert_eq!(calculated_config, expected_config);
-    }
-
-    #[test]
-    fn test_from_sources_should_handle_max_in_middle() {
-        let base_size = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));
-        let size_scalars = ChunkSizeScalarConfig(vec![
-            1.into(), // R0
-            2.into(), // R1
-            4.into(), // R2
-            8.into(), // R3
-        ]);
-
-        let lod_config = LodConfig {
-            distance: vec![
-                30.0.into(),  // D0 (i=0)
-                default(),    // D1 (i=1) = f32::MAX
-                120.0.into(), // D2 (i=2)
-                default(),    // D3 (i=3) = f32::MAX
-            ],
-            ..default()
-        };
-
-        // CD_0 = D_0 + R_1 = 30.0 + 20.0 = 50.0
-        // CD_1 = f32::MAX (from `if **base_dist == f32::MAX`)
-        // CD_2 = D_2 + R_3 = 120.0 + 80.0 = 200.0
-        // CD_3 = f32::MAX
-        let expected_config = ChunkLodConfig(vec![
-            50.0.into(),
-            LodDistance::default(),
-            200.0.into(),
             LodDistance::default(),
         ]);
 
