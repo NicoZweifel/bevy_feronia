@@ -72,6 +72,7 @@ pub(crate) fn add_instance_key_component(
             WindAffectedKey::DIRECTIONAL_LIGHTS,
             material.options.directional_lights,
         );
+        key.set(WindAffectedKey::GPU_CULL, material.options.gpu_cull);
 
         commands
             .entity(entity)

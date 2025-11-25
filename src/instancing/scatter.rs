@@ -108,10 +108,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 .properties
                 .options
                 .gpu_cull
-                .then(|| {
-                    request
-                        .lod_config
-                        .get_visibility_range(asset.properties.lod)
+                .then(|| VisibilityRange {
+                    start_margin: 0.0..0.0,
+                    end_margin: f32::MAX..f32::MAX,
+                    ..default()
                 })
                 .unwrap_or_else(|| {
                     request
@@ -210,7 +210,15 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 }
 
                 if asset.properties.options.gpu_cull {
-                    cmd.entity(entity).insert(GpuCull);
+                    let density_value: CullLodDensity = request
+                        .lod_config
+                        .density
+                        .get(*asset.properties.lod as usize)
+                        .cloned()
+                        .map(|x| x.into())
+                        .unwrap_or_default();
+
+                    cmd.entity(entity).insert((density_value, GpuCull));
                 }
             }
         }

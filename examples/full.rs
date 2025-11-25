@@ -554,10 +554,7 @@ fn spawn_scene(
                 SCurveStrength(2.),
                 BopStrength(2.),
                 AnalyticalNormals,
-                InstanceColor::new(
-                    Color::hsla(84., 0.49, 0.35, 1.),
-                    Color::BLACK
-                ),
+                InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
                 StaticBendStrength::default(),
                 (
                     AddIf::new(QualityRule::DirectionalLights, DirectionalLights),

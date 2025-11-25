@@ -248,5 +248,6 @@ bitflags! {
         const SUBSURFACE_SCATTERING = 1 << 10;
         const POINT_LIGHTS = 1 << 11;
         const DIRECTIONAL_LIGHTS = 1 << 12;
+        const GPU_CULL = 1 << 13;
     }
 }

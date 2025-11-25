@@ -82,5 +82,3 @@ pub struct FastNormals;
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
 pub struct AnalyticalNormals;
-
-

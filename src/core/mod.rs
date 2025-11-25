@@ -490,11 +490,11 @@ mod tests {
         };
 
         let other = MaterialOptions {
-            enable_billboarding: true,   // Merge: true
-            edge_correction_factor: 1.0, // Override: 1.0 (since > 0)
-            top_color: Some(RED.into()), // Override
+            enable_billboarding: true,        // Merge: true
+            edge_correction_factor: 1.0,      // Override: 1.0 (since > 0)
+            top_color: Some(RED.into()),      // Override
             bottom_color: Some(GREEN.into()), // Override
-            static_bend_strength: 0.0, // Keep base (since not > 0)
+            static_bend_strength: 0.0,        // Keep base (since not > 0)
             ..default()
         };
 

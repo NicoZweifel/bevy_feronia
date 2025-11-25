@@ -132,7 +132,7 @@ pub fn setup(
             // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
             shadows_enabled: true,
-           color: Color::srgb(1.0, 0.98, 0.95) ,
+            color: Color::srgb(1.0, 0.98, 0.95),
             ..default()
         },
         VolumetricLight,

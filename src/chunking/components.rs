@@ -80,6 +80,7 @@ pub trait LodConfiguration {
     /// Gets the [`LodDistance`] for a specific LOD `level`.
     fn get_lod_config(&self, level: u32) -> LodDistance {
         self.get().get(level as usize).cloned().unwrap_or_default()
+
     }
 
     /// Calculates the [`VisibilityRange`] for a given `lod`.

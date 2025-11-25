@@ -1,13 +1,14 @@
+use crate::prelude::LodDensity;
+use bevy_color::Color;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QueryItem;
 use bevy_math::Vec3;
+use bevy_reflect::Reflect;
 use bevy_render::render_resource::Buffer;
 use bevy_render::{extract_component::ExtractComponent, render_resource::BindGroup};
 use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
-use bevy_color::Color;
-use bevy_reflect::Reflect;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
 ///
@@ -16,9 +17,9 @@ use bevy_reflect::Reflect;
 /// * **Lower values** (e.g., 4.0, 8.0) result in broader, duller highlights (rough surface).
 ///
 /// Maps to `specular_power` in the shader.
-/// 
+///
 /// Defaults to `32.0`.
-/// 
+///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
@@ -37,7 +38,7 @@ impl Default for SpecularPower {
 /// * `1.0`: Full brightness specular highlights.
 ///
 /// Maps to `specular_strength` in the shader.
-/// 
+///
 /// Defaults to `0.6`.
 ///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
@@ -61,7 +62,7 @@ impl Default for SpecularStrength {
 ///
 /// Maps to `translucency` in the shader.
 /// Defaults to `0.6`.
-/// 
+///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
@@ -101,7 +102,7 @@ pub struct PointLights;
 /// Controls the edge correction effect (makes vegetation look fuller).
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
-/// 
+///
 /// Defaults to `0.02`.
 ///
 /// Not supported in combination with [`EnableBillboarding`].
@@ -134,7 +135,7 @@ impl Default for EdgeCorrectionFactor {
 ///   of the blade remaining flat at the maximum angle.
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
-/// 
+///
 /// Defaults to `0.2`.
 ///
 /// Currently only supported in [`InstancedWindAffectedMaterial`].
@@ -151,8 +152,8 @@ impl Default for CurveFactor {
 /// Controls a persistent, non-wind bend.
 ///
 /// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
-/// 
-/// Defaults to `0.5`.
+///
+/// Defaults to `0.3`.
 ///
 /// Currently only supported in [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
@@ -161,13 +162,30 @@ pub struct StaticBendStrength(pub f32);
 
 impl Default for StaticBendStrength {
     fn default() -> Self {
-        Self(0.5)
+        Self(0.3)
     }
 }
 
 /// Marker component to opt in to GPU-driven culling/preparation.
 #[derive(Component, Clone, Copy, Default, ExtractComponent)]
 pub struct GpuCull;
+
+/// Used for the Compute Shader culling logic.
+#[derive(Component, Clone, Copy, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component)]
+pub struct CullLodDensity(pub f32);
+
+impl Default for CullLodDensity {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
+impl From<LodDensity> for CullLodDensity {
+    fn from(lod_density: LodDensity) -> Self {
+        Self(*lod_density)
+    }
+}
 
 /// Sets a material color tint.
 ///
@@ -237,6 +255,11 @@ pub struct InstanceBuffer {
 pub struct GpuDrawIndexedIndirect {
     pub buffer: Buffer,
     pub offset: u64,
+}
+
+#[derive(Component)]
+pub struct InstanceLodBuffer {
+    pub buffer: Buffer,
 }
 
 #[derive(Clone, Copy, Pod, Zeroable, Default)]

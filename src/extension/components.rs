@@ -1,5 +1,5 @@
-use bevy_ecs::prelude::*;
 use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
 
 /// Disables displacement on shadows.
