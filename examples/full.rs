@@ -551,11 +551,13 @@ fn spawn_scene(
             (
                 EdgeCorrectionFactor::default(),
                 CurveFactor::default(),
+                Strength(1.2),
                 SCurveStrength(2.),
                 BopStrength(2.),
                 AnalyticalNormals,
                 InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
                 StaticBendStrength::default(),
+                SpecularStrength(0.2),
                 (
                     AddIf::new(QualityRule::DirectionalLights, DirectionalLights),
                     AddIf::new(QualityRule::PointLights, PointLights),

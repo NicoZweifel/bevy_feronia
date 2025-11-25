@@ -64,7 +64,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
     fn specialize(
         &self,
-        mut key: Self::Key,
+        key: Self::Key,
         layout: &MeshVertexBufferLayoutRef,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         let mut descriptor = self.mesh_pipeline.specialize(key.mesh_key, layout)?;
@@ -132,16 +132,23 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("CURVE_NORMALS".into());
         }
 
+        // TODO cull in compute shader
+        /*
         let gpu_cull = key.wind_key.contains(WindAffectedKey::GPU_CULL);
         if gpu_cull {
             key.mesh_key
                 .remove(MeshPipelineKey::VISIBILITY_RANGE_DITHER);
         }
+        */
 
         if let Some(fragment) = descriptor.fragment.as_mut() {
+            // TODO cull in compute shader
+            /*
             if !gpu_cull {
                 fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
             }
+             */
+            fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
 
             if key.wind_key.contains(WindAffectedKey::CURVE_NORMALS) {
                 fragment.shader_defs.push("CURVE_NORMALS".into());
@@ -235,6 +242,7 @@ impl FromWorld for InstancedComputePipeline {
                     },
                     count: None,
                 },
+                // Camera_cull_buffer
                 BindGroupLayoutEntry {
                     binding: 3,
                     visibility: ShaderStages::COMPUTE,
@@ -242,16 +250,6 @@ impl FromWorld for InstancedComputePipeline {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: Some(CameraCullData::min_size()),
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: ShaderStages::COMPUTE,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: Some(LodCullData::min_size()),
                     },
                     count: None,
                 },

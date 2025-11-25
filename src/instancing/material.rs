@@ -18,7 +18,7 @@ use bevy_render::renderer::RenderDevice;
 pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,
     pub aabb: Aabb,
-    pub options: MaterialOptions,
+    pub options: ScatterMaterialOptions,
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,

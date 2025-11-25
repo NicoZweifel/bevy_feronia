@@ -28,7 +28,7 @@ pub trait ScatterMaterial: ScatterMaterialAsset {
         properties: &ScatterAssetProperties,
     ) -> Self;
 
-    fn update_material(_material: &mut Self, _wind: Wind, _options: MaterialOptions) {}
+    fn update_material(_material: &mut Self, _wind: Wind, _options: ScatterMaterialOptions) {}
 
     fn component(material: Handle<Self>) -> impl Component;
 
@@ -160,7 +160,6 @@ pub struct WindUniform {
     pub strength: f32,
     pub noise_scale: f32,
     pub scroll_speed: f32,
-    pub bend_exponent: f32,
     pub micro_strength: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
@@ -188,7 +187,6 @@ impl From<&Wind> for WindUniform {
             strength: wind.strength,
             noise_scale: wind.noise_scale,
             scroll_speed: wind.scroll_speed,
-            bend_exponent: wind.bend_exponent,
             micro_strength: wind.micro_strength,
             s_curve_speed: wind.s_curve_speed,
             s_curve_strength: wind.s_curve_strength,

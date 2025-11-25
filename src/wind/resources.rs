@@ -17,7 +17,6 @@ pub struct Wind {
     pub strength: f32,
     pub noise_scale: f32,
     pub scroll_speed: f32,
-    pub bend_exponent: f32,
     pub micro_strength: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
@@ -36,13 +35,12 @@ impl Default for Wind {
             noise_scale: 0.01,
             scroll_speed: 0.1,
             micro_strength: 0.1,
-            bend_exponent: 2.25,
             twist_strength: 0.05,
-            s_curve_speed: 3.,
+            s_curve_speed: 2.,
             s_curve_strength: 0.02,
-            s_curve_frequency: 2.0,
+            s_curve_frequency: PI,
             bop_speed: 2.5,
-            bop_strength: 0.01,
+            bop_strength: 0.02,
         }
     }
 }
@@ -56,7 +54,6 @@ pub type WindOptionData<'w> = (
     Option<&'w BopStrength>,
     Option<&'w BopSpeed>,
     Option<&'w TwistStrength>,
-    Option<&'w BendExponent>,
 );
 
 impl Wind {
@@ -71,7 +68,6 @@ impl Wind {
             bop_strength,
             bop_speed,
             twist_strength,
-            bend_exponent,
         ): WindOptionData,
     ) -> Self {
         Wind {
@@ -99,9 +95,6 @@ impl Wind {
             twist_strength: twist_strength
                 .map(|t| **t * self.twist_strength)
                 .unwrap_or(self.twist_strength),
-            bend_exponent: bend_exponent
-                .map(|b| **b * self.bend_exponent)
-                .unwrap_or(self.bend_exponent),
             ..*self
         }
     }

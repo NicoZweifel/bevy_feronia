@@ -1,8 +1,15 @@
-use bevy_color::Color;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
+use bevy_render::extract_component::ExtractComponent;
 use derive_more::From;
+
+/// Marker component identifying the entity representing the center of the chunking and lod systems.
+///
+/// This should be added to the camera or the player controller.
+#[derive(Component, Reflect, Clone, ExtractComponent)]
+#[reflect(Component)]
+pub struct Center;
 
 /// Component specifying the LOD for a [`ScatterItem`].
 #[derive(

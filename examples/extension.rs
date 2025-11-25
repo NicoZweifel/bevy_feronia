@@ -48,7 +48,7 @@ fn setup(
                 half_extents: Vec3A::new(0.5, 3., 0.5),
                 center: Vec3A::new(0.0, 0.0, 0.0),
             },
-            options: MaterialOptions {
+            options: ScatterMaterialOptions {
                 // make it affected by wind
                 wind_affected: true,
                 // can also tweak other settings here

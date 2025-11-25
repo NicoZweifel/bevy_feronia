@@ -40,7 +40,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
     fn update_material(
         material: &mut InstancedWindAffectedMaterial,
         wind: Wind,
-        options: MaterialOptions,
+        options: ScatterMaterialOptions,
     ) {
         material.wind = wind;
         material.options = options;
@@ -104,20 +104,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         {
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-            let visibility_range = asset
-                .properties
-                .options
-                .gpu_cull
-                .then(|| VisibilityRange {
-                    start_margin: 0.0..0.0,
-                    end_margin: f32::MAX..f32::MAX,
-                    ..default()
-                })
-                .unwrap_or_else(|| {
-                    request
-                        .lod_config
-                        .get_visibility_range(asset.properties.lod)
-                });
+            let visibility_range = request
+                .lod_config
+                .get_visibility_range(asset.properties.lod);
 
             let instances_with_offset = instances
                 .iter()
@@ -155,6 +144,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         InstancedWindAffectedMeshMaterial(part.material().clone()),
                         Mesh3d(mesh_handle),
                         InstanceMaterialData {
+                            specular_power: asset.properties.options.specular_power,
+                            specular_strength: asset.properties.options.specular_strength,
+                            translucency: asset.properties.options.translucency,
                             top_color: LinearRgba::from(
                                 asset
                                     .properties

@@ -19,7 +19,7 @@ pub struct WindAffectedExtension {
 
     pub aabb: Aabb,
 
-    pub options: MaterialOptions,
+    pub options: ScatterMaterialOptions,
 
     #[texture(51)]
     #[sampler(52)]

@@ -20,6 +20,9 @@ struct InstanceUniforms {
     visibility_range: vec4<f32>,
     static_bend_strength: f32,
     curve_factor: f32,
+    translucency: f32,
+    specular_strength: f32,
+    specular_power: f32,
 };
 
 @group(4) @binding(0)
@@ -120,9 +123,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 
 #ifdef STATIC_BEND
-    // 0.3 to 1.0., e.g. blade has at least 30% bend.
     let raw_rand = rand_f(&rand_state);
-    let biased_rand = 0.3 + (raw_rand * 0.7);
+    let biased_rand = instance_uniforms.static_bend_strength + (raw_rand * (1. - instance_uniforms.static_bend_strength));
 
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
 
@@ -281,17 +283,13 @@ fn fragment(
     // ---
 
     // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
-    const SPECULAR_POWER: f32 = 32.;
 
     // TODO tweak && expose
-    const SPECULAR_STRENGTH: f32 = 0.6;
     const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
     const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
-
-    const TRANSLUCENCY: f32 = 0.6;
 
     var final_color_rgb = color_for_lighting.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.);
@@ -317,13 +315,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * TRANSLUCENCY;
+        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, SPECULAR_POWER);
+        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
 
         let shadow = fetch_directional_shadow(
             i,
@@ -338,7 +336,7 @@ fn fragment(
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
+            final_specular += scaled_light_color * specular_factor * instance_uniforms.specular_strength * shadow;
         }
     }
 #endif
@@ -378,13 +376,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * TRANSLUCENCY;
+        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, SPECULAR_POWER);
+        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
 
         var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
@@ -397,7 +395,7 @@ fn fragment(
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * attenuation * specular_factor * SPECULAR_STRENGTH * shadow;
+            final_specular += scaled_light_color * attenuation * specular_factor * instance_uniforms.specular_strength * shadow;
         }
     }
 #endif // POINT_LIGHTS

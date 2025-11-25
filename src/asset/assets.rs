@@ -18,7 +18,7 @@ pub struct ScatterAssetProperties {
     /// Wind properties applied to this asset/part.
     pub wind: Wind,
     /// Material properties applied to this asset/part.
-    pub options: MaterialOptions,
+    pub options: ScatterMaterialOptions,
     /// The local [`Aabb`] of this specific asset/part.
     pub aabb: Aabb,
     /// The inherited name.
@@ -111,7 +111,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .with(scene_root_data.wind_data)
             .with(child_data.wind_data);
 
-        let options = MaterialOptions::from(layer_material_option_data)
+        let options = ScatterMaterialOptions::from(layer_material_option_data)
             .with(scene_root_data.material_options)
             .with(child_data.material_options);
 
@@ -287,7 +287,7 @@ impl<T: ScatterMaterialAsset> ProtoType<T> for ScatterAssetPart<T> {
         &self.properties.lod
     }
 
-    fn material_options(&self) -> &MaterialOptions {
+    fn material_options(&self) -> &ScatterMaterialOptions {
         &self.properties.options
     }
 }

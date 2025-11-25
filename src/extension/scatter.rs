@@ -30,7 +30,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
     fn update_material(
         material: &mut ExtendedWindAffectedMaterial,
         wind: Wind,
-        options: MaterialOptions,
+        options: ScatterMaterialOptions,
     ) {
         let ext = &mut material.extension;
         ext.wind = wind;

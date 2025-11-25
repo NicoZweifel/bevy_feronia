@@ -7,6 +7,7 @@ use bevy_math::Vec3;
 use bevy_reflect::Reflect;
 use bevy_render::render_resource::Buffer;
 use bevy_render::{extract_component::ExtractComponent, render_resource::BindGroup};
+use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
 
@@ -21,7 +22,7 @@ use std::sync::Arc;
 /// Defaults to `32.0`.
 ///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct SpecularPower(pub f32);
 
@@ -42,7 +43,7 @@ impl Default for SpecularPower {
 /// Defaults to `0.6`.
 ///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct SpecularStrength(pub f32);
 
@@ -64,7 +65,7 @@ impl Default for SpecularStrength {
 /// Defaults to `0.6`.
 ///
 /// Only supported with [`ExtendedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct Translucency(pub f32);
 
@@ -81,6 +82,7 @@ impl Default for Translucency {
 /// Enables `#ifdef DIRECTIONAL_LIGHTS` in shaders.
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
+#[require(Translucency, SpecularPower, SpecularStrength)]
 pub struct DirectionalLights;
 
 /// Marker to make base [`StandardMaterial`] unlit.
@@ -97,6 +99,7 @@ pub struct Unlit;
 /// Enables `#ifdef POINT_LIGHTS` in shaders.
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
+#[require(Translucency, SpecularPower, SpecularStrength)]
 pub struct PointLights;
 
 /// Controls the edge correction effect (makes vegetation look fuller).
@@ -153,7 +156,10 @@ impl Default for CurveFactor {
 ///
 /// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
 ///
-/// Defaults to `0.3`.
+/// A higher value will apply a stronger Bézier curve and will affect the instances more uniformly,
+/// while a lower value will affect them more randomly and apply less curve.
+///
+/// Defaults to `0.5`.
 ///
 /// Currently only supported in [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
@@ -162,7 +168,7 @@ pub struct StaticBendStrength(pub f32);
 
 impl Default for StaticBendStrength {
     fn default() -> Self {
-        Self(0.3)
+        Self(0.5)
     }
 }
 
@@ -171,7 +177,7 @@ impl Default for StaticBendStrength {
 pub struct GpuCull;
 
 /// Used for the Compute Shader culling logic.
-#[derive(Component, Clone, Copy, Debug, Reflect, Deref, DerefMut)]
+#[derive(Component, Clone, Copy, Debug, Reflect, Deref, DerefMut, ExtractComponent)]
 #[reflect(Component)]
 pub struct CullLodDensity(pub f32);
 
@@ -233,6 +239,9 @@ pub struct InstanceMaterialData {
     pub visibility_range: [f32; 4],
     pub static_bend_strength: f32,
     pub curve_factor: f32,
+    pub translucency: f32,
+    pub specular_strength: f32,
+    pub specular_power: f32,
 }
 
 impl ExtractComponent for InstanceMaterialData {
@@ -270,7 +279,26 @@ pub struct InstanceUniforms {
     pub visibility_range: [f32; 4],
     pub static_bend_strength: f32,
     pub curve_factor: f32,
-    pub _padding: [f32; 2],
+    pub translucency: f32,
+    pub specular_strength: f32,
+    pub specular_power: f32,
+    pub _padding: [f32; 3],
+}
+
+impl From<&InstanceMaterialData> for InstanceUniforms {
+    fn from(value: &InstanceMaterialData) -> Self {
+        InstanceUniforms {
+            top_color: value.top_color,
+            bottom_color: value.bottom_color,
+            visibility_range: value.visibility_range,
+            static_bend_strength: value.static_bend_strength,
+            curve_factor: value.curve_factor,
+            translucency: value.translucency,
+            specular_power: value.specular_power,
+            specular_strength: value.specular_strength,
+            ..default()
+        }
+    }
 }
 
 #[derive(Component)]

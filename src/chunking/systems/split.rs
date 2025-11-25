@@ -7,7 +7,7 @@ use bevy_transform::prelude::{GlobalTransform, Transform};
 use tracing::{debug, warn};
 
 pub fn split(
-    q_center: Query<&GlobalTransform, With<ChunkCenter>>,
+    q_center: Query<&GlobalTransform, With<Center>>,
     q_chunk: Query<
         (Entity, &GlobalTransform, &SplitDistance),
         (With<CanSplit>, With<Chunk>, Without<Merging>),

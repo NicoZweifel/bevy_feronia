@@ -53,7 +53,7 @@ pub fn merge_check(
 
 pub fn handle_merge_check(
     mut cmd: Commands,
-    q_center: Query<&GlobalTransform, With<ChunkCenter>>,
+    q_center: Query<&GlobalTransform, With<Center>>,
     q_merge_distance: Query<&MergeDistance>,
     q_parent: Query<&GlobalTransform>,
     mut mr_merge_check: MessageReader<MergeCheck>,

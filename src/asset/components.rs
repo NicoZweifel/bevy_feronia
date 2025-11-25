@@ -59,7 +59,7 @@ where
         item_of: AssetItemOf,
         entity_parts: Vec<ScatterAssetPartEntity<StandardMaterial>>,
         wind: Wind,
-        options: MaterialOptions,
+        options: ScatterMaterialOptions,
     ) -> ScatterAssetCreationRequest<T> {
         let parts: Vec<ScatterAssetPart> =
             entity_parts.into_iter().map(|p| p.part.clone()).collect();

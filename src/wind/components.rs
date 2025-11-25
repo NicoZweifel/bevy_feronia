@@ -83,14 +83,6 @@ pub struct BopSpeed(pub f32);
 #[reflect(Component)]
 pub struct TwistStrength(pub f32);
 
-/// Component to multiply the `bend_exponent` field of an entity's [`Wind`] settings.
-///
-/// Corresponds to `wind.bend_exponent` in shaders, controlling the bend curve i.e.,
-/// how much the wind affects the mesh based on height.
-#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
-pub struct BendExponent(pub f32);
-
 /// Marker component to disable secondary wind effects for performance.
 ///
 /// Enables `#ifdef WIND_LOW_QUALITY` in shaders, which disables micro-noise, S-curve,

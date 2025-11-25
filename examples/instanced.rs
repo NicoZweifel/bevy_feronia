@@ -58,7 +58,7 @@ fn setup(
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
     ));
 
-    let options = MaterialOptions {
+    let options = ScatterMaterialOptions {
         // make it affected by wind
         wind_affected: true,
         // can also tweak other settings here
@@ -96,6 +96,9 @@ fn setup(
         .collect();
 
     let instance_material_data = InstanceMaterialData {
+        specular_power: 32.,
+        specular_strength: 0.6,
+        translucency: 0.6,
         top_color: GREEN_500.to_f32_array(),
         bottom_color: GREEN_900.to_f32_array(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0],

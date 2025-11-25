@@ -196,7 +196,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                 .with(layer_wind_data)
                 .with(scene_root_data.wind_data);
 
-            let options = MaterialOptions::from(layer_material_option_data)
+            let options = ScatterMaterialOptions::from(layer_material_option_data)
                 .with(scene_root_data.material_options);
 
             let (part_entities, parts) = entity_parts.iter().fold(

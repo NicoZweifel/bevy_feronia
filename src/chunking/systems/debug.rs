@@ -41,7 +41,7 @@ pub fn draw_chunks(
 
 pub fn draw_lod_ranges(
     mut gizmos: Gizmos,
-    q_center: Query<&GlobalTransform, With<ChunkCenter>>,
+    q_center: Query<&GlobalTransform, With<Center>>,
     q_root_config: Query<(&LodConfig, &ChunkLodConfig)>,
 ) {
     let Ok(center_tf) = q_center.single() else {

@@ -50,7 +50,7 @@ where
 
 /// Collection of material settings defining shader behavior.
 #[derive(Clone, Debug, Reflect, Copy, Default)]
-pub struct MaterialOptions {
+pub struct ScatterMaterialOptions {
     /// If true, material is not automatically synced with global [`Wind`].
     // TODO fix this und update options/material settings properly
     pub controlled: bool,
@@ -94,6 +94,13 @@ pub struct MaterialOptions {
     pub unlit: bool,
     /// See [`GpuCull`].
     pub gpu_cull: bool,
+
+    /// See [`Translucency`].
+    pub translucency: f32,
+    /// See [`SpecularStrength`].
+    pub specular_strength: f32,
+    /// See [`SpecularPower`].
+    pub specular_power: f32,
 }
 
 /// Collection of optional material components, usable as `QueryData`.
@@ -118,9 +125,12 @@ pub struct MaterialOptionData {
     pub static_shadow: Option<&'static StaticShadow>,
     pub unlit: Option<&'static Unlit>,
     pub gpu_cull: Option<&'static GpuCull>,
+    pub translucency: Option<&'static Translucency>,
+    pub specular_strength: Option<&'static SpecularStrength>,
+    pub specular_power: Option<&'static SpecularPower>,
 }
 
-impl From<MaterialOptionDataItem<'_, '_>> for MaterialOptions {
+impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
     fn from(data: MaterialOptionDataItem<'_, '_>) -> Self {
         Self {
             debug: data.enable_debug.is_some(),
@@ -142,12 +152,15 @@ impl From<MaterialOptionDataItem<'_, '_>> for MaterialOptions {
             static_shadows: data.static_shadow.is_some(),
             unlit: data.unlit.is_some(),
             gpu_cull: data.gpu_cull.is_some(),
+            translucency: data.translucency.map(|s| **s).unwrap_or(0.),
+            specular_strength: data.specular_strength.map(|s| **s).unwrap_or(0.),
+            specular_power: data.specular_power.map(|s| **s).unwrap_or(0.),
             ..default()
         }
     }
 }
 
-impl MaterialOptions {
+impl ScatterMaterialOptions {
     /// Merges [`MaterialOptionDataItem`] into existing `MaterialOptions`.
     pub fn with(&self, data: MaterialOptionDataItem) -> Self {
         Self {
@@ -188,11 +201,20 @@ impl MaterialOptions {
             static_shadows: data.static_shadow.is_some() || self.static_shadows,
             unlit: data.unlit.is_some() || self.unlit,
             gpu_cull: data.gpu_cull.is_some() || self.gpu_cull,
+            translucency: data.translucency.map(|s| **s).unwrap_or(self.translucency),
+            specular_strength: data
+                .specular_strength
+                .map(|s| **s)
+                .unwrap_or(self.specular_strength),
+            specular_power: data
+                .specular_power
+                .map(|s| **s)
+                .unwrap_or(self.specular_power),
             ..*self
         }
     }
 
-    /// Merges another [`MaterialOptions`] into this one.
+    /// Merges another [`ScatterMaterialOptions`] into this one.
     pub fn with_options(mut self, other: Self) -> Self {
         self.debug = other.debug || self.debug;
         self.enable_billboarding = other.enable_billboarding || self.enable_billboarding;
@@ -222,6 +244,22 @@ impl MaterialOptions {
         self.directional_lights = other.directional_lights || self.directional_lights;
         self.static_shadows = other.static_shadows || self.static_shadows;
         self.unlit = other.unlit || self.unlit;
+        self.gpu_cull = other.gpu_cull || self.gpu_cull;
+        self.translucency = if other.translucency > 0. {
+            other.specular_power
+        } else {
+            self.translucency
+        };
+        self.specular_strength = if other.specular_strength > 0. {
+            other.specular_strength
+        } else {
+            self.specular_strength
+        };
+        self.specular_power = if other.specular_power > 0. {
+            other.specular_power
+        } else {
+            self.specular_power
+        };
         self
     }
 
@@ -251,8 +289,8 @@ where
     fn aabb(&self) -> &Aabb;
     /// Returns the [`LevelOfDetail`].
     fn lod(&self) -> &LevelOfDetail;
-    /// Returns the [`MaterialOptions`].
-    fn material_options(&self) -> &MaterialOptions;
+    /// Returns the [`ScatterMaterialOptions`].
+    fn material_options(&self) -> &ScatterMaterialOptions;
 }
 
 /// Trait for sampling a value (e.g., density) at a world position.
@@ -287,6 +325,9 @@ mod tests {
         let static_shadow = StaticShadow;
         let unlit = Unlit;
         let gpu_cull = GpuCull;
+        let translucency = Translucency(0.3);
+        let specular_strength = SpecularStrength(0.5);
+        let specular_power = SpecularPower(0.5);
 
         let data_all_some = MaterialOptionDataItem {
             enable_debug: Some(&debug),
@@ -307,10 +348,13 @@ mod tests {
             static_shadow: Some(&static_shadow),
             unlit: Some(&unlit),
             gpu_cull: Some(&gpu_cull),
+            translucency: Some(&translucency),
+            specular_strength: Some(&specular_strength),
+            specular_power: Some(&specular_power),
         };
 
         // Act
-        let opts = MaterialOptions::from(data_all_some);
+        let opts = ScatterMaterialOptions::from(data_all_some);
 
         // Assert
         assert_eq!(opts.debug, true);
@@ -333,6 +377,9 @@ mod tests {
         assert_eq!(opts.controlled, false);
         assert_eq!(opts.debug_color, Color::default());
         assert_eq!(opts.gpu_cull, true);
+        assert_eq!(opts.translucency, 0.3);
+        assert_eq!(opts.specular_strength, 0.5);
+        assert_eq!(opts.specular_power, 0.5);
     }
 
     #[test]
@@ -357,11 +404,14 @@ mod tests {
             static_shadow: None,
             unlit: None,
             gpu_cull: None,
+            translucency: None,
+            specular_strength: None,
+            specular_power: None,
         };
-        let default_opts = MaterialOptions::default();
+        let default_opts = ScatterMaterialOptions::default();
 
         // Act
-        let opts_none = MaterialOptions::from(data_none);
+        let opts_none = ScatterMaterialOptions::from(data_none);
 
         // Assert
         assert_eq!(opts_none.debug, default_opts.debug);
@@ -409,12 +459,15 @@ mod tests {
         assert_eq!(opts_none.static_shadows, default_opts.static_shadows);
         assert_eq!(opts_none.unlit, default_opts.unlit);
         assert_eq!(opts_none.gpu_cull, default_opts.gpu_cull);
+        assert_eq!(opts_none.translucency, default_opts.translucency);
+        assert_eq!(opts_none.specular_strength, default_opts.specular_strength);
+        assert_eq!(opts_none.specular_power, default_opts.specular_power);
     }
 
     #[test]
     fn test_with_data_should_merge_and_override() {
         // Arrange
-        let base_opts = MaterialOptions {
+        let base_opts = ScatterMaterialOptions {
             debug: true,
             edge_correction_factor: 5.0,
             top_color: Some(BLUE.into()),
@@ -447,6 +500,9 @@ mod tests {
             static_shadow: None,
             unlit: None,
             gpu_cull: None,
+            translucency: None,
+            specular_strength: None,
+            specular_power: None,
         };
 
         // Act
@@ -480,7 +536,7 @@ mod tests {
     #[test]
     fn test_with_options_should_merge_and_override() {
         // Arrange
-        let base = MaterialOptions {
+        let base = ScatterMaterialOptions {
             debug: true,
             edge_correction_factor: 5.0,
             top_color: Some(BLUE.into()),
@@ -489,7 +545,7 @@ mod tests {
             ..default()
         };
 
-        let other = MaterialOptions {
+        let other = ScatterMaterialOptions {
             enable_billboarding: true,        // Merge: true
             edge_correction_factor: 1.0,      // Override: 1.0 (since > 0)
             top_color: Some(RED.into()),      // Override
@@ -528,12 +584,12 @@ mod tests {
     #[test]
     fn test_with_options_should_keep_colors_when_no_options_provided() {
         // Arrange
-        let base_with_color = MaterialOptions {
+        let base_with_color = ScatterMaterialOptions {
             top_color: Some(BLUE.into()),
             bottom_color: Some(RED.into()),
             ..default()
         };
-        let other_no_color = MaterialOptions {
+        let other_no_color = ScatterMaterialOptions {
             top_color: None,
             bottom_color: None,
             ..default()
@@ -558,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_builder_methods_should_set() {
-        let opts = MaterialOptions::default()
+        let opts = ScatterMaterialOptions::default()
             .with_controlled(true)
             .with_debug_color(GREEN.into());
 

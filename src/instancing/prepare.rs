@@ -9,14 +9,15 @@ use bevy_render::mesh::allocator::MeshAllocator;
 use bevy_render::mesh::{RenderMesh, RenderMeshBufferInfo};
 use bevy_render::render_asset::RenderAssets;
 use bevy_render::render_resource::{
-    BindGroupEntry, BufferDescriptor, BufferInitDescriptor, BufferUsages,
-    DrawIndexedIndirectArgs,
+    BindGroupEntry, BufferDescriptor, BufferInitDescriptor, BufferUsages, DrawIndexedIndirectArgs,
 };
 use bevy_render::renderer::{RenderDevice, RenderQueue};
 use bevy_render::sync_world::MainEntity;
 use bevy_render::view::ExtractedView;
-use bevy_utils::default;
 use bytemuck::bytes_of;
+
+#[cfg(feature = "tracing")]
+use tracing::warn;
 
 pub(super) fn prepare_instance_buffer(
     mut cmd: Commands,
@@ -79,14 +80,7 @@ pub(super) fn prepare_instance_uniform_buffer(
     let bind_group_layout = pipeline.instance_uniform_layout.clone();
 
     for (entity, instance_data, uniform_buffer_opt) in &query {
-        let uniforms = InstanceUniforms {
-            top_color: instance_data.top_color,
-            bottom_color: instance_data.bottom_color,
-            visibility_range: instance_data.visibility_range,
-            static_bend_strength: instance_data.static_bend_strength,
-            curve_factor: instance_data.curve_factor,
-            ..default()
-        };
+        let uniforms: InstanceUniforms = instance_data.into();
         let contents = bytes_of(&uniforms);
 
         if let Some(uniform_buffer) = uniform_buffer_opt {
@@ -176,12 +170,16 @@ pub(super) fn prepare_indirect_draw_buffer(
 
 pub(super) fn prepare_global_cull_buffer(
     mut commands: Commands,
-    views: Query<(&ExtractedView, &Camera)>,
+    views: Query<(&ExtractedView, &Camera), With<Center>>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
     global_buffer: Option<ResMut<GlobalCullBuffer>>,
 ) {
     let Some((view, _camera)) = views.iter().find(|(_, cam)| cam.is_active) else {
+        #[cfg(feature = "tracing")]
+        warn!(
+            "No active camera found culling. Did you add `Center` to the camera/player controller?"
+        );
         return;
     };
 
@@ -315,6 +313,7 @@ pub(super) fn prepare_instanced_compute_bind_group(
                     binding: 2,
                     resource: indirect.buffer.as_entire_binding(),
                 },
+                // Camera
                 BindGroupEntry {
                     binding: 3,
                     resource: cull_buffer.buffer.as_entire_binding(),
