@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::ecs::prelude::*;
+use bevy_ecs::prelude::*;
 
 pub fn update_root_lod_config(
     mut cmd: Commands,
@@ -9,7 +9,6 @@ pub fn update_root_lod_config(
         let derived_chunk_lod_config =
             ChunkLodConfig::from_sources(lod_config, size_scalars, base_size);
 
-        println!("lol {:?}", lod_config);
         cmd.entity(entity).insert(derived_chunk_lod_config);
     }
 }

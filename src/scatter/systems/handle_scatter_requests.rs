@@ -1,9 +1,16 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
-use bevy::tasks::futures_lite::future;
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec3;
+use bevy_tasks::AsyncComputeTaskPool;
+use bevy_tasks::futures_lite::future;
+use bevy_transform::prelude::GlobalTransform;
+
+#[cfg(feature = "tracing")]
+use tracing::{debug, warn};
 
 type ScatterLayerQueryData<'a> = (
     &'a ScatterLayerOf,
@@ -17,9 +24,9 @@ type ScatterLayerQueryData<'a> = (
     &'a GlobalTransform,
 );
 
-pub fn handle_scatter_requests<TOut, TIn>(
+pub fn handle_scatter_requests<T>(
     mut cmd: Commands,
-    q_requests: Query<(Entity, &ScatterRequest<TOut, TIn>), With<ScatterRequest<TOut, TIn>>>,
+    q_requests: Query<(Entity, &ScatterRequest<T>), With<ScatterRequest<T>>>,
     q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<
         (
@@ -42,8 +49,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
     world_seed: Res<WorldSeed>,
     images: Res<Assets<Image>>,
 ) where
-    TIn: Material + Send + 'static,
-    TOut: ScatterMaterial<TIn> + Send + 'static,
+    T: ScatterMaterial,
 {
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
@@ -62,6 +68,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             layer_gtf,
         )) = q_layer.get(request.layer_entity)
         else {
+            #[cfg(feature = "tracing")]
             warn!("ScatterLayer not found!");
             continue;
         };
@@ -74,6 +81,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
 
         let density = density_dist.map_or(1.0, |d| **d);
 
+        #[cfg(feature = "tracing")]
         debug!(
             "Scattering {} instances in ScatterLayer {}",
             density, request.layer_entity,
@@ -85,6 +93,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
                 q_chunk_root.get(**scatter_root)
             else {
+                #[cfg(feature = "tracing")]
                 warn!("ChunkRoot not found!");
                 continue;
             };
@@ -133,6 +142,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
             })
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
+                #[cfg(feature = "tracing")]
                 warn!("ScatterRoot not found!");
                 continue;
             };
@@ -170,24 +180,23 @@ pub fn handle_scatter_requests<TOut, TIn>(
             continue;
         };
 
-        cmd.entity(entity).remove::<ScatterRequest<TOut, TIn>>();
+        cmd.entity(entity).remove::<ScatterRequest<T>>();
 
-        let task = AsyncComputeTaskPool::get()
-            .spawn(async move { ScatterResults::<TOut, TIn>::from(data) });
+        let task =
+            AsyncComputeTaskPool::get().spawn(async move { ScatterResults::<T>::from(data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
     }
 }
 
-pub fn handle_finished_scatter_tasks<TOut, TIn>(
+pub fn handle_finished_scatter_tasks<T>(
     mut cmd: Commands,
-    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TOut, TIn>>)>,
-    mut mw_results: MessageWriter<ScatterResults<TOut, TIn>>,
+    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<T>>)>,
+    mut mw_results: MessageWriter<ScatterResults<T>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn>,
+    T: ScatterMaterial,
 {
     for (entity, mut task) in &mut tasks {
         let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {
@@ -199,7 +208,7 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
         }
 
         cmd.entity(entity)
-            .remove::<CpuScatterTask<ScatterResults<TOut, TIn>>>();
+            .remove::<CpuScatterTask<ScatterResults<T>>>();
 
         let mut targets = vec![results.root, results.layer];
 
@@ -207,6 +216,7 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
             targets.push(chunk_entity);
         }
 
+        #[cfg(feature = "tracing")]
         debug!("Scattered {} instances", results.data.len());
 
         targets

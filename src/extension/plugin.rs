@@ -1,7 +1,8 @@
 use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
-use bevy::asset::embedded_asset;
-use bevy::prelude::*;
+use bevy_app::{App, Plugin};
+use bevy_asset::embedded_asset;
+use bevy_pbr::MaterialPlugin;
 
 pub struct ExtendedWindAffectedPlugin;
 

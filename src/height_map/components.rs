@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
 #[derive(Component, Clone)]
 pub struct MapHeight;

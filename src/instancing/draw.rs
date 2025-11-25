@@ -1,17 +1,12 @@
 use crate::prelude::*;
-use bevy::{
-    ecs::system::{SystemParamItem, lifetimeless::*},
-    pbr::{
-        RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
-        SetMeshViewBindingArrayBindGroup,
-    },
-    render::{
-        mesh::{RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator},
-        render_asset::RenderAssets,
-        render_phase::{
-            PhaseItem, RenderCommand, RenderCommandResult, SetItemPipeline, TrackedRenderPass,
-        },
-    },
+use bevy_ecs::system::{SystemParamItem, lifetimeless::*};
+use bevy_pbr::{
+    RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup, SetMeshViewBindingArrayBindGroup,
+};
+use bevy_render::{
+    mesh::{RenderMesh, RenderMeshBufferInfo, allocator::MeshAllocator},
+    render_asset::RenderAssets,
+    render_phase::*,
 };
 
 pub type DrawInstancedWindAffected = (

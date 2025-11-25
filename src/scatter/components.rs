@@ -1,15 +1,23 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::prelude::*;
-use bevy::tasks::Task;
+use bevy_asset::Handle;
+use bevy_camera::prelude::Visibility;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec3;
+use bevy_pbr::StandardMaterial;
+use bevy_reflect::Reflect;
+use bevy_tasks::Task;
+use bevy_transform::prelude::Transform;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 /// Component used to trigger a scatter operation for a specific target, layer and material type.
 #[derive(Component)]
-pub struct ScatterRequest<TOut, TIn = StandardMaterial>
+pub struct ScatterRequest<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     /// The entity that triggered the scatter (e.g., a chunk or the root).
     pub target_entity: Entity,
@@ -18,13 +26,12 @@ where
     /// The [`Chunk`] entity this request is for, if any (for chunked scattering).
     pub chunk_entity: Option<Entity>,
 
-    _phantom: PhantomData<(TOut, TIn)>,
+    _phantom: PhantomData<T>,
 }
 
-impl<TOut, TIn> ScatterRequest<TOut, TIn>
+impl<T> ScatterRequest<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     pub fn new(target_entity: Entity, layer_entity: Entity, chunk_entity: Option<Entity>) -> Self {
         Self {
@@ -105,11 +112,11 @@ pub struct ScatterChunked;
 /// (mesh, material, LOD, etc.) of a scatterable object.
 ///
 /// This is similar to [`ScatteredAsset`], but this component is on the original [`ScatterItem`] definition, in a [`ScatterLayer`].
-#[derive(Component, Reflect, Debug, Clone, Deref)]
+#[derive(Component, Reflect, Debug, Clone, Deref, Default)]
 #[reflect(Component)]
 pub struct ScatterItemAsset<T>(pub Handle<ScatterAsset<T>>)
 where
-    T: Asset + Clone;
+    T: ScatterMaterialAsset;
 
 /// Relational component linking a [`ScatterItem`] entity to its parent [`ScatterLayer`].
 #[derive(Component, Debug, Clone, Reflect, Deref)]
@@ -129,18 +136,16 @@ pub struct ScatterLayer(Vec<Entity>);
 /// Marker component on a [`Chunk`] to trigger scattering when the chunk is initialized.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct ChunkInitScatter<TOut, TIn = StandardMaterial>
+pub struct ChunkInitScatter<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
-    _phantom: PhantomData<(TOut, TIn)>,
+    _phantom: PhantomData<T>,
 }
 
-impl<TOut, TIn> Default for ChunkInitScatter<TOut, TIn>
+impl<T> Default for ChunkInitScatter<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn default() -> Self {
         Self {
@@ -155,18 +160,16 @@ where
 /// and material pipelines.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct ScatterLayerType<TOut, TIn = StandardMaterial>
+pub struct ScatterLayerType<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
-    _phantom: PhantomData<(TOut, TIn)>,
+    _phantom: PhantomData<T>,
 }
 
-impl<TOut, TIn> Default for ScatterLayerType<TOut, TIn>
+impl<T> Default for ScatterLayerType<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn default() -> Self {
         Self {
@@ -213,6 +216,24 @@ pub struct ScatterLayerEnabled(pub bool);
 #[reflect(Component)]
 pub struct DistributionDensity(pub f32);
 
+impl From<f32> for DistributionDensity {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<i32> for DistributionDensity {
+    fn from(value: i32) -> Self {
+        Self(value as f32)
+    }
+}
+
+impl From<usize> for DistributionDensity {
+    fn from(value: usize) -> Self {
+        Self(value as f32)
+    }
+}
+
 /// Enables density scaling when using chunks.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
@@ -234,7 +255,7 @@ pub struct ScatteredInstance(pub Entity);
 #[reflect(Component)]
 pub struct ScatteredAsset<T>(pub Handle<ScatterAsset<T>>)
 where
-    T: Asset + Clone;
+    T: ScatterMaterialAsset;
 
 /// Defines a texture-based density map for scattering.
 #[derive(Component, Reflect, Deref, DerefMut)]
@@ -311,22 +332,20 @@ impl Default for Avoidance {
 ///
 /// Required to prevent foliage from being scattered onto rocks etc.
 #[derive(Component)]
-pub struct HierarchicalScatterState<TOut, TIn = StandardMaterial>
+pub struct HierarchicalScatterState<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     /// Layers of the root, in the order they should be processed.
     pub ordered_layers: Vec<Entity>,
     /// Index of the layer currently being processed.
     pub current_layer_index: usize,
-    pub _phantom: PhantomData<(TOut, TIn)>,
+    pub _phantom: PhantomData<T>,
 }
 
-impl<TOut, TIn> Default for HierarchicalScatterState<TOut, TIn>
+impl<T> Default for HierarchicalScatterState<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn default() -> Self {
         Self {

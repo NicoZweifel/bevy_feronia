@@ -1,7 +1,10 @@
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::color::palettes::css::{PURPLE, RED};
-use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
+use bevy_color::palettes::css::{PURPLE, RED};
+use bevy_ecs::prelude::*;
+use bevy_gizmos::prelude::Gizmos;
+use bevy_math::*;
+use bevy_transform::prelude::*;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_8};
 
 pub fn draw_aabbs(

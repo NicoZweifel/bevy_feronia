@@ -1,10 +1,12 @@
 pub mod asset;
+pub mod backend;
 pub mod chunking;
 pub mod core;
 pub mod density_map;
 pub mod extension;
 pub mod height_map;
 pub mod instancing;
+pub mod quality;
 pub mod scatter;
 pub mod wind;
 

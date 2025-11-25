@@ -1,11 +1,13 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::*;
-use bevy::mesh::PlaneMeshBuilder;
+use bevy::app::prelude::*;
 use bevy::prelude::*;
+use bevy_color::palettes::tailwind::*;
 use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
+use bevy_mesh::PlaneMeshBuilder;
+use bevy_state::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
 

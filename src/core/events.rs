@@ -1,14 +1,18 @@
 use crate::core::SpawnTrigger;
-use crate::prelude::{ScatterAsset, ScatterHandleAsset, ScatterItemAsset};
-use bevy::asset::{Asset, Assets};
-use bevy::platform::collections::HashMap;
-use bevy::prelude::*;
+use crate::prelude::*;
+use bevy_asset::Assets;
+use bevy_ecs::prelude::*;
+use bevy_pbr::StandardMaterial;
+use bevy_platform::collections::HashMap;
+use std::fmt::Debug;
+#[cfg(feature = "tracing")]
+use tracing::warn;
 
 /// Event used to trigger the spawning of a batch of `[ScatterAssets]`.
 #[derive(Event, Message, Debug, Clone)]
-pub struct SpawnScatterAssets<T>
+pub struct SpawnScatterAssets<T = StandardMaterial>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     /// A list of asset definitions to be scattered.
     pub items: Vec<ScatterItemAsset<T>>,
@@ -18,20 +22,20 @@ where
 
 impl<T> SpawnScatterAssets<T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     pub fn new(items: Vec<ScatterItemAsset<T>>, trigger: SpawnTrigger) -> Self {
         Self { items, trigger }
     }
 
-    pub fn with_items(mut self, items: Vec<ScatterItemAsset<T>>) -> Self {
-        self.items = items;
+    pub fn with_items(mut self, items: impl Iterator<Item = ScatterItemAsset<T>> + Clone) -> Self {
+        self.items = items.collect();
         self
     }
 
     pub fn create_name_map<'w>(
         &self,
-        prototype_assets: &'w Res<Assets<ScatterAsset<T>>>,
+        prototype_assets: &'w Assets<ScatterAsset<T>>,
     ) -> HashMap<Name, Vec<ScatterHandleAsset<'w, T>>> {
         self.items
             .iter()
@@ -48,6 +52,7 @@ where
                 |mut map, ScatterHandleAsset { handle, asset }| {
                     let name = asset.properties.name.as_ref().map_or_else(
                         || {
+                            #[cfg(feature = "tracing")]
                             warn!("ScatterAsset {:?} has no name!", handle);
                             Name::new("")
                         },
@@ -66,10 +71,19 @@ where
 
 impl<T> From<SpawnTrigger> for SpawnScatterAssets<T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     fn from(value: SpawnTrigger) -> Self {
         Self::new(Vec::new(), value)
+    }
+}
+
+impl<T> From<On<'_, '_, ScatterResults<T>>> for SpawnScatterAssets<T>
+where
+    T: ScatterMaterial,
+{
+    fn from(value: On<'_, '_, ScatterResults<T>>) -> Self {
+        Self::from(SpawnTrigger::from(value))
     }
 }
 

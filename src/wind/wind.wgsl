@@ -14,6 +14,8 @@ struct Wind {
     bop_strength: f32,
     twist_strength: f32,
     edge_correction_factor: f32,
+    sss_scale: f32,
+    sss_intensity: f32,
     aabb_min: vec3<f32>,
     aabb_max: vec3<f32>,
     debug_color: vec4<f32>

@@ -4,24 +4,26 @@ use super::{
     material::{InstancedWindAffectedMaterial, InstancedWindAffectedMeshMaterial},
     pipeline::{InstancedWindAffectedPipeline, InstancedWindAffectedPipelineKey},
 };
+use crate::instancing::pipeline::InstancedComputePipeline;
 use crate::prelude::*;
-use bevy::core_pipeline::core_3d::AlphaMask3d;
-use bevy::core_pipeline::prepass::{
+use bevy_asset::Assets;
+use bevy_core_pipeline::core_3d::AlphaMask3d;
+use bevy_core_pipeline::prepass::{
     DepthPrepass, MotionVectorPrepass, NormalPrepass, OpaqueNoLightmap3dBatchSetKey,
     OpaqueNoLightmap3dBinKey,
 };
-use bevy::ecs::system::SystemChangeTick;
-use bevy::render::batching::gpu_preprocessing::GpuPreprocessingSupport;
-use bevy::render::mesh::allocator::MeshAllocator;
-use bevy::render::render_phase::{BinnedRenderPhaseType, ViewBinnedRenderPhases};
-use bevy::{
-    pbr::{MeshPipelineKey, RenderMeshInstances},
-    prelude::*,
-    render::{
-        mesh::RenderMesh, render_asset::RenderAssets, render_phase::DrawFunctions,
-        render_resource::*, sync_world::MainEntity, view::ExtractedView,
-    },
+use bevy_ecs::prelude::*;
+use bevy_ecs::system::SystemChangeTick;
+use bevy_pbr::{MeshPipelineKey, RenderMeshInstances};
+use bevy_render::batching::gpu_preprocessing::GpuPreprocessingSupport;
+use bevy_render::mesh::allocator::MeshAllocator;
+use bevy_render::render_phase::{BinnedRenderPhaseType, ViewBinnedRenderPhases};
+use bevy_render::view::Msaa;
+use bevy_render::{
+    mesh::RenderMesh, render_asset::RenderAssets, render_phase::DrawFunctions, render_resource::*,
+    sync_world::MainEntity, view::ExtractedView,
 };
+use bevy_utils::default;
 
 pub(crate) fn add_instance_key_component(
     mut commands: Commands,
@@ -66,6 +68,10 @@ pub(crate) fn add_instance_key_component(
             material.options.curve_factor > 0.,
         );
         key.set(WindAffectedKey::POINT_LIGHTS, material.options.point_lights);
+        key.set(
+            WindAffectedKey::DIRECTIONAL_LIGHTS,
+            material.options.directional_lights,
+        );
 
         commands
             .entity(entity)
@@ -167,4 +173,25 @@ pub(crate) fn queue_instanced_wind_affected(
             );
         }
     }
+}
+
+pub fn queue_instanced_compute_pipeline(
+    pipeline_cache: Res<PipelineCache>,
+    mut compute_pipeline: ResMut<InstancedComputePipeline>,
+) {
+    if compute_pipeline.pipeline_id.is_some() {
+        return;
+    }
+
+    let id = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
+        label: Some("instanced_compute_pipeline".into()),
+        layout: vec![compute_pipeline.layout.clone()],
+        push_constant_ranges: vec![],
+        shader: compute_pipeline.shader.clone(),
+        shader_defs: vec![],
+        entry_point: Some("main".into()),
+        ..default()
+    });
+
+    compute_pipeline.pipeline_id = Some(id);
 }

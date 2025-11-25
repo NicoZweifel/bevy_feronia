@@ -1,13 +1,12 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::camera::primitives::Aabb;
-use bevy::color::palettes::tailwind::*;
-use bevy::mesh::PlaneMeshBuilder;
-use bevy::pbr::ExtendedMaterial;
 use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
+use bevy_color::palettes::tailwind::*;
 use bevy_feronia::prelude::*;
-use bevy_feronia::wind::systems::setup_wind_texture;
+use bevy_mesh::PlaneMeshBuilder;
+use bevy_pbr::ExtendedMaterial;
 use example::*;
 
 fn main() -> AppExit {
@@ -24,7 +23,7 @@ fn main() -> AppExit {
             ExtendedWindAffectedPlugin,
         ))
         // Need to wait for the wind noise texture.
-        .add_systems(Startup, setup.after(setup_wind_texture))
+        .add_systems(Startup, setup.after(WindTextureSetup))
         .run()
 }
 

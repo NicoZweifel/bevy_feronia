@@ -16,8 +16,13 @@ fn main() -> AppExit {
             bop_strength: 0.01,
             ..default()
         })
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .init_state::<AppState>()
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
             Update,
@@ -83,7 +88,6 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        ChunkRoot::default(),
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
             extension::scatter_layer("Tree Layer"),

@@ -1,14 +1,22 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::camera::primitives::Aabb;
-use bevy::color::palettes::tailwind::*;
-use bevy::mesh::{Indices, PlaneMeshBuilder, PrimitiveTopology};
-use bevy::prelude::*;
-use bevy::render::batching::NoAutomaticBatching;
+use bevy_app::{App, AppExit, Startup};
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_camera::visibility::Visibility;
+use bevy_color::ColorToComponents;
+use bevy_color::palettes::tailwind::*;
+use bevy_ecs::prelude::*;
 use bevy_feronia::prelude::*;
-use bevy_feronia::wind::systems::setup_wind_texture;
+use bevy_math::{Vec3, Vec3A};
+use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
+use bevy_pbr::{MeshMaterial3d, StandardMaterial};
+use bevy_render::batching::NoAutomaticBatching;
+use bevy_transform::prelude::Transform;
+use bevy_utils::default;
 use example::*;
+use std::sync::Arc;
 
 fn main() -> AppExit {
     App::new()
@@ -24,7 +32,7 @@ fn main() -> AppExit {
             InstancedWindAffectedPlugin,
         ))
         // Need to wait for the wind noise texture.
-        .add_systems(Startup, setup.after(setup_wind_texture))
+        .add_systems(Startup, setup.after(WindTextureSetup))
         .run()
 }
 
@@ -54,6 +62,7 @@ fn setup(
         // make it affected by wind
         wind_affected: true,
         // can also tweak other settings here
+        directional_lights: true,
         point_lights: true,
         static_bend_strength: 3.,
         // or test individual settings
@@ -62,7 +71,7 @@ fn setup(
     };
 
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
-        // We only clone the wind here once, if we want wind updates to be reflected in the materials,
+        // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
         // we need an update system.
         wind: *wind,
         aabb,
@@ -70,9 +79,11 @@ fn setup(
         noise_texture: (**noise_texture).clone(),
     });
 
-    let instances = (-10..10)
+    const SIZE: i32 = 10;
+
+    let instances = (-SIZE..SIZE)
         .enumerate()
-        .map(|(x, i)| {
+        .map(|(i, x)| {
             InstanceData {
                 position: Vec3::new(x as f32, 0.25 * 4., x as f32),
                 scale: 4.0,
@@ -85,9 +96,10 @@ fn setup(
         .collect();
 
     let instance_material_data = InstanceMaterialData {
-        color: GREEN_500.to_f32_array(),
+        top_color: GREEN_500.to_f32_array(),
+        bottom_color: GREEN_900.to_f32_array(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0],
-        instances,
+        instances: Arc::new(instances),
         static_bend_strength: options.static_bend_strength,
         curve_factor: options.curve_factor,
     };
@@ -103,7 +115,7 @@ fn setup(
         // NoFrustumCulling,
         Aabb {
             center: aabb.center,
-            half_extents: aabb.half_extents * 10.,
+            half_extents: aabb.half_extents * SIZE as f32 * 2.,
         },
     ));
 }

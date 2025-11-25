@@ -1,18 +1,19 @@
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::ecs::system::{SystemParamItem, lifetimeless::SRes};
-use bevy::{
-    ecs::query::QueryItem,
-    prelude::*,
-    render::{
-        extract_component::ExtractComponent,
-        render_asset::{PrepareAssetError, RenderAsset},
-        render_resource::*,
-        renderer::RenderDevice,
-    },
-};
 
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+use bevy_asset::{Asset, AssetId, Handle};
+use bevy_camera::primitives::Aabb;
+use bevy_color::ColorToComponents;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryItem;
+use bevy_ecs::system::{SystemParamItem, lifetimeless::SRes};
+use bevy_image::Image;
+use bevy_reflect::TypePath;
+use bevy_render::extract_component::ExtractComponent;
+use bevy_render::render_asset::{PrepareAssetError, RenderAsset};
+use bevy_render::render_resource::{AsBindGroup, AsBindGroupError, BindGroup};
+use bevy_render::renderer::RenderDevice;
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone, Default)]
 #[uniform(50, WindUniform)]
 pub struct InstancedWindAffectedMaterial {
     pub wind: Wind,

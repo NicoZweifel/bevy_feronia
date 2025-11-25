@@ -1,12 +1,18 @@
 pub mod components;
 pub mod events;
 
+use bevy_asset::{Asset, Handle};
 pub use components::*;
-pub use events::*;
 
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
+use bevy_color::Color;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryData;
+use bevy_math::Vec3;
+use bevy_mesh::Mesh;
+use bevy_reflect::Reflect;
+use bevy_utils::default;
 
 /// Trigger of the [`SpawnScatterAssets`] Event.
 /// Contains the scattered positions and contextual information (like `layer`, `chunk`, `root`).
@@ -26,19 +32,32 @@ pub struct SpawnTrigger {
     pub seed: u64,
 }
 
+impl<T> From<On<'_, '_, ScatterResults<T>>> for SpawnTrigger
+where
+    T: ScatterMaterial,
+{
+    fn from(value: On<ScatterResults<T>>) -> Self {
+        Self {
+            chunk: value.chunk,
+            layer: value.layer,
+            target: value.entity,
+            data: value.data.clone(),
+            root: value.root,
+            seed: value.seed,
+        }
+    }
+}
+
 /// Collection of material settings defining shader behavior.
 #[derive(Clone, Debug, Reflect, Copy, Default)]
 pub struct MaterialOptions {
     /// If true, material is not automatically synced with global [`Wind`].
     // TODO fix this und update options/material settings properly
     pub controlled: bool,
-
     /// Color to use when `debug` is enabled.
     pub debug_color: Color,
-
     /// See [`EnableDebug`].
     pub debug: bool,
-
     /// See [`EnableBillboarding`].
     pub enable_billboarding: bool,
     /// See [`FastNormals`].
@@ -47,7 +66,8 @@ pub struct MaterialOptions {
     pub edge_correction_factor: f32,
     /// See [`CurveFactor`].
     pub curve_factor: f32,
-
+    /// See [`DirectionalLights`].
+    pub directional_lights: bool,
     /// See [`PointLights`].
     pub point_lights: bool,
     /// See [`WindAffected`].
@@ -57,106 +77,117 @@ pub struct MaterialOptions {
     /// See [`AnalyticalNormals`].
     pub analytical_normals: bool,
     /// See [`InstanceColor`].
-    pub color: Option<Color>,
+    pub top_color: Option<Color>,
+    /// See [`InstanceColor`].
+    pub bottom_color: Option<Color>,
     /// See [`SubsurfaceScattering`].
     pub subsurface_scattering: bool,
+    /// See [`SubsurfaceScatteringScale`].
+    pub subsurface_scattering_scale: f32,
+    /// See [`SubsurfaceScatteringIntensity`].
+    pub subsurface_scattering_intensity: f32,
     /// See [`StaticBendStrength`].
     pub static_bend_strength: f32,
+    /// See [`StaticShadow`].
+    pub static_shadows: bool,
+    /// See [`Unlit`].
+    pub unlit: bool,
+    /// See [`GpuCull`].
+    pub gpu_cull: bool,
 }
 
-/// Type alias for a tuple of optional material components.
-///
-/// Used to construct or merge [`MaterialOptions`] from entity components.
-pub type MaterialOptionData<'w> = (
-    Option<&'w EnableDebug>,
-    Option<&'w EnableBillboarding>,
-    Option<&'w EdgeCorrectionFactor>,
-    Option<&'w CurveFactor>,
-    Option<&'w WindAffected>,
-    Option<&'w LowQuality>,
-    Option<&'w SubsurfaceScattering>,
-    Option<&'w InstanceColor>,
-    Option<&'w FastNormals>,
-    Option<&'w StaticBendStrength>,
-    Option<&'w AnalyticalNormals>,
-    Option<&'w PointLights>,
-);
+/// Collection of optional material components, usable as `QueryData`.
+#[derive(QueryData)]
+#[query_data(derive(Clone, Copy))]
+pub struct MaterialOptionData {
+    pub enable_debug: Option<&'static EnableDebug>,
+    pub enable_billboarding: Option<&'static EnableBillboarding>,
+    pub edge_correction_factor: Option<&'static EdgeCorrectionFactor>,
+    pub curve_factor: Option<&'static CurveFactor>,
+    pub wind_affected: Option<&'static WindAffected>,
+    pub low_q: Option<&'static LowQuality>,
+    pub sss: Option<&'static SubsurfaceScattering>,
+    pub sss_scale: Option<&'static SubsurfaceScatteringScale>,
+    pub sss_intensity: Option<&'static SubsurfaceScatteringIntensity>,
+    pub scatter_material_color: Option<&'static InstanceColor>,
+    pub fast_normals: Option<&'static FastNormals>,
+    pub static_bend_strength: Option<&'static StaticBendStrength>,
+    pub analytical_normals: Option<&'static AnalyticalNormals>,
+    pub directional_lights: Option<&'static DirectionalLights>,
+    pub point_lights: Option<&'static PointLights>,
+    pub static_shadow: Option<&'static StaticShadow>,
+    pub unlit: Option<&'static Unlit>,
+    pub gpu_cull: Option<&'static GpuCull>,
+}
 
-impl From<MaterialOptionData<'_>> for MaterialOptions {
-    fn from(
-        (
-            enable_debug,
-            enable_billboarding,
-            edge_correction_factor,
-            curve_factor,
-            wind_affected,
-            low_q,
-            subsurface_scattering,
-            scatter_material_color,
-            fast_normals,
-            static_bend_strength,
-            analytical_normals,
-            point_lights,
-        ): MaterialOptionData,
-    ) -> Self {
+impl From<MaterialOptionDataItem<'_, '_>> for MaterialOptions {
+    fn from(data: MaterialOptionDataItem<'_, '_>) -> Self {
         Self {
-            debug: enable_debug.is_some(),
-            enable_billboarding: enable_billboarding.is_some(),
-            edge_correction_factor: edge_correction_factor.map(|e| **e).unwrap_or(0.),
-            curve_factor: curve_factor.map(|c| **c).unwrap_or(0.),
-            wind_affected: wind_affected.is_some(),
-            low_quality: low_q.is_some(),
-            subsurface_scattering: subsurface_scattering.is_some(),
-            color: scatter_material_color.map(|s| **s),
-            fast_normals: fast_normals.is_some(),
-            static_bend_strength: static_bend_strength.map(|s| **s).unwrap_or(0.),
-            analytical_normals: analytical_normals.is_some(),
-            point_lights: point_lights.is_some(),
+            debug: data.enable_debug.is_some(),
+            enable_billboarding: data.enable_billboarding.is_some(),
+            edge_correction_factor: data.edge_correction_factor.map(|e| **e).unwrap_or(0.),
+            curve_factor: data.curve_factor.map(|c| **c).unwrap_or(0.),
+            wind_affected: data.wind_affected.is_some(),
+            low_quality: data.low_q.is_some(),
+            subsurface_scattering: data.sss.is_some(),
+            subsurface_scattering_intensity: data.sss_intensity.map(|s| **s).unwrap_or(0.),
+            subsurface_scattering_scale: data.sss_scale.map(|s| **s).unwrap_or(0.),
+            top_color: data.scatter_material_color.map(|s| s.top),
+            bottom_color: data.scatter_material_color.map(|s| s.bottom),
+            fast_normals: data.fast_normals.is_some(),
+            static_bend_strength: data.static_bend_strength.map(|s| **s).unwrap_or(0.),
+            analytical_normals: data.analytical_normals.is_some(),
+            point_lights: data.point_lights.is_some(),
+            directional_lights: data.directional_lights.is_some(),
+            static_shadows: data.static_shadow.is_some(),
+            unlit: data.unlit.is_some(),
+            gpu_cull: data.gpu_cull.is_some(),
             ..default()
         }
     }
 }
 
 impl MaterialOptions {
-    /// Merges [`MaterialOptionData`] into existing `MaterialOptions`.
-    pub fn with(
-        &self,
-        (
-            enable_debug,
-            enable_billboarding,
-            edge_correction_factor,
-            curve_factor,
-            wind_affected,
-            low_q,
-            subsurface_scattering,
-            scatter_material_color,
-            fast_normals,
-            static_bend_strength,
-            analytical_normals,
-            point_lights,
-        ): MaterialOptionData,
-    ) -> Self {
+    /// Merges [`MaterialOptionDataItem`] into existing `MaterialOptions`.
+    pub fn with(&self, data: MaterialOptionDataItem) -> Self {
         Self {
-            debug: enable_debug.is_some() || self.debug,
-            enable_billboarding: enable_billboarding.is_some() || self.enable_billboarding,
-            edge_correction_factor: edge_correction_factor
+            debug: data.enable_debug.is_some() || self.debug,
+            enable_billboarding: data.enable_billboarding.is_some() || self.enable_billboarding,
+            edge_correction_factor: data
+                .edge_correction_factor
                 .map(|f| **f)
                 .unwrap_or(self.edge_correction_factor),
-            curve_factor: curve_factor.map(|f| **f).unwrap_or(self.curve_factor),
-            wind_affected: wind_affected.is_some() || self.wind_affected,
-            low_quality: low_q.is_some() || self.low_quality,
-            subsurface_scattering: subsurface_scattering.is_some() || self.subsurface_scattering,
-            color: if scatter_material_color.is_some() {
-                scatter_material_color.map(|c| **c)
-            } else {
-                self.color
-            },
-            fast_normals: fast_normals.is_some() || self.fast_normals,
-            static_bend_strength: static_bend_strength
+            curve_factor: data.curve_factor.map(|f| **f).unwrap_or(self.curve_factor),
+            wind_affected: data.wind_affected.is_some() || self.wind_affected,
+            low_quality: data.low_q.is_some() || self.low_quality,
+            subsurface_scattering: data.sss.is_some() || self.subsurface_scattering,
+            subsurface_scattering_scale: data
+                .sss_scale
+                .map(|s| **s)
+                .unwrap_or(self.subsurface_scattering_scale),
+            subsurface_scattering_intensity: data
+                .sss_intensity
+                .map(|s| **s)
+                .unwrap_or(self.subsurface_scattering_intensity),
+            top_color: data
+                .scatter_material_color
+                .map(|c| c.top)
+                .or(self.top_color),
+            bottom_color: data
+                .scatter_material_color
+                .map(|c| c.bottom)
+                .or(self.bottom_color),
+            fast_normals: data.fast_normals.is_some() || self.fast_normals,
+            static_bend_strength: data
+                .static_bend_strength
                 .map(|s| **s)
                 .unwrap_or(self.static_bend_strength),
-            analytical_normals: analytical_normals.is_some() || self.analytical_normals,
-            point_lights: point_lights.is_some() || self.point_lights,
+            analytical_normals: data.analytical_normals.is_some() || self.analytical_normals,
+            point_lights: data.point_lights.is_some() || self.point_lights,
+            directional_lights: data.directional_lights.is_some() || self.directional_lights,
+            static_shadows: data.static_shadow.is_some() || self.static_shadows,
+            unlit: data.unlit.is_some() || self.unlit,
+            gpu_cull: data.gpu_cull.is_some() || self.gpu_cull,
             ..*self
         }
     }
@@ -178,11 +209,8 @@ impl MaterialOptions {
         self.wind_affected = other.wind_affected || self.wind_affected;
         self.low_quality = other.low_quality || self.low_quality;
         self.subsurface_scattering = other.subsurface_scattering || self.subsurface_scattering;
-        self.color = if other.color.is_some() {
-            other.color
-        } else {
-            self.color
-        };
+        self.top_color = other.top_color.or(self.top_color);
+        self.bottom_color = other.bottom_color.or(self.bottom_color);
         self.fast_normals = other.fast_normals || self.fast_normals;
         self.static_bend_strength = if other.static_bend_strength > 0. {
             other.static_bend_strength
@@ -191,6 +219,9 @@ impl MaterialOptions {
         };
         self.analytical_normals = other.analytical_normals || self.analytical_normals;
         self.point_lights = other.point_lights || self.point_lights;
+        self.directional_lights = other.directional_lights || self.directional_lights;
+        self.static_shadows = other.static_shadows || self.static_shadows;
+        self.unlit = other.unlit || self.unlit;
         self
     }
 
@@ -233,10 +264,11 @@ pub trait Sampler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::color::palettes::css::*;
+    use bevy_color::palettes::css::*;
 
     #[test]
     fn test_from_material_option_data_all_some_should_set() {
+        // Arrange
         let debug = EnableDebug;
         let billboarding = EnableBillboarding;
         let edge = EdgeCorrectionFactor(1.1);
@@ -244,29 +276,43 @@ mod tests {
         let wind = WindAffected;
         let low_q = LowQuality;
         let sss = SubsurfaceScattering;
-        let color = InstanceColor(RED.into());
+        let sss_scale = SubsurfaceScatteringScale(0.5);
+        let sss_intensity = SubsurfaceScatteringIntensity(0.2);
+        let color = InstanceColor::new(RED.into(), BLUE.into());
         let fast_normals = FastNormals;
         let bend = StaticBendStrength(3.3);
         let analytical_normals = AnalyticalNormals;
+        let directional_lights = DirectionalLights;
         let point_lights = PointLights;
+        let static_shadow = StaticShadow;
+        let unlit = Unlit;
+        let gpu_cull = GpuCull;
 
-        let data_all_some: MaterialOptionData = (
-            Some(&debug),
-            Some(&billboarding),
-            Some(&edge),
-            Some(&curve),
-            Some(&wind),
-            Some(&low_q),
-            Some(&sss),
-            Some(&color),
-            Some(&fast_normals),
-            Some(&bend),
-            Some(&analytical_normals),
-            Some(&point_lights),
-        );
+        let data_all_some = MaterialOptionDataItem {
+            enable_debug: Some(&debug),
+            enable_billboarding: Some(&billboarding),
+            edge_correction_factor: Some(&edge),
+            curve_factor: Some(&curve),
+            wind_affected: Some(&wind),
+            low_q: Some(&low_q),
+            sss: Some(&sss),
+            sss_scale: Some(&sss_scale),
+            sss_intensity: Some(&sss_intensity),
+            scatter_material_color: Some(&color),
+            fast_normals: Some(&fast_normals),
+            static_bend_strength: Some(&bend),
+            analytical_normals: Some(&analytical_normals),
+            directional_lights: Some(&directional_lights),
+            point_lights: Some(&point_lights),
+            static_shadow: Some(&static_shadow),
+            unlit: Some(&unlit),
+            gpu_cull: Some(&gpu_cull),
+        };
 
+        // Act
         let opts = MaterialOptions::from(data_all_some);
 
+        // Assert
         assert_eq!(opts.debug, true);
         assert_eq!(opts.enable_billboarding, true);
         assert_eq!(opts.edge_correction_factor, 1.1);
@@ -274,24 +320,50 @@ mod tests {
         assert_eq!(opts.wind_affected, true);
         assert_eq!(opts.low_quality, true);
         assert_eq!(opts.subsurface_scattering, true);
-        assert_eq!(opts.color, Some(RED.into()));
+        assert_eq!(opts.top_color, Some(RED.into()));
+        assert_eq!(opts.bottom_color, Some(BLUE.into()));
         assert_eq!(opts.fast_normals, true);
         assert_eq!(opts.static_bend_strength, 3.3);
         assert_eq!(opts.analytical_normals, true);
         assert_eq!(opts.point_lights, true);
-
+        assert_eq!(opts.directional_lights, true);
+        assert_eq!(opts.point_lights, true);
+        assert_eq!(opts.static_shadows, true);
+        assert_eq!(opts.unlit, true);
         assert_eq!(opts.controlled, false);
         assert_eq!(opts.debug_color, Color::default());
+        assert_eq!(opts.gpu_cull, true);
     }
 
     #[test]
     fn test_from_material_option_data_all_none_should_default() {
-        let data_none: MaterialOptionData = (
-            None, None, None, None, None, None, None, None, None, None, None, None,
-        );
+        // Arrange
+        let data_none = MaterialOptionDataItem {
+            enable_debug: None,
+            enable_billboarding: None,
+            edge_correction_factor: None,
+            curve_factor: None,
+            wind_affected: None,
+            low_q: None,
+            sss: None,
+            sss_scale: None,
+            sss_intensity: None,
+            scatter_material_color: None,
+            fast_normals: None,
+            static_bend_strength: None,
+            analytical_normals: None,
+            directional_lights: None,
+            point_lights: None,
+            static_shadow: None,
+            unlit: None,
+            gpu_cull: None,
+        };
+        let default_opts = MaterialOptions::default();
+
+        // Act
         let opts_none = MaterialOptions::from(data_none);
 
-        let default_opts = MaterialOptions::default();
+        // Assert
         assert_eq!(opts_none.debug, default_opts.debug);
         assert_eq!(
             opts_none.enable_billboarding,
@@ -308,7 +380,16 @@ mod tests {
             opts_none.subsurface_scattering,
             default_opts.subsurface_scattering
         );
-        assert_eq!(opts_none.color, default_opts.color);
+        assert_eq!(
+            opts_none.subsurface_scattering_scale,
+            default_opts.subsurface_scattering_scale
+        );
+        assert_eq!(
+            opts_none.subsurface_scattering_intensity,
+            default_opts.subsurface_scattering_intensity
+        );
+        assert_eq!(opts_none.top_color, default_opts.top_color);
+        assert_eq!(opts_none.bottom_color, default_opts.bottom_color);
         assert_eq!(opts_none.fast_normals, default_opts.fast_normals);
         assert_eq!(
             opts_none.static_bend_strength,
@@ -320,15 +401,23 @@ mod tests {
         );
         assert_eq!(opts_none.controlled, default_opts.controlled);
         assert_eq!(opts_none.debug_color, default_opts.debug_color);
+        assert_eq!(
+            opts_none.directional_lights,
+            default_opts.directional_lights
+        );
         assert_eq!(opts_none.point_lights, default_opts.point_lights);
+        assert_eq!(opts_none.static_shadows, default_opts.static_shadows);
+        assert_eq!(opts_none.unlit, default_opts.unlit);
+        assert_eq!(opts_none.gpu_cull, default_opts.gpu_cull);
     }
 
     #[test]
     fn test_with_data_should_merge_and_override() {
+        // Arrange
         let base_opts = MaterialOptions {
             debug: true,
             edge_correction_factor: 5.0,
-            color: Some(BLUE.into()),
+            top_color: Some(BLUE.into()),
             curve_factor: 9.9,
             wind_affected: false,
             ..default()
@@ -336,26 +425,34 @@ mod tests {
 
         let billboarding = EnableBillboarding;
         let edge = EdgeCorrectionFactor(1.5); // Override
-        let color = InstanceColor(RED.into()); // Override
+        let color = InstanceColor::new(RED.into(), default()); // Override
         let wind = WindAffected; // Merge
 
-        let data: MaterialOptionData = (
-            None,                // debug: None || true -> true
-            Some(&billboarding), // billboarding: Some || false -> true
-            Some(&edge),         // edge: Some(1.5) -> 1.5
-            None,                // curve: None -> 9.9 (from base)
-            Some(&wind),         // wind: Some || false -> true
-            None,                // low_q
-            None,                // sss
-            Some(&color),        // color: Some(RED) -> RED
-            None,                // fast_normals
-            None,                // static_bend
-            None,                // analytical_normals
-            None,                // point_lights
-        );
+        let data = MaterialOptionDataItem {
+            enable_debug: None,
+            enable_billboarding: Some(&billboarding),
+            edge_correction_factor: Some(&edge),
+            curve_factor: None,
+            wind_affected: Some(&wind),
+            low_q: None,
+            sss: None,
+            sss_scale: None,
+            sss_intensity: None,
+            scatter_material_color: Some(&color),
+            fast_normals: None,
+            static_bend_strength: None,
+            analytical_normals: None,
+            directional_lights: None,
+            point_lights: None,
+            static_shadow: None,
+            unlit: None,
+            gpu_cull: None,
+        };
 
+        // Act
         let merged_opts = base_opts.with(data);
 
+        // Assert
         assert_eq!(merged_opts.debug, true, "Debug should be preserved");
         assert_eq!(
             merged_opts.enable_billboarding, true,
@@ -374,7 +471,7 @@ mod tests {
             "Wind affected should merge"
         );
         assert_eq!(
-            merged_opts.color,
+            merged_opts.top_color,
             Some(RED.into()),
             "Color should be overridden"
         );
@@ -382,10 +479,12 @@ mod tests {
 
     #[test]
     fn test_with_options_should_merge_and_override() {
+        // Arrange
         let base = MaterialOptions {
             debug: true,
             edge_correction_factor: 5.0,
-            color: Some(BLUE.into()),
+            top_color: Some(BLUE.into()),
+            bottom_color: Some(BLUE.into()),
             static_bend_strength: 8.0,
             ..default()
         };
@@ -393,8 +492,9 @@ mod tests {
         let other = MaterialOptions {
             enable_billboarding: true,   // Merge: true
             edge_correction_factor: 1.0, // Override: 1.0 (since > 0)
-            color: Some(RED.into()),     // Override
-            static_bend_strength: 0.0,   // Keep base (since not > 0)
+            top_color: Some(RED.into()), // Override
+            bottom_color: Some(GREEN.into()), // Override
+            static_bend_strength: 0.0, // Keep base (since not > 0)
             ..default()
         };
 
@@ -413,22 +513,45 @@ mod tests {
             merged.static_bend_strength, 8.0,
             "Bend strength should be preserved"
         );
-        assert_eq!(merged.color, Some(RED.into()), "Color should be overridden");
+        assert_eq!(
+            merged.top_color,
+            Some(RED.into()),
+            "Color should be overridden"
+        );
+        assert_eq!(
+            merged.bottom_color,
+            Some(GREEN.into()),
+            "Color should be overridden"
+        );
+    }
 
+    #[test]
+    fn test_with_options_should_keep_colors_when_no_options_provided() {
+        // Arrange
         let base_with_color = MaterialOptions {
-            color: Some(BLUE.into()),
+            top_color: Some(BLUE.into()),
+            bottom_color: Some(RED.into()),
             ..default()
         };
         let other_no_color = MaterialOptions {
-            color: None,
+            top_color: None,
+            bottom_color: None,
             ..default()
         };
 
+        // Act
         let merged_keep_color = base_with_color.with_options(other_no_color);
 
+        // Assert
         assert_eq!(
-            merged_keep_color.color,
+            merged_keep_color.top_color,
             Some(BLUE.into()),
+            "Should keep base color"
+        );
+
+        assert_eq!(
+            merged_keep_color.bottom_color,
+            Some(RED.into()),
             "Should keep base color"
         );
     }

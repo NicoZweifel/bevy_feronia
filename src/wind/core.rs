@@ -1,22 +1,29 @@
 use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::camera::visibility::VisibilityRange;
-use bevy::platform::collections::HashMap;
-use bevy::prelude::*;
-use bevy::render::render_resource::ShaderType;
+
+use bevy_asset::{Asset, Handle};
+use bevy_camera::{primitives::Aabb, visibility::VisibilityRange};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::*;
+use bevy_mesh::Mesh3d;
+use bevy_pbr::{Material, MeshMaterial3d, StandardMaterial};
+use bevy_platform::collections::HashMap;
+use bevy_render::render_resource::ShaderType;
+use bevy_transform::prelude::Transform;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use rand::SeedableRng;
-use rand::prelude::IndexedRandom;
+use rand::prelude::*;
 use rand_pcg::Pcg64;
+use std::fmt::Debug;
 
-pub trait ScatterMaterial<TIn = StandardMaterial>: Asset + Clone
-where
-    TIn: Material,
-{
+pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
+
+impl<T> ScatterMaterialAsset for T where T: Asset + Clone + Default + Debug {}
+
+pub trait ScatterMaterial: ScatterMaterialAsset {
     fn create_material(
-        base: Option<TIn>,
+        base: Option<StandardMaterial>,
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
     ) -> Self;
@@ -25,12 +32,12 @@ where
 
     fn component(material: Handle<Self>) -> impl Component;
 
-    fn spawn(cmd: &mut Commands, request: SpawnRequest<Self>);
+    fn scatter(cmd: &mut Commands, request: SpawnRequest<Self>);
 }
 
 pub struct SpawnRequest<'w, T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     pub event: &'w SpawnScatterAssets<T>,
     pub names: Vec<Name>,
@@ -44,7 +51,7 @@ where
 
 pub struct ScatterHandleAsset<'w, T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     pub handle: Handle<ScatterAsset<T>>,
     pub asset: &'w ScatterAsset<T>,
@@ -52,7 +59,7 @@ where
 
 impl<T> ScatterHandleAsset<'_, T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     pub fn is_lod(&self, chunked: bool, lod: u32) -> bool {
         if chunked {
@@ -65,7 +72,7 @@ where
 
 impl<'w, T> SpawnRequest<'w, T>
 where
-    T: Asset + Clone,
+    T: ScatterMaterialAsset,
 {
     pub fn prototypes_from_seed_iter(
         &self,
@@ -93,7 +100,7 @@ where
 
 impl<'w, T> SpawnRequest<'w, T>
 where
-    T: Material,
+    T: Material + Default + Debug,
 {
     pub fn spawn_batch_iter(
         &self,
@@ -134,14 +141,14 @@ impl ScatterMaterial for StandardMaterial {
         _noise_texture: Handle<Image>,
         _properties: &ScatterAssetProperties,
     ) -> StandardMaterial {
-        base.unwrap_or_default()
+        base.unwrap_or_default().into()
     }
 
     fn component(material: Handle<StandardMaterial>) -> impl Component {
         MeshMaterial3d(material)
     }
 
-    fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
+    fn scatter(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
         cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }
@@ -161,9 +168,14 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-
-    // TODO move to uniform for Options/InstanceData
     pub edge_correction_factor: f32,
+
+    /// TODO use in both materials or rename [`WindUniform`] to `ExtendedUniforms`
+    pub sss_strength: f32,
+    pub sss_scale: f32,
+
+    /// TODO use in both materials move to separate uniform e.g.
+    /// or move to [`InstanceUniforms`]
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
     pub debug_color: Vec4,
@@ -188,6 +200,8 @@ impl From<&Wind> for WindUniform {
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
             debug_color: Vec4::splat(1.),
+            sss_strength: 0.,
+            sss_scale: 0.,
         }
     }
 }
@@ -208,6 +222,12 @@ impl WindUniform {
         self.debug_color = color;
         self
     }
+
+    pub fn with_sss(mut self, sss_strength: f32, sss_scale: f32) -> Self {
+        self.sss_strength = sss_strength;
+        self.sss_scale = sss_scale;
+        self
+    }
 }
 
 bitflags! {
@@ -220,10 +240,13 @@ bitflags! {
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;
         const WIND_AFFECTED= 1 << 5;
-        const SUBSURFACE_SCATTERING = 1 << 6;
+        const STATIC_SHADOW = 1<< 6;
         const STATIC_BEND = 1 << 7;
         const ANALYTICAL_NORMALS = 1 << 8;
         const CURVE_NORMALS = 1 << 9;
-        const POINT_LIGHTS = 1 << 10;
+         /// TODO use in both materials create separate keys
+        const SUBSURFACE_SCATTERING = 1 << 10;
+        const POINT_LIGHTS = 1 << 11;
+        const DIRECTIONAL_LIGHTS = 1 << 12;
     }
 }

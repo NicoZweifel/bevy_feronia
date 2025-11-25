@@ -1,6 +1,8 @@
 use crate::prelude::*;
-use bevy::pbr::ExtendedMaterial;
-use bevy::prelude::*;
+use bevy_asset::Handle;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_pbr::*;
 use std::borrow::Cow;
 
 pub fn scatter_layer(name: impl Into<Cow<'static, str>>) -> impl Bundle
@@ -39,12 +41,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
         MeshMaterial3d(material)
     }
 
-    fn spawn(cmd: &mut Commands, request: SpawnRequest<ExtendedWindAffectedMaterial>) {
-        cmd.spawn_batch(
-            request
-                .spawn_batch_iter()
-                .map(|bundle| (bundle, WindAffected))
-                .collect::<Vec<_>>(),
-        );
+    fn scatter(cmd: &mut Commands, request: SpawnRequest<ExtendedWindAffectedMaterial>) {
+        cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }

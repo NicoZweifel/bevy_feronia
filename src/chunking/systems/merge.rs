@@ -1,52 +1,65 @@
 use crate::prelude::*;
-use bevy::ecs::query::QueryFilter;
-use bevy::ecs::relationship::Relationship;
-use bevy::platform::collections::HashMap;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryFilter;
+use bevy_ecs::relationship::Relationship;
+use bevy_platform::collections::HashMap;
+use bevy_transform::prelude::GlobalTransform;
+
+#[cfg(feature = "tracing")]
+use tracing::{debug, warn};
 
 pub fn merge_check(
     q_chunk: Query<
         (Entity, &ChildOf),
         (
-            With<CanMerge>,
-            Without<Merging>,
             With<Chunk>,
+            With<CanMerge>,
+            With<MergeDistance>,
+            Without<Merging>,
             Without<ChunkInitialize>,
         ),
     >,
     q_root: Query<&ChunkRootSizeDim, With<ChunkRoot>>,
     q_parent: Query<&ChunkOf, With<Chunk>>,
-    mut mw_check: MessageWriter<MergeCheck>,
+    mut mw_merge_check: MessageWriter<MergeCheck>,
 ) {
-    let parents = get_parent_child_map(q_chunk);
+    let batch_iter = get_parent_child_map(q_chunk)
+        .into_iter()
+        .filter_map(|(parent, children)| {
+            let root = q_parent
+                .get(parent)
+                .map_err(|e| {
+                    #[cfg(feature = "tracing")]
+                    warn!("Couldn't get parent Chunk {parent} for merge quality!");
+                    e
+                })
+                .ok()?;
 
-    for (parent, children) in parents {
-        let Ok(root) = q_parent.get(parent) else {
-            warn!("Couldn't get parent Chunk {parent} for merge check!");
-            continue;
-        };
+            let root_size_dim = q_root
+                .get(**root)
+                .map_err(|e| {
+                    #[cfg(feature = "tracing")]
+                    warn!("Couldn't get ChunkRoot {} for merge quality!", **root);
+                    e
+                })
+                .ok()?;
 
-        let Ok(root_size_dim) = q_root.get(**root) else {
-            warn!("Couldn't get ChunkRoot {} for merge check!", **root);
-            continue;
-        };
+            let check = !(children.len() < root_size_dim.pow(2) as usize);
+            check.then(|| MergeCheck::new(parent, children))
+        });
 
-        if children.len() < root_size_dim.pow(2) as usize {
-            continue;
-        };
-
-        mw_check.write(MergeCheck { parent, children });
-    }
+    mw_merge_check.write_batch(batch_iter);
 }
 
 pub fn handle_merge_check(
     mut cmd: Commands,
     q_center: Query<&GlobalTransform, With<ChunkCenter>>,
-    q_chunk: Query<&MergeDistance, (With<CanMerge>, Without<Merging>, With<Chunk>)>,
-    q_parent: Query<&GlobalTransform, With<Chunk>>,
-    mut mr_check: MessageReader<MergeCheck>,
+    q_merge_distance: Query<&MergeDistance>,
+    q_parent: Query<&GlobalTransform>,
+    mut mr_merge_check: MessageReader<MergeCheck>,
 ) {
     let Ok(center) = q_center.single() else {
+        #[cfg(feature = "tracing")]
         warn!(
             "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
         );
@@ -55,28 +68,45 @@ pub fn handle_merge_check(
 
     let center = center.translation();
 
-    for e in mr_check.read() {
-        let parent = e.parent;
-        let Ok(parent_tf) = q_parent.get(parent) else {
-            warn!("Couldn't get parent Chunk {parent} for merge!");
-            continue;
-        };
+    for child in mr_merge_check
+        .read()
+        .filter_map(|merge_check| {
+            let MergeCheck {
+                parent, children, ..
+            } = merge_check;
+            let first_child = children[0];
 
-        let first_child = e.children[0];
+            let parent_tf = q_parent
+                .get(*parent)
+                .map_err(|_| {
+                    #[cfg(feature = "tracing")]
+                    warn!("Couldn't get parent transform for merge quality!")
+                })
+                .ok()?;
 
-        let Ok(merge_distance) = q_chunk.get(first_child) else {
-            warn!("Couldn't get Chunk {first_child} for merge!");
-            continue;
-        };
+            let merge_distance = q_merge_distance
+                .get(first_child)
+                .map_err(|_| {
+                    #[cfg(feature = "tracing")]
+                    warn!("Couldn't get merge distance for merge quality! Was this Chunk already removed?")
+                })
+                .ok()?;
 
-        let distance = center.distance(parent_tf.translation());
-        if distance < **merge_distance {
-            continue;
-        }
-
-        for child in &e.children {
-            cmd.entity(*child).insert(Merging);
-        }
+            merge_check
+                .clone()
+                .with_center(center)
+                .with_parent_translation(parent_tf.translation())
+                .with_merge_distance(**merge_distance)
+                .check()
+                .then(|| children)
+        })
+        .flatten()
+    {
+        cmd.entity(*child)
+            .queue_silenced(|mut entity: EntityWorldMut| -> Result {
+                entity.insert(Merging);
+                Ok(())
+            });
     }
 }
 
@@ -84,28 +114,23 @@ pub fn merge(
     q_chunk: Query<(Entity, &ChildOf), (With<Merging>, With<Chunk>)>,
     mut mw_merge: MessageWriter<MergeChunks>,
 ) {
-    let merge_chunks_map = get_parent_child_map(q_chunk);
-
-    for (parent, children) in merge_chunks_map {
-        mw_merge.write(MergeChunks {
-            children: children.clone(),
-            parent,
-        });
-    }
+    mw_merge.write_batch(
+        get_parent_child_map(q_chunk)
+            .into_iter()
+            .map(|data| data.into()),
+    );
 }
 
 pub fn handle_merge(mut cmd: Commands, mut mr_merge: MessageReader<MergeChunks>) {
-    for e in mr_merge.read() {
-        let children = e.children.clone();
-        let parent = e.parent;
-
+    for MergeChunks { parent, children } in mr_merge.read() {
+        #[cfg(feature = "tracing")]
         debug!("Merging Chunks: {children:?} into {parent}");
 
-        for child in &e.children {
+        for child in children {
             cmd.entity(*child).despawn();
         }
 
-        cmd.entity(e.parent).insert(CanSplit);
+        cmd.entity(*parent).insert(CanSplit);
     }
 }
 

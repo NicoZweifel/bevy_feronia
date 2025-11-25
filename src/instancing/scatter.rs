@@ -1,12 +1,22 @@
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::platform::collections::HashMap;
-use bevy::prelude::*;
-use bevy::render::batching::NoAutomaticBatching;
+use bevy_asset::Handle;
+use bevy_camera::visibility::VisibilityRange;
+use bevy_camera::{primitives::Aabb, visibility::Visibility};
+use bevy_color::{Color, ColorToComponents, LinearRgba};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec3;
+use bevy_mesh::Mesh3d;
+use bevy_pbr::StandardMaterial;
+use bevy_platform::collections::HashMap;
+use bevy_render::batching::NoAutomaticBatching;
+use bevy_transform::prelude::Transform;
+use bevy_utils::default;
 use rand::SeedableRng;
 use rand::prelude::IndexedRandom;
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
+use std::sync::Arc;
 
 pub fn scatter_layer(name: impl Into<Cow<'static, str>>) -> impl Bundle
 where
@@ -40,7 +50,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         InstancedWindAffectedMeshMaterial(material)
     }
 
-    fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
+    fn scatter(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
         let instance_groups: HashMap<Name, Vec<InstanceData>> =
             request.event.trigger.data.iter().enumerate().fold(
                 HashMap::new(),
@@ -94,9 +104,20 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         {
             let (mut min_point, mut max_point) = (Vec3::MAX, Vec3::MIN);
 
-            let visibility_range = request
-                .lod_config
-                .get_visibility_range(asset.properties.lod);
+            let visibility_range = asset
+                .properties
+                .options
+                .gpu_cull
+                .then(|| {
+                    request
+                        .lod_config
+                        .get_visibility_range(asset.properties.lod)
+                })
+                .unwrap_or_else(|| {
+                    request
+                        .lod_config
+                        .get_visibility_range(asset.properties.lod)
+                });
 
             let instances_with_offset = instances
                 .iter()
@@ -127,19 +148,27 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 .chunk
                 .unwrap_or(request.event.trigger.layer);
 
-            for part in &asset.parts {
+            for part in asset.parts.iter() {
                 let mesh_handle = part.mesh().clone();
                 let entity = cmd
                     .spawn((
                         InstancedWindAffectedMeshMaterial(part.material().clone()),
                         Mesh3d(mesh_handle),
                         InstanceMaterialData {
-                            color: LinearRgba::from(
+                            top_color: LinearRgba::from(
                                 asset
                                     .properties
                                     .options
-                                    .color
+                                    .top_color
                                     .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
+                            )
+                            .to_f32_array(),
+                            bottom_color: LinearRgba::from(
+                                asset
+                                    .properties
+                                    .options
+                                    .bottom_color
+                                    .unwrap_or(Color::hsla(105., 0.54, 0.37, 1.0)),
                             )
                             .to_f32_array(),
                             visibility_range: [
@@ -148,21 +177,22 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                 visibility_range.end_margin.start,
                                 visibility_range.end_margin.end,
                             ],
-                            instances: instances_with_offset
-                                .clone()
-                                .into_iter()
-                                .map(|mut instance| {
-                                    instance.position +=
-                                        part.transform.translation * instance.scale;
-                                    instance.scale *= part.transform.scale.element_sum() / 3.0;
-                                    instance
-                                })
-                                .collect(),
+                            instances: Arc::new(
+                                instances_with_offset
+                                    .clone()
+                                    .into_iter()
+                                    .map(|mut instance| {
+                                        instance.position +=
+                                            part.transform.translation * instance.scale;
+                                        instance.scale *= part.transform.scale.element_sum() / 3.0;
+                                        instance
+                                    })
+                                    .collect(),
+                            ),
                             static_bend_strength: asset.properties.options.static_bend_strength,
                             curve_factor: asset.properties.options.curve_factor,
                         },
                         NoAutomaticBatching,
-                        WindAffected,
                         ScatteredInstance(request.event.trigger.layer),
                         ScatteredAsset(handle.clone()),
                     ))
@@ -174,6 +204,14 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     local_aabb,
                     ChildOf(parent),
                 ));
+
+                if asset.properties.wind_affected {
+                    cmd.entity(entity).insert(WindAffected);
+                }
+
+                if asset.properties.options.gpu_cull {
+                    cmd.entity(entity).insert(GpuCull);
+                }
             }
         }
     }

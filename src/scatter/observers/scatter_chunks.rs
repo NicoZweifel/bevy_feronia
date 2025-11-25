@@ -1,26 +1,31 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
-type LayerQueryItem<'a> = (
+#[cfg(feature = "tracing")]
+use tracing::warn;
+
+type LayerQueryItem = (
     Entity,
-    &'a ScatterLayerOf,
-    Option<&'a Name>,
-    Option<&'a ScatterLayerEnabled>,
+    &'static ScatterLayerOf,
+    Option<&'static Name>,
+    Option<&'static ScatterLayerEnabled>,
 );
 
-pub fn scatter_chunks<TOut: ScatterMaterial<TIn>, TIn: Material>(
-    trigger: On<Scatter<TOut, TIn>>,
+pub fn scatter_chunks<T: ScatterMaterial>(
+    trigger: On<Scatter<T>>,
     mut cmd: Commands,
     q_root: Query<&ChunkRoot>,
-    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>)>,
+    q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
 ) {
     let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.entity) else {
+        #[cfg(feature = "tracing")]
         warn!("ScatterLayer not found!");
         return;
     };
 
     let Ok(child_chunks) = q_root.get(**scatter_root) else {
+        #[cfg(feature = "tracing")]
         warn!("ScatterRoot not found!");
         return;
     };
@@ -31,6 +36,6 @@ pub fn scatter_chunks<TOut: ScatterMaterial<TIn>, TIn: Material>(
 
     child_chunks
         .iter()
-        .map(|c| ScatterChunk::<TOut, TIn>::new(c, layer_entity))
+        .map(|c| ScatterChunk::<T>::new(c, layer_entity))
         .for_each(|c| cmd.trigger(c));
 }

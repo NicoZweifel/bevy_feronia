@@ -1,5 +1,10 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_asset::Handle;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec2;
+use bevy_reflect::Reflect;
 use std::f32::consts::PI;
 
 #[derive(Resource, Deref, DerefMut, Clone)]
@@ -30,19 +35,19 @@ impl Default for Wind {
             strength: 0.2,
             noise_scale: 0.01,
             scroll_speed: 0.1,
-            micro_strength: 0.05,
-            bend_exponent: 2.0,
-            s_curve_speed: 2.0,
-            s_curve_strength: 0.1,
-            s_curve_frequency: PI,
-            bop_speed: 0.1,
-            bop_strength: 0.05,
+            micro_strength: 0.1,
+            bend_exponent: 2.25,
             twist_strength: 0.05,
+            s_curve_speed: 3.,
+            s_curve_strength: 0.02,
+            s_curve_frequency: 2.0,
+            bop_speed: 2.5,
+            bop_strength: 0.01,
         }
     }
 }
 
-pub type WindData<'w> = (
+pub type WindOptionData<'w> = (
     Option<&'w Strength>,
     Option<&'w MicroStrength>,
     Option<&'w SCurveStrength>,
@@ -67,7 +72,7 @@ impl Wind {
             bop_speed,
             twist_strength,
             bend_exponent,
-        ): WindData,
+        ): WindOptionData,
     ) -> Self {
         Wind {
             strength: strength

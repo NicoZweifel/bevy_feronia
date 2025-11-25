@@ -1,11 +1,13 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
 
 /// Marker component to enable wind effects for an entity.
 ///
 /// Enables `#ifdef WIND_AFFECTED` in shaders, applying all wind-related vertex displacements.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Default, Clone)]
+#[reflect(Component, Clone)]
 pub struct WindAffected;
 
 /// Component for configuring wind behavior on a per-entity basis.

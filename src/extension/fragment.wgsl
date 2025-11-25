@@ -1,23 +1,27 @@
-#import bevy_pbr::mesh_view_bindings::{view, lights, clusterable_objects}
-#import bevy_pbr::mesh_bindings::mesh
-#import bevy_pbr::pbr_types::PbrInput
-#import bevy_pbr::forward_io::{FragmentOutput}
-#import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
-#import bevy_pbr::pbr_functions::{
-    alpha_discard,
-    apply_pbr_lighting,
-    main_pass_post_lighting_processing,
-    visibility_range_dither
-}
-#import bevy_pbr::shadows::{fetch_directional_shadow, fetch_point_shadow}
-#import bevy_pbr::mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT
-#import bevy_pbr::clustered_forward::{
-    fragment_cluster_index,
-    unpack_clusterable_object_index_ranges,
-    get_clusterable_object_id
+#import bevy_pbr::{
+    pbr_types,
+    pbr_fragment::pbr_input_from_standard_material,
+    decal::clustered::apply_decal_base_color,
+    mesh_view_bindings::{view, lights, clusterable_objects},
+    mesh_bindings::mesh,
+    pbr_types::{PbrInput, STANDARD_MATERIAL_FLAGS_UNLIT_BIT},
+    forward_io::{FragmentOutput},
+    pbr_functions::{
+        alpha_discard,
+        apply_pbr_lighting,
+        main_pass_post_lighting_processing,
+        visibility_range_dither
+    },
+    shadows::{fetch_directional_shadow, fetch_point_shadow},
+    mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT,
+    clustered_forward::{
+        fragment_cluster_index,
+        unpack_clusterable_object_index_ranges,
+        get_clusterable_object_id
+    }
 }
 
-#import bevy_feronia::sss_io::VertexOutput
+#import bevy_feronia::forward_sss_io::VertexOutput
 #import bevy_feronia::wind::Wind
 
 #ifdef BINDLESS
@@ -69,21 +73,26 @@ fn fragment(
     let wind =  wind_material[wind_indices[slot].material];
 #endif
 
-#ifdef SUBSURFACE_SCATTERING
-    let sss_glow = calculate_sss_lighting(pbr_input, in.thinness_factor);
+    if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
+        #ifdef SUBSURFACE_SCATTERING
+            let sss_glow = calculate_sss_lighting(wind.sss_scale, wind.sss_intensity, pbr_input, in.thinness_factor);
 
-    #ifdef DEBUG_SSS
-        out.color = vec4<f32>(sss_glow, 1.0);
-        return out;
-    #else
-        pbr_input.material.emissive = vec4<f32>(
-            pbr_input.material.emissive.rgb + (sss_glow * pbr_input.material.base_color.rgb),
-            pbr_input.material.emissive.a
-        );
-    #endif
-#endif
+            #ifdef DEBUG_SSS
+                out.color = vec4<f32>(sss_glow, 1.0);
+                return out;
+            #else
+                pbr_input.material.emissive = vec4<f32>(
+                    pbr_input.material.emissive.rgb + (sss_glow * pbr_input.material.base_color.rgb),
+                    pbr_input.material.emissive.a
+                );
+            #endif
+        #endif
 
-    out.color = apply_pbr_lighting(pbr_input);
+        out.color = apply_pbr_lighting(pbr_input);
+    } else {
+        out.color = pbr_input.material.base_color;
+    }
+
     out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 
 #ifdef MATERIAL_DEBUG
@@ -97,17 +106,12 @@ fn fragment(
 // Source: Barré-Brisebois, C., & Bouchard, M. (2011). Approximating Translucency for a
 // Fast, Cheap and Convincing Subsurface Scattering Look. Game Developers Conference.
 
-// TODO expose / unify with lighting in instancing shader before exposing fields in `MaterialOptions`
-// TODO allow use of thickness texture
-const SSS_INTENSITY = 2.0;
 
 // Controls how much the surface normal influences the scattered light direction.
 // A value of 0.0 makes light appear to pass straight through.
 // A value of 1.0 makes light appear to be heavily scattered by the surface.
 const SSS_DISTORTION: f32 = 0.5;
 
-// A multiplier for the overall intensity of the back-scattering effect.
-const SSS_SCALE: f32 = 1.5;
 
 const SSS_WRAP: f32 = 0.2;
 const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
@@ -116,7 +120,7 @@ const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
 // Scale down light rgb
 const LIGHT_INTENSITY_SCALE = 0.00005;
 
-fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
+fn calculate_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
     var sss_light = vec3<f32>(0.0);
 
     let view_pos = view.view_from_world * pbr_input.world_position;
@@ -165,7 +169,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
         // pow(dot, 8) * SSS_SCALE
         let t = back_scatter_dot * back_scatter_dot;
         let t2 = t * t;
-        let back_scatter = t2 * t2 * SSS_SCALE;
+        let back_scatter = t2 * t2 * scale;
 
         let front_scatter = saturate((dot(pbr_input.world_normal, L) + SSS_WRAP) * SSS_WRAP_INV);
 
@@ -190,7 +194,7 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
         // pow(dot, 8) * SSS_SCALE
         let t = back_scatter_dot * back_scatter_dot;
         let t2 = t * t;
-        let back_scatter = t2 * t2 * SSS_SCALE;
+        let back_scatter = t2 * t2 * scale;
 
         let front_scatter = saturate((dot(pbr_input.world_normal, L) + SSS_WRAP) * SSS_WRAP_INV);
 
@@ -200,5 +204,5 @@ fn calculate_sss_lighting(pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32
         sss_light += sss_factor * light_contribution * shadow;
     }
 
-    return sss_light * SSS_INTENSITY * thinness_factor;
+    return sss_light * intensity * thinness_factor;
 }

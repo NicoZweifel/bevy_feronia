@@ -1,30 +1,36 @@
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec3;
+use bevy_transform::prelude::Transform;
 use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
 
+#[cfg(feature = "tracing")]
+use tracing::warn;
+
 pub fn get_height_map_sampler<'a>(
-    images: &'a Res<Assets<Image>>,
-    height_map_cfg: Option<Res<HeightMapConfig>>,
-    height_map: Option<Res<HeightMap>>,
+    images: &'a Assets<Image>,
+    height_map_cfg: Option<&HeightMapConfig>,
+    height_map: Option<&HeightMap>,
 ) -> HeightMapSampler<'a> {
     height_map
         .and_then(|height_map_image| {
             height_map_cfg
-                .and_then(|cfg| create_height_map_sampler(images.get(&height_map_image.0), cfg))
+                .and_then(|cfg| create_height_map_sampler(images.get(&height_map_image.0), &cfg))
         })
         .unwrap_or(HeightMapSampler::Default(DefaultSampler))
 }
 
 fn create_height_map_sampler<'a>(
     height_map_image: Option<&'a Image>,
-    cfg: Res<HeightMapConfig>,
+    cfg: &HeightMapConfig,
 ) -> Option<HeightMapSampler<'a>> {
-    height_map_image
-        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg.into_inner())))
+    height_map_image.map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
 }
 
 pub fn scatter_layer_enabled(
@@ -36,11 +42,12 @@ pub fn scatter_layer_enabled(
     let scatter_layer_enabled = ScatterLayerEnabled(true);
 
     if !**enabled.unwrap_or(&scatter_layer_enabled) {
-        let name = layer_name
+        let _name = layer_name
             .unwrap_or(&Name::new(layer_entity.to_string()))
             .to_string();
 
-        warn!("ScatterLayer {name} is disabled!");
+        #[cfg(feature = "tracing")]
+        warn!("ScatterLayer {_name} is disabled!");
         return false;
     }
 

@@ -3,7 +3,7 @@
 Environment scattering tools and shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
 
 > [!CAUTION]
-> This package is in early development and in an experimentation stage. 
+> This package is in early development and in an experimentation stage.
 >
 
 <img width="100%" alt="Screenshot 2025-10-30 180213" src="https://github.com/user-attachments/assets/b00a0f73-f3ea-471c-b688-6aa2a478014e" />

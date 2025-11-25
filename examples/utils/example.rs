@@ -1,9 +1,16 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
-use bevy::image::{ImageSampler, ImageSamplerDescriptor};
+#[cfg(not(feature = "dlss"))]
+use bevy::anti_alias::taa::TemporalAntiAliasing;
+use bevy::diagnostic::*;
+use bevy::light::ShadowFilteringMethod;
 use bevy::post_process::bloom::Bloom;
-use bevy::render::view::Hdr;
+#[cfg(all(feature = "dlss"))]
+use bevy::{
+    anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
+    asset::uuid,
+};
 use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
     light::{CascadeShadowConfigBuilder, VolumetricLight},
@@ -11,23 +18,21 @@ use bevy::{
     render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
+use bevy_feronia::quality::QualitySettings;
+use bevy_image::{ImageSampler, ImageSamplerDescriptor};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
+use bevy_render::diagnostic::RenderDiagnosticsPlugin;
+use bevy_render::view::Hdr;
 use camera_controller::*;
-
-#[cfg(not(feature = "dlss"))]
-use bevy::anti_alias::taa::TemporalAntiAliasing;
-use bevy::diagnostic::*;
-use bevy::render::diagnostic::RenderDiagnosticsPlugin;
-#[cfg(all(feature = "dlss"))]
-use bevy::{
-    anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
-    asset::uuid,
-};
 use iyes_perf_ui::prelude::*;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, PartialEq, Reflect)]
+#[reflect(Resource)]
 pub struct ExamplePluginOptions {
-    // left in case individual example options are needed again
+    pub show_quality_settings: bool,
+    pub show_wind_settings: bool,
+    pub show_inspector: bool,
 }
 
 pub struct ExamplePlugin;
@@ -35,6 +40,7 @@ pub struct ExamplePlugin;
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(all(feature = "dlss"))]
+        // NOTE: This is an example project ID, you should generate your own uuid.
         app.insert_resource(DlssProjectId(uuid::uuid!(
             "edac5c37-87f0-4e5c-be93-3636dd13677a"
         )));
@@ -44,13 +50,17 @@ impl Plugin for ExamplePlugin {
             .add_plugins((
                 FrameTimeDiagnosticsPlugin::default(),
                 EntityCountDiagnosticsPlugin::default(),
-                RenderDiagnosticsPlugin,
                 SystemInformationDiagnosticsPlugin,
                 PerfUiPlugin,
             ))
             .add_plugins((
                 EguiPlugin::default(),
-                ResourceInspectorPlugin::<Wind>::default(),
+                WorldInspectorPlugin::default()
+                    .run_if(|res: Res<ExamplePluginOptions>| res.show_inspector),
+                ResourceInspectorPlugin::<Wind>::default()
+                    .run_if(|res: Res<ExamplePluginOptions>| res.show_wind_settings),
+                ResourceInspectorPlugin::<QualitySettings>::default()
+                    .run_if(|res: Res<ExamplePluginOptions>| res.show_quality_settings),
             ))
             .add_plugins(CameraControllerPlugin)
             .add_systems(Startup, setup)
@@ -80,6 +90,7 @@ pub fn setup(
             brightness: 10000.,
             ..default()
         },
+        ShadowFilteringMethod::Temporal,
         #[cfg(all(feature = "dlss"))]
         (
             Msaa::Off,
@@ -90,7 +101,7 @@ pub fn setup(
         ),
         #[cfg(not(feature = "dlss"))]
         (Msaa::Off, TemporalAntiAliasing::default()),
-        bevy::pbr::ScreenSpaceAmbientOcclusion::default(),
+        bevy_pbr::ScreenSpaceAmbientOcclusion::default(),
         bevy::light::VolumetricFog {
             ambient_intensity: 0.1,
             ..default()
@@ -121,14 +132,11 @@ pub fn setup(
             // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
             shadows_enabled: true,
+           color: Color::srgb(1.0, 0.98, 0.95) ,
             ..default()
         },
         VolumetricLight,
-        CascadeShadowConfigBuilder {
-            maximum_distance: 300.,
-            ..default()
-        }
-        .build(),
+        CascadeShadowConfigBuilder::default().build(),
         Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 

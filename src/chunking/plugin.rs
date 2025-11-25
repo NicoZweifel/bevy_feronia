@@ -1,6 +1,8 @@
 use crate::chunking::systems::*;
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_app::*;
+use bevy_ecs::prelude::*;
+use bevy_state::prelude::*;
 
 pub struct ChunkPlugin;
 

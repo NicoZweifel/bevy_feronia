@@ -1,9 +1,11 @@
 pub mod components;
 pub mod draw;
 pub mod material;
+pub mod node;
 pub mod pipeline;
 pub mod plugin;
 pub mod prepare;
+mod resources;
 pub mod scatter;
 pub mod systems;
 

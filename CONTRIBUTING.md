@@ -14,7 +14,7 @@ I try to follow a few naming conventions, but they're not super strict:
 - using short names like `i`, `x`, `e` is okay if the scope is small, clear, and it doesn't hurt readability.
 
 ### Log Debugging
-To see detailed log messages while running the project, you can set the `RUST_LOG` environment variable:
+To see detailed log messages while running the project, you can enable the `tracing` feature and set the `RUST_LOG` environment variable:
 
  `RUST_LOG="warn,bevy_feronia=debug"`
 

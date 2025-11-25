@@ -1,13 +1,10 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
-pub fn scatter_finished<TOut, TIn>(
-    trigger: On<Remove, HierarchicalScatterState<TOut, TIn>>,
-    mut cmd: Commands,
-) where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+pub fn scatter_finished<T>(trigger: On<Remove, HierarchicalScatterState<T>>, mut cmd: Commands)
+where
+    T: ScatterMaterial,
 {
     println!("Scatter finished");
-    cmd.trigger(ScatterFinished::<TOut, TIn>::from(trigger.entity));
+    cmd.trigger(ScatterFinished::<T>::from(trigger.entity));
 }

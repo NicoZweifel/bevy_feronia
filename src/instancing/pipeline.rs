@@ -1,14 +1,16 @@
 use super::{components::InstanceData, material::InstancedWindAffectedMaterial};
 use crate::prelude::{InstanceUniforms, WindAffectedKey};
-use bevy::mesh::MeshVertexBufferLayoutRef;
-use bevy::{
-    asset::{AssetPath, embedded_path},
-    mesh::VertexBufferLayout,
-    pbr::{MeshPipeline, MeshPipelineKey},
-    prelude::*,
-    render::{render_resource::*, renderer::RenderDevice},
-};
+
+use bevy_asset::*;
+use bevy_ecs::prelude::*;
+use bevy_mesh::{MeshVertexBufferLayoutRef, VertexBufferLayout};
+use bevy_pbr::{MeshPipeline, MeshPipelineKey};
+use bevy_render::{render_resource::*, renderer::RenderDevice};
+use bevy_shader::Shader;
+
+use crate::instancing::resources::CameraCullData;
 use std::mem::size_of;
+use std::num::NonZeroU64;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct InstancedWindAffectedPipelineKey {
@@ -47,7 +49,7 @@ impl FromWorld for InstancedWindAffectedPipeline {
 
         InstancedWindAffectedPipeline {
             shader: asset_server.load(
-                AssetPath::from_path_buf(embedded_path!("instancing.wgsl")).with_source("embedded"),
+                AssetPath::from_path_buf(embedded_path!("instanced.wgsl")).with_source("embedded"),
             ),
             mesh_pipeline,
             material_layout,
@@ -139,6 +141,10 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             if key.wind_key.contains(WindAffectedKey::POINT_LIGHTS) {
                 fragment.shader_defs.push("POINT_LIGHTS".into());
             }
+
+            if key.wind_key.contains(WindAffectedKey::DIRECTIONAL_LIGHTS) {
+                fragment.shader_defs.push("DIRECTIONAL_LIGHTS".into());
+            }
         }
 
         descriptor.vertex.shader = self.shader.clone();
@@ -165,5 +171,81 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
 
         Ok(descriptor)
+    }
+}
+
+#[derive(Resource)]
+pub struct InstancedComputePipeline {
+    pub layout: BindGroupLayout,
+    pub shader: Handle<Shader>,
+    pub pipeline_id: Option<CachedComputePipelineId>,
+}
+
+impl FromWorld for InstancedComputePipeline {
+    fn from_world(world: &mut World) -> Self {
+        let render_device = world.resource::<RenderDevice>();
+        let asset_server = world.resource::<AssetServer>();
+
+        let instance_size = size_of::<InstanceData>() as u64;
+        let min_size = NonZeroU64::new(instance_size);
+
+        let layout = render_device.create_bind_group_layout(
+            "instanced_compute_layout",
+            &[
+                // Source_buffer
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: min_size,
+                    },
+                    count: None,
+                },
+                // Instance_buffer
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: min_size,
+                    },
+                    count: None,
+                },
+                // Indirect_args
+                BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        // 5 * 4 bytes = 20 bytes
+                        min_binding_size: NonZeroU64::new(20),
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: Some(CameraCullData::min_size()),
+                    },
+                    count: None,
+                },
+            ],
+        );
+
+        let shader = asset_server
+            .load(AssetPath::from_path_buf(embedded_path!("compute.wgsl")).with_source("embedded"));
+
+        InstancedComputePipeline {
+            layout,
+            shader,
+            pipeline_id: None,
+        }
     }
 }

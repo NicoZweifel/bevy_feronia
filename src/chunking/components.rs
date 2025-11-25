@@ -1,6 +1,16 @@
 use crate::core::components::LevelOfDetail;
-use bevy::camera::visibility::VisibilityRange;
-use bevy::prelude::*;
+use bevy_camera::prelude::Visibility;
+use bevy_camera::visibility::VisibilityRange;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_math::{IVec2, Vec3};
+use bevy_reflect::Reflect;
+use bevy_transform::prelude::Transform;
+use bevy_utils::default;
+use derive_more::From;
+
+#[cfg(feature = "tracing")]
+use tracing::warn;
 
 /// Component configuring Level of Detail (LOD) settings, including distances and densities.
 #[derive(Component, Reflect, Debug)]
@@ -21,11 +31,11 @@ impl Default for LodConfig {
             // LODs are ordered from High (0) to Low (n).
             vec![
                 // Level 0: High
-                30.0.into(),
+                20.0.into(),
                 // Level 1: Medium
                 60.0.into(),
                 // Level 2: Low
-                120.0.into(),
+                180.into(),
                 default(), // f32::MAX
             ],
             density: vec![
@@ -76,7 +86,9 @@ pub trait LodConfiguration {
     fn get_visibility_range(&self, lod: LevelOfDetail) -> VisibilityRange {
         let current_lod_dist = *self.get_lod_config(*lod);
 
-        let fade_band_multiplier = 0.1;
+        // If this is too large, it causes artifacts/smearing with DLSS/TAA
+        // TODO expose/create field
+        let fade_band_multiplier = 0.05;
 
         let start_margin = if *lod == 0 {
             0.0..0.0
@@ -181,7 +193,7 @@ impl BaseChunkSize {
 /// Component specifying the distance at which a chunk should merge with its siblings.
 ///
 /// Requires the [`CanMerge`] component.
-#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug, From)]
 #[require(CanMerge)]
 #[reflect(Component)]
 pub struct MergeDistance(pub f32);
@@ -201,7 +213,7 @@ pub struct SplitDistance(pub f32);
 
 /// Marker component identifying a chunk entity.
 #[derive(Component, Debug, Clone, Reflect)]
-#[require(Transform, Visibility)]
+#[require(Transform, Visibility, ChunkInitialize)]
 #[reflect(Component)]
 #[derive(Default)]
 pub struct Chunk;
@@ -222,7 +234,7 @@ pub struct ChunkOf(pub Entity);
 pub struct ChunkRoot(Vec<Entity>);
 
 /// A wrapper type for `f32` representing the distance threshold for an LOD.
-#[derive(Reflect, Debug, Deref, DerefMut, Clone, Copy, PartialEq)]
+#[derive(Reflect, Debug, Deref, DerefMut, Clone, Copy, PartialEq, From)]
 pub struct LodDistance(pub f32);
 
 impl Default for LodDistance {
@@ -232,27 +244,27 @@ impl Default for LodDistance {
     }
 }
 
-impl From<f32> for LodDistance {
-    fn from(val: f32) -> Self {
-        LodDistance(val)
+impl From<i32> for LodDistance {
+    fn from(val: i32) -> Self {
+        LodDistance(val as f32)
     }
 }
 
 /// Wrapper type for `f32` representing the density multiplier for an LOD.
 ///
 /// This value should be between 0.0 (nothing) and 1.0 (full density).
-#[derive(Reflect, Debug, Deref, DerefMut, Clone)]
+#[derive(Reflect, Debug, Deref, DerefMut, Clone, Default, From)]
 pub struct LodDensity(pub f32);
 
-impl Default for LodDensity {
-    fn default() -> Self {
-        0.0.into()
+impl From<i32> for LodDensity {
+    fn from(val: i32) -> Self {
+        Self(val as f32)
     }
 }
 
-impl From<f32> for LodDensity {
-    fn from(val: f32) -> Self {
-        LodDensity(val)
+impl From<usize> for LodDensity {
+    fn from(val: usize) -> Self {
+        Self(val as f32)
     }
 }
 
@@ -269,14 +281,8 @@ pub struct ChunkSizeScalarConfig(pub Vec<ChunkSizeScalar>);
 /// This is a multiplier relative to the [`BaseChunkSize`]. See also [`ChunkSize`].
 ///
 /// NOTE: Changing this might cause inconsistent/buggy behavior.
-#[derive(Reflect, Debug, Deref)]
+#[derive(Reflect, Debug, Deref, From)]
 pub struct ChunkSizeScalar(pub u32);
-
-impl From<u32> for ChunkSizeScalar {
-    fn from(val: u32) -> Self {
-        ChunkSizeScalar(val)
-    }
-}
 
 impl Default for ChunkSizeScalarConfig {
     fn default() -> Self {
@@ -335,6 +341,7 @@ impl Default for ChunkLodConfig {
         )
     }
 }
+
 impl ChunkLodConfig {
     /// Creates a new `ChunkLodConfig` by combining base LOD distances
     /// with chunk radii calculated from size scalars and a base chunk size.
@@ -346,26 +353,27 @@ impl ChunkLodConfig {
         size_scalars: &ChunkSizeScalarConfig,
         base_size: &BaseChunkSize,
     ) -> Self {
-        let radii: Vec<f32> = size_scalars
+        let radii = size_scalars
             .iter()
             .map(|scalar| base_size.get_chunk_radius(**scalar))
-            .collect();
+            .collect::<Vec<_>>();
 
         lod_config
             .distance
             .iter()
             .enumerate()
-            .filter_map(|(i, base_dist)| {
+            .map(|(i, base_dist)| {
                 if **base_dist == f32::MAX {
-                    return Some(base_dist.clone());
+                    return *base_dist;
                 }
 
                 radii
                     .get(i + 1)
-                    .and_then(|r_parent| Some(LodDistance(**base_dist + r_parent)))
-                    .or_else(|| {
+                    .map(|r_parent|LodDistance(**base_dist + r_parent))
+                    .unwrap_or_else(|| {
+                        #[cfg(feature = "tracing")]
                         warn!("Failed to calculate LOD distance for chunk at level {}. Using base distance.", i);
-                        Some(base_dist.clone())
+                        *base_dist
                     })
             })
             .collect::<Vec<_>>().into()
@@ -393,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_get_chunk_radius_1d_should_get_correct_radius() {
-        // This is a 1D "sanity check" to test the simplest case.
+        // This is a 1D "sanity quality" to test the simplest case.
         // A 1D "chunk" (a line) of length 20 should have a radius (half-diagonal) of 10.
         let base_size_1d = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));
 
@@ -426,6 +434,7 @@ mod tests {
 
     #[test]
     fn test_from_sources_standard_should_calculate_correctly() {
+        // Arrange
         // Use a simple 1D chunk for easy math: radius = scalar * 10
         let base_size = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));
 
@@ -460,14 +469,17 @@ mod tests {
             LodDistance::default(),
         ]);
 
+        // Act
         let calculated_config =
             ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size);
 
+        // Assert
         assert_eq!(calculated_config, expected_config);
     }
 
     #[test]
     fn test_from_sources_should_fallback_when_scalars_too_short() {
+        // Arrange
         let base_size = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));
 
         // Radii list: R = [10.0, 20.0]
@@ -498,9 +510,11 @@ mod tests {
             LodDistance::default(),
         ]);
 
+        // Act
         let calculated_config =
             ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size);
 
+        // Assert
         assert_eq!(calculated_config, expected_config);
     }
 }

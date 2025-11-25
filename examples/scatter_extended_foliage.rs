@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -17,8 +18,17 @@ fn main() -> AppExit {
             bop_strength: 0.01,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
+        .add_plugins((
+            ExamplePlugin,
+            SceneAssetBackendPlugin,
+            ExtendedWindAffectedScatterPlugin,
+        ))
         .init_state::<AppState>()
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
             Update,

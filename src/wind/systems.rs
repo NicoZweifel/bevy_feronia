@@ -1,30 +1,33 @@
 use crate::prelude::*;
-use bevy::asset::Assets;
-use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
-use bevy::pbr::Material;
-use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+
+use bevy_asset::Assets;
+use bevy_ecs::prelude::*;
+use bevy_image::*;
+use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use bevy_utils::default;
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<TOut, TIn>(
-    mut materials: ResMut<Assets<TOut>>,
+pub fn update_materials<T>(
+    mut materials: ResMut<Assets<T>>,
     wind: Res<Wind>,
-    mut scatter_assets: ResMut<Assets<ScatterAsset<TOut>>>,
+    mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     q_layer: Query<
-        (WindData, MaterialOptionData, &ScatterLayerOf),
-        (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>),
+        (WindOptionData, MaterialOptionData, &ScatterLayerOf),
+        (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    q_root: Query<WindData, With<ScatterRoot>>,
+    q_root: Query<WindOptionData, With<ScatterRoot>>,
 ) where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn>,
+    T: ScatterMaterial,
 {
     for (_, asset) in scatter_assets.iter_mut() {
         if asset.properties.options.controlled {
             continue;
         };
 
-        let Ok((wind_data, _material_options, root)) = q_layer.get(asset.properties.layer) else {
+        let Some((wind_data, _material_options, root)) =
+            // TODO
+            asset.properties.layer.and_then(|x| q_layer.get(x).ok())
+        else {
             dbg!("ScatterLayer not found!");
             continue;
         };
@@ -52,12 +55,12 @@ pub fn update_materials<TOut, TIn>(
                 .with_quality(*asset.properties.lod, asset.properties.wind_affected);
              */
 
-            TOut::update_material(material, wind, asset.properties.options);
+            T::update_material(material, wind, asset.properties.options);
         }
     }
 }
 
-pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let texture_size = 512;
     let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4) as usize);
 

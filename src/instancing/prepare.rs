@@ -1,20 +1,26 @@
-use crate::instancing::pipeline::InstancedWindAffectedPipeline;
+use crate::instancing::pipeline::{InstancedComputePipeline, InstancedWindAffectedPipeline};
+use crate::instancing::resources::{CameraCullData, GlobalCullBuffer, GrassBufferCache};
 use crate::prelude::*;
-use bevy::pbr::RenderMeshInstances;
-use bevy::prelude::*;
-use bevy::render::mesh::allocator::MeshAllocator;
-use bevy::render::mesh::{RenderMesh, RenderMeshBufferInfo};
-use bevy::render::render_asset::RenderAssets;
-use bevy::render::render_resource::{
-    BindGroupEntry, BufferInitDescriptor, BufferUsages, DrawIndexedIndirectArgs,
+use bevy_camera::Camera;
+use bevy_ecs::prelude::*;
+use bevy_math::Vec4;
+use bevy_pbr::RenderMeshInstances;
+use bevy_render::mesh::allocator::MeshAllocator;
+use bevy_render::mesh::{RenderMesh, RenderMeshBufferInfo};
+use bevy_render::render_asset::RenderAssets;
+use bevy_render::render_resource::{
+    BindGroupEntry, BufferDescriptor, BufferInitDescriptor, BufferUsages,
+    DrawIndexedIndirectArgs,
 };
-use bevy::render::renderer::{RenderDevice, RenderQueue};
-use bevy::render::sync_world::MainEntity;
+use bevy_render::renderer::{RenderDevice, RenderQueue};
+use bevy_render::sync_world::MainEntity;
+use bevy_render::view::ExtractedView;
+use bevy_utils::default;
 use bytemuck::bytes_of;
 
-pub(crate) fn prepare_instance_buffer(
+pub(super) fn prepare_instance_buffer(
     mut cmd: Commands,
-    query: Query<(Entity, &InstanceMaterialData, Option<&InstanceBuffer>)>,
+    query: Query<(Entity, &InstanceMaterialData, Option<&InstanceBuffer>), Without<GpuCull>>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
 ) {
@@ -59,7 +65,7 @@ fn create_buffer(
     });
 }
 
-pub fn prepare_instance_uniform_buffer(
+pub(super) fn prepare_instance_uniform_buffer(
     mut cmd: Commands,
     query: Query<(
         Entity,
@@ -74,7 +80,8 @@ pub fn prepare_instance_uniform_buffer(
 
     for (entity, instance_data, uniform_buffer_opt) in &query {
         let uniforms = InstanceUniforms {
-            color: instance_data.color,
+            top_color: instance_data.top_color,
+            bottom_color: instance_data.bottom_color,
             visibility_range: instance_data.visibility_range,
             static_bend_strength: instance_data.static_bend_strength,
             curve_factor: instance_data.curve_factor,
@@ -106,7 +113,7 @@ pub fn prepare_instance_uniform_buffer(
     }
 }
 
-pub fn prepare_indirect_draw_buffer(
+pub(super) fn prepare_indirect_draw_buffer(
     mut cmd: Commands,
     query: Query<
         (
@@ -164,5 +171,168 @@ pub fn prepare_indirect_draw_buffer(
                     .insert(GpuDrawIndexedIndirect { buffer, offset: 0 });
             }
         }
+    }
+}
+
+pub(super) fn prepare_global_cull_buffer(
+    mut commands: Commands,
+    views: Query<(&ExtractedView, &Camera)>,
+    render_device: Res<RenderDevice>,
+    render_queue: Res<RenderQueue>,
+    global_buffer: Option<ResMut<GlobalCullBuffer>>,
+) {
+    let Some((view, _camera)) = views.iter().find(|(_, cam)| cam.is_active) else {
+        return;
+    };
+
+    let view_proj = view.clip_from_world.unwrap_or_else(|| {
+        let world_from_view = view.world_from_view.to_matrix();
+        let view_from_world = world_from_view.inverse();
+        view.clip_from_view * view_from_world
+    });
+
+    let camera_position = view.world_from_view.translation();
+
+    let data = CameraCullData {
+        view_proj,
+        view_pos: Vec4::from((camera_position, 1.0)),
+        settings: Vec4::new(50.0, 200.0, 0.0, 0.0),
+    };
+
+    let contents = bytes_of(&data);
+
+    if let Some(global) = global_buffer {
+        render_queue.write_buffer(&global.buffer, 0, contents);
+    } else {
+        let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("global_cull_camera_buffer"),
+            contents,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+        commands.insert_resource(GlobalCullBuffer { buffer });
+    }
+}
+
+pub(super) fn prepare_instanced_compute_buffers(
+    mut commands: Commands,
+    query: Query<
+        (Entity, &MainEntity, &InstanceMaterialData),
+        (Without<InstancedComputeSourceBuffer>, With<GpuCull>),
+    >,
+    render_device: Res<RenderDevice>,
+    mut cache: ResMut<GrassBufferCache>,
+) {
+    for (entity, main_entity, instance_data) in &query {
+        let count = instance_data.instances.len();
+        if count == 0 {
+            continue;
+        }
+
+        let size = (count * size_of::<InstanceData>()) as u64;
+
+        // Source Buffer
+        let source_buffer = if let Some(buffer) = cache.buffers.get(&**main_entity) {
+            buffer.clone()
+        } else {
+            let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+                label: Some("instanced_compute_source_buffer"),
+                contents: bytemuck::cast_slice(&instance_data.instances),
+                usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
+            });
+
+            cache.buffers.insert(**main_entity, buffer.clone());
+            buffer
+        };
+
+        // Instance Buffer
+        let instance_buffer = render_device.create_buffer(&BufferDescriptor {
+            label: Some("instanced_compute_output_buffer"),
+            size,
+            usage: BufferUsages::STORAGE | BufferUsages::VERTEX,
+            mapped_at_creation: false,
+        });
+
+        // Indirect Draw Buffer
+        let indirect_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("instanced_compute_indirect_buffer"),
+            contents: &[0u8; 20], // 5 * u32 zeroed out
+            usage: BufferUsages::STORAGE | BufferUsages::INDIRECT | BufferUsages::COPY_DST,
+        });
+
+        commands.entity(entity).insert((
+            InstancedComputeSourceBuffer {
+                buffer: source_buffer,
+                count: count as u32,
+            },
+            InstanceBuffer {
+                buffer: instance_buffer,
+                length: count,
+            },
+            GpuDrawIndexedIndirect {
+                buffer: indirect_buffer,
+                offset: 0,
+            },
+        ));
+    }
+}
+
+pub(super) fn prepare_instanced_compute_bind_group(
+    mut cmd: Commands,
+    query: Query<
+        (
+            Entity,
+            &InstancedComputeSourceBuffer,
+            &InstanceBuffer,
+            &GpuDrawIndexedIndirect,
+        ),
+        Without<InstancedComputeBindGroup>,
+    >,
+    render_device: Res<RenderDevice>,
+    pipeline: Res<InstancedComputePipeline>,
+    global_cull_buffer: Option<Res<GlobalCullBuffer>>,
+) {
+    let Some(cull_buffer) = global_cull_buffer else {
+        return;
+    };
+
+    for (entity, source, instance, indirect) in &query {
+        let bind_group = render_device.create_bind_group(
+            "instanced_compute_bind_group",
+            &pipeline.layout,
+            &[
+                // Source
+                BindGroupEntry {
+                    binding: 0,
+                    resource: source.buffer.as_entire_binding(),
+                },
+                // Instance Output
+                BindGroupEntry {
+                    binding: 1,
+                    resource: instance.buffer.as_entire_binding(),
+                },
+                // Indirect Args
+                BindGroupEntry {
+                    binding: 2,
+                    resource: indirect.buffer.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 3,
+                    resource: cull_buffer.buffer.as_entire_binding(),
+                },
+            ],
+        );
+
+        cmd.entity(entity)
+            .insert(InstancedComputeBindGroup(bind_group));
+    }
+}
+
+pub(super) fn prepare_reset_indirect_buffer(
+    query: Query<&GpuDrawIndexedIndirect, With<GpuCull>>,
+    render_queue: Res<RenderQueue>,
+) {
+    for indirect in &query {
+        // 'instance_count' is at offset 4 in DrawIndexedIndirectArgs
+        render_queue.write_buffer(&indirect.buffer, 4, &[0, 0, 0, 0]);
     }
 }

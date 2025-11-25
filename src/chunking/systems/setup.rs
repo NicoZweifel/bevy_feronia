@@ -1,7 +1,12 @@
 use crate::prelude::*;
 use crate::scatter::utils::get_height_map_sampler;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
+
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::{IVec2, Vec3};
+use bevy_transform::prelude::{GlobalTransform, Transform};
 
 pub fn setup_chunks(
     mut cmd: Commands,
@@ -20,7 +25,11 @@ pub fn setup_chunks(
         (With<ChunkRoot>, Without<BaseChunkSize>),
     >,
 ) {
-    let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
+    let height_sampler = get_height_map_sampler(
+        images.into_inner(),
+        height_map_cfg.map(|x| x.into_inner()),
+        height_map.map(|x| x.into_inner()),
+    );
 
     for (entity, lod_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
         let world_size = Vec3::from(aabb.half_extents * 2.0);

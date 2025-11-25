@@ -1,11 +1,11 @@
 use crate::prelude::HeightMapConfig;
-use bevy::asset::{AssetPath, embedded_path};
-use bevy::mesh::MeshVertexBufferLayoutRef;
-use bevy::pbr::{MaterialPipeline, MaterialPipelineKey};
-use bevy::prelude::*;
-use bevy::reflect::TypePath;
-use bevy::render::render_resource::*;
-use bevy::shader::ShaderRef;
+use bevy_asset::*;
+use bevy_ecs::prelude::*;
+use bevy_mesh::MeshVertexBufferLayoutRef;
+use bevy_pbr::*;
+use bevy_reflect::TypePath;
+use bevy_render::render_resource::*;
+use bevy_shader::ShaderRef;
 
 #[repr(C)]
 #[derive(Clone, ShaderType, Debug)]

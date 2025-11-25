@@ -1,11 +1,11 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::image::*;
 use bevy::prelude::*;
-use bevy::render::render_resource::*;
 use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
+use bevy_image::*;
+use bevy_render::render_resource::*;
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{RngCore, rng};
@@ -13,8 +13,13 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
         .insert_resource(DensityMapConfig { size: 128 })
         .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
+        .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
         .add_systems(Update, scatter_on_keypress)
