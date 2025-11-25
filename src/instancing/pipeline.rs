@@ -9,7 +9,7 @@ use bevy_pbr::{MeshPipeline, MeshPipelineKey};
 use bevy_render::{render_resource::*, renderer::RenderDevice};
 use bevy_shader::Shader;
 
-use crate::instancing::resources::{CameraCullData, LodCullData};
+use crate::instancing::resources::CameraCullData;
 use std::mem::size_of;
 use std::num::NonZeroU64;
 

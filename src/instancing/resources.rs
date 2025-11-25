@@ -13,14 +13,6 @@ pub(super) struct CameraCullData {
     pub settings: Vec4,
 }
 
-#[derive(Clone, Copy, Pod, Zeroable, Default, ShaderType)]
-#[repr(C)]
-pub(super) struct LodCullData {
-    pub visibility_range: Vec4,
-    pub target_density: f32,
-    pub _padding: [f32; 3],
-}
-
 #[derive(Resource)]
 pub(super) struct GlobalCullBuffer {
     pub buffer: Buffer,
