@@ -552,6 +552,7 @@ fn spawn_scene(
                 EdgeCorrectionFactor::default(),
                 CurveFactor::default(),
                 Strength(1.2),
+                MicroStrength(1.2),
                 SCurveStrength(2.),
                 BopStrength(2.),
                 AnalyticalNormals,
