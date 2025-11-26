@@ -1,15 +1,16 @@
 use crate::prelude::LodDensity;
-use bevy_color::Color;
+use bevy_color::{Color, LinearRgba};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QueryItem;
-use bevy_math::Vec3;
+use bevy_math::{Vec3, Vec4};
 use bevy_reflect::Reflect;
 use bevy_render::render_resource::Buffer;
 use bevy_render::{extract_component::ExtractComponent, render_resource::BindGroup};
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
+use bevy_math::curve::LinearCurve;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
 ///
@@ -227,6 +228,7 @@ impl ExtractComponent for InstancePipelineKey {
 pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
+
     pub index: u32,
     pub _padding: [u32; 3],
 }
@@ -234,9 +236,9 @@ pub struct InstanceData {
 #[derive(Component, Clone)]
 pub struct InstanceMaterialData {
     pub instances: Arc<Vec<InstanceData>>,
-    pub top_color: [f32; 4],
-    pub bottom_color: [f32; 4],
-    pub visibility_range: [f32; 4],
+    pub top_color: LinearRgba,
+    pub bottom_color: LinearRgba,
+    pub visibility_range: Vec4,
     pub static_bend_strength: f32,
     pub curve_factor: f32,
     pub translucency: f32,
@@ -274,13 +276,17 @@ pub struct InstanceLodBuffer {
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct InstanceUniforms {
-    pub top_color: [f32; 4],
-    pub bottom_color: [f32; 4],
-    pub visibility_range: [f32; 4],
+    pub top_color: LinearRgba,
+
+    pub bottom_color: LinearRgba,
+
+    pub visibility_range: Vec4,
+
     pub static_bend_strength: f32,
     pub curve_factor: f32,
     pub translucency: f32,
     pub specular_strength: f32,
+
     pub specular_power: f32,
     pub _padding: [f32; 3],
 }

@@ -1,5 +1,7 @@
 use crate::instancing::pipeline::{InstancedComputePipeline, InstancedWindAffectedPipeline};
-use crate::instancing::resources::{CameraCullData, GlobalCullBuffer, GrassBufferCache};
+use crate::instancing::resources::{
+    CameraCullData, GlobalCullBuffer, GrassBufferCache, LodCullData,
+};
 use crate::prelude::*;
 use bevy_camera::Camera;
 use bevy_ecs::prelude::*;
@@ -14,6 +16,7 @@ use bevy_render::render_resource::{
 use bevy_render::renderer::{RenderDevice, RenderQueue};
 use bevy_render::sync_world::MainEntity;
 use bevy_render::view::ExtractedView;
+use bevy_utils::default;
 use bytemuck::bytes_of;
 
 #[cfg(feature = "tracing")]
@@ -287,6 +290,7 @@ pub(super) fn prepare_instanced_compute_bind_group(
             Entity,
             &InstancedComputeSourceBuffer,
             &InstanceBuffer,
+            &InstanceLodBuffer,
             &GpuDrawIndexedIndirect,
         ),
         (Without<InstancedComputeBindGroup>, With<GpuCull>),
@@ -299,7 +303,7 @@ pub(super) fn prepare_instanced_compute_bind_group(
         return;
     };
 
-    for (entity, source, instance, indirect) in &query {
+    for (entity, source, instance, lod_buffer, indirect) in &query {
         let bind_group = render_device.create_bind_group(
             "instanced_compute_bind_group",
             &pipeline.layout,
@@ -323,6 +327,10 @@ pub(super) fn prepare_instanced_compute_bind_group(
                 BindGroupEntry {
                     binding: 3,
                     resource: cull_buffer.buffer.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 4,
+                    resource: lod_buffer.buffer.as_entire_binding(),
                 },
             ],
         );
@@ -382,5 +390,49 @@ pub(super) fn prepare_reset_indirect_buffer(
     for indirect in &query {
         // 'instance_count' is at offset 4 in DrawIndexedIndirectArgs.
         render_queue.write_buffer(&indirect.buffer, 4, &[0, 0, 0, 0]);
+    }
+}
+
+pub(super) fn prepare_lod_buffer(
+    mut commands: Commands,
+    query: Query<
+        (
+            Entity,
+            &CullLodDensity,
+            &InstanceMaterialData,
+            Option<&InstanceLodBuffer>,
+        ),
+        With<GpuCull>,
+    >,
+    render_device: Res<RenderDevice>,
+    render_queue: Res<RenderQueue>,
+) {
+    for (
+        entity,
+        cull_lod_density,
+        &InstanceMaterialData {
+            visibility_range, ..
+        },
+        buffer_opt,
+    ) in &query
+    {
+        let lod_data = LodCullData {
+            visibility_range,
+            target_density: **cull_lod_density,
+            ..default()
+        };
+
+        let contents = bytes_of(&lod_data);
+
+        if let Some(lod_buffer) = buffer_opt {
+            render_queue.write_buffer(&lod_buffer.buffer, 0, contents);
+        } else {
+            let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+                label: Some("lod_cull_data_buffer"),
+                contents,
+                usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            });
+            commands.entity(entity).insert(InstanceLodBuffer { buffer });
+        }
     }
 }

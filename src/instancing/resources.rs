@@ -9,8 +9,19 @@ use bytemuck::{Pod, Zeroable};
 #[repr(C)]
 pub(super) struct CameraCullData {
     pub view_proj: Mat4,
+
     pub view_pos: Vec4,
+
     pub settings: Vec4,
+}
+
+#[derive(Clone, Copy, Pod, Zeroable, Default, ShaderType)]
+#[repr(C)]
+pub(super) struct LodCullData {
+    pub visibility_range: Vec4,
+
+    pub target_density: f32,
+    pub _padding: [f32; 3],
 }
 
 #[derive(Resource)]
