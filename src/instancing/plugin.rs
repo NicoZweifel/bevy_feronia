@@ -71,11 +71,12 @@ impl Plugin for InstancedWindAffectedPlugin {
                         prepare_instanced_compute_source,
                         prepare_instanced_compute_output,
                         prepare_instanced_compute_indirect,
+                        prepare_lod_buffer,
                         prepare_instanced_compute_bind_group.after(prepare_global_cull_buffer),
+                        prepare_reset_indirect_buffer.after(prepare_instanced_compute_indirect),
                         // Common
                         prepare_global_cull_buffer,
                         prepare_instance_uniform_buffer,
-                        prepare_reset_indirect_buffer.after(prepare_instanced_compute_indirect),
                     )
                         .in_set(RenderSystems::PrepareResources),
                 ),
