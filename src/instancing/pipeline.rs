@@ -9,7 +9,7 @@ use bevy_pbr::{MeshPipeline, MeshPipelineKey};
 use bevy_render::{render_resource::*, renderer::RenderDevice};
 use bevy_shader::Shader;
 
-use crate::instancing::resources::CameraCullData;
+use crate::instancing::resources::{CameraCullData, LodCullData};
 use std::mem::size_of;
 use std::num::NonZeroU64;
 
@@ -132,22 +132,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("CURVE_NORMALS".into());
         }
 
-        // TODO cull in compute shader
-        /*
-        let gpu_cull = key.wind_key.contains(WindAffectedKey::GPU_CULL);
-        if gpu_cull {
-            key.mesh_key
-                .remove(MeshPipelineKey::VISIBILITY_RANGE_DITHER);
-        }
-        */
-
         if let Some(fragment) = descriptor.fragment.as_mut() {
-            // TODO cull in compute shader
-            /*
-            if !gpu_cull {
-                fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
-            }
-             */
             fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
 
             if key.wind_key.contains(WindAffectedKey::CURVE_NORMALS) {
@@ -250,6 +235,17 @@ impl FromWorld for InstancedComputePipeline {
                         ty: BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: Some(CameraCullData::min_size()),
+                    },
+                    count: None,
+                },
+                // Lod_cull_buffer
+                BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: Some(LodCullData::min_size()),
                     },
                     count: None,
                 },
