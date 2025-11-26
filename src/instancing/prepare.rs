@@ -116,7 +116,7 @@ pub(super) fn prepare_indirect_draw_buffer(
             &InstanceBuffer,
             Option<&GpuDrawIndexedIndirect>,
         ),
-        With<InstancedWindAffectedMeshMaterial>,
+        (With<InstancedWindAffectedMeshMaterial>, Without<GpuCull>),
     >,
     render_mesh_instances: Res<RenderMeshInstances>,
     meshes: Res<RenderAssets<RenderMesh>>,
@@ -211,25 +211,65 @@ pub(super) fn prepare_global_cull_buffer(
     }
 }
 
-pub(super) fn prepare_instanced_compute_buffers(
+pub(super) fn prepare_instanced_compute_resources(
     mut commands: Commands,
-    query: Query<
-        (Entity, &MainEntity, &InstanceMaterialData),
-        (Without<InstancedComputeSourceBuffer>, With<GpuCull>),
-    >,
+    query: Query<(Entity, &MainEntity, &InstanceMaterialData), With<GpuCull>>,
     render_device: Res<RenderDevice>,
-    mut cache: ResMut<GrassBufferCache>,
+    render_mesh_instances: Res<RenderMeshInstances>,
+    meshes: Res<RenderAssets<RenderMesh>>,
+    mesh_allocator: Res<MeshAllocator>,
+    pipeline: Res<InstancedComputePipeline>,
+    global_cull_buffer: Option<Res<GlobalCullBuffer>>,
+    mut buffer_cache: ResMut<GrassBufferCache>,
 ) {
+    let Some(cull_buffer) = global_cull_buffer else {
+        return;
+    };
+
     for (entity, main_entity, instance_data) in &query {
         let count = instance_data.instances.len();
         if count == 0 {
             continue;
         }
 
-        let size = (count * size_of::<InstanceData>()) as u64;
+        let Some(mesh_instance) = render_mesh_instances.render_mesh_queue_data(*main_entity) else {
+            continue;
+        };
+        let Some(gpu_mesh) = meshes.get(mesh_instance.mesh_asset_id) else {
+            continue;
+        };
+        let Some(vertex_slice) = mesh_allocator.mesh_vertex_slice(&mesh_instance.mesh_asset_id)
+        else {
+            continue;
+        };
 
-        // Source Buffer
-        let source_buffer = if let Some(buffer) = cache.buffers.get(&**main_entity) {
+        let indirect_buffer = if let RenderMeshBufferInfo::Indexed {
+            count: index_count, ..
+        } = gpu_mesh.buffer_info
+        {
+            let Some(index_slice) = mesh_allocator.mesh_index_slice(&mesh_instance.mesh_asset_id)
+            else {
+                continue;
+            };
+
+            let command = DrawIndexedIndirectArgs {
+                index_count,
+                instance_count: 0,
+                first_index: index_slice.range.start,
+                base_vertex: vertex_slice.range.start as i32,
+                first_instance: 0,
+            };
+
+            render_device.create_buffer_with_data(&BufferInitDescriptor {
+                label: Some("instanced_compute_indirect_buffer"),
+                contents: command.as_bytes(),
+                usage: BufferUsages::STORAGE | BufferUsages::INDIRECT | BufferUsages::COPY_DST,
+            })
+        } else {
+            continue;
+        };
+
+        let source_buffer = if let Some(buffer) = buffer_cache.buffers.get(&**main_entity) {
             buffer.clone()
         } else {
             let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
@@ -237,83 +277,34 @@ pub(super) fn prepare_instanced_compute_buffers(
                 contents: bytemuck::cast_slice(&instance_data.instances),
                 usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
             });
-
-            cache.buffers.insert(**main_entity, buffer.clone());
+            buffer_cache.buffers.insert(**main_entity, buffer.clone());
             buffer
         };
 
-        // Instance Buffer
-        let instance_buffer = render_device.create_buffer(&BufferDescriptor {
+        let output_size = (count * size_of::<InstanceData>()) as u64;
+        let output_buffer = render_device.create_buffer(&BufferDescriptor {
             label: Some("instanced_compute_output_buffer"),
-            size,
+            size: output_size,
             usage: BufferUsages::STORAGE | BufferUsages::VERTEX,
             mapped_at_creation: false,
         });
 
-        // Indirect Draw Buffer
-        let indirect_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
-            label: Some("instanced_compute_indirect_buffer"),
-            contents: &[0u8; 20], // 5 * u32 zeroed out
-            usage: BufferUsages::STORAGE | BufferUsages::INDIRECT | BufferUsages::COPY_DST,
-        });
-
-        commands.entity(entity).insert((
-            InstancedComputeSourceBuffer {
-                buffer: source_buffer,
-                count: count as u32,
-            },
-            InstanceBuffer {
-                buffer: instance_buffer,
-                length: count,
-            },
-            GpuDrawIndexedIndirect {
-                buffer: indirect_buffer,
-                offset: 0,
-            },
-        ));
-    }
-}
-
-pub(super) fn prepare_instanced_compute_bind_group(
-    mut cmd: Commands,
-    query: Query<
-        (
-            Entity,
-            &InstancedComputeSourceBuffer,
-            &InstanceBuffer,
-            &GpuDrawIndexedIndirect,
-        ),
-        Without<InstancedComputeBindGroup>,
-    >,
-    render_device: Res<RenderDevice>,
-    pipeline: Res<InstancedComputePipeline>,
-    global_cull_buffer: Option<Res<GlobalCullBuffer>>,
-) {
-    let Some(cull_buffer) = global_cull_buffer else {
-        return;
-    };
-
-    for (entity, source, instance, indirect) in &query {
         let bind_group = render_device.create_bind_group(
             "instanced_compute_bind_group",
             &pipeline.layout,
             &[
-                // Source
                 BindGroupEntry {
                     binding: 0,
-                    resource: source.buffer.as_entire_binding(),
+                    resource: source_buffer.as_entire_binding(),
                 },
-                // Instance Output
                 BindGroupEntry {
                     binding: 1,
-                    resource: instance.buffer.as_entire_binding(),
+                    resource: output_buffer.as_entire_binding(),
                 },
-                // Indirect Args
                 BindGroupEntry {
                     binding: 2,
-                    resource: indirect.buffer.as_entire_binding(),
+                    resource: indirect_buffer.as_entire_binding(),
                 },
-                // Camera
                 BindGroupEntry {
                     binding: 3,
                     resource: cull_buffer.buffer.as_entire_binding(),
@@ -321,17 +312,20 @@ pub(super) fn prepare_instanced_compute_bind_group(
             ],
         );
 
-        cmd.entity(entity)
-            .insert(InstancedComputeBindGroup(bind_group));
-    }
-}
-
-pub(super) fn prepare_reset_indirect_buffer(
-    query: Query<&GpuDrawIndexedIndirect, With<GpuCull>>,
-    render_queue: Res<RenderQueue>,
-) {
-    for indirect in &query {
-        // 'instance_count' is at offset 4 in DrawIndexedIndirectArgs
-        render_queue.write_buffer(&indirect.buffer, 4, &[0, 0, 0, 0]);
+        commands.entity(entity).insert((
+            InstancedComputeSourceBuffer {
+                buffer: source_buffer,
+                count: count as u32,
+            },
+            InstanceBuffer {
+                buffer: output_buffer,
+                length: count,
+            },
+            GpuDrawIndexedIndirect {
+                buffer: indirect_buffer,
+                offset: 0,
+            },
+            InstancedComputeBindGroup(bind_group),
+        ));
     }
 }
