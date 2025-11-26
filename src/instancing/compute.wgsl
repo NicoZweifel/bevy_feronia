@@ -23,10 +23,19 @@ struct CameraCullData {
     settings: vec4<f32>,
 }
 
+struct LodCullData {
+    visibility_range: vec4<f32>,
+
+    // Target density for this LOD (e.g., 1.0 for High, 0.5 for Low)
+    target_density: f32,
+}
+
 @group(0) @binding(0) var<storage, read> source_buffer: array<InstanceData>;
 @group(0) @binding(1) var<storage, read_write> instance_buffer: array<InstanceData>;
 @group(0) @binding(2) var<storage, read_write> indirect_args: DrawIndexedIndirectArgs;
 @group(0) @binding(3) var<uniform> camera: CameraCullData;
+//@group(0) @binding(4) var<uniform> lod_data: LodCullData;
+
 
 fn hash_noise(index: u32) -> f32 {
     var state = index;

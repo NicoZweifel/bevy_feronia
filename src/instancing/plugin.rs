@@ -61,16 +61,21 @@ impl Plugin for InstancedWindAffectedPlugin {
                     (
                         queue_instanced_wind_affected,
                         queue_instanced_compute_pipeline,
-                        prepare_indirect_draw_buffer.after(queue_instanced_wind_affected),
-                        prepare_reset_indirect_buffer.after(prepare_indirect_draw_buffer),
                     )
                         .in_set(RenderSystems::QueueMeshes),
                     (
-                        prepare_instanced_compute_buffers,
+                        // CPU
                         prepare_instance_buffer,
-                        prepare_global_cull_buffer,
+                        prepare_indirect_draw_buffer.after(queue_instanced_wind_affected),
+                        // GPU
+                        prepare_instanced_compute_source,
+                        prepare_instanced_compute_output,
+                        prepare_instanced_compute_indirect,
                         prepare_instanced_compute_bind_group.after(prepare_global_cull_buffer),
+                        // Common
+                        prepare_global_cull_buffer,
                         prepare_instance_uniform_buffer,
+                        prepare_reset_indirect_buffer.after(prepare_instanced_compute_indirect),
                     )
                         .in_set(RenderSystems::PrepareResources),
                 ),

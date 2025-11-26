@@ -26,8 +26,7 @@ impl Plugin for MeshMaterialAssetBackendPlugin {
 pub fn on_add_layer(trigger: On<Add, ScatterLayer>, mut cmd: Commands) {
     let layer = trigger.entity;
 
-    cmd.entity(layer)
-        .insert(NeedsAssetCollection::default());
+    cmd.entity(layer).insert(NeedsAssetCollection::default());
 }
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively.
