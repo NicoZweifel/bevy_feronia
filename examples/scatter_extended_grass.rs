@@ -2,12 +2,12 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
 use std::f32::consts::TAU;
-use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
 
 fn main() -> AppExit {
     App::new()
