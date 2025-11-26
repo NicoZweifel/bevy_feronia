@@ -3,6 +3,7 @@ use bevy_color::{Color, LinearRgba};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QueryItem;
+use bevy_math::curve::LinearCurve;
 use bevy_math::{Vec3, Vec4};
 use bevy_reflect::Reflect;
 use bevy_render::render_resource::Buffer;
@@ -10,7 +11,6 @@ use bevy_render::{extract_component::ExtractComponent, render_resource::BindGrou
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 use std::sync::Arc;
-use bevy_math::curve::LinearCurve;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
 ///
