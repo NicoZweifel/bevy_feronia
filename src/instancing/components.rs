@@ -139,7 +139,7 @@ impl Default for EdgeCorrectionFactor {
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
 ///
-/// Defaults to `0.2`.
+/// Defaults to `0.3`.
 ///
 /// Currently only supported in [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
@@ -148,7 +148,7 @@ pub struct CurveFactor(pub f32);
 
 impl Default for CurveFactor {
     fn default() -> Self {
-        Self(0.2)
+        Self(0.3)
     }
 }
 

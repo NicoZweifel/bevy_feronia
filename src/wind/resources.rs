@@ -36,7 +36,7 @@ impl Default for Wind {
             scroll_speed: 0.1,
             micro_strength: 0.1,
             twist_strength: 0.05,
-            s_curve_speed: 2.,
+            s_curve_speed: 4.,
             s_curve_strength: 0.02,
             s_curve_frequency: PI,
             bop_speed: 2.5,

@@ -155,6 +155,8 @@ fn displace_vertex_and_calc_normal(
     #endif
 
     let local_bitangent = normalize(cross(local_normal, local_tangent) * tangent_sign);
+
+    // Too small, e.g. 0.01, causes flicker on simple geometry
     let sample_offset = 0.05;
     let base_displaced_pos = final_local_pos;
 
