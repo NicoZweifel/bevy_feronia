@@ -24,9 +24,9 @@ impl Plugin for MeshMaterialAssetBackendPlugin {
 
 /// A lightweight listener that tags children of a layer as ready for processing
 pub fn on_add_layer(trigger: On<Add, ScatterLayer>, mut cmd: Commands) {
-    let scene_entity = trigger.entity;
+    let layer = trigger.entity;
 
-    cmd.entity(scene_entity)
+    cmd.entity(layer)
         .insert(NeedsAssetCollection::default());
 }
 
