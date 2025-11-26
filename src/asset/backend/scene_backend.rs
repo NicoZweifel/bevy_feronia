@@ -52,14 +52,14 @@ pub fn scene_asset_ready_listener(
 /// all [`ScatterAssetPart`]s will be assigned to the children of the root collection.
 pub fn scene_asset_backend(
     _: In<()>,
-    q_roots: Query<Entity, (With<SceneRoot>, With<NeedsAssetCollection>)>,
+    q_scene_roots: Query<Entity, (With<SceneRoot>, With<NeedsAssetCollection>)>,
     q_layers: Query<(Entity, Option<&Name>), With<ScatterLayer>>,
     q_parent: Query<&ChildOf>,
     q_children: Query<&Children>,
     q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
     q_name: Query<&Name>,
 ) -> Result<Vec<AssetItem>> {
-    Ok(q_roots
+    Ok(q_scene_roots
         .iter()
         .filter_map(|scene_root| {
             let child_of = q_parent

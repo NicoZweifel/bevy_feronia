@@ -463,7 +463,8 @@ fn update_quality_settings(
 
             light.shadows_enabled = true;
 
-            #[cfg(feature = "pcss")]{
+            #[cfg(feature = "pcss")]
+            {
                 light.soft_shadow_size = pcss_size;
             }
 
