@@ -2,7 +2,6 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -19,7 +18,7 @@ fn main() -> AppExit {
         })
         .add_plugins((
             ExamplePlugin,
-            // This example spawns everything in startup so we can just use the MeshMaterialAssetBackendPlugin
+            // This example spawns everything in startup, so we can just use the MeshMaterialAssetBackendPlugin
             MeshMaterialAssetBackendPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
