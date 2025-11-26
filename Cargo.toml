@@ -109,6 +109,9 @@ avian = ["dep:avian3d"]
 # Enables the "dlss" feature in the bevy crate. Used only in examples.
 dlss = ["bevy/dlss"]
 
+# Enables the "experimental_pbr_pcss" feature in the bevy crate. Used only in examples.
+pcss = ["bevy/experimental_pbr_pcss"]
+
 # Enables tracing and adds the dependency.
 tracing = ["dep:tracing"]
 

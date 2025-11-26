@@ -460,7 +460,10 @@ fn update_quality_settings(
             }
 
             light.shadows_enabled = true;
-            light.soft_shadow_size = pcss_size;
+
+            #[cfg(feature = "pcss")]{
+                light.soft_shadow_size = pcss_size;
+            }
 
             *cascade_config = CascadeShadowConfigBuilder {
                 num_cascades: cascades,
