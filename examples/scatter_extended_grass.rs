@@ -8,6 +8,7 @@ use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
 use std::f32::consts::TAU;
+use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
 
 fn main() -> AppExit {
     App::new()
@@ -18,7 +19,8 @@ fn main() -> AppExit {
         })
         .add_plugins((
             ExamplePlugin,
-            SceneAssetBackendPlugin,
+            // This example spawns everything in startup so we can just use the MeshMaterialAssetBackendPlugin
+            MeshMaterialAssetBackendPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
         .insert_state(ScatterState::Setup)

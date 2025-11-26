@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use bevy_asset::Handle;
-use bevy_camera::visibility::VisibilityRange;
 use bevy_camera::{primitives::Aabb, visibility::Visibility};
 use bevy_color::{Color, ColorToComponents, LinearRgba};
 use bevy_ecs::prelude::*;

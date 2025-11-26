@@ -16,7 +16,7 @@ pub fn backend(world: &mut World) {
         return;
     };
 
-    let processed_scene_roots = world
+    let processed_entities = world
         .run_system_with(**item_backend, ())
         .into_iter()
         .flatten()
@@ -29,13 +29,15 @@ pub fn backend(world: &mut World) {
         })
         .fold(HashSet::new(), |mut acc, item_of| {
             acc.insert(item_of.root);
+            acc.insert(item_of.item);
+            acc.insert(item_of.layer);
             acc
         });
 
     let mut cmd: Commands = world.commands();
 
-    for scene_root in processed_scene_roots {
-        cmd.entity(scene_root).remove::<NeedsAssetCollection>();
+    for e in processed_entities {
+        cmd.entity(e).remove::<NeedsAssetCollection>();
     }
 }
 

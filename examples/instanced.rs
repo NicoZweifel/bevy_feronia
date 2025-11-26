@@ -64,7 +64,7 @@ fn setup(
         // can also tweak other settings here
         directional_lights: true,
         point_lights: true,
-        static_bend_strength: 3.,
+        static_bend_strength: 0.5,
         // or test individual settings
         edge_correction_factor: 1.0,
         ..default()

@@ -22,6 +22,10 @@ The setup depends on the use-case, but a typical setup would look like something
 
 ```rust
 app.add_plugins((
+    MeshMaterialAssetBackendPlugin,
+    // Or 
+    SceneAssetBackendPlugin,
+    // ...
     ExtendedWindAffectedScatterPlugin
 ));
 ```
