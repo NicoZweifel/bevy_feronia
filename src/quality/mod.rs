@@ -445,10 +445,12 @@ fn update_quality_settings(
 
         let ShadowSettings {
             size,
+            #[cfg(feature = "pcss")]
             pcss_size,
             cascades,
             max_dist,
             first_bound,
+            ..
         } = new_settings.shadow_quality.into();
 
         shadow_map_resource.size = size;
