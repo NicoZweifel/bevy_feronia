@@ -200,15 +200,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                 }
 
                 if asset.properties.options.gpu_cull {
-                    let density_value: CullLodDensity = request
-                        .lod_config
-                        .density
-                        .get(*asset.properties.lod as usize)
-                        .cloned()
-                        .map(|x| x.into())
-                        .unwrap_or_default();
-
-                    cmd.entity(entity).insert((density_value, GpuCull));
+                    cmd.entity(entity).insert(GpuCull);
                 }
             }
         }

@@ -9,6 +9,9 @@ use bevy_render::{
     renderer::RenderContext,
 };
 
+#[cfg(feature = "tracing")]
+use tracing::{error, trace};
+
 enum InstancedComputeNodeState {
     Loading,
     Ready,
@@ -60,6 +63,27 @@ impl Node for InstancedComputeNode {
 
         let pipeline_res = world.resource::<InstancedComputePipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
+
+        if let Some(id) = pipeline_res.pipeline_id {
+            match pipeline_cache.get_compute_pipeline_state(id) {
+                CachedPipelineState::Err(_err) => {
+                    #[cfg(feature = "tracing")]
+                    error!("Instanced compute pipeline error: {:?}", _err);
+                }
+                CachedPipelineState::Queued => {
+                    #[cfg(feature = "tracing")]
+                    trace!("Instanced compute pipeline is still compiling...");
+                }
+                CachedPipelineState::Ok(_) => {
+                    #[cfg(feature = "tracing")]
+                    trace!("Instanced compute pipeline is ok...");
+                }
+                CachedPipelineState::Creating(_) => {
+                    #[cfg(feature = "tracing")]
+                    trace!("Compute pipeline is creating...");
+                }
+            }
+        }
 
         let Some(pipeline) = pipeline_cache.get_compute_pipeline(pipeline_res.pipeline_id.unwrap())
         else {

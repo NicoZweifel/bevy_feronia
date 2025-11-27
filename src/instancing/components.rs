@@ -1,4 +1,3 @@
-use crate::prelude::LodDensity;
 use bevy_color::{Color, LinearRgba};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
@@ -176,23 +175,6 @@ impl Default for StaticBendStrength {
 #[derive(Component, Clone, Copy, Default, ExtractComponent)]
 pub struct GpuCull;
 
-/// Used for the Compute Shader culling logic.
-#[derive(Component, Clone, Copy, Debug, Reflect, Deref, DerefMut, ExtractComponent)]
-#[reflect(Component)]
-pub struct CullLodDensity(pub f32);
-
-impl Default for CullLodDensity {
-    fn default() -> Self {
-        Self(1.0)
-    }
-}
-
-impl From<LodDensity> for CullLodDensity {
-    fn from(lod_density: LodDensity) -> Self {
-        Self(*lod_density)
-    }
-}
-
 /// Sets a material color tint.
 ///
 /// Corresponds to `instance_uniforms.color` in shaders.
@@ -227,6 +209,7 @@ impl ExtractComponent for InstancePipelineKey {
 pub struct InstanceData {
     pub position: Vec3,
     pub scale: f32,
+
     pub index: u32,
     pub _padding: [u32; 3],
 }

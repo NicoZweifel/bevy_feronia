@@ -44,7 +44,6 @@ impl Plugin for InstancedWindAffectedPlugin {
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
             ExtractComponentPlugin::<GpuCull>::default(),
             ExtractComponentPlugin::<Center>::default(),
-            ExtractComponentPlugin::<CullLodDensity>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
         .add_systems(PostUpdate, add_instance_key_component);

@@ -1,5 +1,7 @@
 use crate::instancing::pipeline::{InstancedComputePipeline, InstancedWindAffectedPipeline};
-use crate::instancing::resources::{CameraCullData, GlobalCullBuffer, GrassBufferCache};
+use crate::instancing::resources::{
+    CameraCullData, GlobalCullBuffer, GrassBufferCache, LodCullData,
+};
 use crate::prelude::*;
 use bevy_camera::Camera;
 use bevy_ecs::prelude::*;
@@ -183,18 +185,10 @@ pub(super) fn prepare_global_cull_buffer(
         return;
     };
 
-    let view_proj = view.clip_from_world.unwrap_or_else(|| {
-        let world_from_view = view.world_from_view.to_matrix();
-        let view_from_world = world_from_view.inverse();
-        view.clip_from_view * view_from_world
-    });
-
     let camera_position = view.world_from_view.translation();
 
     let data = CameraCullData {
-        view_proj,
         view_pos: Vec4::from((camera_position, 1.0)),
-        settings: Vec4::new(50.0, 200.0, 0.0, 0.0),
     };
 
     let contents = bytes_of(&data);
@@ -269,6 +263,18 @@ pub(super) fn prepare_instanced_compute_resources(
             continue;
         };
 
+        let lod_data = LodCullData {
+            visibility_range: instance_data.visibility_range,
+        };
+
+        let contents = bytes_of(&lod_data);
+
+        let lod_buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("lod_cull_data_buffer"),
+            contents,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+        });
+
         let source_buffer = if let Some(buffer) = buffer_cache.buffers.get(&**main_entity) {
             buffer.clone()
         } else {
@@ -309,6 +315,10 @@ pub(super) fn prepare_instanced_compute_resources(
                     binding: 3,
                     resource: cull_buffer.buffer.as_entire_binding(),
                 },
+                BindGroupEntry {
+                    binding: 4,
+                    resource: lod_buffer.as_entire_binding(),
+                },
             ],
         );
 
@@ -319,13 +329,14 @@ pub(super) fn prepare_instanced_compute_resources(
             },
             InstanceBuffer {
                 buffer: output_buffer,
-                length: count,
+                length: 0,
             },
             GpuDrawIndexedIndirect {
                 buffer: indirect_buffer,
                 offset: 0,
             },
             InstancedComputeBindGroup(bind_group),
+            InstanceLodBuffer { buffer: lod_buffer },
         ));
     }
 }
