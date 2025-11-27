@@ -9,7 +9,7 @@ use bevy_tasks::AsyncComputeTaskPool;
 use bevy_tasks::futures_lite::future;
 use bevy_transform::prelude::GlobalTransform;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 type ScatterLayerQueryData<'a> = (
@@ -68,7 +68,7 @@ pub fn handle_scatter_requests<T>(
             layer_gtf,
         )) = q_layer.get(request.layer_entity)
         else {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("ScatterLayer not found!");
             continue;
         };
@@ -81,7 +81,7 @@ pub fn handle_scatter_requests<T>(
 
         let density = density_dist.map_or(1.0, |d| **d);
 
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!(
             "Scattering {} instances in ScatterLayer {}",
             density, request.layer_entity,
@@ -93,7 +93,7 @@ pub fn handle_scatter_requests<T>(
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
                 q_chunk_root.get(**scatter_root)
             else {
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 warn!("ChunkRoot not found!");
                 continue;
             };
@@ -142,7 +142,7 @@ pub fn handle_scatter_requests<T>(
             })
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 warn!("ScatterRoot not found!");
                 continue;
             };
@@ -216,7 +216,7 @@ pub fn handle_finished_scatter_tasks<T>(
             targets.push(chunk_entity);
         }
 
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Scattered {} instances", results.data.len());
 
         targets

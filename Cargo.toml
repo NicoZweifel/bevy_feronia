@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.5.0-rc.6"
+version = "0.5.0-rc.7"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -101,7 +101,7 @@ codegen-units = 1
 lto = "thin"
 
 [features]
-default = []
+default = ["trace"]
 
 # Enables support for avian and adds the dependency.
 avian = ["dep:avian3d"]
@@ -113,7 +113,7 @@ dlss = ["bevy/dlss"]
 pcss = ["bevy/experimental_pbr_pcss"]
 
 # Enables tracing and adds the dependency.
-tracing = ["dep:tracing"]
+trace = ["dep:tracing"]
 
 
 [patch.crates-io]

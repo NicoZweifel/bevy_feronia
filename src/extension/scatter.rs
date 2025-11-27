@@ -41,7 +41,7 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
         MeshMaterial3d(material)
     }
 
-    fn scatter(cmd: &mut Commands, request: SpawnRequest<ExtendedWindAffectedMaterial>) {
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<ExtendedWindAffectedMaterial>) {
         cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }

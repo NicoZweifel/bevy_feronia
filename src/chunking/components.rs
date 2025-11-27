@@ -9,7 +9,7 @@ use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 use derive_more::From;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 /// Component configuring Level of Detail (LOD) settings, including distances and densities.
@@ -364,7 +364,7 @@ impl ChunkLodConfig {
                     .get(i + 1)
                     .map(|r_parent|LodDistance(**base_dist + r_parent))
                     .unwrap_or_else(|| {
-                        #[cfg(feature = "tracing")]
+                        #[cfg(feature = "trace")]
                         warn!("Failed to calculate LOD distance for chunk at level {}. Using base distance.", i);
                         *base_dist
                     })

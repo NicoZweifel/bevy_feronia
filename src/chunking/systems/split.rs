@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use bevy_math::{IVec2, Vec3};
 use bevy_transform::prelude::{GlobalTransform, Transform};
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub fn split(
@@ -15,7 +15,7 @@ pub fn split(
     mut mw_split: MessageWriter<SplitChunk>,
 ) {
     let Ok(center) = q_center.single() else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!(
             "Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?"
         );
@@ -45,13 +45,13 @@ pub fn handle_split(
 ) {
     for e in mr_split.read() {
         let parent_entity = e.get();
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Splitting Chunk: {parent_entity}");
 
         let Ok((parent_chunk_level, parent_chunk_size, root_chunk, parent_coord)) =
             q_chunk.get(parent_entity)
         else {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("Couldn't get Chunk for split: {parent_entity}");
             continue;
         };
@@ -60,7 +60,7 @@ pub fn handle_split(
 
         let parent_level = **parent_chunk_level;
         if parent_level == 0 {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("Can't split root chunk!");
             continue;
         }

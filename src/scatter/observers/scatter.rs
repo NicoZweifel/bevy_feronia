@@ -1,16 +1,16 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::debug;
 
-pub fn scatter<T>(trigger: On<Scatter<T>>, mut cmd: Commands)
+pub fn scatter_layer<T>(trigger: On<Scatter<T>>, mut cmd: Commands)
 where
     T: ScatterMaterial,
 {
     let layer_entity = trigger.entity;
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Scattering Layer: {layer_entity}");
 
     cmd.entity(layer_entity)

@@ -5,8 +5,8 @@ use bevy_ecs::relationship::Relationship;
 use bevy_platform::collections::HashMap;
 use bevy_transform::prelude::GlobalTransform;
 
-#[cfg(feature = "tracing")]
-use tracing::{debug, warn};
+#[cfg(feature = "trace")]
+use tracing::{debug, error, warn};
 
 pub fn merge_check(
     q_chunk: Query<
@@ -28,19 +28,17 @@ pub fn merge_check(
         .filter_map(|(parent, children)| {
             let root = q_parent
                 .get(parent)
-                .map_err(|e| {
-                    #[cfg(feature = "tracing")]
-                    warn!("Couldn't get parent Chunk {parent} for merge quality!");
-                    e
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
+                    error!("Couldn't get parent Chunk {parent} for merge quality!");
                 })
                 .ok()?;
 
             let root_size_dim = q_root
                 .get(**root)
-                .map_err(|e| {
-                    #[cfg(feature = "tracing")]
-                    warn!("Couldn't get ChunkRoot {} for merge quality!", **root);
-                    e
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
+                    error!("Couldn't get ChunkRoot {} for merge quality!", **root);
                 })
                 .ok()?;
 
@@ -59,7 +57,7 @@ pub fn handle_merge_check(
     mut mr_merge_check: MessageReader<MergeCheck>,
 ) {
     let Ok(center) = q_center.single() else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!(
             "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
         );
@@ -78,16 +76,16 @@ pub fn handle_merge_check(
 
             let parent_tf = q_parent
                 .get(*parent)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Couldn't get parent transform for merge quality!")
                 })
                 .ok()?;
 
             let merge_distance = q_merge_distance
                 .get(first_child)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Couldn't get merge distance for merge quality! Was this Chunk already removed?")
                 })
                 .ok()?;
@@ -123,7 +121,7 @@ pub fn merge(
 
 pub fn handle_merge(mut cmd: Commands, mut mr_merge: MessageReader<MergeChunks>) {
     for MergeChunks { parent, children } in mr_merge.read() {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Merging Chunks: {children:?} into {parent}");
 
         for child in children {

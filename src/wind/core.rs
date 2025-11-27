@@ -32,7 +32,7 @@ pub trait ScatterMaterial: ScatterMaterialAsset {
 
     fn component(material: Handle<Self>) -> impl Component;
 
-    fn scatter(cmd: &mut Commands, request: SpawnRequest<Self>);
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<Self>);
 }
 
 pub struct SpawnRequest<'w, T>
@@ -148,7 +148,7 @@ impl ScatterMaterial for StandardMaterial {
         MeshMaterial3d(material)
     }
 
-    fn scatter(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
         cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }

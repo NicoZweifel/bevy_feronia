@@ -6,12 +6,12 @@ use bevy_ecs::prelude::*;
 use bevy_mesh::{Mesh, Mesh3d};
 use bevy_platform::collections::{HashMap, HashSet};
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, error, trace, warn};
 
 pub fn backend(world: &mut World) {
     let Some(item_backend) = world.get_resource::<ScatterAssetBackend>() else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         error!("No AssetItemBackend found!");
         return;
     };
@@ -58,17 +58,20 @@ pub fn insert_parts<T: ScatterMaterial>(
         .filter_map(|AssetItem { entity, item_of }| {
             let (child_of, scene_root_data) = q_data
                 .get(item_of.root)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
-                    warn!("Could not get AssetItem root {}, skipping.", item_of.root);
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
+                    error!(
+                        "Could not get AssetItem {} root {}, skipping.",
+                        item_of.root, entity
+                    );
                 })
                 .ok()?;
 
             let layer = child_of.parent();
             let (_, layer_material_option_data, layer_wind_data) = q_layers
                 .get(layer)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     trace!(
                         "Multiple ScatterLayerTypes in use, skipping Layer {}.",
                         layer
@@ -78,8 +81,8 @@ pub fn insert_parts<T: ScatterMaterial>(
 
             let (child_of, child_data) = q_data
                 .get(entity)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!(
                         "Asset part {:?} is not a processable scatter asset part, skipping.",
                         entity
@@ -89,16 +92,16 @@ pub fn insert_parts<T: ScatterMaterial>(
 
             let (_, item_root_data) = q_data
                 .get(item_of.item)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get AssetItem {}, skipping.", item_of.item);
                 })
                 .ok()?;
 
             let (_, parent_data) = q_data
                 .get(child_of.parent())
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!(
                         "Could not get AssetItem parent {}, skipping.",
                         child_of.parent()
@@ -158,7 +161,7 @@ pub fn insert_requests<T: ScatterMaterial>(
         )
         .into_iter()
         .filter_map(|(item_of, entity_parts)| {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                 "Collecting ScatterAssetPart {:?}: {:?} {:?}",
                 item_of,
@@ -172,8 +175,8 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             let (child_of, scene_root_data) = q_data
                 .get(*scene_root)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     debug!(
                         "Scene asset {:?} is not a processable scatter asset, skipping.",
                         scene_root
@@ -185,8 +188,8 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             let (_, layer_material_option_data, layer_wind_data) = q_layers
                 .get(layer)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     trace!(
                         "Multiple ScatterLayerTypes in use, skipping Layer {}.",
                         layer
@@ -240,7 +243,7 @@ pub fn insert_requests<T: ScatterMaterial>(
         });
 
     for (scene_root, _name) in processed_scene_roots {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!(
             "Processed ScatterLayerChild {} {scene_root}",
             _name.unwrap_or_default()

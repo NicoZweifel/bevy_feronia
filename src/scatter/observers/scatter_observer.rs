@@ -3,7 +3,7 @@ use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
 use bevy_ecs::prelude::*;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub fn scatter_observer<T>(
@@ -16,12 +16,12 @@ pub fn scatter_observer<T>(
 {
     let layer = trigger.layer;
     let Ok(scatter_items) = q_layer.get(layer) else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!("ScatterLayer {layer} not found!");
         return;
     };
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("ScatterObserver triggered! Writing Spawn Messages for layer {layer}...");
 
     mw_spawn.write(

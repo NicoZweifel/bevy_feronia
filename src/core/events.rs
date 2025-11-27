@@ -5,7 +5,7 @@ use bevy_ecs::prelude::*;
 use bevy_pbr::StandardMaterial;
 use bevy_platform::collections::HashMap;
 use std::fmt::Debug;
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 /// Event used to trigger the spawning of a batch of `[ScatterAssets]`.
@@ -52,7 +52,7 @@ where
                 |mut map, ScatterHandleAsset { handle, asset }| {
                     let name = asset.properties.name.as_ref().map_or_else(
                         || {
-                            #[cfg(feature = "tracing")]
+                            #[cfg(feature = "trace")]
                             warn!("ScatterAsset {:?} has no name!", handle);
                             Name::new("")
                         },

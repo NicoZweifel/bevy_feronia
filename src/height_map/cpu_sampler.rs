@@ -3,7 +3,7 @@ use bevy_image::Image;
 use bevy_math::{FloatExt, Vec2, Vec3, Vec3Swizzles};
 use std::ops::Range;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 pub struct HeightMapCpuSampler<'a> {
@@ -35,7 +35,7 @@ impl<'a> HeightMapCpuSampler<'a> {
             .and_then(|slice| slice.try_into().ok())
             .map(f32::from_le_bytes)
             .unwrap_or_else(|| {
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 warn!("Failed to read heightmap pixel at ({x}, {y})");
                 0.0
             })

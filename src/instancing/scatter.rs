@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy_asset::Handle;
 use bevy_camera::{primitives::Aabb, visibility::Visibility};
-use bevy_color::{Color, ColorToComponents, LinearRgba};
+use bevy_color::{Color, LinearRgba};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::Vec3;
@@ -49,7 +49,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         InstancedWindAffectedMeshMaterial(material)
     }
 
-    fn scatter(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
         let instance_groups: HashMap<Name, Vec<InstanceData>> =
             request.event.trigger.data.iter().enumerate().fold(
                 HashMap::new(),

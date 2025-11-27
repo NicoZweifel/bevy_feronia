@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::scatter::observers::*;
 use bevy_ecs::prelude::*;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::debug;
 
 pub fn on_add_scatter_root<T>(trigger: On<Add, ScatterRoot>, mut cmd: Commands)
@@ -11,7 +11,7 @@ where
 {
     let root = trigger.entity;
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Added ScatterRoot {root}.");
 
     cmd.entity(root)

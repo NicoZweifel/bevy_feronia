@@ -14,7 +14,7 @@ use bevy_utils::default;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{info, warn};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -191,7 +191,7 @@ fn apply_quality_gate<B: Bundle + Clone>(
 ) {
     let entity = trigger.entity;
     let Ok(AddIf { rule, bundle }) = query.get(entity) else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!("Could not find AddIf component for entity {}", entity,);
         return;
     };
@@ -437,7 +437,7 @@ fn update_quality_settings(
     }
 
     if new_settings.shadow_quality != last_settings.shadow_quality {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         info!(
             "Applying new shadow quality: {:?}",
             new_settings.shadow_quality

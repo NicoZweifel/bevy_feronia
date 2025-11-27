@@ -3,7 +3,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::Relationship;
 use bevy_utils::default;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub fn scatter_root<T>(
@@ -21,7 +21,7 @@ pub fn scatter_root<T>(
     };
 
     if state.is_some() {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!(
             "Hierarchical scatter is already in progress for root {:?}. Ignoring new request.",
             root_entity
@@ -34,13 +34,13 @@ pub fn scatter_root<T>(
         return;
     }
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!(
         "Clearing previous scatter results for root: {:?}",
         root_entity
     );
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!(
         "Starting hierarchical scatter on root: {:?}. Resetting occupancy map.",
         root_entity
@@ -97,14 +97,14 @@ pub fn hierarchical_scatter<T>(
 
     if state.current_layer_index < state.ordered_layers.len() {
         let next_layer_entity = state.ordered_layers[state.current_layer_index];
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!(
             "Hierarchical scatter advancing to layer: {:?}",
             next_layer_entity
         );
         cmd.trigger(Scatter::<T>::new(next_layer_entity));
     } else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Hierarchical scatter finished for root: {:?}", root_entity);
         cmd.entity(root_entity)
             .remove::<HierarchicalScatterState<T>>();

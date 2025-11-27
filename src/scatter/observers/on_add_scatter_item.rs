@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::Relationship;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 pub fn on_add_scatter_item(
@@ -11,7 +11,7 @@ pub fn on_add_scatter_item(
     q_item: Query<(&ChildOf, Option<&ScatterLayer>, Option<&ScatterItemOf>), With<ScatterItem>>,
 ) {
     let Ok((parent, layer, scatter_item_of)) = q_item.get(trigger.entity) else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!(
             "Could not get ScatterItemLayer for ScatterItem {}",
             trigger.entity

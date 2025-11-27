@@ -1,10 +1,11 @@
+use crate::prelude::events::SpawnScatterAssets;
 use crate::prelude::*;
+
 use bevy_asset::Assets;
 use bevy_ecs::prelude::*;
 use bevy_transform::prelude::GlobalTransform;
 
-use crate::prelude::events::SpawnScatterAssets;
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub fn spawn<T>(
@@ -17,16 +18,17 @@ pub fn spawn<T>(
 ) where
     T: ScatterMaterial,
 {
-    for event in mr_spawn.read() {
+    // Only spawn max 2 per frame to avoid fps drops.
+    for event in mr_spawn.read().take(2) {
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("Couldn't get ScatterRoot!");
             continue;
         };
 
         let name_map = &event.create_name_map(&prototype_assets);
         if name_map.is_empty() {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("No assets found for spawn event!");
             continue;
         }
@@ -42,7 +44,7 @@ pub fn spawn<T>(
             .unwrap_or_default();
 
         if is_chunked && q_chunks.get(event.trigger.chunk.unwrap()).is_err() {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                 "Couldn't get chunk {:?}, it might've been despawned already or is in the process of merging!",
                 event.trigger.chunk
@@ -55,7 +57,7 @@ pub fn spawn<T>(
 
         let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
-        T::scatter(
+        T::spawn(
             &mut cmd,
             SpawnRequest {
                 event,

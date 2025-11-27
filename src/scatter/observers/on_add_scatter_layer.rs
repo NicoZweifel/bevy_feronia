@@ -3,7 +3,7 @@ use crate::scatter::observers::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::Relationship;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub fn on_add_scatter_layer<T>(
@@ -23,11 +23,11 @@ pub fn on_add_scatter_layer<T>(
 {
     let layer = trigger.entity;
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Added ScatterLayer {layer}.");
 
     let Ok((layer_root, scatter_chunked)) = layer_query.get(layer) else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!("Could not get ScatterLayer {layer}!");
         return;
     };
@@ -39,6 +39,6 @@ pub fn on_add_scatter_layer<T>(
     if chunk_root.is_some() && scatter_chunked.is_some() {
         cmd.entity(layer).observe(scatter_chunks::<T>);
     } else {
-        cmd.entity(layer).observe(scatter::<T>);
+        cmd.entity(layer).observe(scatter_layer::<T>);
     }
 }

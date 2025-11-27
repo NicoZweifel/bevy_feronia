@@ -9,7 +9,7 @@ use bevy_ecs::prelude::*;
 use bevy_mesh::Mesh3d;
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub struct MeshMaterialAssetBackendPlugin;
@@ -46,21 +46,21 @@ pub fn mesh_material_backend(
         .filter_map(|root| {
             let child_of = q_parent
                 .get(*root)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get parent!");
                 })
                 .ok()?;
             let layer = child_of.parent();
             let (layer, _name) = q_layers
                 .get(layer)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get ScatterLayer!");
                 })
                 .ok()?;
 
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                 "Collecting assets in {} {layer}...",
                 _name.cloned().unwrap_or_default()
@@ -72,8 +72,8 @@ pub fn mesh_material_backend(
             Some(
                 q_children
                     .get(*root)
-                    .map_err(|_| {
-                        #[cfg(feature = "tracing")]
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
                         warn!("Could not get children of root!");
                     })
                     .ok()?

@@ -16,7 +16,7 @@ use bevy_state::state::NextState;
 use bevy_transform::prelude::{GlobalTransform, Transform};
 use bevy_utils::default;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, info};
 
 pub fn setup_materials(
@@ -61,7 +61,7 @@ pub fn setup_config(
         render_layer: RenderLayers::layer(1),
     };
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     {
         debug!("HeightMapConfig created from root AABB:");
         debug!("   - World Size: {:.2}", config.world_size);
@@ -80,7 +80,7 @@ pub fn skip_setup(
         return;
     };
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     info!("Skipping HeightMap setup");
 
     next_state.set(HeightMapState::Ready);
@@ -116,7 +116,7 @@ pub fn create_height_map_ghost(
 
             cmd.entity(landscape_root).insert(HeightMapped);
 
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!("HeightMapGhost created");
 
             next_state.set(HeightMapState::Baking);
@@ -150,7 +150,7 @@ pub fn bake_height_map(
 
                 cmd.insert_resource(HeightMap(images.add(image)));
 
-                #[cfg(feature = "tracing")]
+                #[cfg(feature = "trace")]
                 debug!("HeightMap created.");
 
                 next_state.set(HeightMapState::Ready);
@@ -212,13 +212,13 @@ pub fn teardown_height_map_pipeline(
     q_camera: Query<Entity, With<HeightMapCamera>>,
     q_mapped_landscapes: Query<Entity, With<HeightMapped>>,
 ) {
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     info!("Tearing down height map pipeline...");
 
     for entity in &q_ghosts {
         cmd.entity(entity).despawn();
     }
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!(
         "Despawned {} height map ghost entities.",
         q_ghosts.iter().count()
@@ -227,20 +227,20 @@ pub fn teardown_height_map_pipeline(
     for entity in &q_camera {
         cmd.entity(entity).despawn();
     }
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Despawned height map camera.");
 
     cmd.remove_resource::<HeightMapTexture>();
     cmd.remove_resource::<HeightMapMaterialHandle>();
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Removed height map resources.");
 
     for entity in &q_mapped_landscapes {
         cmd.entity(entity).remove::<HeightMapped>();
     }
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Cleaned up HeightMapped component.");
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     info!("Height map pipeline teardown complete.");
 }

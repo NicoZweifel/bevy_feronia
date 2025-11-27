@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
 use bevy_state::state::NextState;
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::debug;
 
 pub fn check_unprocessed_items(
@@ -19,7 +19,7 @@ pub fn check_unprocessed_items(
             .map(|e| q_unprocessed.get(e))
             .any(|r| r.is_ok())
         {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                 "ScatterLayer {} {layer} has unprocessed children.",
                 _name.cloned().unwrap_or_default()
@@ -28,7 +28,7 @@ pub fn check_unprocessed_items(
         }
 
         if children.len() > 0 {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                 "ScatterLayer {} {layer} processed.",
                 _name.cloned().unwrap_or_default()
@@ -45,7 +45,7 @@ pub fn check_unprocessed_layers(
     q_unprocessed_layers: Query<&Children, (Without<ScatterLayerProcessed>, With<ScatterLayer>)>,
 ) {
     for (root, children) in &q_roots {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
         if children
@@ -53,13 +53,13 @@ pub fn check_unprocessed_layers(
             .map(|e| q_unprocessed_layers.get(e))
             .any(|r| r.is_ok())
         {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!("ScatterRoot {root} has unprocessed layers.");
             continue;
         }
 
         if children.len() > 0 {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!("ScatterRoot {root} is processed.");
 
             cmd.entity(root).insert(ScatterRootProcessed);
@@ -75,7 +75,7 @@ pub fn check_unprocessed_root(
         return;
     };
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Setting ScatterState::Ready.");
     ns_scatter.set(ScatterState::Ready);
 }

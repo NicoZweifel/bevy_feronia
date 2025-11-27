@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::scatter::observers::scatter_chunk;
 use bevy_ecs::prelude::*;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 pub fn on_chunk_add<T>(trigger: On<Add, ChunkInitialize>, mut cmd: Commands)
@@ -31,7 +31,7 @@ pub fn chunk_init_scatter<T>(
 {
     for (chunk, root_chunk) in q_chunks.iter() {
         let Ok(layers) = q_root.get(**root_chunk) else {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             warn!("Couldn't get ScatterRoot: {}", **root_chunk);
             return;
         };

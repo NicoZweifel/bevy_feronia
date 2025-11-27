@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
 use bevy_platform::collections::HashSet;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::debug;
 
 pub fn clear_scatter_layers(
@@ -18,7 +18,7 @@ pub fn clear_scatter_layers(
     for child in mr_clear_layers
         .read()
         .filter_map(|trigger| {
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!("ClearScatterLayer triggered for layer {:?}", trigger);
 
             layers.insert(**trigger);

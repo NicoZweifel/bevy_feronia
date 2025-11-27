@@ -18,7 +18,7 @@ use bevy_render::sync_world::MainEntity;
 use bevy_render::view::ExtractedView;
 use bytemuck::bytes_of;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 pub(super) fn prepare_instance_buffer(
@@ -178,7 +178,7 @@ pub(super) fn prepare_global_cull_buffer(
     global_buffer: Option<ResMut<GlobalCullBuffer>>,
 ) {
     let Some((view, _camera)) = views.iter().find(|(_, cam)| cam.is_active) else {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!(
             "No active camera found culling. Did you add `Center` to the camera/player controller?"
         );

@@ -4,7 +4,7 @@ use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
 use bevy_state::state::NextState;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::debug;
 
 pub fn transition_to_collecting(
@@ -15,7 +15,7 @@ pub fn transition_to_collecting(
         return;
     };
 
-    #[cfg(feature = "tracing")]
+    #[cfg(feature = "trace")]
     debug!("Setting ScatterState::Collecting.");
 
     next_state.set(ScatterState::Collecting);
@@ -37,7 +37,7 @@ pub fn setup_root_aabb(
                     .or(Some(*child))
             });
 
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!("Calculated and inserted AABB for ScatterRoot. {aabb:?}");
 
         if let Some(aabb) = aabb {

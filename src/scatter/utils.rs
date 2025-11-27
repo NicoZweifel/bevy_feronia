@@ -10,7 +10,7 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::warn;
 
 pub fn get_height_map_sampler<'a>(
@@ -46,7 +46,7 @@ pub fn scatter_layer_enabled(
             .unwrap_or(&Name::new(layer_entity.to_string()))
             .to_string();
 
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         warn!("ScatterLayer {_name} is disabled!");
         return false;
     }

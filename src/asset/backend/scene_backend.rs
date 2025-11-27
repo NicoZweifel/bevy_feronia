@@ -11,7 +11,7 @@ use crate::asset::backend::iter_self_and_descendants_with_component;
 use crate::asset::backend::systems::backend;
 use crate::backend::ScatterApp;
 
-#[cfg(feature = "tracing")]
+#[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
 pub struct SceneAssetBackendPlugin;
@@ -34,7 +34,7 @@ pub fn scene_asset_ready_listener(
     let scene_entity = trigger.entity;
 
     if q_data.get(scene_entity).is_err() {
-        #[cfg(feature = "tracing")]
+        #[cfg(feature = "trace")]
         debug!(
             "Scene asset {:?} is not a processable scatter asset, skipping.",
             scene_entity
@@ -64,21 +64,21 @@ pub fn scene_asset_backend(
         .filter_map(|scene_root| {
             let child_of = q_parent
                 .get(scene_root)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get parent!");
                 })
                 .ok()?;
             let layer = child_of.parent();
             let (layer, _name) = q_layers
                 .get(layer)
-                .map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get ScatterLayer!");
                 })
                 .ok()?;
 
-            #[cfg(feature = "tracing")]
+            #[cfg(feature = "trace")]
             debug!(
                     "Collecting assets in {} {layer}...",
                     _name.cloned().unwrap_or_default()
@@ -88,13 +88,13 @@ pub fn scene_asset_backend(
         })
         .filter_map(|(scene_root, layer)| {
             Some(q_children
-                .get(scene_root).map_err(|_| {
-                #[cfg(feature = "tracing")]
+                .get(scene_root).inspect_err(|_| {
+                #[cfg(feature = "trace")]
                 warn!("Could not get children of scene root!");
             }).ok()?
                 .iter()
-                .filter_map(|root_collection| Some(q_children.get(root_collection).map_err(|_| {
-                    #[cfg(feature = "tracing")]
+                .filter_map(|root_collection| Some(q_children.get(root_collection).inspect_err(|_| {
+                    #[cfg(feature = "trace")]
                     warn!("Could not get children of root collection!");
                 }).ok()?.iter()))
                 .flatten()
