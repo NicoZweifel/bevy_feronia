@@ -152,22 +152,21 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     .options
                                     .top_color
                                     .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
-                            )
-                            .to_f32_array(),
+                            ),
                             bottom_color: LinearRgba::from(
                                 asset
                                     .properties
                                     .options
                                     .bottom_color
                                     .unwrap_or(Color::hsla(105., 0.54, 0.37, 1.0)),
-                            )
-                            .to_f32_array(),
+                            ),
                             visibility_range: [
                                 visibility_range.start_margin.start,
                                 visibility_range.start_margin.end,
                                 visibility_range.end_margin.start,
                                 visibility_range.end_margin.end,
-                            ],
+                            ]
+                            .into(),
                             instances: Arc::new(
                                 instances_with_offset
                                     .clone()
