@@ -1,3 +1,9 @@
+/// This example showcases how to integrate avian.
+///
+/// Arguably this is a bit experimental and will be changed heavily soon.
+/// In a real scenario you would make use of [`CollisionLayers`] to prevent scattered entities from affecting each other,
+/// which stops them tanking the performance like crazy.
+
 #[path = "utils/example.rs"]
 mod example;
 

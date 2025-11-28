@@ -25,9 +25,13 @@ pub struct ScatterAssetProperties {
     pub name: Option<Name>,
     /// The inherited [`LevelOfDetail`].
     pub lod: LevelOfDetail,
+    ///
     /// The [`Entity`] of the layer this asset belongs to.
+    ///
+    /// Deprecated.
+    ///
     /// TODO move out of here, find way to update materials without it, e.g. a HashNap resource
-    /// Deprecated
+    /// https://github.com/NicoZweifel/bevy_feronia/issues/57
     #[deprecated]
     // TODO we shouldn't track the layer in the asset properties but have a mapping of assets and it's parts and the layers they are part of.
     pub layer: Option<Entity>,
