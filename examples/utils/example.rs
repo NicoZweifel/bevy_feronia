@@ -18,11 +18,10 @@ use bevy::{
     render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
-use bevy_feronia::quality::{QualitySettings, QualitySettingsUpdate, SetupSet};
+use bevy_feronia::quality::{QualitySettings, SetupSet};
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
-use bevy_render::diagnostic::RenderDiagnosticsPlugin;
 use bevy_render::view::Hdr;
 use camera_controller::*;
 use iyes_perf_ui::prelude::*;

@@ -475,7 +475,6 @@ fn spawn_scene(
                         handles.trees_lod_low.clone(),
                     ),
                     LevelOfDetail(0),
-                    EnableDebug,
                 ),
                 (
                     AssetSelect::progressive(
@@ -522,7 +521,6 @@ fn spawn_scene(
             ),
             children![
                 (
-                    EnableDebug,
                     AssetSelect::progressive(
                         handles.foliage_lod_high.clone(),
                         handles.foliage_lod_medium.clone(),
@@ -571,7 +569,6 @@ fn spawn_scene(
             ),
             children![
                 (
-                    EnableDebug,
                     AssetSelect::progressive(
                         handles.grass_lod_high.clone(),
                         handles.grass_lod_medium.clone(),

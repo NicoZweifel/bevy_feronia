@@ -81,13 +81,6 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             descriptor.primitive.cull_mode = None;
         }
 
-        if let Some(fragment) = descriptor.fragment.as_mut()
-            && let Some(target) = fragment.targets.get_mut(0)
-            && let Some(target) = target
-        {
-            target.blend = None;
-        }
-
         let shader_defs = &mut descriptor.vertex.shader_defs;
 
         if !shader_defs.contains(&"MAY_DISCARD".into()) {
@@ -116,10 +109,6 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             shader_defs.push("WIND_AFFECTED".into());
         }
 
-        if key.wind_key.contains(WindAffectedKey::DEBUG) {
-            shader_defs.push("MATERIAL_DEBUG".into());
-        }
-
         if key.wind_key.contains(WindAffectedKey::STATIC_BEND) {
             shader_defs.push("STATIC_BEND".into());
         }
@@ -142,6 +131,12 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         */
 
         if let Some(fragment) = descriptor.fragment.as_mut() {
+            if let Some(target) = fragment.targets.get_mut(0)
+                && let Some(target) = target
+            {
+                target.blend = None;
+            }
+
             // TODO cull in compute shader
             /*
             if !gpu_cull {
@@ -160,6 +155,10 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
 
             if key.wind_key.contains(WindAffectedKey::DIRECTIONAL_LIGHTS) {
                 fragment.shader_defs.push("DIRECTIONAL_LIGHTS".into());
+            }
+
+            if key.wind_key.contains(WindAffectedKey::DEBUG) {
+                fragment.shader_defs.push("MATERIAL_DEBUG".into());
             }
         }
 
