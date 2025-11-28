@@ -24,8 +24,8 @@ pub fn update_materials<T>(
             continue;
         };
 
+        #[allow(deprecated)]
         let Some((wind_data, _material_options, root)) =
-            // TODO
             asset.properties.layer.and_then(|x| q_layer.get(x).ok())
         else {
             dbg!("ScatterLayer not found!");

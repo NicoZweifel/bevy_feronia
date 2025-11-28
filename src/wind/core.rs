@@ -158,7 +158,7 @@ impl ScatterMaterial for StandardMaterial {
         _noise_texture: Handle<Image>,
         _properties: &ScatterAssetProperties,
     ) -> StandardMaterial {
-        base.unwrap_or_default().into()
+        base.unwrap_or_default()
     }
 
     fn component(material: Handle<StandardMaterial>) -> impl Component {

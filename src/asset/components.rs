@@ -83,6 +83,7 @@ where
                     .map(|part| part.properties.lod)
                     .min()
                     .unwrap_or_default(),
+                #[allow(deprecated)]
                 layer: Some(item_of.layer),
                 wind_affected: any_wind_affected,
             },

@@ -13,7 +13,10 @@ pub fn check_unprocessed_items(
     >,
     q_unprocessed: Query<Entity, Without<ScatterLayerChildProcessed>>,
 ) {
-    for (layer, children, _name) in &q_layer {
+    for (layer, children, _name) in q_layer
+        .iter()
+        .filter(|(_, children, _)| !children.is_empty())
+    {
         if children
             .iter()
             .map(|e| q_unprocessed.get(e))
@@ -27,15 +30,13 @@ pub fn check_unprocessed_items(
             continue;
         }
 
-        if children.len() > 0 {
-            #[cfg(feature = "trace")]
-            debug!(
-                "ScatterLayer {} {layer} processed.",
-                _name.cloned().unwrap_or_default()
-            );
+        #[cfg(feature = "trace")]
+        debug!(
+            "ScatterLayer {} {layer} processed.",
+            _name.cloned().unwrap_or_default()
+        );
 
-            cmd.entity(layer).insert(ScatterLayerProcessed);
-        };
+        cmd.entity(layer).insert(ScatterLayerProcessed);
     }
 }
 
@@ -44,7 +45,7 @@ pub fn check_unprocessed_layers(
     q_roots: Query<(Entity, &ScatterRoot), Without<ScatterRootProcessed>>,
     q_unprocessed_layers: Query<&Children, (Without<ScatterLayerProcessed>, With<ScatterLayer>)>,
 ) {
-    for (root, children) in &q_roots {
+    for (root, children) in q_roots.iter().filter(|(_, children)| !children.is_empty()) {
         #[cfg(feature = "trace")]
         debug!("Collecting ScatterAssets in root {:?}...", root);
 
@@ -58,12 +59,10 @@ pub fn check_unprocessed_layers(
             continue;
         }
 
-        if children.len() > 0 {
-            #[cfg(feature = "trace")]
-            debug!("ScatterRoot {root} is processed.");
+        #[cfg(feature = "trace")]
+        debug!("ScatterRoot {root} is processed.");
 
-            cmd.entity(root).insert(ScatterRootProcessed);
-        }
+        cmd.entity(root).insert(ScatterRootProcessed);
     }
 }
 

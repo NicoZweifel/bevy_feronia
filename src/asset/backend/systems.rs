@@ -54,7 +54,7 @@ pub fn insert_parts<T: ScatterMaterial>(
 ) {
     for ScatterAssetPartEntity { entity, part } in q_items
         .into_iter()
-        .map(|x| AssetPart::from(x))
+        .map(AssetPart::from)
         .filter_map(|AssetPart { entity, item_of }| {
             let (child_of, scene_root_data) = q_data
                 .get(item_of.root)

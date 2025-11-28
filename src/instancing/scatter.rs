@@ -81,11 +81,15 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             .data
             .iter()
             .filter_map(|res| {
+                (names.len() == 1)
+                    .then(|| names.iter().next().map(|x| (x, res)))
+                    .flatten();
+
                 let mut rng = Pcg64::seed_from_u64(res.seed);
 
                 let name = request.names.choose(&mut rng)?;
 
-                names.contains(name).then(|| (name, res))
+                names.contains(name).then_some((name, res))
             })
             .enumerate()
             .fold(HashMap::new(), |mut acc, (i, (name, res))| {

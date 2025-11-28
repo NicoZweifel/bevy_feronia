@@ -27,7 +27,7 @@ pub fn clear_chunks(
             q_instances
                 .get(*child)
                 .ok()
-                .and_then(|(_, instance)| layers.contains(&**instance).then(|| child))
+                .and_then(|(_, instance)| layers.contains(&**instance).then_some(child))
         })
     {
         cmd.entity(*child).despawn();

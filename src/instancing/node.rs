@@ -40,12 +40,11 @@ impl Node for InstancedComputeNode {
         let pipeline = world.resource::<InstancedComputePipeline>();
         let pipeline_cache = world.resource::<PipelineCache>();
 
-        if let InstancedComputeNodeState::Loading = self.state {
-            if let Some(id) = pipeline.pipeline_id {
-                if let CachedPipelineState::Ok(_) = pipeline_cache.get_compute_pipeline_state(id) {
-                    self.state = InstancedComputeNodeState::Ready;
-                }
-            }
+        if let InstancedComputeNodeState::Loading = self.state
+            && let Some(id) = pipeline.pipeline_id
+            && let CachedPipelineState::Ok(_) = pipeline_cache.get_compute_pipeline_state(id)
+        {
+            self.state = InstancedComputeNodeState::Ready;
         }
 
         self.query.update_archetypes(world);

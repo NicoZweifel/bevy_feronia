@@ -30,7 +30,7 @@ pub fn process_requests<T>(
     ) in &q_requests
     {
         let parts = parts
-            .into_iter()
+            .iter()
             .map(|part| {
                 part.clone().into_scatter_material_part::<T>(
                     &materials_in,

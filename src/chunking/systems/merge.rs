@@ -42,7 +42,7 @@ pub fn merge_check(
                 })
                 .ok()?;
 
-            let check = !(children.len() < root_size_dim.pow(2) as usize);
+            let check = children.len() >= root_size_dim.pow(2) as usize;
             check.then(|| MergeCheck::new(parent, children))
         });
 
@@ -96,7 +96,7 @@ pub fn handle_merge_check(
                 .with_parent_translation(parent_tf.translation())
                 .with_merge_distance(**merge_distance)
                 .check()
-                .then(|| children)
+                .then_some(children)
         })
         .flatten()
     {

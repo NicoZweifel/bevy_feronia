@@ -45,7 +45,9 @@ where
 
 /// Defines a 2D avoidance zone used by the scatter systems.
 ///
-/// TODO: https://github.com/NicoZweifel/bevy_feronia/issues/56
+/// TODO
+/// https://github.com/NicoZweifel/bevy_feronia/issues/56
+/// https://github.com/NicoZweifel/bevy_feronia/issues/43
 #[derive(Clone, Debug)]
 pub struct AvoidanceData {
     /// The center of the avoidance zone in world space.

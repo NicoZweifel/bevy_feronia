@@ -30,7 +30,7 @@ pub fn split(
             let distance = center.distance(chunk_transform.translation());
             let check = distance < **split_distance;
 
-            check.then(|| entity)
+            check.then_some(entity)
         })
     {
         mw_split.write(SplitChunk(entity));

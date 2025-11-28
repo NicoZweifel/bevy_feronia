@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.5.0-rc.9"
+version = "0.5.0"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -55,7 +55,6 @@ bevy = { version = "0.17", features = [
     "asset_processor",
     "basis-universal",
     "mp3",
-    "experimental_pbr_pcss"
 ] }
 
 bytemuck = "1.23.1"
@@ -106,15 +105,14 @@ default = ["trace"]
 # Enables support for avian and adds the dependency.
 avian = ["dep:avian3d"]
 
-# Enables the "dlss" feature in the bevy crate. Used only in examples.
-dlss = ["bevy/dlss"]
-
-# Enables the "experimental_pbr_pcss" feature in the bevy crate. Used only in examples.
+# Enables the "experimental_pbr_pcss" feature in the bevy crate. Used for shadow quality settings.
 pcss = ["bevy/experimental_pbr_pcss"]
 
 # Enables tracing and adds the dependency.
 trace = ["dep:tracing"]
 
+# Enables the "dlss" feature in the bevy crate. Used only in examples.
+dlss = ["bevy/dlss"]
 
 [patch.crates-io]
 iyes_perf_ui = { git = "https://github.com/mgi388/iyes_perf_ui", branch = "bevy-0.17" }

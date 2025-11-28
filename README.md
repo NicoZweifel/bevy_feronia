@@ -151,7 +151,6 @@ fn scatter_instanced(
 
 ```
 
-
 ### Credits/Inspirations/References
 
 Feel free to copy the grass assets. All the other assets used in the examples are licensed assets.

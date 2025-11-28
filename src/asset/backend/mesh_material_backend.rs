@@ -26,7 +26,7 @@ impl Plugin for MeshMaterialAssetBackendPlugin {
 pub fn on_add_layer(trigger: On<Add, ScatterLayer>, mut cmd: Commands) {
     let layer = trigger.entity;
 
-    cmd.entity(layer).insert(NeedsAssetCollection::default());
+    cmd.entity(layer).insert(NeedsAssetCollection);
 }
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively.
@@ -69,15 +69,15 @@ pub fn mesh_material_backend(
             Some((root, layer))
         })
         .flat_map(|(root, layer)| {
-            iter_self_and_descendants_with_component(*root, &q_children, &q_search)
-                .into_iter()
-                .map(move |child| {
+            iter_self_and_descendants_with_component(*root, &q_children, &q_search).map(
+                move |child| {
                     AssetPart::new(
                         child,
                         AssetPartOf::new(*root, *root, layer)
                             .with_name_from_queries(child, &q_name, &q_parent),
                     )
-                })
+                },
+            )
         })
         .collect())
 }

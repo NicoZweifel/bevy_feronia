@@ -33,6 +33,8 @@ pub struct LevelOfDetail(pub u32);
 
 /// Marker component for debug visualization.
 ///
+/// Makes shaders return `debug_color` in the fragment shader.
+///
 /// Enables `#ifdef MATERIAL_DEBUG` in shaders.
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]

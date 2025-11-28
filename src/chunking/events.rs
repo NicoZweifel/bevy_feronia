@@ -66,6 +66,6 @@ impl MergeCheck {
 
     pub fn check(&self) -> bool {
         let distance = self.center.distance(self.parent_translation);
-        !(distance < self.merge_distance)
+        self.merge_distance > distance
     }
 }

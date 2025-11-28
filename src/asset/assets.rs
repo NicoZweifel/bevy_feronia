@@ -11,6 +11,7 @@ use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
 use avian3d::prelude::{Collider, RigidBody};
+use bevy_color::Color;
 
 /// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug, Reflect, Default)]
@@ -34,6 +35,7 @@ pub struct ScatterAssetProperties {
     /// https://github.com/NicoZweifel/bevy_feronia/issues/57
     #[deprecated]
     // TODO we shouldn't track the layer in the asset properties but have a mapping of assets and it's parts and the layers they are part of.
+    #[allow(deprecated)]
     pub layer: Option<Entity>,
     /// Whether wind affects this asset/part.
     pub wind_affected: bool,
@@ -114,6 +116,9 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
     ) -> Option<Self> {
         let AssetPartOf { layer, .. } = item_of;
 
+        let hue = (entity.index() * 30) as f32 % 360.0;
+        let debug_color = Color::hsl(hue, 1.0, 0.5);
+
         let wind = wind
             .with(layer_wind_data)
             .with(scene_root_data.wind_data)
@@ -121,7 +126,8 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
 
         let options = ScatterMaterialOptions::from(layer_material_option_data)
             .with(scene_root_data.material_options)
-            .with(child_data.material_options);
+            .with(child_data.material_options)
+            .with_debug_color(debug_color);
 
         let mesh = child_data.o_mesh?;
         let material = child_data.o_material?;
@@ -140,6 +146,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             options, // TODO: Inherit this?
             aabb,
             name: item_of.name.clone(),
+            #[allow(deprecated)]
             layer: Some(layer),
             lod,
             wind_affected: options.wind_affected

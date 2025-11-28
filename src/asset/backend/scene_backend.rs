@@ -42,8 +42,7 @@ pub fn scene_asset_ready_listener(
         return;
     };
 
-    cmd.entity(scene_entity)
-        .insert(NeedsAssetCollection::default());
+    cmd.entity(scene_entity).insert(NeedsAssetCollection);
 }
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively in a Scene.
@@ -106,7 +105,6 @@ pub fn scene_asset_backend(
                         &q_children,
                         &q_search,
                     )
-                        .into_iter()
                         .map(move |item| (item_root, item))
                 })
                 .map(move |(root_item, child)| {

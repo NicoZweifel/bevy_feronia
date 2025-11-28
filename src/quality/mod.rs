@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use bevy_app::{App, Plugin, Update};
+use bevy_app::{App, Plugin, Startup, Update};
 use bevy_asset::{Asset, Handle};
 use bevy_ecs::prelude::*;
 use bevy_light::{
@@ -18,6 +18,9 @@ use std::marker::PhantomData;
 use tracing::{info, warn};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SetupSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct QualitySettingsUpdate;
 
 pub struct QualityPlugin;
@@ -26,8 +29,17 @@ impl Plugin for QualityPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Quality>()
             .register_type::<ShadowQuality>()
+            .configure_sets(Startup, (SetupSet, QualitySettingsUpdate).chain())
             .configure_sets(Update, QualitySettingsUpdate)
             .init_resource::<QualitySettings>()
+            .add_systems(
+                Startup,
+                ApplyDeferred.after(SetupSet).before(QualitySettingsUpdate),
+            )
+            .add_systems(
+                Startup,
+                update_quality_settings.in_set(QualitySettingsUpdate),
+            )
             .add_systems(
                 Update,
                 update_quality_settings

@@ -3,7 +3,12 @@
 /// Arguably this is a bit experimental and will be changed heavily soon.
 /// In a real scenario you would make use of [`CollisionLayers`] to prevent scattered entities from affecting each other,
 /// which stops them tanking the performance like crazy.
-
+///
+/// In a level where we need to scatter around existing physics objects, we would have to populate the [`AvoidanceData`] component.
+///
+/// TODO
+/// https://github.com/NicoZweifel/bevy_feronia/issues/56
+/// https://github.com/NicoZweifel/bevy_feronia/issues/43
 #[path = "utils/example.rs"]
 mod example;
 

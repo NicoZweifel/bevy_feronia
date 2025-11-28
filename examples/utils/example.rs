@@ -18,7 +18,7 @@ use bevy::{
     render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
-use bevy_feronia::quality::QualitySettings;
+use bevy_feronia::quality::{QualitySettings, QualitySettingsUpdate, SetupSet};
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
@@ -63,7 +63,7 @@ impl Plugin for ExamplePlugin {
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_quality_settings),
             ))
             .add_plugins(CameraControllerPlugin)
-            .add_systems(Startup, setup)
+            .add_systems(Startup, setup.in_set(SetupSet))
             .add_systems(Update, (anisotropic_filtering, rotate_sun));
     }
 }

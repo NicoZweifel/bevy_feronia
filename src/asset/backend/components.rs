@@ -54,12 +54,7 @@ impl AssetPartOf {
     ) -> Self {
         self.name = q_name
             .get(self.item)
-            .or_else(|_| {
-                q_parent
-                    .get(entity)
-                    .map(|x| q_name.get(x.parent()))
-                    .flatten()
-            })
+            .or_else(|_| q_parent.get(entity).and_then(|x| q_name.get(x.parent())))
             .or_else(|_| q_name.get(entity))
             .ok()
             .or(self.name.as_ref())

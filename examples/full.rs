@@ -474,7 +474,8 @@ fn spawn_scene(
                         handles.trees_lod_medium.clone(),
                         handles.trees_lod_low.clone(),
                     ),
-                    LevelOfDetail(0)
+                    LevelOfDetail(0),
+                    EnableDebug,
                 ),
                 (
                     AssetSelect::progressive(
@@ -521,6 +522,7 @@ fn spawn_scene(
             ),
             children![
                 (
+                    EnableDebug,
                     AssetSelect::progressive(
                         handles.foliage_lod_high.clone(),
                         handles.foliage_lod_medium.clone(),
@@ -569,6 +571,7 @@ fn spawn_scene(
             ),
             children![
                 (
+                    EnableDebug,
                     AssetSelect::progressive(
                         handles.grass_lod_high.clone(),
                         handles.grass_lod_medium.clone(),
@@ -600,13 +603,10 @@ fn scatter_on_keypress(
     mut world_seed: ResMut<WorldSeed>,
     root: Single<Entity, With<ScatterRoot>>,
     mut mw_clear_root: MessageWriter<ClearScatterRoot>,
-    state: Res<State<ScatterState>>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
-
-    println!("{state:?}");
 
     // Clean up all scattered instances.
     mw_clear_root.write((*root).into());
