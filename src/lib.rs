@@ -181,7 +181,7 @@
 //!     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
 //! }
 //! ```
- 
+
 pub mod asset;
 pub mod backend;
 pub mod chunking;
