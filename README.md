@@ -2,13 +2,17 @@
 
 Environment scattering tools and shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
 
+## Who is this for?
+
+In the current stage this is mostly for tinkerers and learners within the [bevy](https://github.com/bevyengine/bevy) ecosystem but I am planning to use this for actual game dev myself eventually.
+
 > [!CAUTION]
 > This package is in early development and in an experimentation stage.
->
+> I wouldn't personally use this in production quite yet but it's getting closer to that state incrementally.
 
-<img width="100%" alt="Screenshot 2025-10-30 180213" src="https://github.com/user-attachments/assets/b00a0f73-f3ea-471c-b688-6aa2a478014e" />
+<img width="100%" alt="Screenshot 2025-11-28 144933" src="https://github.com/user-attachments/assets/bf0ac5b4-affc-4360-8b3e-7492b5c07257" />
 
-### Getting started
+## Getting started
 
 ```shell
 cargo add bevy_feronia
@@ -16,7 +20,7 @@ cargo add bevy_feronia
 
 The possible use-cases are demonstrated in the [examples](/examples/EXAMPLES.md)
 
-#### Setup
+### Setup
 
 The setup depends on the use-case, but a typical setup would look like something like this:
 
@@ -30,7 +34,7 @@ app.add_plugins((
 ));
 ```
 
-The Scatter system needs to know when it can setup since it can depend on height mapping. You need to insert the setup state at some point.
+The Scatter system needs to know when it can set up since it can depend on height mapping. You need to insert the setup state at some point.
 
 > [!NOTE]  
 > In complex setups that load assets and bake a height map this can be after the `Startup`.
@@ -47,7 +51,7 @@ ns_scatter.set(ScatterState::Setup);
 
 ### Defining layers
 
-A `ScatterItem`'s `LOD`'s are grouped by `Name`.
+A `ScatterItem`'s `LOD`s are grouped by `Name`. If the names end in `LOD_1` or `lod1` etc., the LOD suffix will be stripped from the name to match it to the other lods of the asset.
 
 > [!CAUTION]
 > When defining multiple `ScatterItems` per `ScatterLayer` without names, a different asset will render when `LODs` are changing, leading to visual bugs.
@@ -115,7 +119,7 @@ cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root));
 In complex scenes it is often required to scatter a complete hierarchy in order (rocks → trees/foliage → grass).
 
 > [!TIP]
-> If a ordered scatter is still required and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
+> If an ordered scatter is still required and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
 
 ```rust
 fn scatter_on_keypress(
@@ -128,7 +132,7 @@ fn scatter_on_keypress(
     };
 
     // Scatter the rocks.
-    cmd.trigger(Scatter::<StandardMaterial>::new(q_root));
+    cmd.trigger(Scatter::<StandardMaterial>::new(*root));
 }
 
 fn scatter_extended(
@@ -151,7 +155,15 @@ fn scatter_instanced(
 
 ```
 
-### Credits/Inspirations/References
+## Compatibility
+
+There are very experimental releases before 0.5.0 but I wouldn't use them.
+
+| bevy        | bevy_feronia |
+|-------------|------------------------|
+| 0.17        | 0.5                    |
+
+## Credits/Inspirations/References
 
 Feel free to copy the grass assets. All the other assets used in the examples are licensed assets.
 
@@ -167,7 +179,7 @@ Feel free to copy the grass assets. All the other assets used in the examples ar
 - [Blinn–Phong reflection model](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model)
 - [All the other assets](/assets/LICENSE)
 
-### Roadmap
+## Roadmap
 
 A bunch of issues are already open, but some of the larger milestones could be:
 
