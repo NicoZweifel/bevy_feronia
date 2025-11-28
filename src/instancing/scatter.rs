@@ -7,12 +7,12 @@ use bevy_image::Image;
 use bevy_math::{Vec3, Vec4};
 use bevy_mesh::Mesh3d;
 use bevy_pbr::StandardMaterial;
-use bevy_platform::collections::{HashMap, HashSet, hash_map::Entry};
+use bevy_platform::collections::{hash_map::Entry, HashMap, HashSet};
 use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
-use rand::SeedableRng;
 use rand::prelude::IndexedRandom;
+use rand::SeedableRng;
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -57,67 +57,72 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
-        let mut valid_names: HashSet<Name> = HashSet::default();
+        let names: HashSet<Name> = request
+            .names
+            .iter()
+            .filter_map(|name| Some((name, request.name_map.get(name)?)))
+            .fold(HashSet::new(), |mut acc, (name, group)| {
+                let min_lod = group
+                    .iter()
+                    .map(|h| *h.asset.properties.lod)
+                    .min()
+                    .unwrap_or_default();
 
-        for name in &request.names {
-            let Some(group) = request.name_map.get(name) else {
-                continue;
-            };
-
-            let min_lod = group
-                .iter()
-                .map(|h| *h.asset.properties.lod)
-                .min()
-                .unwrap_or_default();
-
-            if group.iter().any(|h| h.is_lod(request.is_chunked, min_lod)) {
-                valid_names.insert(name.clone());
-            }
-        }
-
-        let mut groups: HashMap<Name, GroupData> = HashMap::new();
-
-        for (i, res) in request.event.trigger.data.iter().enumerate() {
-            let mut rng = Pcg64::seed_from_u64(res.seed);
-
-            let Some(name) = request.names.choose(&mut rng) else {
-                continue;
-            };
-
-            if !valid_names.contains(name) {
-                continue;
-            }
-
-            let position = res.transform.translation + request.chunk_gtf_translation;
-            let scale = res.transform.scale.element_sum() / 3.0;
-
-            let instance = InstanceData {
-                position,
-                scale,
-                index: i as u32,
-                ..default()
-            };
-
-            match groups.entry((*name).clone()) {
-                Entry::Occupied(mut e) => {
-                    let g = e.get_mut();
-                    g.instances.push(instance);
-                    g.min_pos = g.min_pos.min(position);
-                    g.max_pos = g.max_pos.max(position);
-                    g.max_scale = g.max_scale.max(scale);
+                if group.iter().any(|h| h.is_lod(request.is_chunked, min_lod)) {
+                    acc.insert(name.clone());
                 }
-                Entry::Vacant(e) => {
-                    e.insert(GroupData {
-                        instances: vec![instance],
-                        min_pos: position,
-                        max_pos: position,
-                        max_scale: scale,
-                    });
-                }
-            }
-        }
+
+                acc
+            });
+
+        let groups: HashMap<Name, GroupData> = request
+            .event
+            .trigger
+            .data
+            .iter()
+            .filter_map(|res| {
+                let mut rng = Pcg64::seed_from_u64(res.seed);
+
+                let name = request.names.choose(&mut rng)?;
+
+                names.contains(name).then(|| (name, res))
+            })
+            .enumerate()
+            .fold(HashMap::new(), |mut acc, (i, (name, res))| {
+                let position = res.transform.translation + request.chunk_gtf_translation;
+                let scale = res.transform.scale.element_sum() / 3.0;
+
+                let instance = InstanceData {
+                    position,
+                    scale,
+                    index: i as u32,
+                    ..default()
+                };
+
+                match acc.entry(name.clone()) {
+                    Entry::Occupied(mut e) => {
+                        let g = e.get_mut();
+                        g.instances.push(instance);
+                        g.min_pos = g.min_pos.min(position);
+                        g.max_pos = g.max_pos.max(position);
+                        g.max_scale = g.max_scale.max(scale);
+                    }
+                    Entry::Vacant(e) => {
+                        e.insert(GroupData {
+                            instances: vec![instance],
+                            min_pos: position,
+                            max_pos: position,
+                            max_scale: scale,
+                        });
+                    }
+                };
+
+                acc
+            });
 
         for (name, group_data) in groups {
+            let base_instances = Arc::new(group_data.instances);
+
             for handle_asset in request.prototypes_from_name_iter(&name) {
                 let asset = &handle_asset.asset;
 
@@ -132,8 +137,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     world_min - request.chunk_gtf_translation,
                     world_max - request.chunk_gtf_translation,
                 );
-
-                let base_instances = Arc::new(group_data.instances.clone());
 
                 let visibility_range = request
                     .lod_config
