@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
 use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -10,8 +11,18 @@ use rand::{RngCore, rng};
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
+        .add_plugins((
+            ExamplePlugin,
+            // This example spawns everything in startup, so we can just use the MeshMaterialAssetBackendPlugin
+            MeshMaterialAssetBackendPlugin,
+            InstancedWindAffectedScatterPlugin,
+        ))
         .add_systems(Startup, setup)
+        .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Update, (scatter_on_keypress,))
         .run()

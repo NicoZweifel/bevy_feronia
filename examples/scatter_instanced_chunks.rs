@@ -1,9 +1,10 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::css::WHITE;
-use bevy::color::palettes::tailwind::*;
 use bevy::prelude::*;
+use bevy_color::palettes::css::WHITE;
+use bevy_color::palettes::tailwind::*;
+use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::instancing::scatter::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -20,10 +21,32 @@ fn main() -> AppExit {
             ],
             aabb_color: GREEN_500.into(),
         })
-        .add_plugins((ExamplePlugin, InstancedWindAffectedScatterPlugin))
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
+        .add_plugins((
+            ExamplePlugin,
+            SceneAssetBackendPlugin,
+            InstancedWindAffectedScatterPlugin,
+        ))
+        .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, setup)
+        .add_systems(Update, grass_count)
         .run()
+}
+
+fn grass_count(query: Query<&InstanceMaterialData>, keys: Res<ButtonInput<KeyCode>>) {
+    if keys.just_pressed(KeyCode::KeyC) {
+        println!(
+            "{:?}",
+            query
+                .iter()
+                .map(|x| x.instances.len() as u32)
+                .fold(0, |acc, x| acc + x as usize)
+        );
+    }
 }
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
@@ -35,21 +58,22 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(150.0),
+                DistributionDensity(200.0),
                 InstanceScale::default(),
                 InstanceJitter(1.),
+                ScatterChunked,
                 ScaleDensity,
             ),
             // Material options
             (
                 WindAffected,
-                ScatterChunked,
                 EdgeCorrectionFactor::default(),
                 AnalyticalNormals,
-                InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
                 StaticBendStrength::default(),
                 CurveFactor::default(),
+                DirectionalLights,
                 PointLights,
+                GpuCull
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

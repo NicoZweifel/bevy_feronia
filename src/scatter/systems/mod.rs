@@ -1,15 +1,21 @@
 pub mod check_unprocessed_layers;
+pub mod clear_chunks;
 pub mod clear_scatter_layers;
 pub mod clear_scatter_root;
 pub mod handle_scatter_requests;
 pub mod init;
+pub mod queue;
 pub mod setup;
+pub mod spawn;
 
 pub mod prelude {
     pub use super::check_unprocessed_layers::*;
+    pub use super::clear_chunks::*;
     pub use super::clear_scatter_layers::*;
     pub use super::clear_scatter_root::*;
     pub use super::handle_scatter_requests::*;
     pub use super::init::*;
+    pub use super::queue::*;
     pub use super::setup::*;
+    pub use super::spawn::*;
 }

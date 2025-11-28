@@ -15,10 +15,14 @@
 #import bevy_feronia::noise::sample_noise
 
 struct InstanceUniforms {
-    color: vec4<f32>,
+    top_color: vec4<f32>,
+    bottom_color: vec4<f32>,
     visibility_range: vec4<f32>,
     static_bend_strength: f32,
     curve_factor: f32,
+    translucency: f32,
+    specular_strength: f32,
+    specular_power: f32,
 };
 
 @group(4) @binding(0)
@@ -53,7 +57,7 @@ struct Vertex {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) color: vec4<f32>,
+    @location(0) ao: f32,
 
 #ifdef VISIBILITY_RANGE_DITHER
     @location(1) @interpolate(flat) visibility_range_dither: i32,
@@ -114,15 +118,17 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     instance.world_from_local = world_from_local_matrix;
     instance.instance_position = instance.world_from_local[3];
-    instance.wrapped_time = globals.time % 1000.0;
+    instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
 
 
-// TODO change to use quadratic cubic bezier
-// https://github.com/NicoZweifel/bevy_feronia/issues/38
 #ifdef STATIC_BEND
+    let raw_rand = rand_f(&rand_state);
+    let biased_rand = instance_uniforms.static_bend_strength + (raw_rand * (1. - instance_uniforms.static_bend_strength));
+
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
-    let static_bend_strength = rand_f(&rand_state) * instance_uniforms.static_bend_strength;
+
+    let static_bend_strength = biased_rand * instance_uniforms.static_bend_strength;
 
     let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
 #endif
@@ -159,12 +165,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.uv = vertex.uv;
 #endif
 
+    // Calculate the AO here, but leave the gradient/texture for the fragment shader.
     let height_range = wind.aabb_max.y - wind.aabb_min.y;
     let normalized_height = saturate((vertex.position.y - wind.aabb_min.y) / max(height_range, 0.0001));
 
-    // Fake ambient occlusion
-    let dark_color = vec4<f32>(instance_uniforms.color.rgb * 0.1, instance_uniforms.color.a);
-    out.color = mix(dark_color, instance_uniforms.color, normalized_height);
+    // 1.0 = full brightness, 0.0 = dark root area (global)
+    out.ao = normalized_height;
 
 #ifdef VISIBILITY_RANGE_DITHER
     out.visibility_range_dither = get_visibility_range_dither_level(
@@ -215,11 +221,39 @@ fn fragment(
     #endif
 #endif
 
+    var top_color = instance_uniforms.top_color.rgb;
+    var bottom_color = instance_uniforms.bottom_color.rgb;
+
+    // Blender exports UVs with Y=0 at bottom.
+    let corrected_uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
+
+    let gradient_mix = pow(corrected_uv.y, 0.8);
+    let blade_color_rgb = mix(bottom_color, top_color, gradient_mix);
+
+    // TODO: allow texture usage here
+    var albedo = blade_color_rgb;
+
+    // in.color.r holds the normalized world height
+    let global_height_factor = in.ao;
+
+    // fake ao
+    let ambient_occlusion = mix(0.4, 1.0, global_height_factor);
+
+    albedo = albedo * ambient_occlusion;
+
+    var color_for_lighting = vec4<f32>(albedo, 1.0);
+
     var normal = in.world_normal;
 
     if !is_front {
         normal = -normal;
     }
+
+#ifndef DIRECTIONAL_LIGHTS
+#ifndef POINT_LIGHTS
+    return vec4<f32>(blade_color_rgb, in.ao);
+#endif
+#endif
 
 
 // TODO move out / re-use
@@ -249,22 +283,18 @@ fn fragment(
     // ---
 
     // TODO expose/unify as much as possible with extended shader before exposing fields in `MaterialOptions`
-    const SPECULAR_POWER: f32 = 32.;
 
     // TODO tweak && expose
-    const SPECULAR_STRENGTH: f32 = 0.2;
     const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
-    const AMBIENT_INTENSITY_SCALE: f32 = 0.002;
+    const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
 
-    const TRANSLUCENCY: f32 = 0.2;
-
-    let V = normalize(view.world_position.xyz - in.world_position);
-
-    var final_color_rgb = in.color.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
+    var final_color_rgb = color_for_lighting.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.);
+    
+    let V = normalize(view.world_position.xyz - in.world_position);
 
     let view_z = dot(vec4<f32>(
         view.view_from_world[0].z,
@@ -273,22 +303,25 @@ fn fragment(
         view.view_from_world[3].z
     ), vec4<f32>(in.world_position, 1.));
 
+#ifdef DIRECTIONAL_LIGHTS
+
     // --- Directional Lights (Sun) ---
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         let sun = lights.directional_lights[i];
         let L = sun.direction_to_light;
+
         let scaled_light_color = sun.color.rgb * LIGHT_INTENSITY_SCALE;
 
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * TRANSLUCENCY;
+        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, SPECULAR_POWER);
+        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
 
         let shadow = fetch_directional_shadow(
             i,
@@ -299,13 +332,14 @@ fn fragment(
         let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
-        final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
+        final_color_rgb += color_for_lighting.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
+            final_specular += scaled_light_color * specular_factor * instance_uniforms.specular_strength * shadow;
         }
     }
+#endif
 
 #ifdef POINT_LIGHTS
     let is_orthographic = view.clip_from_view[3].w == 1.;
@@ -335,16 +369,20 @@ fn fragment(
 
         let L = normalize(light_vector);
 
+        let range_factor = distance_sq * inverse_square_range;
+        let smooth_falloff = saturate(1.0 - range_factor);
+        let attenuation = smooth_falloff * smooth_falloff;
+
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * TRANSLUCENCY;
+        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, SPECULAR_POWER);
+        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
 
         var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
@@ -353,18 +391,18 @@ fn fragment(
         let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
-        final_color_rgb += in.color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
+        final_color_rgb += color_for_lighting.rgb * scaled_light_color * attenuation * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * specular_factor * SPECULAR_STRENGTH * shadow;
+            final_specular += scaled_light_color * attenuation * specular_factor * instance_uniforms.specular_strength * shadow;
         }
     }
 #endif // POINT_LIGHTS
 
     final_color_rgb += final_specular;
 
-    var final_color = vec4<f32>(final_color_rgb, in.color.a);
+    var final_color = vec4<f32>(final_color_rgb, in.ao);
 
 #ifdef MATERIAL_DEBUG
     final_color = wind.debug_color;

@@ -1,14 +1,21 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::camera::primitives::Aabb;
-use bevy::color::palettes::tailwind::*;
-use bevy::mesh::{Indices, PlaneMeshBuilder, PrimitiveTopology};
-use bevy::prelude::*;
-use bevy::render::batching::NoAutomaticBatching;
+use bevy_app::{App, AppExit, Startup};
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_camera::visibility::Visibility;
+use bevy_color::palettes::tailwind::*;
+use bevy_ecs::prelude::*;
 use bevy_feronia::prelude::*;
-use bevy_feronia::wind::systems::setup_wind_texture;
+use bevy_math::{Vec3, Vec3A};
+use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
+use bevy_pbr::{MeshMaterial3d, StandardMaterial};
+use bevy_render::batching::NoAutomaticBatching;
+use bevy_transform::prelude::Transform;
+use bevy_utils::default;
 use example::*;
+use std::sync::Arc;
 
 fn main() -> AppExit {
     App::new()
@@ -24,7 +31,7 @@ fn main() -> AppExit {
             InstancedWindAffectedPlugin,
         ))
         // Need to wait for the wind noise texture.
-        .add_systems(Startup, setup.after(setup_wind_texture))
+        .add_systems(Startup, setup.after(WindTextureSetup))
         .run()
 }
 
@@ -50,19 +57,20 @@ fn setup(
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
     ));
 
-    let options = MaterialOptions {
+    let options = ScatterMaterialOptions {
         // make it affected by wind
         wind_affected: true,
         // can also tweak other settings here
+        directional_lights: true,
         point_lights: true,
-        static_bend_strength: 3.,
+        static_bend_strength: 0.5,
         // or test individual settings
         edge_correction_factor: 1.0,
         ..default()
     };
 
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
-        // We only clone the wind here once, if we want wind updates to be reflected in the materials,
+        // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
         // we need an update system.
         wind: *wind,
         aabb,
@@ -70,26 +78,30 @@ fn setup(
         noise_texture: (**noise_texture).clone(),
     });
 
-    let mut i: u32 = 0;
+    const SIZE: i32 = 10;
 
-    let instances = (-10..10)
-        .map(|x| {
-            i += 1;
+    let instances = (-SIZE..SIZE)
+        .enumerate()
+        .map(|(i, x)| {
             InstanceData {
                 position: Vec3::new(x as f32, 0.25 * 4., x as f32),
                 scale: 4.0,
                 // NOTE:
                 // for testing, to remove rotation, pass the same index (e.g., 0) for all items here.
-                index: i,
+                index: i as u32,
                 ..default()
             }
         })
         .collect();
 
     let instance_material_data = InstanceMaterialData {
-        color: GREEN_500.to_f32_array(),
-        visibility_range: [0.0, 0.0, 1000.0, 1000.0],
-        instances,
+        specular_power: 32.,
+        specular_strength: 0.6,
+        translucency: 0.6,
+        top_color: GREEN_500.into(),
+        bottom_color: GREEN_900.into(),
+        visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
+        instances: Arc::new(instances),
         static_bend_strength: options.static_bend_strength,
         curve_factor: options.curve_factor,
     };
@@ -105,12 +117,12 @@ fn setup(
         // NoFrustumCulling,
         Aabb {
             center: aabb.center,
-            half_extents: aabb.half_extents * 10.,
+            half_extents: aabb.half_extents * SIZE as f32 * 2.,
         },
     ));
 }
 
-/// Creates a subdivided triangle mesh on the x and y-axis with UVs.
+/// Creates a subdivided triangle mesh on the x and y-axis with normals/UVs.
 fn create_triangle_with_foliage_uvs() -> Mesh {
     let pos_bottom_left = [0.0, -0.25, 0.0];
     let pos_top_center = [0.25, 0.5, 0.0];

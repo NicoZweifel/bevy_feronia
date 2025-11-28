@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -17,8 +18,17 @@ fn main() -> AppExit {
             bop_strength: 0.01,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
+        .add_plugins((
+            ExamplePlugin,
+            SceneAssetBackendPlugin,
+            ExtendedWindAffectedScatterPlugin,
+        ))
         .init_state::<AppState>()
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
             Update,
@@ -68,7 +78,7 @@ fn check_assets_loaded(
     .all(|id| {
         asset_server
             .get_load_state(*id)
-            .is_some_and(|x| x.is_loaded())
+            .is_some_and(|s| s.is_loaded())
     });
 
     if all_loaded {
@@ -96,9 +106,9 @@ fn spawn_scene(
             // Material options
             (SubsurfaceScattering, WindAffected),
             children![
-                // TODO figure out what's wrong with highest detail models
-                (LevelOfDetail(0), SceneRoot(handles.lod_medium.clone()),),
-                (LevelOfDetail(1), SceneRoot(handles.lod_low.clone()),)
+                SceneRoot(handles.lod_high.clone()),
+                (LevelOfDetail(1), SceneRoot(handles.lod_medium.clone())),
+                (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()))
             ]
         )],
     ));

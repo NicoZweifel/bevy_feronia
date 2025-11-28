@@ -1,5 +1,12 @@
 #import bevy_pbr::mesh_view_bindings::view
-#import bevy_pbr::mesh_functions::{get_world_from_local, get_visibility_range_dither_level, get_model_matrix, mesh_tangent_local_to_world, get_previous_world_from_local}
+#import bevy_pbr::mesh_functions::{
+    get_world_from_local,
+    get_visibility_range_dither_level,
+    get_model_matrix,
+    mesh_tangent_local_to_world,
+    get_previous_world_from_local,
+    mesh_normal_local_to_world
+}
 #import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
 #import bevy_pbr::pbr_fragment::pbr_material_from_standard_material
@@ -49,27 +56,55 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         let camera_world_pos = view.world_position.xyz;
         instance.world_from_local = world_from_local;
         instance.instance_position = instance.world_from_local[3];
-        instance.wrapped_time = globals.time % 1000.0;
+        instance.wrapped_time = globals.time;
         instance.instance_index = vertex.instance_index;
 
         let noise = sample_noise(instance, vertex.position);
 
+        var static_shadows = false;
+
+        #ifdef STATIC_SHADOW
+        #ifndef MOTION_VECTOR_PREPASS
+        static_shadows = true;
+        #endif
+        #endif
+
         // --- DISPLACEMENT ---
-        let displaced = displace_vertex_and_calc_normal(
-            wind,
-            noise,
-            vertex.position,
-            instance,
-#ifdef VERTEX_NORMALS
-            vertex.normal,
-#endif
-#ifdef VERTEX_TANGENTS
-            vertex.tangent,
-#endif
-#ifdef VERTEX_UVS_A
-        vertex.uv
-#endif
-        );
+       var displaced: DisplacedVertex;
+        if static_shadows {
+            displaced.world_position = (instance.world_from_local * vec4<f32>(vertex.position, 1.0));
+
+            #ifdef VERTEX_NORMALS
+                displaced.world_normal = mesh_normal_local_to_world(vertex.normal, instance.instance_index);
+            #else
+                displaced.world_normal = vec3<f32>(0.0, 0.0, 1.0);
+            #endif
+
+            #ifdef VERTEX_TANGENTS
+                displaced.world_tangent = mesh_tangent_local_to_world(instance.world_from_local, vertex.tangent, instance.instance_index);
+            #else
+                const local_fallback_tangent: vec4<f32> = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+                let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
+
+                displaced.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
+            #endif
+        } else {
+            displaced = displace_vertex_and_calc_normal(
+                wind,
+                noise,
+                vertex.position,
+                instance,
+                #ifdef VERTEX_NORMALS
+                vertex.normal,
+                #endif
+                #ifdef VERTEX_TANGENTS
+                vertex.tangent,
+                #endif
+                #ifdef VERTEX_UVS_A
+                vertex.uv
+                #endif
+            );
+        }
 
 #ifdef VERTEX_POSITIONS
         out.position = position_world_to_clip(displaced.world_position.xyz);
@@ -114,7 +149,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
         instance_prev.world_from_local = get_previous_world_from_local(vertex.instance_index);
         instance_prev.instance_position = instance_prev.world_from_local[3];
-        instance_prev.wrapped_time = (globals.time - globals.delta_time) % 1000.0;
+        instance_prev.wrapped_time = (globals.time - globals.delta_time);
         instance_prev.instance_index = vertex.instance_index;
 
         let noise_prev = sample_noise(instance_prev, vertex.position);

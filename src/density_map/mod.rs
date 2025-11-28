@@ -1,6 +1,6 @@
 use crate::prelude::Sampler;
-use bevy::image::Image;
-use bevy::math::Vec3;
+use bevy_image::Image;
+use bevy_math::Vec3;
 
 pub struct DensityMapSampler<'a> {
     pub image_data: &'a Option<Vec<u8>>,

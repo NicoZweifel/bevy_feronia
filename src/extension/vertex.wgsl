@@ -5,7 +5,7 @@
 #import bevy_pbr::forward_io::Vertex
 
 
-#import bevy_feronia::sss_io::VertexOutput
+#import bevy_feronia::forward_sss_io::VertexOutput
 #import bevy_feronia::wind::Wind
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::displace::{displace_vertex_and_calc_normal}
@@ -34,7 +34,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let camera_world_pos = view.world_position.xyz;
     instance.world_from_local = world_from_local;
     instance.instance_position = instance.world_from_local[3];
-    instance.wrapped_time = globals.time % 1000.0;
+    instance.wrapped_time = globals.time;
     instance.instance_index = vertex.instance_index;
 
     let noise = sample_noise(instance, vertex.position);

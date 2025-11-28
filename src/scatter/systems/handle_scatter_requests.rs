@@ -1,25 +1,35 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
-use bevy::tasks::futures_lite::future;
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryData;
+use bevy_image::Image;
+use bevy_math::Vec3;
+use bevy_tasks::AsyncComputeTaskPool;
+use bevy_tasks::futures_lite::future;
+use bevy_transform::prelude::GlobalTransform;
 
-type ScatterLayerQueryData<'a> = (
-    &'a ScatterLayerOf,
-    Option<&'a DistributionDensity>,
-    Option<&'a DistributionPattern>,
-    Option<&'a InstanceRotationYaw>,
-    Option<&'a InstanceScale>,
-    Option<&'a InstanceJitter>,
-    Option<&'a Avoidance>,
-    Option<&'a ScaleDensity>,
-    &'a GlobalTransform,
-);
+#[cfg(feature = "trace")]
+use tracing::{debug, warn};
 
-pub fn handle_scatter_requests<TOut, TIn>(
+#[derive(QueryData)]
+#[query_data()]
+pub struct ScatterLayerQueryData {
+    scatter_root: &'static ScatterLayerOf,
+    density_dist: Option<&'static DistributionDensity>,
+    pattern_dist: Option<&'static DistributionPattern>,
+    instance_rotation: Option<&'static InstanceRotationYaw>,
+    instance_scale: Option<&'static InstanceScale>,
+    instance_jitter: Option<&'static InstanceJitter>,
+    avoidance: Option<&'static Avoidance>,
+    scale_density: Option<&'static ScaleDensity>,
+    layer_gtf: &'static GlobalTransform,
+}
+
+pub fn handle_scatter_requests<T>(
     mut cmd: Commands,
-    q_requests: Query<(Entity, &ScatterRequest<TOut, TIn>), With<ScatterRequest<TOut, TIn>>>,
+    q_requests: Query<(Entity, &ScatterRequest<T>), With<ScatterRequest<T>>>,
     q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<
         (
@@ -42,15 +52,14 @@ pub fn handle_scatter_requests<TOut, TIn>(
     world_seed: Res<WorldSeed>,
     images: Res<Assets<Image>>,
 ) where
-    TIn: Material + Send + 'static,
-    TOut: ScatterMaterial<TIn> + Send + 'static,
+    T: ScatterMaterial,
 {
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
-    // NOTE: handle 2 per frame. TODO optimize / compute shaders for instanced procedural material
+    // NOTE: handle 2 per frame. TODO optimize / create compute pipeline for this.
     for (entity, request) in q_requests.iter().take(2) {
-        let Ok((
+        let Ok(ScatterLayerQueryDataItem {
             scatter_root,
             density_dist,
             pattern_dist,
@@ -60,8 +69,9 @@ pub fn handle_scatter_requests<TOut, TIn>(
             avoidance,
             scale_density,
             layer_gtf,
-        )) = q_layer.get(request.layer_entity)
+        }) = q_layer.get(request.layer_entity)
         else {
+            #[cfg(feature = "trace")]
             warn!("ScatterLayer not found!");
             continue;
         };
@@ -74,17 +84,19 @@ pub fn handle_scatter_requests<TOut, TIn>(
 
         let density = density_dist.map_or(1.0, |d| **d);
 
+        #[cfg(feature = "trace")]
         debug!(
             "Scattering {} instances in ScatterLayer {}",
             density, request.layer_entity,
         );
 
-        let density_map_image = pattern_dist.and_then(|x| images.get(&**x)).cloned();
+        let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
 
         let task_data = if let Some(chunk_entity) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
                 q_chunk_root.get(**scatter_root)
             else {
+                #[cfg(feature = "trace")]
                 warn!("ChunkRoot not found!");
                 continue;
             };
@@ -98,10 +110,7 @@ pub fn handle_scatter_requests<TOut, TIn>(
 
             let seed = generate_seed(&world_seed, chunk_coord);
 
-            let instances_dim = density
-                * scale_density
-                    .map(|_| **chunk_level as f32 / 2. + 0.5)
-                    .unwrap_or(1.0);
+            let instances_dim = density * (**chunk_level as f32 * 2.).max(1.);
 
             Some(ScatterTaskData {
                 container: Container {
@@ -123,19 +132,20 @@ pub fn handle_scatter_requests<TOut, TIn>(
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.occupied_zones.clone(),
-                density: Some(
+                density: scale_density.map(|_| {
                     lod_config
                         .density
                         .get(**chunk_level as usize)
                         .cloned()
-                        .unwrap_or_default(),
-                ),
+                        .unwrap_or_default()
+                }),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
             })
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
+                #[cfg(feature = "trace")]
                 warn!("ScatterRoot not found!");
                 continue;
             };
@@ -173,24 +183,23 @@ pub fn handle_scatter_requests<TOut, TIn>(
             continue;
         };
 
-        cmd.entity(entity).remove::<ScatterRequest<TOut, TIn>>();
+        cmd.entity(entity).remove::<ScatterRequest<T>>();
 
-        let task = AsyncComputeTaskPool::get()
-            .spawn(async move { ScatterResults::<TOut, TIn>::from(data) });
+        let task =
+            AsyncComputeTaskPool::get().spawn(async move { ScatterResults::<T>::from(data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
     }
 }
 
-pub fn handle_finished_scatter_tasks<TOut, TIn>(
+pub fn handle_finished_scatter_tasks<T>(
     mut cmd: Commands,
-    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<TOut, TIn>>)>,
-    mut mw_results: MessageWriter<ScatterResults<TOut, TIn>>,
+    mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<T>>)>,
+    mut mw_results: MessageWriter<ScatterResults<T>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn>,
+    T: ScatterMaterial,
 {
     for (entity, mut task) in &mut tasks {
         let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {
@@ -202,7 +211,7 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
         }
 
         cmd.entity(entity)
-            .remove::<CpuScatterTask<ScatterResults<TOut, TIn>>>();
+            .remove::<CpuScatterTask<ScatterResults<T>>>();
 
         let mut targets = vec![results.root, results.layer];
 
@@ -210,16 +219,17 @@ pub fn handle_finished_scatter_tasks<TOut, TIn>(
             targets.push(chunk_entity);
         }
 
+        #[cfg(feature = "trace")]
         debug!("Scattered {} instances", results.data.len());
 
         targets
             .iter()
-            .map(|x| {
+            .map(|entity| {
                 let mut results = results.clone();
-                results.entity = *x;
+                results.entity = *entity;
                 results
             })
-            .for_each(|x| cmd.trigger(x));
+            .for_each(|results| cmd.trigger(results));
 
         mw_results.write(results);
     }

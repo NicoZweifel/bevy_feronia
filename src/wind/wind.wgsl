@@ -5,7 +5,6 @@ struct Wind {
     strength: f32,
     noise_scale: f32,
     scroll_speed: f32,
-    bend_exponent: f32,
     micro_strength: f32,
     s_curve_speed: f32,
     s_curve_strength: f32,
@@ -14,6 +13,8 @@ struct Wind {
     bop_strength: f32,
     twist_strength: f32,
     edge_correction_factor: f32,
+    sss_scale: f32,
+    sss_intensity: f32,
     aabb_min: vec3<f32>,
     aabb_max: vec3<f32>,
     debug_color: vec4<f32>

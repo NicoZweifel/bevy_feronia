@@ -1,4 +1,4 @@
-//! Showcases how to build a complex scene by scattering different types
+//! Showcases how to build a complex scene with quality settings by scattering different types
 //! of assets (rocks, trees, foliage, and grass) onto a large landscape model.
 //!
 //! Ordered Scattering with:
@@ -11,14 +11,15 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::asset::RenderAssetUsages;
-use bevy::image::*;
-use bevy::light::FogVolume;
-use bevy::mesh::PlaneMeshBuilder;
 use bevy::prelude::*;
-use bevy::render::render_resource::*;
+use bevy_asset::RenderAssetUsages;
+use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
+use bevy_feronia::quality::*;
 use bevy_feronia::{extension, instancing};
+use bevy_image::*;
+use bevy_mesh::PlaneMeshBuilder;
+use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, RngCore, SeedableRng, rng};
@@ -26,33 +27,49 @@ use rand_pcg::Pcg64;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            strength: 0.2,
-            micro_strength: 0.1,
-            s_curve_strength: 0.1,
-            bop_strength: 0.1,
-            ..default()
+        .insert_resource(ExamplePluginOptions {
+            show_quality_settings: true,
+            show_wind_settings: true,
+            show_inspector: true,
         })
+        .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
+        /*
+        .register_type::<ScatterAsset<StandardMaterial>>()
+        .register_type::<ScatterAsset<ExtendedWindAffectedMaterial>>()
+        .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
+         */
         .add_plugins((
+            QualityPlugin,
+            AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
+            SceneAssetBackendPlugin,
             StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
         .init_state::<AppState>()
-        .add_systems(Startup, (load_assets, setup_density_map))
+        .add_systems(Startup, setup_density_map)
         .add_systems(
             Update,
-            check_assets_loaded.run_if(in_state(AppState::Loading)),
+            (
+                load_assets.run_if(in_state(AppState::Setup)),
+                check_assets_loaded.run_if(in_state(AppState::Loading)),
+            ),
         )
-        .add_systems(OnEnter(AppState::InGame), spawn_scene)
+        .add_systems(OnEnter(AppState::InGame), spawn_landscape)
+        .add_systems(OnEnter(HeightMapState::Ready), spawn_scene)
+        .add_systems(OnEnter(ScatterState::Ready), scatter)
         .add_systems(
             Update,
             (
                 setup_density_map_inspection.run_if(resource_added::<DensityMap>),
                 setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
                 scatter_on_keypress,
+                respawn_scene
+                    .run_if(in_state(AppState::InGame))
+                    .run_if(resource_changed::<QualitySettings>)
+                    .after(QualitySettingsUpdate),
             ),
         )
         .add_observer(scatter_extended)
@@ -64,46 +81,190 @@ fn main() -> AppExit {
 #[derive(States, Debug, Clone, Eq, PartialEq, Hash, Default)]
 enum AppState {
     #[default]
+    Setup,
     Loading,
     InGame,
 }
 
 #[derive(Resource)]
 struct Scenes {
+    // Always Loaded
     landscape: Handle<Scene>,
-    grass_lod_high: Handle<Scene>,
-    grass_lod_medium: Handle<Scene>,
+    audio: Handle<AudioSource>,
+
+    // Low LODs are used by Low Quality (as close) and High Quality (as far)
+    trees_lod_low: Handle<Scene>,
+    trees_billboards: Handle<Scene>,
+
+    foliage_lod_low: Handle<Scene>,
+
     grass_lod_low: Handle<Scene>,
+
+    // Note: Low Quality settings use Med grass at LOD0
+    grass_lod_medium: Handle<Scene>,
+
+    rocks_lod_low: Handle<Scene>,
+
+    // Conditionally Loaded (Quality Dependent)
+    grass_lod_high: Handle<Scene>,
+
     foliage_lod_high: Handle<Scene>,
     foliage_lod_medium: Handle<Scene>,
-    foliage_lod_low: Handle<Scene>,
+
     trees_lod_high: Handle<Scene>,
     trees_lod_medium: Handle<Scene>,
-    trees_lod_low: Handle<Scene>,
-    rocks_lod_low: Handle<Scene>,
+
     rocks_lod_medium: Handle<Scene>,
     rocks_lod_high: Handle<Scene>,
-    audio: Handle<AudioSource>,
 }
 
-fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+impl Scenes {
+    fn active_handles(&self) -> Vec<&Handle<Scene>> {
+        [
+            &self.landscape,
+            &self.trees_lod_low,
+            &self.trees_billboards,
+            &self.foliage_lod_low,
+            &self.grass_lod_low,
+            &self.grass_lod_medium,
+            &self.rocks_lod_low,
+            &self.foliage_lod_medium,
+            &self.trees_lod_medium,
+            &self.rocks_lod_medium,
+            &self.foliage_lod_high,
+            &self.foliage_lod_medium,
+            &self.trees_lod_high,
+            &self.trees_lod_medium,
+            &self.rocks_lod_medium,
+            &self.rocks_lod_high,
+        ]
+        .into_iter()
+        .filter(|x| x.id() != default::<Handle<Scene>>().id())
+        .collect()
+    }
+}
+
+fn load_assets(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    quality: Res<QualitySettings>,
+    mut ns_app: ResMut<NextState<AppState>>,
+    mut ns_scatter: ResMut<NextState<ScatterState>>,
+    scenes: Option<ResMut<Scenes>>,
+) {
+    let load_opt =
+        |existing: Option<Handle<Scene>>, condition: bool, path: &'static str| -> Handle<Scene> {
+            existing
+                .map(|h| {
+                    asset_server
+                        .get_load_state(h.id())
+                        .is_some_and(|s| s.is_loaded())
+                        .then(|| h)
+                })
+                .flatten()
+                .or_else(|| condition.then(|| asset_server.load(path)))
+                .unwrap_or_default()
+        };
+
+    // High/Ultra: Needs High, Medium, Low, Billboards
+    // Medium:     Needs Medium, Low, Billboards (Usually excludes High, but see Grass below)
+    // Low:        Needs Low, Billboards (excludes Medium, High)
+
+    let is_high_tier = quality.model_quality == ModelQuality::High;
+    let is_med_tier = quality.model_quality == ModelQuality::Medium || is_high_tier;
+
+    // Grass uses `Except<IsLowQuality>` for High asset.
+    let is_grass_high_needed = quality.model_quality != ModelQuality::Low;
+
     commands.insert_resource(Scenes {
-        landscape: asset_server.load("landscape_large.glb#Scene0"),
-        grass_lod_high: asset_server.load("grass.glb#Scene0"),
-        grass_lod_medium: asset_server.load("grass_medium_lod.glb#Scene0"),
-        grass_lod_low: asset_server.load("grass_low_lod.glb#Scene0"),
-        foliage_lod_high: asset_server.load("foliage_complex.glb#Scene0"),
-        foliage_lod_medium: asset_server.load("foliage_complex_medium_lod.glb#Scene0"),
-        foliage_lod_low: asset_server.load("foliage_complex_low_lod.glb#Scene0"),
-        trees_lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
-        trees_lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
-        trees_lod_low: asset_server.load("trees_low_lod.glb#Scene0"),
-        rocks_lod_low: asset_server.load("rocks_low_lod.glb#Scene0"),
-        rocks_lod_medium: asset_server.load("rocks_medium_lod.glb#Scene0"),
-        rocks_lod_high: asset_server.load("rocks_high_lod.glb#Scene0"),
-        audio: asset_server
-            .load("sounds/birds-singing-in-and-leaves-rustling-with-the-wind-14557.mp3"),
+        // Mandatory
+        landscape: scenes.as_ref().map_or_else(
+            || asset_server.load("landscape_large.glb#Scene0"),
+            |s| s.landscape.clone(),
+        ),
+        audio: scenes.as_ref().map_or_else(
+            || {
+                asset_server
+                    .load("sounds/birds-singing-in-and-leaves-rustling-with-the-wind-14557.mp3")
+            },
+            |s| s.audio.clone(),
+        ),
+
+        trees_lod_low: scenes.as_ref().map_or_else(
+            || asset_server.load("trees.glb#Scene2"),
+            |s| s.trees_lod_low.clone(),
+        ),
+        trees_billboards: scenes.as_ref().map_or_else(
+            || asset_server.load("trees.glb#Scene0"),
+            |s| s.trees_billboards.clone(),
+        ),
+
+        foliage_lod_low: scenes.as_ref().map_or_else(
+            || asset_server.load("foliage_complex_low_lod.glb#Scene0"),
+            |s| s.foliage_lod_low.clone(),
+        ),
+
+        grass_lod_low: scenes.as_ref().map_or_else(
+            || asset_server.load("grass_low_lod.glb#Scene0"),
+            |s| s.grass_lod_low.clone(),
+        ),
+        // Low Quality uses Med Grass at LOD0.
+        grass_lod_medium: scenes.as_ref().map_or_else(
+            || asset_server.load("grass_medium_lod.glb#Scene0"),
+            |s| s.grass_lod_medium.clone(),
+        ),
+
+        rocks_lod_low: scenes.as_ref().map_or_else(
+            || asset_server.load("rocks_low_lod.glb#Scene0"),
+            |s| s.rocks_lod_low.clone(),
+        ),
+
+        // Conditional
+
+        // Grass High is used by Medium and High settings
+        grass_lod_high: load_opt(
+            scenes.as_ref().map(|s| s.grass_lod_high.clone()),
+            is_grass_high_needed,
+            "grass.glb#Scene0",
+        ),
+
+        // Trees/Foliage/Rocks follow standard progression
+        foliage_lod_high: load_opt(
+            scenes.as_ref().map(|s| s.foliage_lod_high.clone()),
+            is_high_tier,
+            "foliage_complex.glb#Scene0",
+        ),
+        foliage_lod_medium: load_opt(
+            scenes.as_ref().map(|s| s.foliage_lod_medium.clone()),
+            is_med_tier,
+            "foliage_complex_medium_lod.glb#Scene0",
+        ),
+
+        trees_lod_high: load_opt(
+            scenes.as_ref().map(|s| s.trees_lod_high.clone()),
+            is_high_tier,
+            "trees.glb#Scene1",
+        ),
+        trees_lod_medium: load_opt(
+            scenes.as_ref().map(|s| s.trees_lod_medium.clone()),
+            is_med_tier,
+            "trees.glb#Scene3",
+        ),
+
+        rocks_lod_high: load_opt(
+            scenes.as_ref().map(|s| s.rocks_lod_high.clone()),
+            is_high_tier,
+            "rocks_high_lod.glb#Scene0",
+        ),
+        rocks_lod_medium: load_opt(
+            scenes.as_ref().map(|s| s.rocks_lod_medium.clone()),
+            is_med_tier,
+            "rocks_medium_lod.glb#Scene0",
+        ),
     });
+
+    ns_app.set(AppState::Loading);
+    ns_scatter.set(ScatterState::Loading);
 }
 
 fn setup_density_map_inspection(
@@ -145,24 +306,10 @@ fn check_assets_loaded(
     asset_server: Res<AssetServer>,
     handles: Res<Scenes>,
 ) {
-    let all_loaded = [
-        handles.landscape.id(),
-        handles.grass_lod_high.id(),
-        handles.grass_lod_medium.id(),
-        handles.grass_lod_low.id(),
-        handles.foliage_lod_high.id(),
-        handles.foliage_lod_medium.id(),
-        handles.foliage_lod_low.id(),
-        handles.trees_lod_high.id(),
-        handles.trees_lod_medium.id(),
-        handles.trees_lod_low.id(),
-        handles.rocks_lod_low.id(),
-    ]
-    .iter()
-    .all(|id| {
+    let all_loaded = handles.active_handles().iter().all(|h| {
         asset_server
-            .get_load_state(*id)
-            .is_some_and(|x| x.is_loaded())
+            .get_load_state(h.id())
+            .is_some_and(|s| s.is_loaded())
     });
 
     if all_loaded {
@@ -170,37 +317,64 @@ fn check_assets_loaded(
     }
 }
 
-fn spawn_scene(
+fn scatter(mut cmd: Commands, root: Single<Entity, With<ScatterRoot>>) {
+    cmd.trigger(Scatter::<StandardMaterial>::new(*root));
+}
+
+fn respawn_scene(
     mut cmd: Commands,
-    density_map: Res<DensityMap>,
-    mut ns_scatter: ResMut<NextState<ScatterState>>,
+    root: Single<Entity, With<ScatterRoot>>,
+    mut ns_app: ResMut<NextState<AppState>>,
+) {
+    info!("Quality settings changed, despawning and respawning scene...");
+
+    cmd.entity(*root).despawn();
+
+    ns_app.set(AppState::Setup);
+}
+
+#[derive(Component)]
+pub struct Landscape;
+
+fn spawn_landscape(
+    mut cmd: Commands,
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
+    mut ns_scatter: ResMut<NextState<ScatterState>>,
     handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
+    settings: Res<QualitySettings>,
 ) {
-    let fog_texture = create_spherical_fog_texture(64);
+    info!("Spawning scene with quality: {:?}", settings.quality);
 
+    let fog_texture = create_spherical_fog_texture(64);
     let fog_texture_handle = images.add(fog_texture);
 
     if let Some(image) = images.get_mut(&fog_texture_handle) {
         image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
     }
 
-    cmd.spawn((
-        FogVolume {
-            density_texture: Some(fog_texture_handle),
-            density_factor: 0.05,
-            fog_color: Color::WHITE,
-            scattering_asymmetry: 0.6,
-            ..default()
-        },
-        Transform::from_scale(Vec3::splat(300.).with_y(100.))
-            .with_translation(Vec3::new(0., 15., 0.)),
-    ));
+    /* too expensive and seems bugged TODO
+    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
+        cmd.spawn((
+            FogVolume {
+                density_texture: Some(fog_texture_handle),
+                density_factor: 0.05,
+                fog_color: Color::WHITE,
+                scattering_asymmetry: 0.6,
+                ..default()
+            },
+            Transform::from_scale(Vec3::splat(300.).with_y(100.))
+                .with_translation(Vec3::new(0., 15., 0.)),
+        ));
+    }
+     */
 
     cmd.spawn((
+        Name::new("Landscape"),
+        Landscape,
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
+        LodConfig::from(settings.range_quality),
         MapHeight,
         ChunkRoot::default(),
         AudioPlayer::new(handles.audio.clone()),
@@ -208,117 +382,216 @@ fn spawn_scene(
             mode: bevy::audio::PlaybackMode::Loop,
             ..default()
         },
-        // Layers/Scattering should be ordered in respect to the ScatterOccupancyMap, i.e.,
-        // later layers/scatters can't scatter on occupied areas from earlier layers/scatters.
-        children![
-            (
-                Name::new("Rock Layer"),
-                ScatterLayer::default(),
-                ScatterLayerType::<StandardMaterial>::default(),
-                // Scatter options
-                (
-                    DistributionDensity(10.0),
-                    InstanceRotationYaw::default(),
-                    InstanceScale { min: 1., max: 4. },
-                    InstanceJitter::default(),
-                    Avoidance(2.)
-                ),
-                children![
-                    SceneRoot(handles.rocks_lod_high.clone()),
-                    (
-                        SceneRoot(handles.rocks_lod_medium.clone()),
-                        LevelOfDetail(1)
-                    ),
-                    (SceneRoot(handles.rocks_lod_low.clone()), LevelOfDetail(2)),
-                ]
-            ),
-            (
-                extension::scatter_layer("Tree Layer"),
-                // Scatter options
-                (
-                    DistributionDensity(8.0),
-                    InstanceRotationYaw::default(),
-                    InstanceScale { min: 4., max: 6. },
-                    InstanceJitter::default(),
-                    Avoidance(1.2),
-                    // Displaced numerical normals are a bit buggy for now on complex foliage
-                    FastNormals,
-                ),
-                // Material options
-                (SubsurfaceScattering, WindAffected),
-                children![
-                    SceneRoot(handles.trees_lod_high.clone()),
-                    (
-                        SceneRoot(handles.trees_lod_medium.clone()),
-                        LevelOfDetail(1)
-                    ),
-                    (SceneRoot(handles.trees_lod_low.clone()), LevelOfDetail(2)),
-                ]
-            ),
-            (
-                extension::scatter_layer("Foliage Complex Layer"),
-                // Scatter options
-                (
-                    DistributionDensity(20.0),
-                    InstanceRotationYaw::default(),
-                    InstanceScale { min: 8., max: 18. },
-                    InstanceJitter::default(),
-                    Avoidance(0.2),
-                    // Displaced numerical normals are a bit buggy for now on complex foliage
-                    FastNormals,
-                ),
-                // Material options
-                (SubsurfaceScattering, WindAffected),
-                children![
-                    // TODO figure out what's wrong with highest detail models
-                    SceneRoot(handles.foliage_lod_medium.clone()),
-                    (
-                        SceneRoot(handles.foliage_lod_medium.clone()),
-                        LevelOfDetail(1)
-                    ),
-                    (SceneRoot(handles.foliage_lod_low.clone()), LevelOfDetail(2))
-                ]
-            ),
-            (
-                instancing::scatter_layer("Instanced Grass Layer"),
-                // Scatter options
-                (
-                    // Very dense
-                    DistributionDensity(200.),
-                    // But with noise pattern and empty spots/patches
-                    DistributionPattern(density_map.clone()),
-                    InstanceJitter::default(),
-                    InstanceScale::default(),
-                    ScaleDensity,
-                    ScatterChunked,
-                ),
-                // Material options
-                (
-                    WindAffected,
-                    EdgeCorrectionFactor::default(),
-                    CurveFactor::default(),
-                    Strength(1.1),
-                    MicroStrength(1.1),
-                    SCurveStrength(1.5),
-                    BopStrength(1.5),
-                    AnalyticalNormals,
-                    InstanceColor(Color::hsla(86., 0.69, 0.59, 1.0)),
-                    StaticBendStrength::default(),
-                ),
-                children![
-                    SceneRoot(handles.grass_lod_high.clone()),
-                    (
-                        SceneRoot(handles.grass_lod_medium.clone()),
-                        LevelOfDetail(1),
-                    ),
-                    (SceneRoot(handles.grass_lod_low.clone()), LevelOfDetail(2),),
-                ],
-            )
-        ],
     ));
 
-    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
+    ns_height_map.set(HeightMapState::Setup);
+}
+
+fn spawn_scene(
+    mut cmd: Commands,
+    landscape: Single<Entity, With<Landscape>>,
+    density_map: Res<DensityMap>,
+    handles: Res<Scenes>,
+    mut images: ResMut<Assets<Image>>,
+    settings: Res<QualitySettings>,
+) {
+    info!("Spawning scene with quality: {:?}", settings.quality);
+
+    let fog_texture = create_spherical_fog_texture(64);
+    let fog_texture_handle = images.add(fog_texture);
+
+    if let Some(image) = images.get_mut(&fog_texture_handle) {
+        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
+    }
+
+    /* too expensive and seems bugged TODO
+    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
+        cmd.spawn((
+            FogVolume {
+                density_texture: Some(fog_texture_handle),
+                density_factor: 0.05,
+                fog_color: Color::WHITE,
+                scattering_asymmetry: 0.6,
+                ..default()
+            },
+            Transform::from_scale(Vec3::splat(300.).with_y(100.))
+                .with_translation(Vec3::new(0., 15., 0.)),
+        ));
+    }
+     */
+
+    cmd.entity(*landscape).insert(children![
+        (
+            Name::new("Rock Layer"),
+            ScatterLayer::default(),
+            ScatterLayerType::<StandardMaterial>::default(),
+            (
+                DistributionDensity(15.),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 1., max: 2. },
+                InstanceJitter::default(),
+                Avoidance(2.5),
+            ),
+            children![
+                (
+                    AssetSelect::progressive(
+                        handles.rocks_lod_high.clone(),
+                        handles.rocks_lod_medium.clone(),
+                        handles.rocks_lod_low.clone(),
+                    ),
+                    LevelOfDetail(0)
+                ),
+                (
+                    AssetSelect::new(handles.rocks_lod_medium.clone())
+                        .with_med(handles.rocks_lod_low.clone()),
+                    LevelOfDetail(1)
+                ),
+                (
+                    AssetSelect::new(handles.rocks_lod_low.clone()),
+                    LevelOfDetail(2)
+                )
+            ]
+        ),
+        (
+            extension::scatter_layer("Tree Layer"),
+            (
+                DistributionDensity(20.),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 1., max: 2. },
+                InstanceJitter::default(),
+                Avoidance(0.5),
+            ),
+            (
+                AddIf::new(QualityRule::Sss, SssBundle::default()),
+                AddIf::new(QualityRule::StaticShadows, StaticShadow::default()),
+                AddIf::new(QualityRule::Wind, WindAffected::default()),
+            ),
+            children![
+                (
+                    AssetSelect::progressive(
+                        handles.trees_lod_high.clone(),
+                        handles.trees_lod_medium.clone(),
+                        handles.trees_lod_low.clone(),
+                    ),
+                    LevelOfDetail(0),
+                ),
+                (
+                    AssetSelect::progressive(
+                        handles.trees_lod_medium.clone(),
+                        handles.trees_lod_low.clone(),
+                        handles.trees_billboards.clone()
+                    ),
+                    AddIf::new(QualityRule::LowModel, Unlit),
+                    LevelOfDetail(1)
+                ),
+                (
+                    AssetSelect::new(handles.trees_lod_low.clone())
+                        .with_med(handles.trees_billboards.clone()),
+                    AddIf::new(QualityRule::MediumModel, Unlit),
+                    LevelOfDetail(2)
+                ),
+                (
+                    AssetSelect::new(handles.trees_billboards.clone()),
+                    Unlit,
+                    LevelOfDetail(3)
+                )
+            ]
+        ),
+        (
+            extension::scatter_layer("Foliage Complex Layer"),
+            (
+                DistributionDensity(20.),
+                InstanceRotationYaw::default(),
+                InstanceScale { min: 4., max: 8. },
+                InstanceJitter::default(),
+                Avoidance(0.2),
+            ),
+            (
+                AddIf::new(
+                    QualityRule::Sss,
+                    (
+                        SubsurfaceScattering,
+                        SubsurfaceScatteringIntensity(4.),
+                        SubsurfaceScatteringScale(5.),
+                    )
+                ),
+                AddIf::new(QualityRule::StaticShadows, StaticShadow::default()),
+                AddIf::new(QualityRule::Wind, WindAffected::default()),
+            ),
+            children![
+                (
+                    AssetSelect::progressive(
+                        handles.foliage_lod_high.clone(),
+                        handles.foliage_lod_medium.clone(),
+                        handles.foliage_lod_low.clone(),
+                    ),
+                    LevelOfDetail(0)
+                ),
+                (
+                    AssetSelect::new(handles.foliage_lod_medium.clone())
+                        .with_med(handles.foliage_lod_low.clone()),
+                    LevelOfDetail(1)
+                ),
+                (
+                    AssetSelect::new(handles.foliage_lod_low.clone()),
+                    LevelOfDetail(2)
+                ),
+            ]
+        ),
+        (
+            instancing::scatter_layer("Instanced Grass Layer"),
+            (
+                DistributionDensity::from(settings.grass_density),
+                DistributionPattern(density_map.clone()),
+                InstanceJitter::default(),
+                InstanceScale::default(),
+                ScatterChunked,
+                ScaleDensity,
+                GpuCull,
+            ),
+            (
+                EdgeCorrectionFactor::default(),
+                CurveFactor::default(),
+                Strength(1.2),
+                MicroStrength(1.2),
+                SCurveStrength(1.2),
+                BopStrength(1.2),
+                AnalyticalNormals,
+                InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
+                StaticBendStrength::default(),
+                SpecularStrength(0.2),
+                (
+                    AddIf::new(QualityRule::DirectionalLights, DirectionalLights),
+                    AddIf::new(QualityRule::PointLights, PointLights),
+                    AddIf::new(QualityRule::Wind, WindAffected::default())
+                ),
+            ),
+            children![
+                (
+                    AssetSelect::progressive(
+                        handles.grass_lod_high.clone(),
+                        handles.grass_lod_medium.clone(),
+                        handles.grass_lod_low.clone(),
+                    ),
+                    LevelOfDetail(0)
+                ),
+                (
+                    AssetSelect::progressive(
+                        handles.grass_lod_high.clone(),
+                        handles.grass_lod_medium.clone(),
+                        handles.grass_lod_low.clone(),
+                    ),
+                    LevelOfDetail(1)
+                ),
+                (
+                    AssetSelect::new(handles.grass_lod_medium.clone())
+                        .with_med(handles.grass_lod_low.clone()),
+                    LevelOfDetail(2)
+                ),
+            ],
+        )
+    ]);
 }
 
 fn scatter_on_keypress(
@@ -410,7 +683,7 @@ fn update_density_map(
 
     let num_spots = 100;
     let max_spot_radius = (size / 8) as f32;
-    let min_spot_radius = (size / 40) as f32;
+    let min_spot_radius = (size / 32) as f32;
 
     // Empty spots
     for _ in 0..num_spots {

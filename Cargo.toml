@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.4.10"
+version = "0.5.0"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -10,12 +10,29 @@ repository = "https://github.com/NicoZweifel/bevy_feronia"
 exclude = ["assets/", ".github/"]
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = [
-    "bevy_pbr", "bevy_state",
-    "bevy_log",
-    "bevy_gizmos"
-] }
-bevy-inspector-egui = "0.35.0"
+bevy_scene = { version = "0.17.2" ,default-features = false}
+bevy_state= { version = "0.17.2" ,default-features = false, features = ["bevy_app"]}
+bevy_gizmos= { version = "0.17.2" ,default-features = false}
+bevy_pbr= { version = "0.17.2" ,default-features = false}
+bevy_mesh= { version = "0.17.2" ,default-features = false}
+bevy_color= { version = "0.17.2" ,default-features = false}
+bevy_app = { version = "0.17.2" ,default-features = false}
+bevy_ecs = { version = "0.17.2" ,default-features = false}
+bevy_asset= { version = "0.17.2" ,default-features = false}
+bevy_camera= { version = "0.17.2" ,default-features = false}
+bevy_derive = { version = "0.17.2" ,default-features = false}
+bevy_reflect= { version = "0.17.2" ,default-features = false}
+bevy_transform= { version = "0.17.2" ,default-features = false}
+bevy_tasks= { version = "0.17.2" ,default-features = false}
+bevy_math= { version = "0.17.2" ,default-features = false}
+bevy_image= { version = "0.17.2" ,default-features = false}
+bevy_platform= { version = "0.17.2" ,default-features = false}
+bevy_render= { version = "0.17.2" ,default-features = false}
+bevy_shader= { version = "0.17.2" ,default-features = false}
+bevy_utils= { version = "0.17.2" ,default-features = false}
+bevy_core_pipeline= { version = "0.17.2" ,default-features = false}
+bevy_light= { version = "0.17.2" ,default-features = false}
+
 bytemuck = "1.23.1"
 noise = "0.9.0"
 bitflags = "2.9.1"
@@ -23,9 +40,22 @@ rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
 xxh3 = "0.1.1"
 rand_pcg = "0.9.0"
+derive_more = "2.0.1"
+
+tracing = { version = "0.1.41", default-features = false, optional = true }
+avian3d = { version = "0.4", optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.17", features = ["dynamic_linking", "file_watcher", "jpeg", "embedded_watcher", "asset_processor", "basis-universal", "mp3"] }
+bevy-inspector-egui = "0.35.0"
+bevy = { version = "0.17", features = [
+    "dynamic_linking",
+    "file_watcher",
+    "jpeg",
+    "embedded_watcher",
+    "asset_processor",
+    "basis-universal",
+    "mp3",
+] }
 
 bytemuck = "1.23.1"
 iyes_perf_ui = "0.5.0"
@@ -70,10 +100,23 @@ codegen-units = 1
 lto = "thin"
 
 [features]
-default = []
+default = ["trace"]
+
+# Enables support for avian and adds the dependency.
+avian = ["dep:avian3d"]
+
+# Enables the "experimental_pbr_pcss" feature in the bevy crate. Used for shadow quality settings.
+pcss = ["bevy/experimental_pbr_pcss"]
+
+# Enables tracing and adds the dependency.
+trace = ["dep:tracing"]
 
 # Enables the "dlss" feature in the bevy crate. Used only in examples.
 dlss = ["bevy/dlss"]
 
 [patch.crates-io]
 iyes_perf_ui = { git = "https://github.com/mgi388/iyes_perf_ui", branch = "bevy-0.17" }
+
+[[example]]
+name = "avian"
+required-features = ["avian"]

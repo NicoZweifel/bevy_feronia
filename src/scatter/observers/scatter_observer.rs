@@ -1,33 +1,34 @@
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 use crate::scatter::events::ScatterResults;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
-pub fn scatter_observer<TOut, TIn>(
-    trigger: On<ScatterResults<TOut, TIn>>,
-    q_layer: Query<&ScatterLayer, With<ScatterLayerType<TOut, TIn>>>,
-    q_items: Query<&ScatterItemAsset<TOut>, With<ScatterItem>>,
-    mut mw_spawn: MessageWriter<SpawnProtoTypes<TOut>>,
+#[cfg(feature = "trace")]
+use tracing::{debug, warn};
+
+pub fn scatter_observer<T>(
+    trigger: On<ScatterResults<T>>,
+    q_layer: Query<&ScatterLayer, With<ScatterLayerType<T>>>,
+    q_items: Query<&ScatterItemAsset<T>, With<ScatterItem>>,
+    mut queue: ResMut<SpawnScatterAssetsEventQueue<T>>,
 ) where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     let layer = trigger.layer;
-
     let Ok(scatter_items) = q_layer.get(layer) else {
+        #[cfg(feature = "trace")]
         warn!("ScatterLayer {layer} not found!");
         return;
     };
 
-    let items = scatter_items
-        .iter()
-        .filter_map(|x| q_items.get(x).ok().cloned());
+    #[cfg(feature = "trace")]
+    debug!("ScatterObserver triggered! Queueing Spawn Messages for layer {layer}...");
 
-    let trigger = SpawnTrigger::from(trigger);
-
-    let event = SpawnProtoTypes::from(trigger).with_items(items.collect());
-
-    debug!("ScatterObserver triggered! Writing Spawn Events...");
-
-    mw_spawn.write(event);
+    (**queue).push_back(
+        SpawnScatterAssets::<T>::from(trigger).with_items(
+            scatter_items
+                .iter()
+                .filter_map(|e| q_items.get(e).ok().cloned()),
+        ),
+    );
 }

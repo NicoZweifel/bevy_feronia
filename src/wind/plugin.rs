@@ -1,11 +1,18 @@
 use super::systems::*;
 use crate::prelude::*;
-use bevy::prelude::*;
-use bevy::shader::load_shader_library;
+
+use bevy_app::{App, Plugin, Startup, Update};
+use bevy_asset::Assets;
+use bevy_ecs::prelude::*;
+use bevy_pbr::StandardMaterial;
+use bevy_shader::load_shader_library;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub struct WindPlugin;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WindTextureSetup;
 
 impl Plugin for WindPlugin {
     fn build(&self, app: &mut App) {
@@ -14,45 +21,51 @@ impl Plugin for WindPlugin {
         load_shader_library!(app, "bindings.wgsl");
         load_shader_library!(app, "noise.wgsl");
         load_shader_library!(app, "displace.wgsl");
-        load_shader_library!(app, "sss_io.wgsl");
+        load_shader_library!(app, "forward_sss_io.wgsl");
 
         app.init_resource::<Wind>()
             .register_type::<Wind>()
-            .add_systems(Startup, setup_wind_texture);
+            .configure_sets(Startup, WindTextureSetup)
+            .add_systems(Startup, setup_wind_texture.in_set(WindTextureSetup));
     }
 }
 
-pub struct ScatterMaterialPlugin<TOut, TIn = StandardMaterial>
+pub struct ScatterMaterialPlugin<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
-    pub _marker: PhantomData<(TOut, TIn)>,
+    pub _marker: PhantomData<T>,
 }
 
-impl<TOut, TIn> Default for ScatterMaterialPlugin<TOut, TIn>
+impl<T> Default for ScatterMaterialPlugin<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn default() -> Self {
         Self {
-            _marker: Default::default(),
+            _marker: PhantomData,
         }
     }
 }
 
-impl<TOut, TIn> Plugin for ScatterMaterialPlugin<TOut, TIn>
+impl<T> ScatterMaterialPlugin<T>
 where
-    TOut: ScatterMaterial<TIn> + Debug,
-    TIn: Material,
+    T: ScatterMaterial,
+{
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<T> Plugin for ScatterMaterialPlugin<T>
+where
+    T: ScatterMaterial,
 {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (update_materials::<TOut, TIn>.run_if(
-                resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<TOut>>>),
-            ),),
+            (update_materials::<T>
+                .run_if(resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<T>>>)),),
         );
     }
 }

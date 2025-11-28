@@ -2,7 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_feronia::extension::scatter_layer;
+use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
@@ -16,8 +16,13 @@ fn main() -> AppExit {
             bop_strength: 0.01,
             ..default()
         })
+        .insert_resource(ExamplePluginOptions {
+            show_wind_settings: true,
+            ..default()
+        })
         .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
         .init_state::<AppState>()
+        .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
             Update,
@@ -67,7 +72,7 @@ fn check_assets_loaded(
     .all(|id| {
         asset_server
             .get_load_state(*id)
-            .is_some_and(|x| x.is_loaded())
+            .is_some_and(|s| s.is_loaded())
     });
 
     if all_loaded {
@@ -79,15 +84,13 @@ fn spawn_scene(
     mut cmd: Commands,
     handles: Res<Scenes>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
-    mut ns_height_map: ResMut<NextState<HeightMapState>>,
 ) {
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        ChunkRoot::default(),
         LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
         children![(
-            scatter_layer("Tree Layer"),
+            extension::scatter_layer("Tree Layer"),
             DistributionDensity(10.),
             InstanceRotationYaw {
                 min: 0.,
@@ -104,7 +107,6 @@ fn spawn_scene(
         )],
     ));
 
-    ns_height_map.set(HeightMapState::Setup);
     ns_scatter.set(ScatterState::Setup);
 }
 

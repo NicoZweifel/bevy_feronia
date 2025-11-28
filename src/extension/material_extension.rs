@@ -1,15 +1,16 @@
 use crate::prelude::*;
-use bevy::asset::{AssetPath, embedded_path};
-use bevy::camera::primitives::Aabb;
-use bevy::mesh::MeshVertexBufferLayoutRef;
-use bevy::pbr::{MaterialExtension, MaterialExtensionKey, MaterialExtensionPipeline};
-use bevy::prelude::*;
-use bevy::render::render_resource::{
-    AsBindGroup, RenderPipelineDescriptor, SpecializedMeshPipelineError,
-};
-use bevy::shader::ShaderRef;
+use bevy_asset::*;
+use bevy_camera::primitives::Aabb;
+use bevy_color::ColorToComponents;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_mesh::MeshVertexBufferLayoutRef;
+use bevy_pbr::*;
+use bevy_reflect::Reflect;
+use bevy_render::render_resource::*;
+use bevy_shader::ShaderRef;
 
-#[derive(Asset, Reflect, AsBindGroup, Debug, Clone)]
+#[derive(Asset, Reflect, AsBindGroup, Debug, Clone, Default)]
 #[bind_group_data(WindAffectedKey)]
 #[data(50, WindUniform, binding_array(101))]
 #[bindless(index_table(range(50..53), binding(100)))]
@@ -18,7 +19,7 @@ pub struct WindAffectedExtension {
 
     pub aabb: Aabb,
 
-    pub options: MaterialOptions,
+    pub options: ScatterMaterialOptions,
 
     #[texture(51)]
     #[sampler(52)]
@@ -42,6 +43,10 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
             .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
             .with_debug_color(material_extension.options.debug_color.to_linear().to_vec4())
+            .with_sss(
+                material_extension.options.subsurface_scattering_scale,
+                material_extension.options.subsurface_scattering_intensity,
+            )
     }
 }
 
@@ -109,6 +114,11 @@ const SHADER_DEFS: &[ShaderDefMap] = &[
         flag: WindAffectedKey::CURVE_NORMALS,
         def: "CURVE_NORMALS",
         stage: ShaderStage::Both,
+    },
+    ShaderDefMap {
+        flag: WindAffectedKey::STATIC_SHADOW,
+        def: "STATIC_SHADOW",
+        stage: ShaderStage::Vertex,
     },
 ];
 
@@ -198,6 +208,10 @@ impl From<&WindAffectedExtension> for WindAffectedKey {
         key.set(
             WindAffectedKey::CURVE_NORMALS,
             material.options.curve_factor > 0.,
+        );
+        key.set(
+            WindAffectedKey::STATIC_SHADOW,
+            material.options.static_shadows,
         );
 
         key

@@ -1,6 +1,6 @@
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::Sampler;
-use bevy::math::Vec3;
+use bevy_math::Vec3;
 
 pub struct DefaultSampler;
 

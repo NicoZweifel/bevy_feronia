@@ -1,16 +1,43 @@
-use bevy::color::Color;
-use bevy::prelude::*;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+use bevy_render::extract_component::ExtractComponent;
+use derive_more::From;
+
+/// Marker component identifying the entity representing the center of the chunking and lod systems.
+///
+/// This should be added to the camera or the player controller.
+#[derive(Component, Reflect, Clone, ExtractComponent)]
+#[reflect(Component)]
+pub struct Center;
 
 /// Component specifying the LOD for a [`ScatterItem`].
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Default, Reflect, PartialEq, Eq, Hash)]
-#[reflect(Component)]
+#[derive(
+    Component,
+    Deref,
+    DerefMut,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Reflect,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    From,
+)]
+#[reflect(Component, Clone, Debug, PartialEq, Hash)]
 pub struct LevelOfDetail(pub u32);
 
 /// Marker component for debug visualization.
 ///
+/// Makes shaders return `debug_color` in the fragment shader.
+///
 /// Enables `#ifdef MATERIAL_DEBUG` in shaders.
 #[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Clone, Debug)]
 pub struct EnableDebug;
 
 /// Marker component to make instances always face the camera.
@@ -19,7 +46,7 @@ pub struct EnableDebug;
 ///
 /// Not supported in combination with [`EdgeCorrectionFactor`].
 #[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Clone, Debug)]
 pub struct EnableBillboarding;
 
 /// Marker component to force simple, undisplaced world-space normals.
@@ -27,12 +54,12 @@ pub struct EnableBillboarding;
 /// Will have incorrect lighting on displaced vertices,
 /// as the normals will not match the displaced vertex positions.
 ///
-/// **Note: ** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
+/// **Note:** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
 /// the shader defaults to the numerical path, which is the most accurate, but most expensive path,
 /// as it runs the full displacement logic on the neighbors to find the surface direction,
 /// which should only be used for complex foliage like non-billboarded bushes, trees.
 ///
-/// **Note: ** For correct fallback behavior (if the mesh lacks tangents or normals),
+/// **Note:** For correct fallback behavior (if the mesh lacks tangents or normals),
 /// the mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
 /// and its "face" pointing along Z-Up (`+Z`).
 ///
@@ -40,7 +67,7 @@ pub struct EnableBillboarding;
 ///
 /// Enables `#ifdef FAST_NORMALS` in shaders.
 #[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Clone, Debug)]
 pub struct FastNormals;
 
 /// Marker component to enable approximated, mathematically derived normals.
@@ -49,12 +76,12 @@ pub struct FastNormals;
 /// as it only accounts for `static_bend`, `twist`,
 /// and `macro_wind`, ignoring high-frequency displacements.
 ///
-/// **Note: ** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
+/// **Note:** If neither [`FastNormals`] nor [`AnalyticalNormals`] is present,
 /// the shader defaults to the numerical path, which is the most accurate, but most expensive path,
 /// as it runs the full displacement logic on the neighbors to find the surface direction,
 /// which should only be used for complex foliage like non-billboarded bushes, trees.
 ///
-/// **Note: ** For correct fallback behavior (if the mesh lacks tangents or normals),
+/// **Note:** For correct fallback behavior (if the mesh lacks tangents or normals),
 /// the mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
 /// and its "face" pointing along Z-Up (`+Z`).
 ///
@@ -62,92 +89,5 @@ pub struct FastNormals;
 ///
 /// Enables `#ifdef ANALYTICAL_NORMALS` in shaders.
 #[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, Clone, Debug)]
 pub struct AnalyticalNormals;
-
-/// Marker component to enable point lights.
-///
-/// Only supported with [`InstancedWindAffectedMaterial`].
-///
-/// Enables `#ifdef POINT_LIGHTS` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct PointLights;
-
-/// Controls the edge correction effect (makes vegetation look fuller).
-///
-/// Corresponds to `wind.edge_correction_factor` in shaders.
-///
-/// Not supported in combination with [`EnableBillboarding`].
-///
-/// TODO: disabled at the moment
-/// https://github.com/NicoZweifel/bevy_feronia/issues/36
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct EdgeCorrectionFactor(pub f32);
-
-impl Default for EdgeCorrectionFactor {
-    fn default() -> Self {
-        Self(0.02)
-    }
-}
-
-/// Controls the normal curving effect (simulates curved blades).
-///
-/// This is a multiplier that determines how strongly the blade curves from its
-/// center (0.0) to its edges (1.0), using the **`uv.x`** coordinate of the mesh.
-/// The final curve angle is hard-capped at **1.4 radians (~80°)**.
-///
-/// The behavior changes significantly depending on the value:
-///
-/// - **`CurveFactor < 1.4`**: Creates a gentle, shallow curve. The blade will
-///   never reach the 80° maximum, resulting in a softer look.
-///
-/// - **`CurveFactor = 1.4`**: Creates a full, linear curve. The blade
-///   bends smoothly from 0° at the center to the 80° maximum exactly at the edge.
-///
-/// - **`CurveFactor > 1.4`**: The blade hits the 80° cap *before* reaching the edge.
-///   This creates a sharp "crease" or "spine" down the center, with the rest
-///   of the blade remaining flat at the maximum angle.
-///
-/// Corresponds to `wind.curve_factor` in shaders.
-///
-/// Currently only supported in [`InstancedWindAffectedMaterial`].
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct CurveFactor(pub f32);
-
-impl Default for CurveFactor {
-    fn default() -> Self {
-        Self(0.1)
-    }
-}
-
-/// Controls a persistent, non-wind bend.
-///
-/// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct StaticBendStrength(pub f32);
-
-impl Default for StaticBendStrength {
-    fn default() -> Self {
-        Self(0.3)
-    }
-}
-
-/// Marker component to enable simulated subsurface scattering.
-///
-/// Enables `#ifdef SUBSURFACE_SCATTERING` in shaders.
-///
-/// Only supported with [`ExtendedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct SubsurfaceScattering;
-
-/// Sets a material color tint.
-///
-/// Corresponds to `instance_uniforms.color` in shaders.
-#[derive(Component, Clone, Debug, Reflect, Deref, Default, DerefMut)]
-#[reflect(Component)]
-pub struct InstanceColor(pub Color);

@@ -1,8 +1,11 @@
 use super::systems::*;
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
-use bevy::asset::embedded_asset;
-use bevy::prelude::*;
+use bevy_app::*;
+use bevy_asset::embedded_asset;
+use bevy_ecs::prelude::*;
+use bevy_pbr::MaterialPlugin;
+use bevy_state::prelude::*;
 
 pub struct HeightMapPlugin;
 

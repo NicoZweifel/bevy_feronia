@@ -1,7 +1,12 @@
 use crate::prelude::*;
 use crate::scatter::utils::get_height_map_sampler;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
+
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::{IVec2, Vec3};
+use bevy_transform::prelude::{GlobalTransform, Transform};
 
 pub fn setup_chunks(
     mut cmd: Commands,
@@ -11,7 +16,7 @@ pub fn setup_chunks(
     q_root: Query<
         (
             Entity,
-            &ChunkLodConfig,
+            &LodConfig,
             &ChunkSizeScalarConfig,
             &Aabb,
             &GlobalTransform,
@@ -20,22 +25,28 @@ pub fn setup_chunks(
         (With<ChunkRoot>, Without<BaseChunkSize>),
     >,
 ) {
-    let height_sampler = get_height_map_sampler(&images, height_map_cfg, height_map);
+    let height_sampler = get_height_map_sampler(
+        images.into_inner(),
+        height_map_cfg.map(|x| x.into_inner()),
+        height_map.map(|x| x.into_inner()),
+    );
 
-    for (entity, chunk_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
+    for (entity, lod_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
         let world_size = Vec3::from(aabb.half_extents * 2.0);
 
         let center_offset = Vec3::from(aabb.half_extents);
 
-        let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
-
-        let top_lod = chunk_cfg.get_max_lod();
+        let top_lod = lod_cfg.get_max_lod();
         let top_scalar_config = scalar_config.get_scalar_config(top_lod);
 
-        let base_chunk_size = top_chunk_size / **top_scalar_config as f32;
+        let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
+
+        let base_chunk_size = BaseChunkSize(top_chunk_size / **top_scalar_config as f32);
+
+        let chunk_lod_cfg = ChunkLodConfig::from_sources(lod_cfg, scalar_config, &base_chunk_size);
 
         cmd.entity(entity)
-            .insert((ChunkRoot::default(), BaseChunkSize(base_chunk_size)));
+            .insert((ChunkRoot::default(), base_chunk_size, chunk_lod_cfg.clone()));
 
         for z in 0..**chunk_root_size {
             for x in 0..**chunk_root_size {
@@ -46,7 +57,8 @@ pub fn setup_chunks(
 
                 world_pos.y = height_sampler.sample(world_pos);
 
-                let child_lod_config = chunk_cfg.get_lod_config(chunk_cfg.get_max_lod() - 1);
+                let child_lod_config =
+                    chunk_lod_cfg.get_lod_config(chunk_lod_cfg.get_max_lod() - 1);
 
                 cmd.spawn((
                     Chunk,

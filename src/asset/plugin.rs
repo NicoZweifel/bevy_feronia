@@ -1,20 +1,22 @@
-use crate::asset::systems::*;
+use crate::asset::backend::systems::{insert_parts, insert_requests};
+use crate::asset::systems::process_requests;
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_app::{App, Plugin, PostUpdate, Update};
+use bevy_ecs::prelude::*;
+use bevy_pbr::prelude::*;
+use bevy_state::prelude::*;
 use std::marker::PhantomData;
 
-pub struct ScatterAssetsPlugin<TOut, TIn = StandardMaterial>
+pub struct ScatterAssetsPlugin<T = StandardMaterial>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
-    _marker: PhantomData<(TOut, TIn)>,
+    _marker: PhantomData<T>,
 }
 
-impl<TOut, TIn> ScatterAssetsPlugin<TOut, TIn>
+impl<T> ScatterAssetsPlugin<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     pub fn new() -> Self {
         Self {
@@ -23,30 +25,27 @@ where
     }
 }
 
-impl<TOut, TIn> Default for ScatterAssetsPlugin<TOut, TIn>
+impl<T> Default for ScatterAssetsPlugin<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<TOut, TIn> Plugin for ScatterAssetsPlugin<TOut, TIn>
+impl<T> Plugin for ScatterAssetsPlugin<T>
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            PostUpdate,
+            (insert_parts::<T>, insert_requests::<T>).run_if(in_state(ScatterState::Collecting)),
+        )
+        .add_systems(
             Update,
-            (
-                queue_material_creation_requests::<TOut, TIn>,
-                process_distinct_material_requests::<TOut, TIn>
-                    .after(queue_material_creation_requests::<TOut, TIn>),
-            )
-                .run_if(in_state(ScatterState::Ready)),
+            process_requests::<T>.run_if(in_state(ScatterState::Collecting)),
         );
     }
 }

@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use bevy::pbr::ExtendedMaterial;
-use bevy::prelude::*;
+use bevy_pbr::{ExtendedMaterial, StandardMaterial};
 
 pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindAffectedExtension>;

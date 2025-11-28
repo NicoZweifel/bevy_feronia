@@ -1,18 +1,18 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
 
-pub fn scatter<TOut: ScatterMaterial<TIn>, TIn: Material>(
-    trigger: On<Scatter<TOut, TIn>>,
-    mut cmd: Commands,
-) {
+#[cfg(feature = "trace")]
+use tracing::debug;
+
+pub fn scatter_layer<T>(trigger: On<Scatter<T>>, mut cmd: Commands)
+where
+    T: ScatterMaterial,
+{
     let layer_entity = trigger.entity;
 
+    #[cfg(feature = "trace")]
     debug!("Scattering Layer: {layer_entity}");
 
     cmd.entity(layer_entity)
-        .insert(ScatterRequest::<TOut, TIn>::new(
-            layer_entity,
-            layer_entity,
-            None,
-        ));
+        .insert(ScatterRequest::<T>::new(layer_entity, layer_entity, None));
 }

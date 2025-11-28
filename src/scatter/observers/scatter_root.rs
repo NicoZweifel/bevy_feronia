@@ -1,15 +1,18 @@
 use crate::prelude::*;
-use bevy::ecs::relationship::Relationship;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::relationship::Relationship;
+use bevy_utils::default;
 
-pub fn scatter_root<TOut, TIn>(
-    trigger: On<Scatter<TOut, TIn>>,
+#[cfg(feature = "trace")]
+use tracing::{debug, warn};
+
+pub fn scatter_root<T>(
+    trigger: On<Scatter<T>>,
     mut cmd: Commands,
-    q_root: Query<(&ScatterRoot, Option<&HierarchicalScatterState<TOut, TIn>>)>,
-    q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>)>,
+    q_root: Query<(&ScatterRoot, Option<&HierarchicalScatterState<T>>)>,
+    q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
 ) where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     let root_entity = trigger.entity;
 
@@ -18,6 +21,7 @@ pub fn scatter_root<TOut, TIn>(
     };
 
     if state.is_some() {
+        #[cfg(feature = "trace")]
         warn!(
             "Hierarchical scatter is already in progress for root {:?}. Ignoring new request.",
             root_entity
@@ -25,23 +29,25 @@ pub fn scatter_root<TOut, TIn>(
         return;
     }
 
-    let ordered_layers: Vec<Entity> = layers.iter().filter_map(|x| q_layer.get(x).ok()).collect();
+    let ordered_layers: Vec<Entity> = layers.iter().filter_map(|e| q_layer.get(e).ok()).collect();
     if ordered_layers.is_empty() {
         return;
     }
 
+    #[cfg(feature = "trace")]
     debug!(
         "Clearing previous scatter results for root: {:?}",
         root_entity
     );
 
+    #[cfg(feature = "trace")]
     debug!(
         "Starting hierarchical scatter on root: {:?}. Resetting occupancy map.",
         root_entity
     );
 
     cmd.entity(root_entity)
-        .insert((HierarchicalScatterState::<TOut, TIn> {
+        .insert((HierarchicalScatterState::<T> {
             ordered_layers: ordered_layers.clone(),
             current_layer_index: 0,
             ..default()
@@ -49,21 +55,17 @@ pub fn scatter_root<TOut, TIn>(
 
     let first_layer_entity = ordered_layers[0];
 
-    cmd.trigger(Scatter::<TOut, TIn>::new(first_layer_entity));
+    cmd.trigger(Scatter::<T>::new(first_layer_entity));
 }
 
-pub fn hierarchical_scatter<TOut, TIn>(
-    trigger: On<ScatterResults<TOut, TIn>>,
+pub fn hierarchical_scatter<T>(
+    trigger: On<ScatterResults<T>>,
     mut cmd: Commands,
     q_layer_parent: Query<&ScatterLayerOf, With<ScatterLayer>>,
-    mut q_roots: Query<(
-        &mut HierarchicalScatterState<TOut, TIn>,
-        &mut ScatterOccupancyMap,
-    )>,
+    mut q_roots: Query<(&mut HierarchicalScatterState<T>, &mut ScatterOccupancyMap)>,
     q_avoidance: Query<&Avoidance>,
 ) where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     let finished_layer = trigger.layer;
 
@@ -95,14 +97,16 @@ pub fn hierarchical_scatter<TOut, TIn>(
 
     if state.current_layer_index < state.ordered_layers.len() {
         let next_layer_entity = state.ordered_layers[state.current_layer_index];
+        #[cfg(feature = "trace")]
         debug!(
             "Hierarchical scatter advancing to layer: {:?}",
             next_layer_entity
         );
-        cmd.trigger(Scatter::<TOut, TIn>::new(next_layer_entity));
+        cmd.trigger(Scatter::<T>::new(next_layer_entity));
     } else {
+        #[cfg(feature = "trace")]
         debug!("Hierarchical scatter finished for root: {:?}", root_entity);
         cmd.entity(root_entity)
-            .remove::<HierarchicalScatterState<TOut, TIn>>();
+            .remove::<HierarchicalScatterState<T>>();
     }
 }

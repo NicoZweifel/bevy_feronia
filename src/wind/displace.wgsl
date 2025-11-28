@@ -15,16 +15,12 @@
 #import bevy_feronia::wind::{Wind, BindlessWindIndices}
 #import bevy_feronia::noise::sample_noise
 
-struct DisplacementCache {
-    normalized_height: f32,
-    height_attenuation_factor: f32,
-    bend_curve: f32,
-    macro_wind_factor: f32,
-    twist_angle: f32,
-    bent_twisted_local_pos: vec3<f32>,
-    wind_dir: vec3<f32>,
-    micro_wind_factor: f32,
-    macro_wind: vec3<f32>,
+struct CurveResult {
+    local_pos: vec3<f32>,
+    slope: vec3<f32>,
+    twist: f32,
+    height_factor: f32,
+    local_wind_dir: vec3<f32>
 }
 
 fn displace_vertex_and_calc_normal(
@@ -45,38 +41,41 @@ fn displace_vertex_and_calc_normal(
     uv: vec2<f32>
 #endif
 ) -> DisplacedVertex {
-    var out: DisplacedVertex;
+    var result: DisplacedVertex;
 
-    let cache = displacement_cache(
+    // Macro (wind bend, static bend)
+    let curve_data = calculate_macro_curve(
         vertex_pos,
         wind,
         noise,
         instance,
     #ifdef STATIC_BEND
-        static_bend,
+        static_bend
     #endif
     );
 
-    let final_pos_xyz = finish_vertex_displacement(
-        cache,
-        vertex_pos,
+    // Micro, s-curve, bop
+    let final_local_pos = apply_micro_details(
+        curve_data.local_pos,
+        curve_data,
         wind,
-        noise,
-        instance
+        instance,
+        noise
     );
 
-    out.world_position = vec4<f32>(final_pos_xyz, 1.0);
+    result.world_position = instance.world_from_local * vec4<f32>(final_local_pos, 1.0);
 
-    let local_fallback_tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
-
-#ifdef VERTEX_NORMALS
-    let mesh_normal = mesh_normal_local_to_world(normal, instance.instance_index);
-
-#ifdef VERTEX_TANGENTS
-    let mesh_tangent = mesh_tangent_local_to_world(instance.world_from_local, tangent, instance.instance_index);
-#endif
-
-    var normal_data: DisplacedVertex;
+    #ifdef BILLBOARDING
+    result.world_position = vec4<f32>(
+        billboarding(
+            wind,
+            instance,
+            final_local_pos,
+            final_local_pos - vertex_pos
+        ),
+        1.0
+    );
+    #endif
 
 #ifdef FAST_NORMALS
     // Uses the original, un-displaced world-space normals.
@@ -87,17 +86,21 @@ fn displace_vertex_and_calc_normal(
     // and its "face" pointing along Z-Up (`+Z`).
     //
     // Should be used for performance reasons and/or on static or barely wind affected objects.
-    normal_data.world_normal = mesh_normal;
 
-#ifdef VERTEX_TANGENTS
-    normal_data.world_tangent = mesh_tangent;
+    #ifdef VERTEX_NORMALS
+        result.world_normal = mesh_normal_local_to_world(normal, instance.instance_index);
+    #else
+        result.world_normal = normalize(instance.world_from_local[2].xyz);
+    #endif
+
+    #ifdef VERTEX_TANGENTS
+        result.world_tangent = mesh_tangent_local_to_world(instance.world_from_local, tangent, instance.instance_index);
+    #else
+        let world_tangent_xyz = normalize(instance.world_from_local[0].xyz);
+        result.world_tangent = vec4<f32>(world_tangent_xyz, 1.0);
+    #endif
+
 #else
-    let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
-
-    normal_data.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
-#endif
-
-#else // NOT FAST_NORMALS
 #ifdef ANALYTICAL_NORMALS
     // Calculates normals using a mathematical approximation of the
     // displacement.
@@ -110,453 +113,299 @@ fn displace_vertex_and_calc_normal(
     // and its "face" pointing along Z-Up (`+Z`).
     //
     // Typically used for billboarded foliage or flat meshes like grass.
-    normal_data = calculate_analytical_normal(
-        cache,
-        wind,
-        instance,
-        vertex_pos,
-#ifdef STATIC_BEND
-        static_bend,
-#endif
-#ifdef VERTEX_NORMALS
-        normal,
-#endif
-#ifdef VERTEX_TANGENTS
-        tangent
-#endif
+
+    let local_spine_direction = normalize(vec3<f32>(curve_data.slope.x, 1.0, curve_data.slope.z));
+
+    let cos_twist = cos(curve_data.twist);
+    let sin_twist = sin(curve_data.twist);
+
+    let local_width_direction = vec3<f32>(cos_twist, 0.0, sin_twist);
+    let model_rotation_matrix = mat3x3<f32>(
+        instance.world_from_local[0].xyz,
+        instance.world_from_local[1].xyz,
+        instance.world_from_local[2].xyz
     );
-#else // NOT ANALYTICAL_NORMALS
+
+    let world_spine = normalize(model_rotation_matrix * local_spine_direction);
+    let world_width = normalize(model_rotation_matrix * local_width_direction);
+
+    result.world_normal = normalize(cross(world_width, world_spine));
+    result.world_tangent = vec4<f32>(world_width, 1.0);
+
+#else
     // Calculates normals numerically by sampling neighboring positions.
     //
     // Should be the most accurate, but most expensive path, as it runs the full
     // displacement logic on the neighbors to find the surface direction.
     //
     // Typically used for complex foliage like non-billboarded bushes, trees.
-    normal_data = calculate_numerical_normal(
-        final_pos_xyz,
-        vertex_pos,
-        wind,
-        instance,
-#ifdef STATIC_BEND
-        static_bend,
-#endif
-#ifdef VERTEX_NORMALS
-        normal,
-#endif
-#ifdef VERTEX_TANGENTS
-        tangent
-#endif
-    );
-#endif // ANALYTICAL_NORMALS
-#endif // FAST_NORMALS
 
-    out.world_normal = normal_data.world_normal;
-    out.world_tangent = normal_data.world_tangent;
-
-#else // NOT VERTEX_NORMALS
-    // Fallback to original, un-displaced world-space normals.
-    //
-    // Will have incorrect lighting as the normals will not match the displaced vertex positions.
-    //
-    // The mesh should ideally be modeled with its "growth" axis along Y-Up (`+Y`)
-    // and its "face" pointing along Z-Up (`+Z`).
-
-    out.world_normal  = vec3<f32>(0., 0., 1.);
-
-    let world_tangent_xyz = (instance.world_from_local * vec4<f32>(local_fallback_tangent.xyz, 0.0)).xyz;
-
-    out.world_tangent = vec4<f32>(normalize(world_tangent_xyz), local_fallback_tangent.w);
-#endif // VERTEX_NORMALS
-
-#ifdef EDGE_CORRECTION
-#ifdef VERTEX_UVS_A
-    let edge_offset = calculate_edge_correction(
-        out.world_position.xyz,
-        out.world_normal,
-        uv.x,
-        wind.edge_correction_factor
-    );
-
-    out.world_position += vec4<f32>(edge_offset, 0.);
-#endif
-#endif
-
-    return out;
-}
-
-
-fn displacement_cache(
-    local_pos: vec3<f32>,
-    wind: Wind,
-    noise: SampledNoise,
-    instance: InstanceInfo,
-#ifdef STATIC_BEND
-    static_bend: vec2<f32>,
-#endif
-) -> DisplacementCache {
-    var cache: DisplacementCache;
-    var pos = local_pos;
-
-    let height_range = wind.aabb_max.y - wind.aabb_min.y;
-    cache.normalized_height = (local_pos.y - wind.aabb_min.y) / max(height_range, 0.0001);
-    cache.height_attenuation_factor = pow(cache.normalized_height, wind.bend_exponent);
-
-    cache.bend_curve = 0.0;
-
-#ifdef STATIC_BEND
-    if (cache.normalized_height > 0.0001 && wind.bend_exponent > 0.0) {
-        cache.bend_curve = wind.bend_exponent
-            * pow(cache.normalized_height, wind.bend_exponent - 1.0) * (1.0 / max(height_range, 0.0001));
-    }
-
-    let bend_offset = static_bend * cache.height_attenuation_factor;
-    pos.x += bend_offset.x;
-    pos.z += bend_offset.y;
-#endif
-
-    cache.macro_wind_factor = 0.0;
-    cache.twist_angle = 0.0;
-    cache.wind_dir = vec3<f32>(0.0);
-    cache.micro_wind_factor = 0.0;
-    cache.macro_wind = vec3<f32>(0.0);
-
-#ifdef WIND_AFFECTED
-    cache.wind_dir = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
-
-    let clamped_macro_noise = clamp(noise.macro_noise, 0.001, 1.0 - 0.001);
-    cache.macro_wind_factor = clamped_macro_noise * 2.0 - 1.0;
-
-    let clamped_micro_noise = clamp(noise.micro_noise, 0.001, 1.0 - 0.001);
-    cache.micro_wind_factor = clamped_micro_noise * 2.0 - 1.0;
-
-    cache.macro_wind = cache.wind_dir
-        * wind.strength
-        * cache.macro_wind_factor
-        * cache.height_attenuation_factor;
-
-#ifndef BILLBOARDING
-
-    let twist = cache.macro_wind_factor * wind.twist_strength;
-    cache.twist_angle = twist * cache.height_attenuation_factor;
-
-    let cos_a = cos(cache.twist_angle);
-    let sin_a = sin(cache.twist_angle);
-
-    let rotated_x = pos.x * cos_a - pos.z * sin_a;
-    let rotated_z = pos.x * sin_a + pos.z * cos_a;
-    pos = vec3<f32>(rotated_x, pos.y, rotated_z);
-
-#endif // NOT BILLBOARDING
-#endif // WIND_AFFECTED
-
-    cache.bent_twisted_local_pos = pos;
-
-    return cache;
-}
-
-fn finish_vertex_displacement(
-    cache: DisplacementCache,
-    original_local_pos: vec3<f32>,
-    wind: Wind,
-    noise: SampledNoise,
-    instance: InstanceInfo,
-) -> vec3<f32> {
-    var total_world_offset = vec3<f32>(0.0);
-    let pos = cache.bent_twisted_local_pos;
-
-#ifdef WIND_AFFECTED
-    let macro_displacement = cache.macro_wind;
-    total_world_offset = cache.wind_dir * macro_displacement;
-
-#ifndef WIND_LOW_QUALITY
-    let micro_displacement = cache.micro_wind_factor * wind.micro_strength * cache.height_attenuation_factor;
-    let micro_wind = cache.wind_dir * micro_displacement;
-
-    let s_curve = calculate_s_curve_displacement(
-        wind,
-        cache.height_attenuation_factor,
-        cache.normalized_height,
-        instance.wrapped_time,
-        noise.phase_noise.x,
-        cache.wind_dir
-    );
-
-    let bop = calculate_bop_displacement(
-        wind,
-        cache.height_attenuation_factor,
-        instance.wrapped_time,
-        noise.phase_noise.y
-    );
-
-    total_world_offset += micro_wind + s_curve + bop;
-#endif // NOT WIND_LOW_QUALITY
-#endif // WIND_AFFECTED
-
-    var final_world_pos = (instance.world_from_local * vec4<f32>(pos, 1.0)).xyz;
-    final_world_pos += total_world_offset;
-
-#ifdef BILLBOARDING
-    final_world_pos = billboarding(wind, instance, pos, total_world_offset);
-#endif
-
-    return final_world_pos;
-}
-
-
-fn calculate_vertex_displacement(
-    local_pos: vec3<f32>,
-    wind: Wind,
-    noise: SampledNoise,
-    instance: InstanceInfo,
-#ifdef STATIC_BEND
-    static_bend: vec2<f32>,
-#endif
-) -> vec3<f32> {
-    let cache = displacement_cache(
-        local_pos,
-        wind,
-        noise,
-        instance,
-    #ifdef STATIC_BEND
-        static_bend,
+    #ifdef VERTEX_NORMALS
+        let local_normal = normal;
+    #else
+        let local_normal = vec3<f32>(0.0, 0.0, 1.0);
     #endif
+
+    #ifdef VERTEX_TANGENTS
+        let local_tangent = tangent.xyz;
+        let tangent_sign = tangent.w;
+    #else
+        let local_tangent = vec3<f32>(1.0, 0.0, 0.0);
+        let tangent_sign = 1.0;
+    #endif
+
+    let local_bitangent = normalize(cross(local_normal, local_tangent) * tangent_sign);
+
+    // Too small, e.g. 0.01, causes flicker on simple geometry
+    let sample_offset = 0.05;
+    let base_displaced_pos = final_local_pos;
+
+    // Sample Neighbor along Tangent
+    let neighbor_tangent_origin = vertex_pos + local_tangent * sample_offset;
+    let noise_tangent = sample_noise(instance, neighbor_tangent_origin);
+    let curve_tangent = calculate_macro_curve(neighbor_tangent_origin, wind, noise_tangent, instance,
+        #ifdef STATIC_BEND
+        static_bend
+        #endif
     );
+    let neighbor_tangent_displaced = apply_micro_details(curve_tangent.local_pos, curve_tangent, wind, instance, noise_tangent);
 
-    return finish_vertex_displacement(
-        cache,
-        local_pos,
-        wind,
-        noise,
-        instance
+    // Sample Neighbor along Bitangent
+    let neighbor_bitangent_origin = vertex_pos + local_bitangent * sample_offset;
+    let noise_bitangent = sample_noise(instance, neighbor_bitangent_origin);
+    let curve_bitangent = calculate_macro_curve(neighbor_bitangent_origin, wind, noise_bitangent, instance,
+        #ifdef STATIC_BEND
+         static_bend
+          #endif
     );
-}
+    let neighbor_bitangent_displaced = apply_micro_details(curve_bitangent.local_pos, curve_bitangent, wind, instance, noise_bitangent);
 
-fn billboarding(
-    wind: Wind,
-    instance: InstanceInfo,
-    pos: vec3<f32>,
-    total_world_offset: vec3<f32>,
-) -> vec3<f32> {
-    let billboard_anchor = instance.instance_position + vec4<f32>(total_world_offset.x, 0.0, total_world_offset.z, 0.0);
+    // Deltas
+    let delta_tangent = neighbor_tangent_displaced - base_displaced_pos;
+    let delta_bitangent = neighbor_bitangent_displaced - base_displaced_pos;
 
-    let billboard_matrix = calculate_billboard_matrix(
-        billboard_anchor,
-        view.world_position.xyz,
-        instance.world_from_local
-    );
+    let computed_local_normal = normalize(cross(delta_tangent, delta_bitangent) * tangent_sign);
 
-    let billboard_base = billboard_anchor.xyz + (billboard_matrix * pos);
+    // Prevent back-facing normals if displacement is extreme
+    let dot_alignment = dot(computed_local_normal, local_normal);
+    let safe_local_normal = select(computed_local_normal, local_normal, dot_alignment < 0.1);
 
-    return billboard_base + vec3(0.0, total_world_offset.y, 0.0);
-}
-
-#ifdef ANALYTICAL_NORMALS
-fn calculate_analytical_normal(
-    cache: DisplacementCache,
-    wind: Wind,
-    instance: InstanceInfo,
-    vertex_pos: vec3<f32>,
-#ifdef STATIC_BEND
-    static_bend:vec2<f32>,
-#endif
-#ifdef VERTEX_NORMALS
-    in_normal: vec3<f32>,
-#endif
-#ifdef VERTEX_TANGENTS
-    in_tangent: vec4<f32>,
-#endif
-) -> DisplacedVertex {
-    var out: DisplacedVertex;
-
-#ifdef VERTEX_NORMALS
-    let normal = in_normal;
-#else
-    let normal = vec3<f32>(0.0, 0.0, 1.0);
-#endif
-#ifdef VERTEX_TANGENTS
-    let tangent = in_tangent;
-#else
-    let tangent = vec4<f32>(1.0, 0.0, 0.0, 1.0);
-#endif
-
-    var local_tangent = tangent.xyz;
-    var local_normal = normal;
-    let local_tangent_w = tangent.w;
-
-#ifdef STATIC_BEND
-    let bend_x = static_bend.x * cache.bend_curve;
-    let bend_z = static_bend.y * cache.bend_curve;
-
-    let bent_up_vec = normalize(vec3<f32>(bend_x, 1.0, bend_z));
-
-    let local_sideways_vec = local_tangent;
-
-    local_normal = normalize(cross(local_sideways_vec, bent_up_vec));
-
-    local_tangent = local_sideways_vec;
-#endif // STATIC_BEND
-
-#ifndef BILLBOARDING
-    let cos_a = cos(cache.twist_angle);
-    let sin_a = sin(cache.twist_angle);
-
-    local_normal = normalize(vec3<f32>(
-        local_normal.x * cos_a - local_normal.z * sin_a,
-        local_normal.y,
-        local_normal.x * sin_a + local_normal.z * cos_a
-    ));
-
-    local_tangent = normalize(vec3<f32>(
-        local_tangent.x * cos_a - local_tangent.z * sin_a,
-        local_tangent.y,
-        local_tangent.x * sin_a + local_tangent.z * cos_a
-    ));
-#endif // NOT BILLBOARDING
-
-    // Wind displacement is in world space.
-    let model_3x3 = mat3x3<f32>(
+    let model_rotation_matrix = mat3x3<f32>(
         instance.world_from_local[0].xyz,
         instance.world_from_local[1].xyz,
         instance.world_from_local[2].xyz
     );
 
-    let world_normal_dir = normalize(model_3x3 * local_normal);
-    let world_tangent_dir = normalize(model_3x3 * local_tangent);
+    result.world_normal = normalize(model_rotation_matrix * safe_local_normal);
 
-#ifdef WIND_AFFECTED
-    let macro_wind = cache.macro_wind;
-    let world_bitangent = cross(world_tangent_dir, world_normal_dir);
+    let world_tangent_vec = normalize(model_rotation_matrix * delta_tangent);
 
-    let final_bitangent = world_bitangent + macro_wind;
-    let final_world_normal = normalize(
-        world_normal_dir + cross(world_tangent_dir, macro_wind)
+    result.world_tangent = vec4<f32>(
+        normalize(world_tangent_vec - dot(world_tangent_vec, result.world_normal) * result.world_normal),
+        tangent_sign
     );
-    let final_world_tangent = normalize(cross(final_world_normal, final_bitangent));
-
-    out.world_normal = final_world_normal;
-    out.world_tangent = vec4<f32>(final_world_tangent, local_tangent_w);
-#else
-    out.world_normal = world_normal_dir;
-    out.world_tangent = vec4<f32>(world_tangent_dir, local_tangent_w);
+#endif
 #endif
 
-    return out;
+#ifdef EDGE_CORRECTION
+#ifdef VERTEX_UVS_A
+    let edge_correction_offset = calculate_edge_correction(
+        result.world_position.xyz,
+        result.world_normal,
+        uv.x,
+        wind.edge_correction_factor
+    );
+    result.world_position += vec4<f32>(edge_correction_offset, 0.);
+#endif
+#endif
+
+    return result;
 }
-#endif
 
-fn calculate_numerical_normal(
-    final_pos_xyz: vec3<f32>,
-    vertex_pos: vec3<f32>,
+fn calculate_macro_curve(
+    local_pos: vec3<f32>,
     wind: Wind,
+    noise: SampledNoise,
     instance: InstanceInfo,
 #ifdef STATIC_BEND
     static_bend: vec2<f32>,
 #endif
-#ifdef VERTEX_NORMALS
-    normal: vec3<f32>,
-#endif
-#ifdef VERTEX_TANGENTS
-    tangent: vec4<f32>,
-#endif
-) -> DisplacedVertex {
-    var out: DisplacedVertex;
+) -> CurveResult {
+    var result: CurveResult;
 
-    // NOTE: Offset is sensitive to mesh scale.
-    // Too small: numerical precision issues.
-    // Too large: can cause flickering by sampling "over" details.
-    let small_offset = 0.1;
+    let height_range = max(wind.aabb_max.y - wind.aabb_min.y, 0.001);
 
-#ifdef VERTEX_NORMALS
-    let local_normal = normal;
-#else
-    let local_normal = vec3<f32>(0.0, 0.0, 1.0);
-#endif
+    // Normalized progress along the vertical axis (0.0 at bottom, 1.0 at top)
+    let height_progress = clamp((local_pos.y - wind.aabb_min.y) / height_range, 0.0, 1.0);
 
-#ifdef VERTEX_TANGENTS
-    let local_tangent_vec4 = tangent;
-#else
-    let local_tangent_vec4 = vec4<f32>(1.0, 0.0, 0.0, 1.0);
-#endif
+    result.height_factor = height_progress;
 
-    let local_tangent = local_tangent_vec4.xyz;
-    let local_bitangent = cross(local_normal, local_tangent) * local_tangent_vec4.w;
+    result.twist = 0.0;
+    result.local_wind_dir = vec3<f32>(0.0);
+    var target_bend_vector = vec2<f32>(0.0);
 
-    let local_pos_tangent = vertex_pos + local_tangent * small_offset;
-    let noise_tangent = sample_noise(instance, local_pos_tangent);
-
-    let neighbor_pos_tangent = calculate_vertex_displacement(
-        local_pos_tangent,
-        wind,
-        noise_tangent,
-        instance,
     #ifdef STATIC_BEND
-        static_bend,
+        target_bend_vector += static_bend;
     #endif
-    );
 
-    let local_pos_bitangent = vertex_pos + local_bitangent * small_offset;
-    let noise_bitangent = sample_noise(instance, local_pos_bitangent);
+    #ifdef WIND_AFFECTED
+        // Get scale from the instance matrix to apply wind correctly in local space
+        let scale_x = length(instance.world_from_local[0].xyz);
+        let scale_y = length(instance.world_from_local[1].xyz);
+        let scale_z = length(instance.world_from_local[2].xyz);
 
-    let neighbor_pos_bitangent = calculate_vertex_displacement(
-        local_pos_bitangent,
-        wind,
-        noise_bitangent,
-        instance,
-    #ifdef STATIC_BEND
-        static_bend,
+        let rotation_matrix = mat3x3<f32>(
+            instance.world_from_local[0].xyz / max(scale_x, 0.001),
+            instance.world_from_local[1].xyz / max(scale_y, 0.001),
+            instance.world_from_local[2].xyz / max(scale_z, 0.001)
+        );
+
+        let world_wind_direction = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
+        let local_wind_unscaled = transpose(rotation_matrix) * world_wind_direction;
+        result.local_wind_dir = normalize(local_wind_unscaled);
+
+        let macro_noise_value = clamp(noise.macro_noise, 0.001, 0.999) * 2.0 - 1.0;
+
+        let scale_compensation = vec2<f32>(1.0 / max(scale_x, 0.001), 1.0 / max(scale_z, 0.001));
+
+        let wind_force = vec2<f32>(local_wind_unscaled.x, local_wind_unscaled.z)
+                         * wind.strength
+                         * macro_noise_value
+                         * scale_compensation;
+
+        target_bend_vector += wind_force;
+
+        #ifndef BILLBOARDING
+            result.twist = macro_noise_value * wind.twist_strength * height_progress;
+        #endif
     #endif
+
+    let total_bend_amount = length(target_bend_vector);
+
+    // Limit bending to prevent the mesh from curling into itself
+    let max_allowed_bend = height_range * 0.95;
+    let safe_bend_amount = min(total_bend_amount, max_allowed_bend);
+
+    // Ensures the grass doesn't stretch when bending.
+    let tip_y_position = sqrt(max(height_range * height_range - safe_bend_amount * safe_bend_amount, 0.0));
+
+    // Quadratic Bezier
+    // P0: Start
+    // P1: Control Point
+    // P2: End Point
+    let point_end = vec3<f32>(target_bend_vector.x, tip_y_position, target_bend_vector.y);
+    let point_start = vec3<f32>(0.0, 0.0, 0.0);
+
+    let bend_factor = clamp(total_bend_amount / height_range, 0.0, 1.0);
+    let bend_stiffness = 0.33;
+
+    // Adjust control point height based on how much we are bending
+    let control_point_y_factor = mix(0.5, 0.6, bend_factor);
+    let control_point_y = height_range * control_point_y_factor;
+
+    let point_control = vec3<f32>(
+        target_bend_vector.x * bend_stiffness,
+        control_point_y,
+        target_bend_vector.y * bend_stiffness
     );
 
-    let surface_delta_tangent_dir = neighbor_pos_tangent - final_pos_xyz;
-    let surface_delta_bitangent_dir = neighbor_pos_bitangent - final_pos_xyz;
+    // B(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+    let inverse_progress = 1.0 - height_progress;
+    let bezier_position = (inverse_progress * inverse_progress) * point_start
+              + (2.0 * inverse_progress * height_progress) * point_control
+              + (height_progress * height_progress) * point_end;
 
-    out.world_normal = normalize(
-        cross(surface_delta_tangent_dir, surface_delta_bitangent_dir)
+    // B'(t) = 2(1-t)(P1-P0) + 2t(P2-P1)
+    let bezier_tangent = 2.0 * inverse_progress * (point_control - point_start)
+                       + 2.0 * height_progress * (point_end - point_control);;
+
+    // Twist
+    let cos_twist = cos(result.twist);
+    let sin_twist = sin(result.twist);
+    let twisted_x = local_pos.x * cos_twist - local_pos.z * sin_twist;
+    let twisted_z = local_pos.x * sin_twist + local_pos.z * cos_twist;
+
+    // Calculate delta and apply to vertex.
+    let spine_delta = bezier_position - vec3<f32>(0.0, local_pos.y - wind.aabb_min.y, 0.0);
+
+    result.local_pos = vec3<f32>(
+        twisted_x + spine_delta.x,
+        local_pos.y + spine_delta.y,
+        twisted_z + spine_delta.z
     );
 
-    let approximated_world_tangent = normalize(surface_delta_tangent_dir);
-    let orthogonalized_tangent = normalize(approximated_world_tangent
-        - dot(approximated_world_tangent, out.world_normal) * out.world_normal);
+    let slope_xz = vec2<f32>(bezier_tangent.x, bezier_tangent.z) / max(bezier_tangent.y, 0.001);
 
-    out.world_tangent = vec4<f32>(orthogonalized_tangent, local_tangent_vec4.w);
+    result.slope = vec3<f32>(slope_xz.x, 1.0, slope_xz.y);
 
-    return out;
+    return result;
 }
 
-fn calculate_s_curve_displacement(
+fn apply_micro_details(
+    pos: vec3<f32>,
+    curve_data: CurveResult,
     wind: Wind,
-    height_attenuation_factor: f32,
-    normalized_height: f32,
-    wrapped_time: f32,
-    s_curve_seed: f32,
-    wind_dir: vec3<f32>
+    instance: InstanceInfo,
+    noise: SampledNoise
 ) -> vec3<f32> {
-    let s_curve_phase_offset = s_curve_seed * 6.28318;
-    let s_curve_anim = sin(wrapped_time * wind.s_curve_speed + s_curve_phase_offset);
-    let s_curve_wiggles = sin(normalized_height * wind.s_curve_frequency);
+    var final_pos = pos;
 
-    let final_s_curve_shape = height_attenuation_factor
-        + (s_curve_wiggles * wind.s_curve_strength * height_attenuation_factor);
-    let s_curve_amount = s_curve_anim * wind.s_curve_strength * final_s_curve_shape;
+#ifdef WIND_AFFECTED
+#ifndef WIND_LOW_QUALITY
 
-    return wind_dir * s_curve_amount;
+    let forward_dir = curve_data.local_wind_dir;
+
+    let up_dir = vec3<f32>(0.0, 1.0, 0.0);
+    let right_dir = normalize(cross(forward_dir, up_dir));
+
+    // Micro
+    let micro_noise_val = (clamp(noise.micro_noise, 0.001, 0.999) * 2.0 - 1.0);
+    let micro_offset = forward_dir * (micro_noise_val * wind.micro_strength * 0.5 * curve_data.height_factor);
+
+    // S-Curve
+    let s_curve_seed = noise.phase_noise.x * 6.28;
+    let s_curve_lag = curve_data.height_factor * wind.s_curve_frequency;
+    let s_curve_input = instance.wrapped_time * wind.s_curve_speed + s_curve_seed + s_curve_lag;
+
+    let s_primary_oscillation = sin(s_curve_input);
+    let s_secondary_oscillation = cos(s_curve_input * 0.7) * 0.5;
+
+    let s_curve_offset = (forward_dir * s_primary_oscillation + right_dir * s_secondary_oscillation)
+                 * wind.s_curve_strength
+                 * curve_data.height_factor;
+
+    // Bop
+    let bop_seed = noise.phase_noise.y * 6.28;
+    let bop_input = instance.wrapped_time * wind.bop_speed + bop_seed + s_curve_lag;
+    let bop_val = sin(bop_input);
+
+    let bop_offset = vec3<f32>(0.0, bop_val * wind.bop_strength * curve_data.height_factor, 0.0);
+
+    final_pos += micro_offset + s_curve_offset + bop_offset;
+#endif
+#endif
+
+    return final_pos;
 }
 
-fn calculate_bop_displacement(
+fn billboarding(
     wind: Wind,
-    height_attenuation_factor: f32,
-    wrapped_time: f32,
-    bop_seed: f32,
+    instance: InstanceInfo,
+    local_displaced_pos: vec3<f32>,
+    total_offset: vec3<f32>
 ) -> vec3<f32> {
-    let bop_phase_offset = bop_seed * 6.28318;
-    let bop_value = sin(wrapped_time * wind.bop_speed + bop_phase_offset);
-    let vertical_amount = bop_value * wind.bop_strength * height_attenuation_factor;
+    let billboard_anchor_point = instance.instance_position + vec4<f32>(total_offset.x, 0.0, total_offset.z, 0.0);
 
-    return vec3<f32>(0.0, vertical_amount, 0.0);
+    let billboard_matrix = calculate_billboard_matrix(
+        billboard_anchor_point,
+        view.world_position.xyz,
+        instance.world_from_local
+    );
+
+    let billboard_base_pos = billboard_anchor_point.xyz + (billboard_matrix * local_displaced_pos);
+
+    return billboard_base_pos + vec3(0.0, total_offset.y, 0.0);
 }
-
-
-
 
 fn calculate_billboard_matrix(
     instance_position: vec4<f32>,
@@ -569,12 +418,12 @@ fn calculate_billboard_matrix(
         length(world_from_local[2].xyz)
     );
 
-    let to_camera = camera_world_pos - instance_position.xyz;
-    let new_z = normalize(vec3<f32>(to_camera.x, 0.0, to_camera.z));
-    let new_y = vec3<f32>(0.0, 1.0, 0.0);
-    let new_x = normalize(cross(new_y, new_z));
+    let to_camera_vector = camera_world_pos - instance_position.xyz;
+    let billboard_z = normalize(vec3<f32>(to_camera_vector.x, 0.0, to_camera_vector.z));
+    let billboard_y = vec3<f32>(0.0, 1.0, 0.0);
+    let billboard_x = normalize(cross(billboard_y, billboard_z));
 
-    return mat3x3<f32>(new_x * scale.x, new_y * scale.y, new_z * scale.z);
+    return mat3x3<f32>(billboard_x * scale.x, billboard_y * scale.y, billboard_z * scale.z);
 }
 
 fn calculate_edge_correction(
@@ -585,21 +434,22 @@ fn calculate_edge_correction(
 ) -> vec3<f32> {
     let signed_edge_factor = uv_x * 2.0 - 1.0;
 
-    let to_camera = normalize(view.world_position.xyz - world_pos);
+    let to_camera_dir = normalize(view.world_position.xyz - world_pos);
 
     let world_up = vec3<f32>(0.0, 1.0, 0.0);
-    let view_side_dir = normalize(cross(to_camera, world_up));
+    let view_side_dir = normalize(cross(to_camera_dir, world_up));
 
     // Normal orthogonal to camera/view vec
-    let normal_dot_view = dot(world_normal, to_camera);
+    let normal_dot_view = dot(world_normal, to_camera_dir);
     let grazing_angle_factor = pow(1.0 - abs(normal_dot_view), 2.0);
 
-    let top_down_factor = abs(dot(to_camera, world_up));
+    // Fade out correction when looking top-down
+    let top_down_factor = abs(dot(to_camera_dir, world_up));
     let top_down_fade = pow(1.0 - top_down_factor, 0.5);
 
     let strength = grazing_angle_factor * edge_correction_factor *  top_down_fade;
 
-    let shift = view_side_dir * -signed_edge_factor;
+    let correction_shift = view_side_dir * -signed_edge_factor;
 
-    return shift * strength;
+    return correction_shift * strength;
 }

@@ -1,5 +1,10 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_asset::Handle;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::Vec2;
+use bevy_reflect::Reflect;
 use std::f32::consts::PI;
 
 #[derive(Resource, Deref, DerefMut, Clone)]
@@ -12,7 +17,6 @@ pub struct Wind {
     pub strength: f32,
     pub noise_scale: f32,
     pub scroll_speed: f32,
-    pub bend_exponent: f32,
     pub micro_strength: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
@@ -30,19 +34,18 @@ impl Default for Wind {
             strength: 0.2,
             noise_scale: 0.01,
             scroll_speed: 0.1,
-            micro_strength: 0.05,
-            bend_exponent: 2.0,
-            s_curve_speed: 2.0,
-            s_curve_strength: 0.1,
-            s_curve_frequency: PI,
-            bop_speed: 0.1,
-            bop_strength: 0.05,
+            micro_strength: 0.1,
             twist_strength: 0.05,
+            s_curve_speed: 4.,
+            s_curve_strength: 0.02,
+            s_curve_frequency: PI,
+            bop_speed: 2.5,
+            bop_strength: 0.02,
         }
     }
 }
 
-pub type WindData<'w> = (
+pub type WindOptionData<'w> = (
     Option<&'w Strength>,
     Option<&'w MicroStrength>,
     Option<&'w SCurveStrength>,
@@ -51,7 +54,6 @@ pub type WindData<'w> = (
     Option<&'w BopStrength>,
     Option<&'w BopSpeed>,
     Option<&'w TwistStrength>,
-    Option<&'w BendExponent>,
 );
 
 impl Wind {
@@ -66,37 +68,33 @@ impl Wind {
             bop_strength,
             bop_speed,
             twist_strength,
-            bend_exponent,
-        ): WindData,
+        ): WindOptionData,
     ) -> Self {
         Wind {
             strength: strength
-                .map(|x| **x * self.strength)
+                .map(|s| **s * self.strength)
                 .unwrap_or(self.strength),
             micro_strength: micro_strength
-                .map(|x| **x * self.micro_strength)
+                .map(|s| **s * self.micro_strength)
                 .unwrap_or(self.micro_strength),
             s_curve_strength: s_curve_strength
-                .map(|x| **x * self.s_curve_strength)
+                .map(|s| **s * self.s_curve_strength)
                 .unwrap_or(self.s_curve_strength),
             s_curve_speed: s_curve_speed
-                .map(|x| **x * self.s_curve_speed)
+                .map(|s| **s * self.s_curve_speed)
                 .unwrap_or(self.s_curve_speed),
             s_curve_frequency: s_curve_frequency
-                .map(|x| **x * self.s_curve_frequency)
+                .map(|f| **f * self.s_curve_frequency)
                 .unwrap_or(self.s_curve_frequency),
             bop_strength: bop_strength
-                .map(|x| **x * self.bop_strength)
+                .map(|b| **b * self.bop_strength)
                 .unwrap_or(self.bop_strength),
             bop_speed: bop_speed
-                .map(|x| **x * self.bop_speed)
+                .map(|b| **b * self.bop_speed)
                 .unwrap_or(self.bop_speed),
             twist_strength: twist_strength
-                .map(|x| **x * self.twist_strength)
+                .map(|t| **t * self.twist_strength)
                 .unwrap_or(self.twist_strength),
-            bend_exponent: bend_exponent
-                .map(|x| **x * self.bend_exponent)
-                .unwrap_or(self.bend_exponent),
             ..*self
         }
     }

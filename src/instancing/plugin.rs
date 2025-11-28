@@ -1,58 +1,90 @@
 use super::prepare::*;
-use super::{draw::DrawInstancedWindAffected, pipeline::InstancedWindAffectedPipeline, systems::*};
-use crate::core::events::SpawnProtoTypes;
+use super::{
+    components::GpuCull,
+    draw::DrawInstancedWindAffected,
+    node::InstancedComputeNode,
+    pipeline::{InstancedComputePipeline, InstancedWindAffectedPipeline},
+    systems::*,
+};
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
-use bevy::asset::embedded_asset;
-use bevy::core_pipeline::core_3d::AlphaMask3d;
-use bevy::prelude::*;
-use bevy::render::{
-    Render, RenderApp, RenderSystems, extract_component::ExtractComponentPlugin,
-    render_asset::RenderAssetPlugin, render_phase::AddRenderCommand,
+
+use crate::instancing::resources::GrassBufferCache;
+use bevy_app::{App, Plugin, PostUpdate};
+use bevy_asset::{AssetApp, embedded_asset};
+use bevy_core_pipeline::core_3d::AlphaMask3d;
+use bevy_ecs::prelude::*;
+use bevy_render::graph::CameraDriverLabel;
+use bevy_render::{
+    Render, RenderApp, RenderSystems,
+    extract_component::ExtractComponentPlugin,
+    render_asset::RenderAssetPlugin,
+    render_graph::{RenderGraph, RenderLabel},
+    render_phase::AddRenderCommand,
     render_resource::SpecializedMeshPipelines,
 };
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
+pub struct InstancedComputeLabel;
 
 pub struct InstancedWindAffectedPlugin;
 
 impl Plugin for InstancedWindAffectedPlugin {
     fn build(&self, app: &mut App) {
-        embedded_asset!(app, "instancing.wgsl");
+        embedded_asset!(app, "instanced.wgsl");
+        embedded_asset!(app, "compute.wgsl");
 
         app.init_asset::<InstancedWindAffectedMaterial>()
-            .add_message::<SpawnProtoTypes<InstancedWindAffectedMaterial>>();
+            .add_message::<SpawnScatterAssets<InstancedWindAffectedMaterial>>();
+
         app.add_plugins((
             ScatterMaterialPlugin::<InstancedWindAffectedMaterial>::default(),
             ExtractComponentPlugin::<InstancePipelineKey>::default(),
             ExtractComponentPlugin::<InstanceMaterialData>::default(),
             ExtractComponentPlugin::<InstancedWindAffectedMeshMaterial>::default(),
+            ExtractComponentPlugin::<GpuCull>::default(),
+            ExtractComponentPlugin::<Center>::default(),
             RenderAssetPlugin::<PreparedInstancedWindAffectedMaterial>::default(),
         ))
-        .add_systems(
-            Update,
-            InstancedWindAffectedMaterial::spawn
-                .run_if(resource_exists::<Assets<ScatterAsset<InstancedWindAffectedMaterial>>>),
-        )
         .add_systems(PostUpdate, add_instance_key_component);
 
-        app.sub_app_mut(RenderApp)
+        let render_app = app.sub_app_mut(RenderApp);
+
+        render_app
             .add_render_command::<AlphaMask3d, DrawInstancedWindAffected>()
+            .init_resource::<GrassBufferCache>()
             .init_resource::<SpecializedMeshPipelines<InstancedWindAffectedPipeline>>()
             .add_systems(
                 Render,
                 (
                     (
                         queue_instanced_wind_affected,
-                        prepare_indirect_draw_buffer.after(queue_instanced_wind_affected),
+                        queue_instanced_compute_pipeline,
                     )
                         .in_set(RenderSystems::QueueMeshes),
-                    (prepare_instance_buffer, prepare_instance_uniform_buffer)
+                    (
+                        prepare_indirect_draw_buffer,
+                        prepare_instance_buffer,
+                        prepare_global_cull_buffer,
+                        prepare_instance_uniform_buffer,
+                        prepare_instanced_compute_resources.after(prepare_global_cull_buffer),
+                    )
                         .in_set(RenderSystems::PrepareResources),
                 ),
             );
+
+        let compute_node = InstancedComputeNode::from_world(render_app.world_mut());
+
+        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
+
+        render_graph.add_node(InstancedComputeLabel, compute_node);
+        render_graph.add_node_edge(InstancedComputeLabel, CameraDriverLabel);
     }
 
     fn finish(&self, app: &mut App) {
         app.sub_app_mut(RenderApp)
-            .init_resource::<InstancedWindAffectedPipeline>();
+            .init_resource::<InstancedWindAffectedPipeline>()
+            .init_resource::<InstancedComputePipeline>();
     }
 }
 

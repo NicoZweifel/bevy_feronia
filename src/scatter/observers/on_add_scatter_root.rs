@@ -1,18 +1,21 @@
 use crate::prelude::*;
-use crate::scatter::observers::{hierarchical_scatter, scatter_observer, scatter_root};
-use bevy::prelude::*;
+use crate::scatter::observers::*;
+use bevy_ecs::prelude::*;
 
-pub fn on_add_scatter_root<TOut, TIn>(trigger: On<Add, ScatterRoot>, mut cmd: Commands)
+#[cfg(feature = "trace")]
+use tracing::debug;
+
+pub fn on_add_scatter_root<T>(trigger: On<Add, ScatterRoot>, mut cmd: Commands)
 where
-    TOut: ScatterMaterial<TIn>,
-    TIn: Material,
+    T: ScatterMaterial,
 {
     let root = trigger.entity;
 
+    #[cfg(feature = "trace")]
     debug!("Added ScatterRoot {root}.");
 
     cmd.entity(root)
-        .observe(scatter_root::<TOut, TIn>)
-        .observe(hierarchical_scatter::<TOut, TIn>)
-        .observe(scatter_observer::<TOut, TIn>);
+        .observe(scatter_root::<T>)
+        .observe(hierarchical_scatter::<T>)
+        .observe(scatter_observer::<T>);
 }

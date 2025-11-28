@@ -1,6 +1,8 @@
-use crate::chunking::systems::prelude::*;
+use crate::chunking::systems::*;
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_app::*;
+use bevy_ecs::prelude::*;
+use bevy_state::prelude::*;
 
 pub struct ChunkPlugin;
 
@@ -27,17 +29,17 @@ impl Plugin for ChunkPlugin {
                         .run_if(in_state(HeightMapState::Ready)),
                 ),
             )
-            .add_observer(on_add_chunk)
+            .add_systems(Update, update_root_lod_config)
             .add_systems(
                 Update,
                 (
                     setup_chunks,
-                    chunk_init,
                     update_chunk_height.run_if(resource_exists_and_changed::<HeightMap>),
                     (split, handle_split).chain(),
                     (merge_check, handle_merge_check).chain(),
                     (merge, handle_merge).chain(),
-                    (draw_aabbs, draw_chunks).run_if(resource_exists::<ChunkDebugConfig>),
+                    (draw_aabbs, draw_chunks, draw_lod_ranges)
+                        .run_if(resource_exists::<ChunkDebugConfig>),
                 )
                     .in_set(ChunkSet::Ready),
             );

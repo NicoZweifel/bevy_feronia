@@ -1,35 +1,33 @@
 use crate::prelude::*;
-use bevy::asset::Assets;
-use bevy::image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor};
-use bevy::pbr::Material;
-use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+
+use bevy_asset::Assets;
+use bevy_ecs::prelude::*;
+use bevy_image::*;
+use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use bevy_utils::default;
 use noise::{NoiseFn, Perlin};
 
-pub fn update_materials<TOut, TIn>(
-    mut materials: ResMut<Assets<TOut>>,
+pub fn update_materials<T>(
+    mut materials: ResMut<Assets<T>>,
     wind: Res<Wind>,
-    mut scatter_assets: ResMut<Assets<ScatterAsset<TOut>>>,
+    mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     q_layer: Query<
-        (WindData, MaterialOptionData, &ScatterLayerOf),
-        (With<ScatterLayer>, With<ScatterLayerType<TOut, TIn>>),
+        (WindOptionData, MaterialOptionData, &ScatterLayerOf),
+        (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    q_root: Query<WindData, With<ScatterRoot>>,
+    q_root: Query<WindOptionData, With<ScatterRoot>>,
 ) where
-    TIn: Material,
-    TOut: ScatterMaterial<TIn>,
+    T: ScatterMaterial,
 {
     for (_, asset) in scatter_assets.iter_mut() {
-        let Some(material) = materials.get_mut(&asset.material) else {
-            dbg!("Material not found!");
-            continue;
-        };
-
         if asset.properties.options.controlled {
             continue;
         };
 
-        let Ok((wind_data, _material_options, root)) = q_layer.get(asset.properties.layer) else {
+        #[allow(deprecated)]
+        let Some((wind_data, _material_options, root)) =
+            asset.properties.layer.and_then(|x| q_layer.get(x).ok())
+        else {
             dbg!("ScatterLayer not found!");
             continue;
         };
@@ -41,21 +39,28 @@ pub fn update_materials<TOut, TIn>(
 
         let wind = wind.with(root_wind_data).with(wind_data);
 
-        // TODO update options
-        /*
-        let options = MaterialOptions::from(root_material_options)
-            .with(material_options)
-            .with_options(asset.properties.options)
-            .with_quality(*asset.properties.lod, asset.properties.wind_affected);
-         */
-
         asset.properties.wind = wind;
 
-        TOut::update_material(material, wind, asset.properties.options);
+        for part in &asset.parts {
+            let Some(material) = materials.get_mut(&part.h_material) else {
+                dbg!("Material not found!");
+                continue;
+            };
+
+            // TODO update options
+            /*
+            let options = MaterialOptions::from(root_material_options)
+                .with(material_options)
+                .with_options(asset.properties.options)
+                .with_quality(*asset.properties.lod, asset.properties.wind_affected);
+             */
+
+            T::update_material(material, wind, asset.properties.options);
+        }
     }
 }
 
-pub fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let texture_size = 512;
     let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4) as usize);
 

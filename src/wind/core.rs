@@ -1,37 +1,155 @@
-use crate::core::events::SpawnProtoTypes;
+use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
-use bevy::camera::primitives::Aabb;
-use bevy::platform::collections::HashMap;
-use bevy::prelude::*;
-use bevy::render::render_resource::ShaderType;
+
+use bevy_asset::{Asset, Handle};
+use bevy_camera::{primitives::Aabb, visibility::VisibilityRange};
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::*;
+use bevy_mesh::Mesh3d;
+use bevy_pbr::{Material, MeshMaterial3d, StandardMaterial};
+use bevy_platform::collections::HashMap;
+use bevy_render::render_resource::ShaderType;
+use bevy_transform::prelude::Transform;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use rand::SeedableRng;
-use rand::prelude::IndexedRandom;
+use rand::prelude::*;
 use rand_pcg::Pcg64;
+use std::fmt::Debug;
 
-pub trait ScatterMaterial<TIn = StandardMaterial>: Asset + Clone
-where
-    TIn: Material,
-{
-    // TODO refactor
+#[cfg(feature = "avian")]
+use avian3d::prelude::Collider;
+
+pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
+
+impl<T> ScatterMaterialAsset for T where T: Asset + Clone + Default + Debug {}
+
+pub trait ScatterMaterial: ScatterMaterialAsset {
     fn create_material(
-        base: Option<TIn>,
+        base: Option<StandardMaterial>,
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
     ) -> Self;
-    fn update_material(material: &mut Self, wind: Wind, options: MaterialOptions);
+
+    fn update_material(_material: &mut Self, _wind: Wind, _options: ScatterMaterialOptions) {}
 
     fn component(material: Handle<Self>) -> impl Component;
 
-    fn spawn(
-        cmd: Commands,
-        mr_spawn: MessageReader<SpawnProtoTypes<Self>>,
-        prototype_assets: Res<Assets<ScatterAsset<Self>>>,
-        q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
-        q_root: Query<&LodConfig, With<ScatterRoot>>,
-        q_layers: Query<(), With<ScatterChunked>>,
-    );
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<Self>);
+}
+
+pub struct SpawnRequest<'w, T>
+where
+    T: ScatterMaterialAsset,
+{
+    pub event: &'w SpawnScatterAssets<T>,
+    pub names: Vec<Name>,
+    pub name_map: &'w HashMap<Name, Vec<ScatterHandleAsset<'w, T>>>,
+    pub is_chunked: bool,
+    pub chunk_level: ChunkLevel,
+    pub chunk_gtf_translation: Vec3,
+    pub lod_config: &'w LodConfig,
+    pub parent: Entity,
+}
+
+pub struct ScatterHandleAsset<'w, T>
+where
+    T: ScatterMaterialAsset,
+{
+    pub handle: Handle<ScatterAsset<T>>,
+    pub asset: &'w ScatterAsset<T>,
+}
+
+impl<T> ScatterHandleAsset<'_, T>
+where
+    T: ScatterMaterialAsset,
+{
+    pub fn is_lod(&self, chunked: bool, lod: u32) -> bool {
+        if chunked {
+            *self.asset.properties.lod == lod
+        } else {
+            *self.asset.properties.lod >= lod
+        }
+    }
+}
+
+impl<'w, T> SpawnRequest<'w, T>
+where
+    T: ScatterMaterialAsset,
+{
+    pub fn prototypes_from_seed_iter(
+        &self,
+        seed: u64,
+    ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
+        let mut rng = Pcg64::seed_from_u64(seed);
+
+        self.names
+            .choose(&mut rng)
+            .into_iter()
+            .flat_map(|name| self.prototypes_from_name_iter(name))
+    }
+
+    pub fn prototypes_from_name_iter(
+        &self,
+        name: &Name,
+    ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
+        self.name_map
+            .get(name)
+            .map_or(&[][..], |prototypes| prototypes.as_slice())
+            .iter()
+            .filter(|&handle_asset| handle_asset.is_lod(self.is_chunked, *self.chunk_level))
+    }
+}
+
+#[cfg(not(feature = "avian"))]
+type SpawnRequestItem<T> = (
+    Transform,
+    VisibilityRange,
+    Mesh3d,
+    MeshMaterial3d<T>,
+    ChildOf,
+    ScatteredInstance,
+    ScatteredAsset<T>,
+);
+
+#[cfg(feature = "avian")]
+type SpawnRequestItem<T> = (
+    Transform,
+    VisibilityRange,
+    Mesh3d,
+    MeshMaterial3d<T>,
+    ChildOf,
+    ScatteredInstance,
+    ScatteredAsset<T>,
+    Collider,
+);
+
+impl<'w, T> SpawnRequest<'w, T>
+where
+    T: Material + Default + Debug,
+{
+    pub fn spawn_batch_iter(&self) -> impl Iterator<Item = SpawnRequestItem<T>> {
+        self.event.trigger.data.iter().flat_map(|res| {
+            self.prototypes_from_seed_iter(res.seed).flat_map(
+                |ScatterHandleAsset { handle, asset }| {
+                    asset.parts.iter().map(|part| {
+                        (
+                            res.transform.mul_transform(part.transform),
+                            self.lod_config.get_visibility_range(asset.properties.lod),
+                            Mesh3d(part.h_mesh.clone()),
+                            MeshMaterial3d::<T>(part.h_material.clone()),
+                            ChildOf(self.parent),
+                            ScatteredInstance(self.event.trigger.layer),
+                            ScatteredAsset(handle.clone()),
+                            // TODO find a method for conditionally adding colliders
+                            #[cfg(feature = "avian")]
+                            part.collider.clone().unwrap_or_default(),
+                        )
+                    })
+                },
+            )
+        })
+    }
 }
 
 impl ScatterMaterial for StandardMaterial {
@@ -43,102 +161,12 @@ impl ScatterMaterial for StandardMaterial {
         base.unwrap_or_default()
     }
 
-    fn update_material(_material: &mut StandardMaterial, _wind: Wind, _options: MaterialOptions) {}
-
     fn component(material: Handle<StandardMaterial>) -> impl Component {
         MeshMaterial3d(material)
     }
 
-    fn spawn(
-        mut cmd: Commands,
-        mut mr_spawn: MessageReader<SpawnProtoTypes<StandardMaterial>>,
-        prototype_assets: Res<Assets<ScatterAsset<StandardMaterial>>>,
-        q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
-        q_root: Query<&LodConfig, With<ScatterRoot>>,
-        q_layers: Query<(), With<ScatterChunked>>,
-    ) {
-        for event in mr_spawn.read() {
-            debug!("Spawning extended wind affected!");
-
-            let chunk_level = event
-                .trigger
-                .chunk
-                .and_then(|x| q_chunks.get(x).map(|(_, lvl)| lvl).ok())
-                .cloned()
-                .unwrap_or_default();
-
-            let is_chunked =
-                event.trigger.chunk.is_some() && q_layers.get(event.trigger.layer).is_ok();
-
-            let prototypes: Vec<_> = event
-                .items
-                .iter()
-                .filter_map(|h| prototype_assets.get(&**h))
-                .collect();
-
-            let mut name_map: HashMap<Name, Vec<&ScatterAsset<_>>> = HashMap::new();
-
-            prototypes.iter().for_each(|p| {
-                let name = p.properties.name.clone().unwrap_or_else(|| Name::new(""));
-                name_map.entry(name).or_default().push(*p);
-            });
-
-            if name_map.is_empty() {
-                continue;
-            }
-
-            let mut sorted_names: Vec<&Name> = name_map.keys().collect();
-            sorted_names.sort();
-
-            let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
-
-            let Ok(lod_config) = q_root.get(event.trigger.root) else {
-                warn!("Couldn't get ScatterRoot!");
-                continue;
-            };
-
-            cmd.spawn_batch(
-                event
-                    .trigger
-                    .data
-                    .iter()
-                    .flat_map(|res| {
-                        let mut rng = Pcg64::seed_from_u64(res.seed);
-
-                        let Some(chosen_name) = sorted_names.choose(&mut rng) else {
-                            return vec![];
-                        };
-
-                        let Some(prototypes_to_spawn) = name_map.get(*chosen_name) else {
-                            return vec![];
-                        };
-
-                        prototypes_to_spawn
-                            .iter()
-                            .filter(|p| {
-                                if is_chunked {
-                                    *p.properties.lod == *chunk_level
-                                } else {
-                                    *p.properties.lod >= *chunk_level
-                                }
-                            })
-                            .map(move |p| {
-                                let visibility_range =
-                                    lod_config.get_visibility_range(p.properties.lod);
-                                (
-                                    res.transform,
-                                    Mesh3d(p.mesh().clone()),
-                                    MeshMaterial3d(p.material().clone()),
-                                    ChildOf(parent),
-                                    visibility_range,
-                                    ScatteredInstance(event.trigger.layer),
-                                )
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .collect::<Vec<_>>(),
-            );
-        }
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
+        cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
     }
 }
 
@@ -149,7 +177,6 @@ pub struct WindUniform {
     pub strength: f32,
     pub noise_scale: f32,
     pub scroll_speed: f32,
-    pub bend_exponent: f32,
     pub micro_strength: f32,
     pub s_curve_speed: f32,
     pub s_curve_strength: f32,
@@ -157,9 +184,14 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-
-    // TODO move to uniform for Options/InstanceData
     pub edge_correction_factor: f32,
+
+    /// TODO use in both materials or rename [`WindUniform`] to `ExtendedUniforms`
+    pub sss_strength: f32,
+    pub sss_scale: f32,
+
+    /// TODO use in both materials move to separate uniform e.g.
+    /// or move to [`InstanceUniforms`]
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
     pub debug_color: Vec4,
@@ -172,7 +204,6 @@ impl From<&Wind> for WindUniform {
             strength: wind.strength,
             noise_scale: wind.noise_scale,
             scroll_speed: wind.scroll_speed,
-            bend_exponent: wind.bend_exponent,
             micro_strength: wind.micro_strength,
             s_curve_speed: wind.s_curve_speed,
             s_curve_strength: wind.s_curve_strength,
@@ -184,6 +215,8 @@ impl From<&Wind> for WindUniform {
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
             debug_color: Vec4::splat(1.),
+            sss_strength: 0.,
+            sss_scale: 0.,
         }
     }
 }
@@ -204,6 +237,12 @@ impl WindUniform {
         self.debug_color = color;
         self
     }
+
+    pub fn with_sss(mut self, sss_strength: f32, sss_scale: f32) -> Self {
+        self.sss_strength = sss_strength;
+        self.sss_scale = sss_scale;
+        self
+    }
 }
 
 bitflags! {
@@ -216,10 +255,14 @@ bitflags! {
         const FAST_NORMALS = 1 << 3;
         const DEBUG = 1 << 4;
         const WIND_AFFECTED= 1 << 5;
-        const SUBSURFACE_SCATTERING = 1 << 6;
+        const STATIC_SHADOW = 1<< 6;
         const STATIC_BEND = 1 << 7;
         const ANALYTICAL_NORMALS = 1 << 8;
         const CURVE_NORMALS = 1 << 9;
-        const POINT_LIGHTS = 1 << 10;
+         /// TODO use in both materials create separate keys
+        const SUBSURFACE_SCATTERING = 1 << 10;
+        const POINT_LIGHTS = 1 << 11;
+        const DIRECTIONAL_LIGHTS = 1 << 12;
+        const GPU_CULL = 1 << 13;
     }
 }

@@ -1,9 +1,13 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy::camera::primitives::Aabb;
-use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
+use bevy_ecs::prelude::*;
+use bevy_state::state::NextState;
 
-pub fn transition_to_ready_state(
+#[cfg(feature = "trace")]
+use tracing::debug;
+
+pub fn transition_to_collecting(
     q_pending_roots: Query<Entity, (With<ScatterRoot>, Without<Aabb>)>,
     mut next_state: ResMut<NextState<ScatterState>>,
 ) {
@@ -11,9 +15,10 @@ pub fn transition_to_ready_state(
         return;
     };
 
-    debug!("Transitioning ScatterState to Ready.");
+    #[cfg(feature = "trace")]
+    debug!("Setting ScatterState::Collecting.");
 
-    next_state.set(ScatterState::Ready);
+    next_state.set(ScatterState::Collecting);
 }
 
 pub fn setup_root_aabb(
@@ -23,27 +28,20 @@ pub fn setup_root_aabb(
     q_aabb: Query<&Aabb>,
 ) {
     for (root_entity, children) in &q_root {
-        let mut root_aabb: Option<Aabb> = None;
+        let aabb: Option<Aabb> = children
+            .iter()
+            .flat_map(|child| q_children.iter_descendants(child))
+            .filter_map(|entity| q_aabb.get(entity).ok())
+            .fold(None, |aabb, child| {
+                aabb.map(|aabb| combine_aabbs(&aabb, child))
+                    .or(Some(*child))
+            });
 
-        for child in children.iter() {
-            for descendant_entity in q_children.iter_descendants(child) {
-                let Ok(descendant_aabb) = q_aabb.get(descendant_entity) else {
-                    continue;
-                };
-
-                if let Some(existing_aabb) = &mut root_aabb {
-                    *existing_aabb = combine_aabbs(existing_aabb, descendant_aabb);
-                } else {
-                    root_aabb = Some(*descendant_aabb);
-                }
-            }
-        }
-
-        let Some(aabb) = root_aabb else {
-            continue;
-        };
-
+        #[cfg(feature = "trace")]
         debug!("Calculated and inserted AABB for ScatterRoot. {aabb:?}");
-        cmd.entity(root_entity).insert(aabb);
+
+        if let Some(aabb) = aabb {
+            cmd.entity(root_entity).insert(aabb);
+        }
     }
 }

@@ -1,9 +1,10 @@
 use crate::core::Sampler;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use bevy::asset::Assets;
-use bevy::image::Image;
-use bevy::prelude::*;
+use bevy_asset::Assets;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_transform::prelude::Transform;
 
 pub fn update_chunk_height(
     images: Res<Assets<Image>>,
@@ -13,7 +14,7 @@ pub fn update_chunk_height(
 ) {
     let height_sampler = images
         .get(&height_map.0)
-        .map(|x| HeightMapCpuSampler::new(x, height_map_config.into_inner()));
+        .map(|img| HeightMapCpuSampler::new(img, height_map_config.into_inner()));
 
     let Some(sampler) = height_sampler else {
         return;

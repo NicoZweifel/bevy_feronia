@@ -1,15 +1,13 @@
 use crate::prelude::*;
-use bevy::prelude::*;
-
-/// Marker component indicating that an entity with [`WindAffected`] is fully processed and ready for wind simulation.
-#[derive(Component)]
-pub struct WindAffectedReady;
+use bevy_derive::{Deref, DerefMut};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
 
 /// Marker component to enable wind effects for an entity.
 ///
 /// Enables `#ifdef WIND_AFFECTED` in shaders, applying all wind-related vertex displacements.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Default, Clone)]
+#[reflect(Component, Clone)]
 pub struct WindAffected;
 
 /// Component for configuring wind behavior on a per-entity basis.
@@ -84,14 +82,6 @@ pub struct BopSpeed(pub f32);
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct TwistStrength(pub f32);
-
-/// Component to multiply the `bend_exponent` field of an entity's [`Wind`] settings.
-///
-/// Corresponds to `wind.bend_exponent` in shaders, controlling the bend curve i.e.,
-/// how much the wind affects the mesh based on height.
-#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
-pub struct BendExponent(pub f32);
 
 /// Marker component to disable secondary wind effects for performance.
 ///

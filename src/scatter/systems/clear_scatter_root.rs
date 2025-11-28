@@ -1,5 +1,8 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+
+#[cfg(feature = "trace")]
+use tracing::warn;
 
 pub fn clear_scatter_roots(
     mut cmd: Commands,
@@ -7,13 +10,25 @@ pub fn clear_scatter_roots(
     mut mw_clear_layers: MessageWriter<ClearScatterLayer>,
     q_root: Query<(Entity, &ScatterRoot)>,
 ) {
-    for root in mr_clear_root.read() {
-        let Ok((root, layers)) = q_root.get(**root) else {
-            continue;
-        };
+    let layers = mr_clear_root
+        .read()
+        .filter_map(|root| {
+            q_root
+                .get(**root)
+                .inspect_err(|_| {
+                    #[cfg(feature = "trace")]
+                    warn!(
+                        "No `ScatterRoot` found for root entity {:?}. Skipping.",
+                        root
+                    );
+                })
+                .map(|(root, layers)| {
+                    cmd.entity(root).insert(ScatterOccupancyMap::default());
+                    layers.iter()
+                })
+                .ok()
+        })
+        .flatten();
 
-        cmd.entity(root).insert(ScatterOccupancyMap::default());
-
-        mw_clear_layers.write_batch(layers.iter().map(|x| x.into()));
-    }
+    mw_clear_layers.write_batch(layers.map(ClearScatterLayer));
 }

@@ -1,12 +1,23 @@
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
-use bevy::camera::primitives::Aabb;
-use bevy::camera::visibility::{NoFrustumCulling, RenderLayers};
-use bevy::camera::{ImageRenderTarget, RenderTarget};
-use bevy::prelude::*;
-use bevy::render::render_resource::*;
-use bevy::render::view::screenshot::{Screenshot, ScreenshotCaptured};
+use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
+use bevy_camera::visibility::{NoFrustumCulling, RenderLayers};
+use bevy_camera::*;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_math::*;
+use bevy_mesh::Mesh3d;
+use bevy_pbr::MeshMaterial3d;
+use bevy_render::render_resource::*;
+use bevy_render::view::screenshot::{Screenshot, ScreenshotCaptured};
+use bevy_state::state::NextState;
+use bevy_transform::prelude::{GlobalTransform, Transform};
+use bevy_utils::default;
+
+#[cfg(feature = "trace")]
+use tracing::{debug, info};
 
 pub fn setup_materials(
     mut cmd: Commands,
@@ -50,10 +61,13 @@ pub fn setup_config(
         render_layer: RenderLayers::layer(1),
     };
 
-    debug!("HeightMapConfig created from root AABB:");
-    debug!("   - World Size: {:.2}", config.world_size);
-    debug!("   - Min Height: {:.2}", config.world_height_range.start);
-    debug!("   - Max Height: {:.2}", config.world_height_range.end);
+    #[cfg(feature = "trace")]
+    {
+        debug!("HeightMapConfig created from root AABB:");
+        debug!("   - World Size: {:.2}", config.world_size);
+        debug!("   - Min Height: {:.2}", config.world_height_range.start);
+        debug!("   - Max Height: {:.2}", config.world_height_range.end);
+    }
 
     cmd.insert_resource(config);
 }
@@ -66,6 +80,7 @@ pub fn skip_setup(
         return;
     };
 
+    #[cfg(feature = "trace")]
     info!("Skipping HeightMap setup");
 
     next_state.set(HeightMapState::Ready);
@@ -101,6 +116,7 @@ pub fn create_height_map_ghost(
 
             cmd.entity(landscape_root).insert(HeightMapped);
 
+            #[cfg(feature = "trace")]
             debug!("HeightMapGhost created");
 
             next_state.set(HeightMapState::Baking);
@@ -134,6 +150,7 @@ pub fn bake_height_map(
 
                 cmd.insert_resource(HeightMap(images.add(image)));
 
+                #[cfg(feature = "trace")]
                 debug!("HeightMap created.");
 
                 next_state.set(HeightMapState::Ready);
@@ -178,7 +195,7 @@ pub fn setup_height_map_pipeline(
             far: world_size,
             scale: 1.0,
             viewport_origin: Vec2::new(0.5, 0.5),
-            scaling_mode: bevy::camera::ScalingMode::Fixed {
+            scaling_mode: ScalingMode::Fixed {
                 width: world_size,
                 height: world_size,
             },
@@ -195,11 +212,13 @@ pub fn teardown_height_map_pipeline(
     q_camera: Query<Entity, With<HeightMapCamera>>,
     q_mapped_landscapes: Query<Entity, With<HeightMapped>>,
 ) {
+    #[cfg(feature = "trace")]
     info!("Tearing down height map pipeline...");
 
     for entity in &q_ghosts {
         cmd.entity(entity).despawn();
     }
+    #[cfg(feature = "trace")]
     debug!(
         "Despawned {} height map ghost entities.",
         q_ghosts.iter().count()
@@ -208,16 +227,20 @@ pub fn teardown_height_map_pipeline(
     for entity in &q_camera {
         cmd.entity(entity).despawn();
     }
+    #[cfg(feature = "trace")]
     debug!("Despawned height map camera.");
 
     cmd.remove_resource::<HeightMapTexture>();
     cmd.remove_resource::<HeightMapMaterialHandle>();
+    #[cfg(feature = "trace")]
     debug!("Removed height map resources.");
 
     for entity in &q_mapped_landscapes {
         cmd.entity(entity).remove::<HeightMapped>();
     }
+    #[cfg(feature = "trace")]
     debug!("Cleaned up HeightMapped component.");
 
+    #[cfg(feature = "trace")]
     info!("Height map pipeline teardown complete.");
 }

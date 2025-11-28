@@ -1,18 +1,25 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::color::palettes::tailwind::*;
-use bevy::mesh::PlaneMeshBuilder;
+use bevy::app::prelude::*;
 use bevy::prelude::*;
+use bevy_color::palettes::tailwind::*;
+use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
 use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
+use bevy_mesh::PlaneMeshBuilder;
 use example::*;
 use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .add_plugins((
+            ExamplePlugin,
+            MeshMaterialAssetBackendPlugin,
+            ExtendedWindAffectedScatterPlugin,
+        ))
+        .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, setup)
         .add_systems(Update, scatter_on_keypress)
@@ -40,21 +47,24 @@ fn setup(
             // Scatter Options
             DistributionDensity(50.),
             InstanceJitter::default(),
+            InstanceScale::default(),
+            InstanceRotationYaw::default(),
             // You can define material options on the full layer here.
             WindAffected,
             children![
                 (
-                    // Or overwrite on the item, e.g.,
-                    // WindAffected,
-                    // CAUTION: If you have multiple assets, all lods that belong to each other need to have the same name!
-
                     // You can have multiple assets in each layer; as long as all LODs have the same name, they will be matched correctly.
-                    Name::new("Wind Affected Item"),
-                    // Material will default if no material is given, but we always do need a mesh:
+                    Name::new("Wind Affected Asset"),
+                    // Always need a mesh/material combo:
+                    MeshMaterial3d(materials.add(StandardMaterial {
+                        base_color: RED_500.into(),
+                        ..default()
+                    })),
                     Mesh3d(mesh.clone()),
+                    Transform::from_xyz(0., 3., 0.),
                 ),
                 (
-                    Name::new("Wind Affected Item"),
+                    Name::new("Wind Affected Asset"),
                     // We need to specify the LOD Level if it is not 0 (Highest level)
                     LevelOfDetail(1),
                     MeshMaterial3d(materials.add(StandardMaterial {
@@ -62,15 +72,17 @@ fn setup(
                         ..default()
                     })),
                     Mesh3d(mesh.clone()),
+                    Transform::from_xyz(0., 3., 0.),
                 ),
                 (
-                    Name::new("Wind Affected Item"),
+                    Name::new("Wind Affected Asset"),
                     LevelOfDetail(2),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: GREEN_500.into(),
                         ..default()
                     })),
                     Mesh3d(mesh),
+                    Transform::from_xyz(0., 3., 0.),
                 )
             ]
         )],

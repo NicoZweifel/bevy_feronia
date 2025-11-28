@@ -1,9 +1,14 @@
 use crate::prelude::HeightMapMaterial;
-use bevy::camera::visibility::RenderLayers;
-use bevy::prelude::*;
+use bevy_asset::Handle;
+use bevy_camera::visibility::RenderLayers;
+use bevy_derive::Deref;
+use bevy_ecs::prelude::*;
+use bevy_image::Image;
+use bevy_reflect::Reflect;
 use std::ops::Range;
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Reflect)]
+#[reflect(Resource)]
 pub struct HeightMapConfig {
     pub world_size: f32,
     pub render_layer: RenderLayers,
@@ -20,11 +25,14 @@ impl Default for HeightMapConfig {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
 pub struct HeightMapTexture(pub Handle<Image>);
 
-#[derive(Resource, Default, Deref)]
+#[derive(Resource, Reflect, Deref)]
+#[reflect(Resource)]
 pub struct HeightMap(pub Handle<Image>);
 
-#[derive(Resource)]
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
 pub struct HeightMapMaterialHandle(pub Handle<HeightMapMaterial>);
