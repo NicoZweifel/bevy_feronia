@@ -4,11 +4,11 @@ Environment scattering tools and shaders/materials that prioritize visual fideli
 
 ## Who is this for?
 
-In the current stage this is mostly for tinkerers and learners within the [bevy](https://github.com/bevyengine/bevy) ecosystem but I am planning to use this for actual game dev myself eventually.
+In the current stage this is mostly for tinkerers and learners within the [bevy](https://github.com/bevyengine/bevy) ecosystem, but I am planning to use this for actual game dev myself eventually.
 
 > [!CAUTION]
 > This package is in early development and in an experimentation stage.
-> I wouldn't personally use this in production quite yet but it's getting closer to that state incrementally.
+> I wouldn't personally use this in production quite yet, but it's getting closer to that state incrementally.
 
 <img width="100%" alt="Screenshot 2025-11-28 144933" src="https://github.com/user-attachments/assets/bf0ac5b4-affc-4360-8b3e-7492b5c07257" />
 
@@ -37,13 +37,13 @@ app.add_plugins((
 The Scatter system needs to know when it can set up since it can depend on height mapping. You need to insert the setup state at some point.
 
 > [!NOTE]  
-> In complex setups that load assets and bake a height map this can be after the `Startup`.
+> In complex setups that load assets and bake a height map, this can be after the `Startup`.
 
 ```rust
 app.insert_state(ScatterState::Setup)
 ```
 
-or
+Or
 ```rust
 ns_height_map.set(HeightMapState::Setup);
 ns_scatter.set(ScatterState::Setup);
@@ -119,7 +119,7 @@ cmd.trigger(Scatter::<ExtendedWindAffectedMaterial>::new(*root));
 In complex scenes it is often required to scatter a complete hierarchy in order (rocks → trees/foliage → grass).
 
 > [!TIP]
-> If an ordered scatter is still required and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
+> If an ordered scatter is still required, and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
 
 ```rust
 fn scatter_on_keypress(
