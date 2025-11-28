@@ -1,9 +1,7 @@
-use crate::prelude::Chunk;
 use crate::scatter::prelude::*;
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
-use bevy_platform::collections::HashSet;
 
 #[cfg(feature = "trace")]
 use tracing::debug;
