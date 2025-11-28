@@ -73,6 +73,7 @@ pub(crate) fn add_instance_key_component(
             material.options.directional_lights,
         );
         key.set(WindAffectedKey::GPU_CULL, material.options.gpu_cull);
+        key.set(WindAffectedKey::DEBUG, material.options.debug);
 
         if material.options.gpu_cull {
             commands.entity(entity).insert(GpuCull);
