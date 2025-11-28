@@ -11,7 +11,7 @@ Most examples (except `extension`, `instanced` and `scatter`) use assets that ar
 
 > [!TIP]  
 >
-> The examples all use `TAA` by default, you can however run it with `DLSS` by using `--features dlss`.
+> The examples all use `TAA` by default, you can however run it with `DLAA` by using `--features dlss`.
 >
 > How to set up `DLSS` can be found [here](https://github.com/bevyengine/dlss_wgpu).
 
