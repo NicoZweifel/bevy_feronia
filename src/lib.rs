@@ -10,8 +10,6 @@
 //! > This package is in early development and in an experimentation stage.
 //! > I wouldn't personally use this in production quite yet, but it's getting closer to that state incrementally.
 //!
-//! <img width="100%" alt="Screenshot 2025-11-28 144933" src="https://github.com/user-attachments/assets/bf0ac5b4-affc-4360-8b3e-7492b5c07257" />
-//!
 //! ## Getting started
 //!
 //! ```shell
@@ -24,7 +22,7 @@
 //!
 //! The setup depends on the use-case, but a typical setup would look like something like this:
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy_feronia::prelude::*;
 //! # let mut app = App::new();
@@ -42,7 +40,7 @@
 //! > [!NOTE]
 //! > In complex setups that load assets and bake a height map, this can be after the `Startup`.
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy_feronia::prelude::*;
 //! # let mut app = App::new();
@@ -51,7 +49,7 @@
 //!
 //! Or
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy_feronia::prelude::*;
 //! # fn system(mut ns_height_map: ResMut<NextState<HeightMapState>>, mut ns_scatter: ResMut<NextState<ScatterState>>) {
@@ -67,7 +65,7 @@
 //! > [!CAUTION]
 //! > When defining multiple `ScatterItems` per `ScatterLayer` without names, a different asset will render when `LODs` are changing, leading to visual bugs.
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy::color::palettes::tailwind::{GRAY_500, RED_500};
 //! # use bevy_feronia::prelude::*;
@@ -128,7 +126,7 @@
 //!
 //! Now you can start scattering! 🌱 🍃 🌿 🍀 🌳 🌲 🌴 🌺
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy_feronia::prelude::*;
 //! # fn system(mut cmd: Commands, root: Single<Entity, With<ScatterRoot>>) {
@@ -146,7 +144,7 @@
 //! > [!TIP]
 //! > If an ordered scatter is still required, and you can't or don't want to scatter in parallel, observers need to be used to chain the scattering of `ScatterTypes` in order.
 //!
-//! ```rust,no_run
+//! ```rust,ignore
 //! # use bevy::prelude::*;
 //! # use bevy_feronia::prelude::*;
 //!

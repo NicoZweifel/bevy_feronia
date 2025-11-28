@@ -5,7 +5,6 @@ use bevy_app::{App, AppExit, Startup};
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
 use bevy_camera::visibility::Visibility;
-use bevy_color::ColorToComponents;
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
 use bevy_feronia::prelude::*;

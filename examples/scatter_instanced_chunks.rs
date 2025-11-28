@@ -1,7 +1,6 @@
 #[path = "utils/example.rs"]
 mod example;
 
-use bevy::input::keyboard::KeyboardInput;
 use bevy::prelude::*;
 use bevy_color::palettes::css::WHITE;
 use bevy_color::palettes::tailwind::*;
