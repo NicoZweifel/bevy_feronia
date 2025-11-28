@@ -2,14 +2,15 @@ use crate::asset::backend::systems::{insert_parts, insert_requests};
 use crate::asset::systems::*;
 use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
-use crate::scatter::observers::*;
-use crate::scatter::systems::prelude::*;
+use crate::scatter::{observers::*, systems::prelude::*};
+
 use bevy_app::prelude::*;
-use bevy_asset::prelude::*;
+use bevy_asset::prelude::{AssetApp, Assets};
 use bevy_ecs::prelude::resource_exists;
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use bevy_pbr::prelude::*;
-use bevy_state::prelude::{AppExtStates, in_state};
+use bevy_pbr::prelude::StandardMaterial;
+use bevy_state::prelude::*;
+
 use std::marker::PhantomData;
 
 pub struct ScatterAssetPlugin<T = StandardMaterial>
@@ -48,7 +49,8 @@ where
             app.add_plugins(ScatterPlugin);
         }
 
-        app.add_message::<Scatter<T>>()
+        app.init_resource::<SpawnScatterAssetsEventQueue<T>>()
+            .add_message::<Scatter<T>>()
             .init_asset::<ScatterAsset<T>>()
             .init_asset::<ScatterAsset<T>>()
             .add_message::<ScatterChunk<T>>()
@@ -59,6 +61,10 @@ where
             .add_observer(on_chunk_add::<T>)
             .add_observer(scatter_finished::<T>)
             .add_systems(Update, chunk_init_scatter::<T>.in_set(ChunkSet::Ready))
+            .add_systems(
+                PreUpdate,
+                process_scatter_queue::<T>.run_if(in_state(ScatterState::Ready)),
+            )
             .add_systems(
                 Update,
                 (
@@ -77,17 +83,23 @@ impl Plugin for ScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((ChunkPlugin, HeightMapPlugin, WindPlugin))
             .init_state::<ScatterState>()
+            .configure_sets(
+                Update,
+                (
+                    ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
+                    ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
+                    ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
+                    ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
+                ),
+            )
             .init_resource::<WorldSeed>()
             .add_message::<ClearScatterLayer>()
             .add_message::<ClearScatterRoot>()
             .add_observer(on_add_scatter_item)
-            .add_systems(
-                PostUpdate,
-                setup_root_aabb.run_if(in_state(ScatterState::Setup)),
-            )
+            .add_systems(PostUpdate, setup_root_aabb.in_set(ScatterSet::Setup))
             .add_systems(
                 Update,
-                (transition_to_collecting,).run_if(in_state(ScatterState::Setup)),
+                (transition_to_collecting,).in_set(ScatterSet::Setup),
             )
             .add_systems(
                 Update,
@@ -96,7 +108,7 @@ impl Plugin for ScatterPlugin {
                     check_unprocessed_items,
                     check_unprocessed_root,
                 )
-                    .run_if(in_state(ScatterState::Collecting)),
+                    .in_set(ScatterSet::Collecting),
             )
             .add_systems(
                 Update,
@@ -104,7 +116,7 @@ impl Plugin for ScatterPlugin {
                     clear_scatter_roots,
                     (clear_chunks, clear_scatter_layers).after(clear_scatter_roots),
                 )
-                    .run_if(in_state(ScatterState::Ready)),
+                    .in_set(ScatterSet::Ready),
             );
     }
 }
@@ -123,11 +135,11 @@ impl Plugin for StandardScatterPlugin {
                     insert_parts::<StandardMaterial>,
                     insert_requests::<StandardMaterial>,
                 )
-                    .run_if(in_state(ScatterState::Collecting)),
+                    .in_set(ScatterSet::Collecting),
             )
             .add_systems(
                 Update,
-                process_standard_requests.run_if(in_state(ScatterState::Collecting)),
+                process_standard_requests.in_set(ScatterSet::Collecting),
             );
     }
 }

@@ -18,8 +18,7 @@ pub fn spawn<T>(
 ) where
     T: ScatterMaterial,
 {
-    // Only spawn max 2 per frame to avoid fps drops.
-    for event in mr_spawn.read().take(2) {
+    for event in mr_spawn.read() {
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             #[cfg(feature = "trace")]
             warn!("Couldn't get ScatterRoot!");

@@ -10,7 +10,7 @@ pub fn scatter_observer<T>(
     trigger: On<ScatterResults<T>>,
     q_layer: Query<&ScatterLayer, With<ScatterLayerType<T>>>,
     q_items: Query<&ScatterItemAsset<T>, With<ScatterItem>>,
-    mut mw_spawn: MessageWriter<SpawnScatterAssets<T>>,
+    mut queue: ResMut<SpawnScatterAssetsEventQueue<T>>,
 ) where
     T: ScatterMaterial,
 {
@@ -22,9 +22,9 @@ pub fn scatter_observer<T>(
     };
 
     #[cfg(feature = "trace")]
-    debug!("ScatterObserver triggered! Writing Spawn Messages for layer {layer}...");
+    debug!("ScatterObserver triggered! Queueing Spawn Messages for layer {layer}...");
 
-    mw_spawn.write(
+    (**queue).push_back(
         SpawnScatterAssets::<T>::from(trigger).with_items(
             scatter_items
                 .iter()

@@ -22,6 +22,7 @@ pub(super) struct GlobalCullBuffer {
     pub buffer: Buffer,
 }
 
+// TODO: this leaks memory, but it'll take forever. Gotta implement a queue or sth like that.
 #[derive(Resource, Default)]
 pub(super) struct GrassBufferCache {
     pub buffers: HashMap<Entity, Buffer>,

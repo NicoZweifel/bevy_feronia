@@ -3,6 +3,7 @@ use crate::scatter::utils::*;
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
+use bevy_ecs::query::QueryData;
 use bevy_image::Image;
 use bevy_math::Vec3;
 use bevy_tasks::AsyncComputeTaskPool;
@@ -12,17 +13,19 @@ use bevy_transform::prelude::GlobalTransform;
 #[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
-type ScatterLayerQueryData<'a> = (
-    &'a ScatterLayerOf,
-    Option<&'a DistributionDensity>,
-    Option<&'a DistributionPattern>,
-    Option<&'a InstanceRotationYaw>,
-    Option<&'a InstanceScale>,
-    Option<&'a InstanceJitter>,
-    Option<&'a Avoidance>,
-    Option<&'a ScaleDensity>,
-    &'a GlobalTransform,
-);
+#[derive(QueryData)]
+#[query_data()]
+pub struct ScatterLayerQueryData {
+    scatter_root: &'static ScatterLayerOf,
+    density_dist: Option<&'static DistributionDensity>,
+    pattern_dist: Option<&'static DistributionPattern>,
+    instance_rotation: Option<&'static InstanceRotationYaw>,
+    instance_scale: Option<&'static InstanceScale>,
+    instance_jitter: Option<&'static InstanceJitter>,
+    avoidance: Option<&'static Avoidance>,
+    scale_density: Option<&'static ScaleDensity>,
+    layer_gtf: &'static GlobalTransform,
+}
 
 pub fn handle_scatter_requests<T>(
     mut cmd: Commands,
@@ -54,9 +57,9 @@ pub fn handle_scatter_requests<T>(
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
-    // NOTE: handle 2 per frame. TODO optimize / compute shaders for instanced procedural material
+    // NOTE: handle 2 per frame. TODO optimize / create compute pipeline for this.
     for (entity, request) in q_requests.iter().take(2) {
-        let Ok((
+        let Ok(ScatterLayerQueryDataItem {
             scatter_root,
             density_dist,
             pattern_dist,
@@ -66,7 +69,7 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
-        )) = q_layer.get(request.layer_entity)
+        }) = q_layer.get(request.layer_entity)
         else {
             #[cfg(feature = "trace")]
             warn!("ScatterLayer not found!");

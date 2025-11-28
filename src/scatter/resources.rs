@@ -1,6 +1,10 @@
+use crate::prelude::events::*;
+use crate::prelude::{InstancedWindAffectedMaterial, ScatterMaterial};
+
 use bevy_derive::*;
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
+use std::collections::VecDeque;
 
 /// A global resource to seed the entire world generation process.
 /// Changing this value will generate a completely different world.
@@ -19,3 +23,7 @@ impl Default for WorldSeed {
         Self(123456789)
     }
 }
+
+#[derive(Resource, Default, DerefMut, Deref, Debug, Reflect)]
+#[reflect(Resource, Debug)]
+pub struct SpawnScatterAssetsEventQueue<T: ScatterMaterial>(pub VecDeque<SpawnScatterAssets<T>>);
