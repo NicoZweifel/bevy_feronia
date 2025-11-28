@@ -26,7 +26,7 @@ This example demonstrates ordered scattering (rocks → trees/foliage → grass)
 
 `cargo run --example full`
 
-https://github.com/user-attachments/assets/970e69d9-6a05-4897-9cff-754c845814fe
+https://github.com/user-attachments/assets/5aa9caa8-670f-482e-8a8a-0a24994ade84
 
 The other examples are mostly for demonstration and testing purposes:
 
@@ -35,6 +35,12 @@ The other examples are mostly for demonstration and testing purposes:
 Shows the basic scatter logic. This is the `Getting started`/`Setup` section as an example. 
 
 `cargo run --example scatter`
+
+#### Avian
+
+Experimental example, will likely heavily change in the future.
+
+`cargo run --example avian`
 
 - A minimal example showing how to scatter cuboids.
 
