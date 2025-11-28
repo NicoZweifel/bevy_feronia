@@ -122,6 +122,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
         }
 
         // TODO cull in compute shader
+        // https://github.com/NicoZweifel/bevy_feronia/issues/51
         /*
         let gpu_cull = key.wind_key.contains(WindAffectedKey::GPU_CULL);
         if gpu_cull {
@@ -138,6 +139,7 @@ impl SpecializedMeshPipeline for InstancedWindAffectedPipeline {
             }
 
             // TODO cull in compute shader
+            // https://github.com/NicoZweifel/bevy_feronia/issues/51
             /*
             if !gpu_cull {
                 fragment.shader_defs.push("VISIBILITY_RANGE_DITHER".into());
