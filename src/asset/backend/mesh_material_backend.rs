@@ -1,7 +1,7 @@
 use crate::asset::backend::iter_self_and_descendants_with_component::iter_self_and_descendants_with_component;
 use crate::asset::backend::systems::backend;
 use crate::backend::ScatterApp;
-use crate::prelude::{AssetItem, AssetItemOf};
+use crate::prelude::{AssetPart, AssetPartOf};
 use crate::prelude::{NeedsAssetCollection, ScatterLayer};
 
 use bevy_app::prelude::*;
@@ -38,7 +38,7 @@ pub fn mesh_material_backend(
     q_children: Query<&Children>,
     q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
     q_name: Query<&Name>,
-) -> Result<Vec<AssetItem>> {
+) -> Result<Vec<AssetPart>> {
     Ok(q_collect
         .iter()
         .filter_map(|layer| q_children.get(layer).ok())
@@ -68,30 +68,16 @@ pub fn mesh_material_backend(
 
             Some((root, layer))
         })
-        .filter_map(|(root, layer)| {
-            Some(
-                q_children
-                    .get(*root)
-                    .inspect_err(|_| {
-                        #[cfg(feature = "trace")]
-                        warn!("Could not get children of root!");
-                    })
-                    .ok()?
-                    .iter()
-                    .flat_map(|item_root| {
-                        iter_self_and_descendants_with_component(item_root, &q_children, &q_search)
-                            .into_iter()
-                            .map(move |item| (item_root, item))
-                    })
-                    .map(move |(root_item, child)| {
-                        AssetItem::new(
-                            child,
-                            AssetItemOf::new(root_item, *root, layer)
-                                .with_name_from_queries(child, &q_name, &q_parent),
-                        )
-                    }),
-            )
+        .flat_map(|(root, layer)| {
+            iter_self_and_descendants_with_component(*root, &q_children, &q_search)
+                .into_iter()
+                .map(move |child| {
+                    AssetPart::new(
+                        child,
+                        AssetPartOf::new(*root, *root, layer)
+                            .with_name_from_queries(child, &q_name, &q_parent),
+                    )
+                })
         })
-        .flatten()
         .collect())
 }

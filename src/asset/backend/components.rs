@@ -6,33 +6,36 @@ use bevy_reflect::Reflect;
 pub struct NeedsAssetCollection;
 
 #[derive(Clone, Debug)]
-pub struct AssetItem {
+pub struct AssetPart {
     pub entity: Entity,
-    pub item_of: AssetItemOf,
+    pub item_of: AssetPartOf,
 }
 
-impl AssetItem {
-    pub fn new(entity: Entity, item_of: AssetItemOf) -> Self {
+impl AssetPart {
+    pub fn new(entity: Entity, item_of: AssetPartOf) -> Self {
         Self { entity, item_of }
     }
 }
 
-impl From<(Entity, &AssetItemOf)> for AssetItem {
-    fn from((entity, item_of): (Entity, &AssetItemOf)) -> Self {
+impl From<(Entity, &AssetPartOf)> for AssetPart {
+    fn from((entity, item_of): (Entity, &AssetPartOf)) -> Self {
         Self::new(entity, item_of.clone())
     }
 }
 
 #[derive(Reflect, Eq, PartialEq, Hash, Clone, Debug, Component)]
 #[reflect(Component, Clone, Debug, PartialEq, Hash)]
-pub struct AssetItemOf {
+pub struct AssetPartOf {
+    /// The entity that this part belongs to.
     pub item: Entity,
+    /// The root entity of the layer this part belongs to.
     pub root: Entity,
+    /// The entity of the layer this part belongs to.
     pub layer: Entity,
     pub name: Option<Name>,
 }
 
-impl AssetItemOf {
+impl AssetPartOf {
     pub fn new(item: Entity, root: Entity, layer: Entity) -> Self {
         Self {
             item,

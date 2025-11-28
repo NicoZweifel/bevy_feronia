@@ -1,6 +1,8 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use avian3d::PhysicsPlugins;
+use avian3d::prelude::{ColliderConstructor, PhysicsDebugPlugin, RigidBody};
 use bevy::app::prelude::*;
 use bevy::prelude::*;
 use bevy_color::palettes::tailwind::*;
@@ -17,11 +19,26 @@ fn main() -> AppExit {
         .add_plugins((
             ExamplePlugin,
             MeshMaterialAssetBackendPlugin,
+            PhysicsPlugins::default(),
+            PhysicsDebugPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, setup)
+        .add_observer(
+            |trigger: On<Add, ScatteredAsset<ExtendedWindAffectedMaterial>>,
+             q_instance: Query<(Entity, &ScatteredAsset<ExtendedWindAffectedMaterial>)>,
+             assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
+             mut cmd: Commands| {
+                let (entity, asset) = q_instance.get(trigger.entity).unwrap();
+                let asset = assets.get(&**asset).unwrap();
+
+                if let Some(rigid_body) = asset.rigid_body {
+                    cmd.entity(entity).insert(rigid_body);
+                }
+            },
+        )
         .add_systems(Update, scatter_on_keypress)
         .run()
 }
@@ -38,6 +55,8 @@ fn setup(
             base_color: GRAY_500.into(),
             ..default()
         })),
+        RigidBody::Static,
+        ColliderConstructor::ConvexHullFromMesh,
         Mesh3d(meshes.add(PlaneMeshBuilder::from_length(80.).build())),
         ScatterRoot::default(),
         children![(
@@ -45,7 +64,7 @@ fn setup(
             // Standard, Extended or Instanced Material/Layer.
             extension::scatter_layer("Wind Affected Layer"),
             // Scatter Options
-            DistributionDensity(50.),
+            DistributionDensity(20.),
             InstanceJitter::default(),
             InstanceScale::default(),
             InstanceRotationYaw::default(),
@@ -61,7 +80,9 @@ fn setup(
                         ..default()
                     })),
                     Mesh3d(mesh.clone()),
-                    Transform::from_xyz(0., 3., 0.),
+                    RigidBody::Static,
+                    ColliderConstructor::ConvexHullFromMesh,
+                    Transform::from_xyz(0., 2.5, 0.),
                 ),
                 (
                     Name::new("Wind Affected Asset"),
@@ -72,7 +93,9 @@ fn setup(
                         ..default()
                     })),
                     Mesh3d(mesh.clone()),
-                    Transform::from_xyz(0., 3., 0.),
+                    RigidBody::Static,
+                    ColliderConstructor::ConvexHullFromMesh,
+                    Transform::from_xyz(0., 2.5, 0.),
                 ),
                 (
                     Name::new("Wind Affected Asset"),
@@ -82,7 +105,9 @@ fn setup(
                         ..default()
                     })),
                     Mesh3d(mesh),
-                    Transform::from_xyz(0., 3., 0.),
+                    RigidBody::Static,
+                    ColliderConstructor::ConvexHullFromMesh,
+                    Transform::from_xyz(0., 2.5, 0.),
                 )
             ]
         )],

@@ -21,7 +21,7 @@ pub fn backend(world: &mut World) {
         .into_iter()
         .flatten()
         .flatten()
-        .map(|AssetItem { entity, item_of }| {
+        .map(|AssetPart { entity, item_of }| {
             let mut cmd: Commands = world.commands();
             cmd.entity(entity).insert(item_of.clone());
 
@@ -43,7 +43,7 @@ pub fn backend(world: &mut World) {
 
 pub fn insert_parts<T: ScatterMaterial>(
     mut cmd: Commands,
-    q_items: Query<(Entity, &AssetItemOf), Without<ScatterAssetPart>>,
+    q_items: Query<(Entity, &AssetPartOf), Without<ScatterAssetPart>>,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
     q_layers: Query<
         (Entity, MaterialOptionData, WindOptionData),
@@ -54,8 +54,8 @@ pub fn insert_parts<T: ScatterMaterial>(
 ) {
     for ScatterAssetPartEntity { entity, part } in q_items
         .into_iter()
-        .map(|x| AssetItem::from(x))
-        .filter_map(|AssetItem { entity, item_of }| {
+        .map(|x| AssetPart::from(x))
+        .filter_map(|AssetPart { entity, item_of }| {
             let (child_of, scene_root_data) = q_data
                 .get(item_of.root)
                 .inspect_err(|_| {
@@ -138,7 +138,7 @@ pub fn insert_parts<T: ScatterMaterial>(
 pub fn insert_requests<T: ScatterMaterial>(
     mut cmd: Commands,
     q_parts: Query<
-        (Entity, &ScatterAssetPart, &AssetItemOf),
+        (Entity, &ScatterAssetPart, &AssetPartOf),
         Without<ScatterAssetCreationRequest<T>>,
     >,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
@@ -151,7 +151,7 @@ pub fn insert_requests<T: ScatterMaterial>(
     let processed_scene_roots = q_parts
         .iter()
         .fold(
-            HashMap::<AssetItemOf, Vec<ScatterAssetPartEntity>>::new(),
+            HashMap::<AssetPartOf, Vec<ScatterAssetPartEntity>>::new(),
             |mut acc, (entity, part, item_of)| {
                 acc.entry(item_of.clone())
                     .or_default()
@@ -169,7 +169,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                 entity_parts[0].part.properties.lod
             );
 
-            let AssetItemOf {
+            let AssetPartOf {
                 root: scene_root, ..
             } = &item_of;
 
@@ -221,7 +221,14 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             Some((
                 item_of.clone(),
-                ScatterAssetCreationRequest::<T>::from_data(item_of, entity_parts, wind, options),
+                ScatterAssetCreationRequest::<T>::from_data(
+                    item_of,
+                    entity_parts,
+                    wind,
+                    options,
+                    #[cfg(feature = "avian")]
+                    scene_root_data.o_rigid_body.cloned(),
+                ),
                 part_entities,
             ))
         })
@@ -231,7 +238,7 @@ pub fn insert_requests<T: ScatterMaterial>(
             for part_entity in part_entities {
                 cmd.entity(part_entity)
                     .remove::<ScatterAssetPart>()
-                    .remove::<AssetItemOf>()
+                    .remove::<AssetPartOf>()
                     .remove::<Mesh3d>();
             }
 

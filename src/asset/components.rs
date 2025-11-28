@@ -56,10 +56,11 @@ where
     }
 
     pub fn from_data(
-        item_of: AssetItemOf,
+        item_of: AssetPartOf,
         entity_parts: Vec<ScatterAssetPartEntity<StandardMaterial>>,
         wind: Wind,
         options: ScatterMaterialOptions,
+        #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> ScatterAssetCreationRequest<T> {
         let parts: Vec<ScatterAssetPart> =
             entity_parts.into_iter().map(|p| p.part.clone()).collect();
@@ -88,7 +89,7 @@ where
             parts,
             item_of.layer,
             #[cfg(feature = "avian")]
-            scene_root_data.o_rigid_body.cloned(),
+            rigid_body,
         )
     }
 }

@@ -10,7 +10,7 @@ use bevy_transform::prelude::Transform;
 use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::{Collider, RigidBody};
 
 /// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug, Reflect, Default)]
@@ -29,6 +29,7 @@ pub struct ScatterAssetProperties {
     /// TODO move out of here, find way to update materials without it, e.g. a HashNap resource
     /// Deprecated
     #[deprecated]
+    // TODO we shouldn't track the layer in the asset properties but have a mapping of assets and it's parts and the layers they are part of.
     pub layer: Option<Entity>,
     /// Whether wind affects this asset/part.
     pub wind_affected: bool,
@@ -56,8 +57,7 @@ where
 /// A single, renderable part of a [`ScatterAsset`].
 ///
 /// This typically represents one mesh+material pair from the hierarchy.
-#[derive(Clone, Default, Reflect, Debug, Component)]
-#[reflect(Default, Clone, Debug, Component)]
+#[derive(Clone, Default, Debug, Component)]
 pub struct ScatterAssetPart<T = StandardMaterial>
 where
     T: ScatterMaterialAsset,
@@ -74,8 +74,12 @@ where
     /// Optional name for the asset that this part belongs to.
     ///
     /// This can also be the name of the part itself if the parent had no name.
-    /// Typically, this shouldn't happen unless there is exactly 1 part.
+    /// Typically, this shouldn't happen unless there is exactly 1 part and no hierarchy/parent.
     pub name: Option<Name>,
+
+    #[cfg(feature = "avian")]
+    /// Optional collider for this part.
+    pub collider: Option<Collider>,
 }
 
 #[derive(Clone, Debug, Reflect)]
@@ -94,7 +98,7 @@ impl<T: ScatterMaterialAsset> ScatterAssetPartEntity<T> {
 impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
     pub fn try_from_data(
         entity: Entity,
-        item_of: AssetItemOf,
+        item_of: AssetPartOf,
         wind: Wind,
         layer_wind_data: WindOptionData,
         scene_root_data: CollectableQueryDataItem<T>,
@@ -104,7 +108,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
-        let AssetItemOf { layer, .. } = item_of;
+        let AssetPartOf { layer, .. } = item_of;
 
         let wind = wind
             .with(layer_wind_data)
@@ -146,6 +150,8 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
                 mesh.0.clone(),
                 *child_data.transform,
                 part_properties,
+                #[cfg(feature = "avian")]
+                child_data.o_collider.cloned(),
             ),
         })
     }
@@ -179,6 +185,7 @@ where
         h_mesh: Handle<Mesh>,
         transform: Transform,
         properties: ScatterAssetProperties,
+        #[cfg(feature = "avian")] collider: Option<Collider>,
     ) -> Self {
         Self {
             name,
@@ -186,6 +193,8 @@ where
             h_mesh,
             h_material,
             properties,
+            #[cfg(feature = "avian")]
+            collider,
         }
     }
 
@@ -240,6 +249,8 @@ impl ScatterAssetPart<StandardMaterial> {
             transform,
             properties,
             name,
+            #[cfg(feature = "avian")]
+            collider,
         } = self;
 
         let mut source_material = materials_in.get(&h_material).cloned();
@@ -258,10 +269,12 @@ impl ScatterAssetPart<StandardMaterial> {
 
         ScatterAssetPart {
             transform,
-            properties: properties.clone(),
+            properties,
             h_material,
-            h_mesh: h_mesh.clone(),
-            name: name.clone(),
+            h_mesh,
+            name,
+            #[cfg(feature = "avian")]
+            collider,
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::asset::backend::prelude::*;
-use crate::prelude::AssetItem;
+use crate::prelude::AssetPart;
 use crate::prelude::ScatterLayer;
 use bevy_app::{App, Plugin, PostUpdate};
 use bevy_ecs::prelude::*;
@@ -58,7 +58,7 @@ pub fn scene_asset_backend(
     q_children: Query<&Children>,
     q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
     q_name: Query<&Name>,
-) -> Result<Vec<AssetItem>> {
+) -> Result<Vec<AssetPart>> {
     Ok(q_collect
         .iter()
         .filter_map(|scene_root| {
@@ -93,6 +93,8 @@ pub fn scene_asset_backend(
                 warn!("Could not get children of scene root!");
             }).ok()?
                 .iter()
+                // We only want to collect assets that are children of the root collection if we use this backend
+                // since gltf scenes have a root collection.
                 .filter_map(|root_collection| Some(q_children.get(root_collection).inspect_err(|_| {
                     #[cfg(feature = "trace")]
                     warn!("Could not get children of root collection!");
@@ -108,9 +110,9 @@ pub fn scene_asset_backend(
                         .map(move |item| (item_root, item))
                 })
                 .map(move |(root_item, child)| {
-                    AssetItem::new(
+                    AssetPart::new(
                         child,
-                        AssetItemOf::new(root_item, scene_root, layer)
+                        AssetPartOf::new(root_item, scene_root, layer)
                             .with_name_from_queries(child, &q_name, &q_parent),
                     )
                 }))

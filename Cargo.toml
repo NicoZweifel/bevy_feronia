@@ -118,3 +118,7 @@ trace = ["dep:tracing"]
 
 [patch.crates-io]
 iyes_perf_ui = { git = "https://github.com/mgi388/iyes_perf_ui", branch = "bevy-0.17" }
+
+[[example]]
+name = "avian"
+required-features = ["avian"]

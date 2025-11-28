@@ -17,6 +17,9 @@ use rand::prelude::*;
 use rand_pcg::Pcg64;
 use std::fmt::Debug;
 
+#[cfg(feature = "avian")]
+use avian3d::prelude::Collider;
+
 pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
 
 impl<T> ScatterMaterialAsset for T where T: Asset + Clone + Default + Debug {}
@@ -98,23 +101,34 @@ where
     }
 }
 
+#[cfg(not(feature = "avian"))]
+type SpawnRequestItem<T> = (
+    Transform,
+    VisibilityRange,
+    Mesh3d,
+    MeshMaterial3d<T>,
+    ChildOf,
+    ScatteredInstance,
+    ScatteredAsset<T>,
+);
+
+#[cfg(feature = "avian")]
+type SpawnRequestItem<T> = (
+    Transform,
+    VisibilityRange,
+    Mesh3d,
+    MeshMaterial3d<T>,
+    ChildOf,
+    ScatteredInstance,
+    ScatteredAsset<T>,
+    Collider,
+);
+
 impl<'w, T> SpawnRequest<'w, T>
 where
     T: Material + Default + Debug,
 {
-    pub fn spawn_batch_iter(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            Transform,
-            VisibilityRange,
-            Mesh3d,
-            MeshMaterial3d<T>,
-            ChildOf,
-            ScatteredInstance,
-            ScatteredAsset<T>,
-        ),
-    > {
+    pub fn spawn_batch_iter(&self) -> impl Iterator<Item = SpawnRequestItem<T>> {
         self.event.trigger.data.iter().flat_map(|res| {
             self.prototypes_from_seed_iter(res.seed).flat_map(
                 |ScatterHandleAsset { handle, asset }| {
@@ -127,6 +141,9 @@ where
                             ChildOf(self.parent),
                             ScatteredInstance(self.event.trigger.layer),
                             ScatteredAsset(handle.clone()),
+                            // TODO find a method for conditionally adding colliders
+                            #[cfg(feature = "avian")]
+                            part.collider.clone().unwrap_or_default(),
                         )
                     })
                 },

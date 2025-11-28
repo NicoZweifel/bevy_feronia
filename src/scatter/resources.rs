@@ -1,5 +1,5 @@
+use crate::prelude::ScatterMaterial;
 use crate::prelude::events::*;
-use crate::prelude::{InstancedWindAffectedMaterial, ScatterMaterial};
 
 use bevy_derive::*;
 use bevy_ecs::prelude::*;
