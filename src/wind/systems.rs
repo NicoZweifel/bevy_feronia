@@ -62,7 +62,7 @@ pub fn update_materials<T>(
 
 pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let texture_size = 512;
-    let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4) as usize);
+    let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4 * 4) as usize);
 
     let macro_perlin = Perlin::new(1);
     let micro_perlin = Perlin::new(2);
@@ -81,13 +81,13 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
             let micro_noise_value =
                 micro_perlin.get([point[0] * micro_sample_scale, point[1] * micro_sample_scale]);
 
-            let macro_byte = ((macro_noise_value * 0.5 + 0.5) * 255.0) as u8;
-            let micro_byte = ((micro_noise_value * 0.5 + 0.5) * 255.0) as u8;
+            let macro_val = (macro_noise_value * 0.5 + 0.5) as f32;
+            let micro_val = (micro_noise_value * 0.5 + 0.5) as f32;
 
-            image_buffer.push(macro_byte); // R channel for macro noise
-            image_buffer.push(micro_byte); // G channel for micro noise
-            image_buffer.push(0); // B channel is unused
-            image_buffer.push(255); // A channel is unused
+            image_buffer.extend_from_slice(&macro_val.to_le_bytes()); // R - Macro
+            image_buffer.extend_from_slice(&micro_val.to_le_bytes()); // G - Micro
+            image_buffer.extend_from_slice(&0.0f32.to_le_bytes()); // B - Unused
+            image_buffer.extend_from_slice(&1.0f32.to_le_bytes()); // A - Unused
         }
     }
 
@@ -99,7 +99,7 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
         },
         TextureDimension::D2,
         image_buffer,
-        TextureFormat::Rgba8Unorm,
+        TextureFormat::Rgba32Float,
         default(),
     );
 
@@ -108,6 +108,8 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
         address_mode_u: ImageAddressMode::MirrorRepeat,
         address_mode_v: ImageAddressMode::MirrorRepeat,
         address_mode_w: ImageAddressMode::MirrorRepeat,
+        mag_filter: ImageFilterMode::Linear,
+        min_filter: ImageFilterMode::Linear,
         ..default()
     });
 

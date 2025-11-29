@@ -175,8 +175,8 @@ fn displace_vertex_and_calc_normal(
     let noise_bitangent = sample_noise(instance, neighbor_bitangent_origin);
     let curve_bitangent = calculate_macro_curve(neighbor_bitangent_origin, wind, noise_bitangent, instance,
         #ifdef STATIC_BEND
-         static_bend
-          #endif
+        static_bend
+        #endif
     );
     let neighbor_bitangent_displaced = apply_micro_details(curve_bitangent.local_pos, curve_bitangent, wind, instance, noise_bitangent);
 
@@ -215,6 +215,7 @@ fn displace_vertex_and_calc_normal(
         uv.x,
         wind.edge_correction_factor
     );
+
     result.world_position += vec4<f32>(edge_correction_offset, 0.);
 #endif
 #endif
@@ -285,21 +286,25 @@ fn calculate_macro_curve(
     // Limit bending to prevent the mesh from curling into itself
     let max_allowed_bend = height_range * 0.95;
     let safe_bend_amount = min(total_bend_amount, max_allowed_bend);
+    let bend_factor = clamp(total_bend_amount / height_range, 0.0, 1.0);
+    let bend_stiffness = 0.33;
 
-    // Ensures the grass doesn't stretch when bending.
-    let tip_y_position = sqrt(max(height_range * height_range - safe_bend_amount * safe_bend_amount, 0.0));
+    // Estimate vertical height
+    var tip_height = sqrt(max(height_range * height_range - safe_bend_amount * safe_bend_amount, 0.0));
+    // The resulting Bezier curve arc is longer than the estimated straight-line distance.
+    // Compensate by shortening the grass to prevent it from appearing to "grow" or stretch as it bends outward.
+    let stretch_compensation = 1.0 - (bend_factor * 0.1);
+    tip_height *= stretch_compensation;
 
     // Quadratic Bezier
     // P0: Start
     // P1: Control Point
     // P2: End Point
-    let point_end = vec3<f32>(target_bend_vector.x, tip_y_position, target_bend_vector.y);
+    let point_end = vec3<f32>(target_bend_vector.x, tip_height, target_bend_vector.y);
     let point_start = vec3<f32>(0.0, 0.0, 0.0);
 
-    let bend_factor = clamp(total_bend_amount / height_range, 0.0, 1.0);
-    let bend_stiffness = 0.33;
-
-    // Adjust control point height based on how much we are bending
+    // Adjust control point height based on how much we are bending, i.e.,
+    // Push the curve up, making the tip bend more than the base
     let control_point_y_factor = mix(0.5, 0.6, bend_factor);
     let control_point_y = height_range * control_point_y_factor;
 
@@ -317,7 +322,7 @@ fn calculate_macro_curve(
 
     // B'(t) = 2(1-t)(P1-P0) + 2t(P2-P1)
     let bezier_tangent = 2.0 * inverse_progress * (point_control - point_start)
-                       + 2.0 * height_progress * (point_end - point_control);;
+                       + 2.0 * height_progress * (point_end - point_control);
 
     // Twist
     let cos_twist = cos(result.twist);
@@ -394,7 +399,7 @@ fn billboarding(
     local_displaced_pos: vec3<f32>,
     total_offset: vec3<f32>
 ) -> vec3<f32> {
-    let billboard_anchor_point = instance.instance_position + vec4<f32>(total_offset.x, 0.0, total_offset.z, 0.0);
+    let billboard_anchor_point = instance.instance_position;
 
     let billboard_matrix = calculate_billboard_matrix(
         billboard_anchor_point,

@@ -25,7 +25,7 @@ fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledN
     let noise_texture_sampler = bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif
 
-    let world_pos = (instance.world_from_local * vec4<f32>(local_vertex_pos, 1.0)).xyz;
+    let world_pos = (instance.world_from_local * vec4<f32>(0.0, 0.0, 0.0, 1.0)).xyz;
 
     let base_uv = world_pos.xz * wind.noise_scale;
     let uv_scroll_offset = instance.wrapped_time * wind.scroll_speed * wind.direction;
