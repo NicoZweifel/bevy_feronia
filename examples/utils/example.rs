@@ -13,15 +13,16 @@ use bevy::{
 };
 use bevy::{
     core_pipeline::{Skybox, tonemapping::Tonemapping},
-    light::{CascadeShadowConfigBuilder, VolumetricLight},
+    light::VolumetricLight,
     prelude::*,
     render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
-use bevy_feronia::quality::{QualitySettings, SetupSet};
+use bevy_feronia::quality::{QualitySettings, QualitySettingsSetup, QualitySettingsUpdated};
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
+use bevy_light::{CascadeShadowConfig, DirectionalLightShadowMap};
 use bevy_render::view::Hdr;
 use camera_controller::*;
 use iyes_perf_ui::prelude::*;
@@ -45,6 +46,7 @@ impl Plugin for ExamplePlugin {
         )));
 
         app.init_resource::<ExamplePluginOptions>()
+            .insert_resource(DirectionalLightShadowMap { size: 4096 })
             .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
             .add_plugins((
                 FrameTimeDiagnosticsPlugin::default(),
@@ -62,9 +64,57 @@ impl Plugin for ExamplePlugin {
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_quality_settings),
             ))
             .add_plugins(CameraControllerPlugin)
-            .add_systems(Startup, setup.in_set(SetupSet))
-            .add_systems(Update, (anisotropic_filtering, rotate_sun));
+            .add_systems(
+                Startup,
+                ((setup, spawn_directional_light).in_set(QualitySettingsSetup),),
+            )
+            .add_systems(
+                Update,
+                (
+                    anisotropic_filtering,
+                    rotate_sun,
+                    respawn_directional_light
+                        .run_if(resource_changed::<DirectionalLightShadowMap>)
+                        .in_set(QualitySettingsUpdated),
+                ),
+            );
     }
+}
+
+fn respawn_directional_light(
+    mut cmd: Commands,
+    light: Single<
+        (Entity, &DirectionalLight, &CascadeShadowConfig, &Transform),
+        With<DirectionalLight>,
+    >,
+) {
+    let (entity, light, cfg, tf) = light.into_inner();
+
+    cmd.entity(entity).despawn();
+
+    cmd.spawn((
+        light.clone(),
+        cfg.clone(),
+        tf.clone(),
+        VolumetricLight,
+        ShadowFilteringMethod::Temporal,
+    ));
+}
+
+fn spawn_directional_light(mut cmd: Commands) {
+    cmd.spawn((
+        DirectionalLight {
+            // NOTE: Direct sunlight has over-exposure with the SkyBox ambient
+            // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
+            illuminance: 30_000.,
+            shadows_enabled: true,
+            color: Color::srgb(1.0, 0.98, 0.95),
+            ..default()
+        },
+        VolumetricLight,
+        Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ShadowFilteringMethod::Temporal,
+    ));
 }
 
 pub fn setup(
@@ -124,20 +174,6 @@ pub fn setup(
         intensity: 500_000.,
         ..default()
     });
-
-    cmd.spawn((
-        DirectionalLight {
-            // NOTE: Direct sunlight has over-exposure with the SkyBox ambient
-            // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
-            illuminance: 30_000.,
-            shadows_enabled: true,
-            color: Color::srgb(1.0, 0.98, 0.95),
-            ..default()
-        },
-        VolumetricLight,
-        CascadeShadowConfigBuilder::default().build(),
-        Transform::from_xyz(2., 2., 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
 
     cmd.spawn(PerfUiDefaultEntries::default());
 }

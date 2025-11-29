@@ -18,10 +18,13 @@ use std::marker::PhantomData;
 use tracing::{info, warn};
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct SetupSet;
+pub struct QualitySettingsSetup;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct QualitySettingsUpdate;
+pub struct QualitySettingsUpdating;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct QualitySettingsUpdated;
 
 pub struct QualityPlugin;
 
@@ -29,22 +32,29 @@ impl Plugin for QualityPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Quality>()
             .register_type::<ShadowQuality>()
-            .configure_sets(Startup, (SetupSet, QualitySettingsUpdate).chain())
-            .configure_sets(Update, QualitySettingsUpdate)
+            .configure_sets(
+                Startup,
+                (
+                    QualitySettingsSetup,
+                    QualitySettingsUpdating,
+                    QualitySettingsUpdated,
+                )
+                    .chain(),
+            )
+            .configure_sets(
+                Update,
+                (QualitySettingsUpdating, QualitySettingsUpdated).chain(),
+            )
             .init_resource::<QualitySettings>()
             .add_systems(
                 Startup,
-                ApplyDeferred.after(SetupSet).before(QualitySettingsUpdate),
-            )
-            .add_systems(
-                Startup,
-                update_quality_settings.in_set(QualitySettingsUpdate),
+                update_quality_settings.in_set(QualitySettingsUpdating),
             )
             .add_systems(
                 Update,
                 update_quality_settings
                     .run_if(resource_changed::<QualitySettings>)
-                    .in_set(QualitySettingsUpdate),
+                    .in_set(QualitySettingsUpdating),
             )
             .add_observer(apply_quality_gate::<WindAffected>)
             .add_observer(apply_quality_gate::<StaticShadow>)
@@ -376,8 +386,8 @@ impl From<VisibilityRangeQuality> for LodConfig {
 pub enum ShadowQuality {
     Off,
     Low,
-    #[default]
     Medium,
+    #[default]
     High,
     Ultra,
 }
@@ -409,17 +419,17 @@ impl From<ShadowQuality> for ShadowSettings {
                 pcss_size: None,
             },
             ShadowQuality::High => Self {
-                size: 2048,
+                size: 4096,
                 cascades: 4,
                 max_dist: 200.0,
-                first_bound: 15.0,
+                first_bound: 10.0,
                 pcss_size: Some(8.0),
             },
             ShadowQuality::Ultra => Self {
                 size: 4096,
                 cascades: 4,
                 max_dist: 250.0,
-                first_bound: 20.0,
+                first_bound: 10.0,
                 pcss_size: Some(8.0),
             },
         }

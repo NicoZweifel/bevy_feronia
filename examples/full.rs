@@ -69,7 +69,7 @@ fn main() -> AppExit {
                 respawn_scene
                     .run_if(in_state(AppState::InGame))
                     .run_if(resource_changed::<QualitySettings>)
-                    .after(QualitySettingsUpdate),
+                    .after(QualitySettingsUpdating),
             ),
         )
         .add_observer(scatter_extended)
