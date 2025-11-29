@@ -177,11 +177,15 @@ pub(super) fn prepare_global_cull_buffer(
     render_queue: Res<RenderQueue>,
     global_buffer: Option<ResMut<GlobalCullBuffer>>,
 ) {
-    let Some((view, _camera)) = views.iter().find(|(_, cam)| cam.is_active) else {
+    if views.is_empty() {
         #[cfg(feature = "trace")]
         warn!(
-            "No active camera found culling. Did you add `Center` to the camera/player controller?"
+            "No active camera/view found culling. Did you add `Center` to the camera/player controller?"
         );
+        return;
+    }
+
+    let Some((view, _camera)) = views.iter().find(|(_, cam)| cam.is_active) else {
         return;
     };
 
