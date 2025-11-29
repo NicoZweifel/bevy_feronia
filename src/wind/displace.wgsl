@@ -304,7 +304,7 @@ fn calculate_macro_curve(
     let point_start = vec3<f32>(0.0, 0.0, 0.0);
 
     // Adjust control point height based on how much we are bending, i.e.,
-    // Push the curve up, making the tip bend more than the base
+    // pushing the curve up and making the tip bend more than the base.
     let control_point_y_factor = mix(0.5, 0.6, bend_factor);
     let control_point_y = height_range * control_point_y_factor;
 
