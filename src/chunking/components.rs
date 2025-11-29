@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_get_chunk_radius_1d_should_get_correct_radius() {
-        // This is a 1D "sanity quality" to test the simplest case.
+        // This is a 1D "sanity check" to test the simplest case.
         // A 1D "chunk" (a line) of length 20 should have a radius (half-diagonal) of 10.
         let base_size_1d = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));
 

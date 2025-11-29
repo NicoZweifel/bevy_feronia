@@ -30,7 +30,7 @@ pub fn merge_check(
                 .get(parent)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
-                    error!("Couldn't get parent Chunk {parent} for merge quality!");
+                    error!("Couldn't get parent Chunk {parent} for merge check!");
                 })
                 .ok()?;
 
@@ -38,7 +38,7 @@ pub fn merge_check(
                 .get(**root)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
-                    error!("Couldn't get ChunkRoot {} for merge quality!", **root);
+                    error!("Couldn't get ChunkRoot {} for merge check!", **root);
                 })
                 .ok()?;
 
@@ -78,7 +78,7 @@ pub fn handle_merge_check(
                 .get(*parent)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
-                    warn!("Couldn't get parent transform for merge quality!")
+                    warn!("Couldn't get parent transform for merge check!")
                 })
                 .ok()?;
 
@@ -86,7 +86,7 @@ pub fn handle_merge_check(
                 .get(first_child)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
-                    warn!("Couldn't get merge distance for merge quality! Was this Chunk already removed?")
+                    warn!("Couldn't get merge distance for merge check! Was this Chunk already removed?")
                 })
                 .ok()?;
 
