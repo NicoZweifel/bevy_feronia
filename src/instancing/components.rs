@@ -20,7 +20,7 @@ use std::sync::Arc;
 ///
 /// Defaults to `32.0`.
 ///
-/// Only supported with [`ExtendedWindAffectedMaterial`].
+/// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct SpecularPower(pub f32);
@@ -41,7 +41,7 @@ impl Default for SpecularPower {
 ///
 /// Defaults to `0.6`.
 ///
-/// Only supported with [`ExtendedWindAffectedMaterial`].
+/// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct SpecularStrength(pub f32);
@@ -63,7 +63,7 @@ impl Default for SpecularStrength {
 /// Maps to `translucency` in the shader.
 /// Defaults to `0.6`.
 ///
-/// Only supported with [`ExtendedWindAffectedMaterial`].
+/// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
 pub struct Translucency(pub f32);
@@ -76,47 +76,23 @@ impl Default for Translucency {
 
 /// Marker component to enable directional lights.
 ///
-/// Only supported with [`InstancedWindAffectedMaterial`].
-///
 /// Enables `#ifdef DIRECTIONAL_LIGHTS` in shaders.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 #[require(Translucency, SpecularPower, SpecularStrength)]
 pub struct DirectionalLights;
 
-/// Marker to make base [`StandardMaterial`] unlit.
-///
-/// Only supported with [`ExtendedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect, Default)]
-#[reflect(Component, Clone, Debug)]
-pub struct Unlit;
-
 /// Marker component to enable point lights.
 ///
-/// Only supported with [`InstancedWindAffectedMaterial`].
-///
 /// Enables `#ifdef POINT_LIGHTS` in shaders.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 #[require(Translucency, SpecularPower, SpecularStrength)]
 pub struct PointLights;
-
-/// Controls the edge correction effect (makes vegetation look fuller).
-///
-/// Corresponds to `wind.edge_correction_factor` in shaders.
-///
-/// Defaults to `0.02`.
-///
-/// Not supported in combination with [`EnableBillboarding`].
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
-#[reflect(Component)]
-pub struct EdgeCorrectionFactor(pub f32);
-
-impl Default for EdgeCorrectionFactor {
-    fn default() -> Self {
-        Self(0.02)
-    }
-}
 
 /// Controls the normal curving effect (simulates curved blades).
 ///
@@ -140,7 +116,7 @@ impl Default for EdgeCorrectionFactor {
 ///
 /// Defaults to `0.3`.
 ///
-/// Currently only supported in [`InstancedWindAffectedMaterial`].
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
 pub struct CurveFactor(pub f32);
@@ -160,7 +136,7 @@ impl Default for CurveFactor {
 ///
 /// Defaults to `0.5`.
 ///
-/// Currently only supported in [`InstancedWindAffectedMaterial`].
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
 pub struct StaticBendStrength(pub f32);
@@ -178,6 +154,8 @@ pub struct GpuCull;
 /// Sets a material color tint.
 ///
 /// Corresponds to `instance_uniforms.color` in shaders.
+///
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Copy, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct InstanceColor {

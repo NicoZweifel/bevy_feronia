@@ -16,6 +16,13 @@ use bevy_reflect::Reflect;
 #[reflect(Component, Debug, Clone)]
 pub struct StaticShadow;
 
+/// Marker to make base [`StandardMaterial`] unlit.
+///
+/// Only supported with [`ExtendedWindAffectedMaterial`].
+#[derive(Component, Clone, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+pub struct Unlit;
+
 #[derive(Bundle, Default, Debug, Clone)]
 pub struct SssBundle {
     sss: SubsurfaceScattering,
