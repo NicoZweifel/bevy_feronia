@@ -43,21 +43,6 @@ where
     }
 }
 
-/// Defines a 2D avoidance zone used by the scatter systems.
-///
-/// TODO
-/// https://github.com/NicoZweifel/bevy_feronia/issues/56
-/// https://github.com/NicoZweifel/bevy_feronia/issues/43
-#[derive(Clone, Debug)]
-pub struct AvoidanceData {
-    /// The center of the avoidance zone in world space.
-    pub world_pos: Vec3,
-    /// The squared radius of the zone.
-    pub radius_sq: f32,
-    /// The scale of the object at this position, influencing the final avoidance radius.
-    pub scale: f32,
-}
-
 /// Collection of all necessary data and configuration for a single scatter task.
 ///
 /// Sent to a [`CpuScatterTask`] task for processing.
@@ -358,6 +343,21 @@ where
             _phantom: Default::default(),
         }
     }
+}
+
+/// Defines a 2D avoidance zone used by the scatter systems.
+///
+/// TODO
+/// https://github.com/NicoZweifel/bevy_feronia/issues/56
+/// https://github.com/NicoZweifel/bevy_feronia/issues/43
+#[derive(Clone, Debug)]
+pub struct AvoidanceData {
+    /// The center of the avoidance zone in world space.
+    pub world_pos: Vec3,
+    /// The squared radius of the zone.
+    pub radius_sq: f32,
+    /// The scale of the object at this position, influencing the final avoidance radius.
+    pub scale: f32,
 }
 
 /// A component on the [`ScatterRoot`] that accumulates [`AvoidanceData`]
