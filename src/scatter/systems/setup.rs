@@ -30,7 +30,7 @@ pub fn setup_root_aabb(
     for (root_entity, children) in &q_root {
         let aabb: Option<Aabb> = children
             .iter()
-            .flat_map(|child| q_children.iter_descendants(child))
+            .flat_map(|child| std::iter::once(child).chain(q_children.iter_descendants(child)))
             .filter_map(|entity| q_aabb.get(entity).ok())
             .fold(None, |aabb, child| {
                 aabb.map(|aabb| combine_aabbs(&aabb, child))
