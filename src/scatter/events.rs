@@ -223,18 +223,13 @@ where
             })
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
+        let instance_modifiers = InstanceModifiers::from(&task_data)
+            .with_density_sampler(&density_sampler)
+            .with_height_sampler(&height_sampler);
+
         ScatterResults::<T>::from_container_with_data(
-            task_data.container,
-            InstanceModifiers {
-                jitter: task_data.jitter.as_ref(),
-                avoidance: task_data.avoidance.as_ref(),
-                map_height: task_data.map_height.as_ref(),
-                height_sampler: &height_sampler,
-                density_sampler: &density_sampler,
-                scale: task_data.scale.as_ref(),
-                rotation: task_data.rotation.as_ref(),
-                density: task_data.density.as_ref(),
-            },
+            &task_data.container,
+            instance_modifiers,
             &task_data.external_avoidance_data,
         )
     }
@@ -279,7 +274,7 @@ where
     }
 
     pub fn from_container_with_data(
-        container: Container,
+        container: &Container,
         modifiers: InstanceModifiers,
         external_avoidance_data: &[AvoidanceData],
     ) -> ScatterResults<T>
@@ -297,7 +292,7 @@ where
             }
 
             let Some(candidate) = ScatterResult::try_from_container_and_modifiers(
-                &container,
+                container,
                 &modifiers,
                 &mut rng,
                 external_avoidance_data,
@@ -308,7 +303,7 @@ where
             results.push(candidate);
         }
 
-        ScatterResults::<T>::from(&container).with_data(results)
+        ScatterResults::<T>::from(container).with_data(results)
     }
 }
 

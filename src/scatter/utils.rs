@@ -81,6 +81,36 @@ pub struct InstanceModifiers<'a> {
     pub density: Option<&'a LodDensity>,
 }
 
+impl<'a> From<&'a ScatterTaskData> for InstanceModifiers<'a> {
+    fn from(value: &'a ScatterTaskData) -> Self {
+        Self {
+            jitter: value.jitter.as_ref(),
+            avoidance: value.avoidance.as_ref(),
+            map_height: value.map_height.as_ref(),
+            scale: value.scale.as_ref(),
+            rotation: value.rotation.as_ref(),
+            density: value.density.as_ref(),
+            height_sampler: &HeightMapSampler::Default(DefaultSampler),
+            density_sampler: &None,
+        }
+    }
+}
+
+impl<'a> InstanceModifiers<'a> {
+    pub fn with_height_sampler(mut self, height_sampler: &'a HeightMapSampler<'a>) -> Self {
+        self.height_sampler = height_sampler;
+        self
+    }
+
+    pub fn with_density_sampler(
+        mut self,
+        density_sampler: &'a Option<DensityMapSampler<'a>>,
+    ) -> Self {
+        self.density_sampler = density_sampler;
+        self
+    }
+}
+
 #[derive(Clone)]
 pub struct Container {
     pub entity: Entity,
