@@ -123,6 +123,7 @@ impl ScatterResult {
             return None;
         }
 
+        /// TODO see [`AvoidanceData`]
         if external_avoidance_data.iter().any(|obstacle| {
             final_world_pos
                 .with_y(0.)
