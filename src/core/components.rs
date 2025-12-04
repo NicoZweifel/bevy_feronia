@@ -36,7 +36,7 @@ pub struct LevelOfDetail(pub u32);
 /// Makes shaders return `debug_color` in the fragment shader.
 ///
 /// Enables `#ifdef MATERIAL_DEBUG` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct EnableDebug;
 
@@ -45,7 +45,7 @@ pub struct EnableDebug;
 /// Enables `#ifdef BILLBOARDING` in shaders.
 ///
 /// Not supported in combination with [`EdgeCorrectionFactor`].
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct EnableBillboarding;
 
@@ -66,7 +66,7 @@ pub struct EnableBillboarding;
 /// Typically used for performance reasons and/or on static or barely wind-affected objects.
 ///
 /// Enables `#ifdef FAST_NORMALS` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct FastNormals;
 
@@ -88,7 +88,7 @@ pub struct FastNormals;
 /// Typically used for billboarded foliage or flat meshes like grass.
 ///
 /// Enables `#ifdef ANALYTICAL_NORMALS` in shaders.
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct AnalyticalNormals;
 

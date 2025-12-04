@@ -1,3 +1,6 @@
+/// Opinionated quality settings module
+///
+/// TODO try to remove AddIf completely
 use crate::prelude::*;
 
 use bevy_app::{App, Plugin, Startup, Update};
@@ -89,6 +92,7 @@ pub trait SpawnableAsset: Asset + Sized {
     fn spawn(cmd: &mut Commands, entity: Entity, handle: Handle<Self>);
 }
 
+/// This is a Band-Aid solution and will most likely be replaced by a better one in the future, e.g. scatter_items! macro TODO
 #[derive(Component, Default, Debug, Reflect, Clone)]
 #[reflect(Component)]
 pub struct AssetSelect<T: Asset> {
@@ -186,6 +190,10 @@ pub enum QualityRule {
 }
 
 /// "Only add Bundle B if the QualityRule passes"
+///
+/// If you can, using required components and observers directly is preferred over using [`AddIf`].
+///
+/// This is pretty much a Band-Aid solution until something better comes along (Maybe a `scatter_items!` macro could help?) TODO
 #[derive(Component)]
 pub struct AddIf<B>
 where

@@ -13,10 +13,11 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
+use bevy_ecs::lifecycle::HookContext;
+use bevy_ecs::world::DeferredWorld;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
 use bevy_feronia::quality::*;
-use bevy_feronia::{extension, instancing};
 use bevy_image::*;
 use bevy_mesh::PlaneMeshBuilder;
 use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
@@ -86,7 +87,7 @@ enum AppState {
     InGame,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct Scenes {
     // Always Loaded
     landscape: Handle<Scene>,
@@ -334,13 +335,43 @@ fn respawn_scene(
 }
 
 #[derive(Component)]
+#[component(on_add = Self::on_add)]
+#[require(
+    Name::new("Landscape"),
+    ScatterRoot::default(),
+    MapHeight,
+    ChunkRoot::default(),
+    PlaybackSettings {
+        mode: bevy::audio::PlaybackMode::Loop,
+        ..default()
+    },
+)]
 pub struct Landscape;
+
+impl Landscape {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let (landscape, audio) = world
+            .get_resource::<Scenes>()
+            .map(|x| (x.landscape.clone(), x.audio.clone()))
+            .expect("Scene handles should be added!");
+
+        let range_quality = world
+            .get_resource::<QualitySettings>()
+            .map(|x| x.range_quality)
+            .unwrap_or_default();
+
+        world.commands().entity(ctx.entity).insert((
+            SceneRoot(landscape.clone()),
+            LodConfig::from(range_quality),
+            AudioPlayer::new(audio.clone()),
+        ));
+    }
+}
 
 fn spawn_landscape(
     mut cmd: Commands,
     mut ns_height_map: ResMut<NextState<HeightMapState>>,
     mut ns_scatter: ResMut<NextState<ScatterState>>,
-    handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
     settings: Res<QualitySettings>,
 ) {
@@ -369,29 +400,193 @@ fn spawn_landscape(
     }
      */
 
-    cmd.spawn((
-        Name::new("Landscape"),
-        Landscape,
-        SceneRoot(handles.landscape.clone()),
-        ScatterRoot::default(),
-        LodConfig::from(settings.range_quality),
-        MapHeight,
-        ChunkRoot::default(),
-        AudioPlayer::new(handles.audio.clone()),
-        PlaybackSettings {
-            mode: bevy::audio::PlaybackMode::Loop,
-            ..default()
-        },
-    ));
+    cmd.spawn(Landscape);
 
     ns_scatter.set(ScatterState::Setup);
     ns_height_map.set(HeightMapState::Setup);
 }
 
+#[derive(Component)]
+#[require(
+    Name::new("Rock Layer"),
+    ScatterLayerType::<StandardMaterial>::default(),
+    DistributionDensity(15.),
+    InstanceRotationYaw::default(),
+    InstanceScale { min: 1., max: 2. },
+    InstanceJitter::default(),
+    Avoidance(2.5),
+)]
+struct RockLayer;
+
+#[derive(Component)]
+#[component(on_add = Self::on_add)]
+#[require(
+    Name::new("Tree Layer"),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
+    DistributionDensity(20.),
+    InstanceRotationYaw::default(),
+    InstanceScale { min: 1., max: 2. },
+    InstanceJitter::default(),
+    Avoidance(0.5),
+)]
+struct TreeLayer;
+
+impl TreeLayer {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let QualitySettings {
+            disable_sss,
+            disable_wind_displacement,
+            static_shadows,
+            ..
+        } = world
+            .get_resource::<QualitySettings>()
+            .cloned()
+            .unwrap_or_default();
+
+        if !disable_sss {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(SssBundle::default());
+        }
+
+        if !disable_wind_displacement {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(WindAffected::default());
+        }
+
+        if static_shadows {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(StaticShadow::default());
+        }
+    }
+}
+
+#[derive(Component)]
+#[component(on_add = Self::on_add)]
+#[require(
+    Name::new("Foliage Layer"),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
+    DistributionDensity(20.),
+    InstanceRotationYaw::default(),
+    InstanceScale { min: 4., max: 8. },
+    InstanceJitter::default(),
+    Avoidance(0.2),
+)]
+struct FoliageLayer;
+
+impl FoliageLayer {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let QualitySettings {
+            disable_sss,
+            disable_wind_displacement,
+            static_shadows,
+            ..
+        } = world
+            .get_resource::<QualitySettings>()
+            .cloned()
+            .unwrap_or_default();
+
+        if !disable_sss {
+            world.commands().entity(ctx.entity).insert((
+                SubsurfaceScattering,
+                SubsurfaceScatteringIntensity(4.),
+                SubsurfaceScatteringScale(5.),
+            ));
+        }
+
+        if !disable_wind_displacement {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(WindAffected::default());
+        }
+
+        if static_shadows {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(StaticShadow::default());
+        }
+    }
+}
+
+#[derive(Component)]
+#[component(on_add = Self::on_add)]
+#[require(
+    Name::new("Grass Layer"),
+    ScatterLayerType::<InstancedWindAffectedMaterial>::default(),
+
+    // Scatter options
+
+    InstanceJitter::default(),
+    InstanceScale::default(),
+    ScatterChunked,
+    ScaleDensity,
+
+    // Material options
+
+    GpuCull,
+    EdgeCorrectionFactor::default(),
+    CurveFactor::default(),
+    Strength(1.2),
+    MicroStrength(1.2),
+    SCurveStrength(1.2),
+    BopStrength(1.2),
+    AnalyticalNormals,
+    InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
+    StaticBendStrength::default(),
+    SpecularStrength(0.2)
+)]
+struct GrassLayer;
+
+impl GrassLayer {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let QualitySettings {
+            disable_grass_point_lights,
+            disable_grass_directional_lights,
+            disable_wind_displacement,
+            grass_density,
+            ..
+        } = world
+            .get_resource::<QualitySettings>()
+            .cloned()
+            .unwrap_or_default();
+
+        let density_map = world
+            .get_resource::<DensityMap>()
+            .map(|x| x.0.clone())
+            .expect("Density map should be added!");
+
+        world.commands().entity(ctx.entity).insert((
+            DistributionDensity::from(grass_density),
+            DistributionPattern(density_map),
+        ));
+
+        if !disable_grass_directional_lights {
+            world
+                .commands()
+                .entity(ctx.entity)
+                .insert(DirectionalLights);
+        }
+
+        if !disable_grass_point_lights {
+            world.commands().entity(ctx.entity).insert(PointLights);
+        }
+
+        if !disable_wind_displacement {
+            world.commands().entity(ctx.entity).insert(WindAffected);
+        }
+    }
+}
+
 fn spawn_scene(
     mut cmd: Commands,
     landscape: Single<Entity, With<Landscape>>,
-    density_map: Res<DensityMap>,
     handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
     settings: Res<QualitySettings>,
@@ -423,16 +618,7 @@ fn spawn_scene(
 
     cmd.entity(*landscape).insert(children![
         (
-            Name::new("Rock Layer"),
-            ScatterLayer::default(),
-            ScatterLayerType::<StandardMaterial>::default(),
-            (
-                DistributionDensity(15.),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 2. },
-                InstanceJitter::default(),
-                Avoidance(2.5),
-            ),
+            RockLayer,
             children![
                 (
                     AssetSelect::progressive(
@@ -454,19 +640,7 @@ fn spawn_scene(
             ]
         ),
         (
-            extension::scatter_layer("Tree Layer"),
-            (
-                DistributionDensity(20.),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 1., max: 2. },
-                InstanceJitter::default(),
-                Avoidance(0.5),
-            ),
-            (
-                AddIf::new(QualityRule::Sss, SssBundle::default()),
-                AddIf::new(QualityRule::StaticShadows, StaticShadow::default()),
-                AddIf::new(QualityRule::Wind, WindAffected::default()),
-            ),
+            TreeLayer,
             children![
                 (
                     AssetSelect::progressive(
@@ -499,26 +673,7 @@ fn spawn_scene(
             ]
         ),
         (
-            extension::scatter_layer("Foliage Complex Layer"),
-            (
-                DistributionDensity(20.),
-                InstanceRotationYaw::default(),
-                InstanceScale { min: 4., max: 8. },
-                InstanceJitter::default(),
-                Avoidance(0.2),
-            ),
-            (
-                AddIf::new(
-                    QualityRule::Sss,
-                    (
-                        SubsurfaceScattering,
-                        SubsurfaceScatteringIntensity(4.),
-                        SubsurfaceScatteringScale(5.),
-                    )
-                ),
-                AddIf::new(QualityRule::StaticShadows, StaticShadow::default()),
-                AddIf::new(QualityRule::Wind, WindAffected::default()),
-            ),
+            FoliageLayer,
             children![
                 (
                     AssetSelect::progressive(
@@ -540,33 +695,7 @@ fn spawn_scene(
             ]
         ),
         (
-            instancing::scatter_layer("Instanced Grass Layer"),
-            (
-                DistributionDensity::from(settings.grass_density),
-                DistributionPattern(density_map.clone()),
-                InstanceJitter::default(),
-                InstanceScale::default(),
-                ScatterChunked,
-                ScaleDensity,
-                GpuCull,
-            ),
-            (
-                EdgeCorrectionFactor::default(),
-                CurveFactor::default(),
-                Strength(1.2),
-                MicroStrength(1.2),
-                SCurveStrength(1.2),
-                BopStrength(1.2),
-                AnalyticalNormals,
-                InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
-                StaticBendStrength::default(),
-                SpecularStrength(0.2),
-                (
-                    AddIf::new(QualityRule::DirectionalLights, DirectionalLights),
-                    AddIf::new(QualityRule::PointLights, PointLights),
-                    AddIf::new(QualityRule::Wind, WindAffected::default())
-                ),
-            ),
+            GrassLayer,
             children![
                 (
                     AssetSelect::progressive(

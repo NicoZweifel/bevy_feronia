@@ -73,28 +73,28 @@ pub struct ScatterTaskData {
 }
 
 /// Component that holds a [`Task`] for an in-progress CPU-based scatter job.
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CpuScatterTask<T>(pub Task<T>);
 
 /// Component that holds the result `T` from a completed [`CpuScatterTask`].
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct CpuScatterResult<T>(pub T);
 
 /// Marker component defining a "prototype" or "source" entity to be scattered by a [`ScatterLayer`].
 #[derive(Component, Reflect, Debug, Clone)]
-#[reflect(Component)]
+#[reflect(Component, Debug, Clone)]
 pub struct ScatterItem;
 
 /// Marker component indicating that a [`ScatterRoot`] has been processed (e.g., its layers discovered).
 #[derive(Component, Reflect, Debug, Clone)]
-#[reflect(Component)]
+#[reflect(Component, Debug, Clone)]
 pub struct ScatterRootProcessed;
 
 /// Marker component on a [`ScatterLayer`] indicating its scattering should be chunked.
 ///
 /// If this is present, scattering will be tied to the [`Chunk`] lifecycle.
-#[derive(Component, Reflect, Debug, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component, Debug, Clone)]
 pub struct ScatterChunked;
 
 /// Component on a [`ScatterLayer`]'s [`ScatterItem`] holding a handle to a [`ScatterAsset`], which defines the properties
@@ -102,14 +102,14 @@ pub struct ScatterChunked;
 ///
 /// This is similar to [`ScatteredAsset`], but this component is on the original [`ScatterItem`] definition, in a [`ScatterLayer`].
 #[derive(Component, Reflect, Debug, Clone, Deref, Default)]
-#[reflect(Component)]
+#[reflect(Component, Debug, Clone)]
 pub struct ScatterItemAsset<T>(pub Handle<ScatterAsset<T>>)
 where
     T: ScatterMaterialAsset;
 
 /// Relational component linking a [`ScatterItem`] entity to its parent [`ScatterLayer`].
 #[derive(Component, Debug, Clone, Reflect, Deref)]
-#[reflect(Component)]
+#[reflect(Component, Debug, Clone)]
 #[relationship(relationship_target = ScatterLayer)]
 pub struct ScatterItemOf(pub Entity);
 
@@ -149,6 +149,7 @@ where
 /// and material pipelines.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
+#[require(ScatterLayer)]
 pub struct ScatterLayerType<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -224,7 +225,7 @@ impl From<usize> for DistributionDensity {
 }
 
 /// Enables density scaling when using chunks.
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct ScaleDensity;
 
