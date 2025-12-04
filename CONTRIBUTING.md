@@ -18,7 +18,4 @@ To see detailed log messages while running the project, you can enable the `trac
 
  `RUST_LOG="warn,bevy_feronia=debug"`
 
-### CI / GitHub Actions
-There is no CI or GitHub Actions pipeline yet. I'm not opposed to adding one, I just haven't gotten around to it.
-This needs to be done eventually anyway, so if you'd like to set one up, a PR would be great.
 
