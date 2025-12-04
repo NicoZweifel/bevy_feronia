@@ -350,14 +350,16 @@ pub struct Landscape;
 
 impl Landscape {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
-        let (landscape, audio) = world
+        let Scenes {
+            landscape, audio, ..
+        } = world
             .get_resource::<Scenes>()
-            .map(|x| (x.landscape.clone(), x.audio.clone()))
+            .cloned()
             .expect("Scene handles should be added!");
 
-        let range_quality = world
+        let QualitySettings { range_quality, .. } = world
             .get_resource::<QualitySettings>()
-            .map(|x| x.range_quality)
+            .cloned()
             .unwrap_or_default();
 
         world.commands().entity(ctx.entity).insert((
