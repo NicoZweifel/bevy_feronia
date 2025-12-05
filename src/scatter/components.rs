@@ -123,8 +123,8 @@ pub struct ScatterItemOf(pub Entity);
 pub struct ScatterLayer(Vec<Entity>);
 
 /// Marker component on a [`Chunk`] to trigger scattering when the chunk is initialized.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component, Debug)]
 pub struct ChunkInitScatter<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -147,8 +147,8 @@ where
 ///
 /// This acts as a generic type marker to associate the layer with the correct scatter systems
 /// and material pipelines.
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Debug)]
+#[reflect(Component, Debug)]
 #[require(ScatterLayer)]
 pub struct ScatterLayerType<T = StandardMaterial>
 where
@@ -183,7 +183,7 @@ pub struct ScatterObserver;
 
 /// Relational component linking a [`ScatterLayer`] entity to its parent [`ScatterRoot`].
 #[derive(Component, Debug, Clone, Reflect, Deref)]
-#[reflect(Component)]
+#[reflect(Component, Debug)]
 #[relationship(relationship_target = ScatterRoot)]
 pub struct ScatterLayerOf(pub Entity);
 
@@ -191,19 +191,19 @@ pub struct ScatterLayerOf(pub Entity);
 ///
 /// It holds overall configuration like [`LodConfig`] and state like the [`ScatterOccupancyMap`].
 #[derive(Component, Debug, Clone, Reflect, Deref, Default)]
-#[reflect(Component)]
+#[reflect(Component, Debug)]
 #[require(Transform, Visibility, LodConfig, ScatterOccupancyMap)]
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 
 /// Component to enable or disable scattering for a [`ScatterLayer`].
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
 pub struct ScatterLayerEnabled(pub bool);
 
 /// Controls the density for a specific [`ScatterLayer`].
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
 pub struct DistributionDensity(pub f32);
 
 impl From<f32> for DistributionDensity {
@@ -225,15 +225,15 @@ impl From<usize> for DistributionDensity {
 }
 
 /// Enables density scaling when using chunks.
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Default, Debug)]
+#[reflect(Component, Debug)]
 pub struct ScaleDensity;
 
 /// Marker component placed on a spawned entity, indicating it was created by a scatter system.
 ///
 /// Contains the [`Entity`] of the [`ScatterLayer`] it belongs to.
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
 pub struct ScatteredInstance(pub Entity);
 
 /// Marker component placed on a spawned entity, indicating it was created by a scatter system.
@@ -241,20 +241,20 @@ pub struct ScatteredInstance(pub Entity);
 /// Contains the [`Handle`] of the [`ScatterAsset`] it belongs to.
 ///
 /// This is similar to [`ScatterItemAsset`], which is on the original [`ScatterItem`] definition, in a [`ScatterLayer`].
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
 pub struct ScatteredAsset<T>(pub Handle<ScatterAsset<T>>)
 where
     T: ScatterMaterialAsset;
 
 /// Defines a texture-based density map for scattering.
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
 pub struct DistributionPattern(pub Handle<Image>);
 
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
-#[derive(Component, Reflect, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Clone, Debug)]
+#[reflect(Component, Debug)]
 pub struct InstanceRotationYaw {
     /// The minimum rotation angle (in radians).
     pub min: f32,
@@ -272,8 +272,8 @@ impl Default for InstanceRotationYaw {
 }
 
 /// Specifies a random uniform scale range for scattered instances.
-#[derive(Component, Reflect, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Clone, Debug)]
+#[reflect(Component, Debug)]
 pub struct InstanceScale {
     /// The minimum scale.
     pub min: f32,
@@ -288,8 +288,8 @@ impl Default for InstanceScale {
 }
 
 /// Specifies a random positional offset (jitter) applied to scattered instances.
-#[derive(Component, Reflect, Deref, DerefMut, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
+#[reflect(Component, Debug)]
 pub struct InstanceJitter(pub f32);
 
 impl Default for InstanceJitter {
@@ -299,14 +299,15 @@ impl Default for InstanceJitter {
 }
 
 /// Specifies the density for scattering.
-#[derive(Component, Reflect, Deref, DerefMut, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
+#[reflect(Component, Debug)]
 pub struct InstanceDensity(pub f32);
 
 /// Specifies the minimum distance between the centers of scattered objects.
 ///
 /// Gets scaled by the [`InstanceScale`].
-#[derive(Component, Clone, Debug, Deref, DerefMut)]
+#[derive(Component, Clone, Debug, Deref, DerefMut, Reflect)]
+#[reflect(Component, Debug)]
 pub struct Avoidance(pub f32);
 
 impl Default for Avoidance {
@@ -321,7 +322,7 @@ impl Default for Avoidance {
 /// to fill the [`ScatterOccupancyMap`] before the next one runs.
 ///
 /// Required to prevent foliage from being scattered onto rocks etc.
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct HierarchicalScatterState<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -365,7 +366,7 @@ pub struct AvoidanceData {
 /// from processed layers.
 ///
 /// This allows later layers to avoid spawning on top of instances from previous layers, e.g., no foliage on rocks.
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug)]
 pub struct ScatterOccupancyMap {
     /// A list of occupied zones from previously scattered layers.
     pub occupied_zones: Vec<AvoidanceData>,

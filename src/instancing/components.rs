@@ -8,6 +8,7 @@ use bevy_render::render_resource::Buffer;
 use bevy_render::{extract_component::ExtractComponent, render_resource::BindGroup};
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
+use std::fmt;
 use std::sync::Arc;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
@@ -136,7 +137,7 @@ impl Default for CurveFactor {
 ///
 /// Defaults to `0.5`.
 ///
-/// Currently only supported with [`InstancedWindAffectedMaterial`].
+/// Currently only supported with [`InstancedWindAffectedMaterial`] but should be easy to add.
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
 pub struct StaticBendStrength(pub f32);
@@ -192,8 +193,10 @@ pub struct InstanceData {
     pub _padding: [u32; 3],
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
+#[reflect(Component, Clone, Debug)]
 pub struct InstanceMaterialData {
+    #[reflect(ignore)]
     pub instances: Arc<Vec<InstanceData>>,
     pub top_color: LinearRgba,
     pub bottom_color: LinearRgba,
@@ -203,6 +206,22 @@ pub struct InstanceMaterialData {
     pub translucency: f32,
     pub specular_strength: f32,
     pub specular_power: f32,
+}
+
+impl fmt::Debug for InstanceMaterialData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InstanceMaterialData")
+            .field("instances", &self.instances.len())
+            .field("top_color", &self.top_color)
+            .field("bottom_color", &self.bottom_color)
+            .field("visibility_range", &self.visibility_range)
+            .field("static_bend_strength", &self.static_bend_strength)
+            .field("curve_factor", &self.curve_factor)
+            .field("translucency", &self.translucency)
+            .field("specular_strength", &self.specular_strength)
+            .field("specular_power", &self.specular_power)
+            .finish()
+    }
 }
 
 impl ExtractComponent for InstanceMaterialData {
