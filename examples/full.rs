@@ -50,6 +50,8 @@ fn main() -> AppExit {
             ExtendedWindAffectedScatterPlugin,
         ))
         .init_state::<AppState>()
+        .add_systems(OnEnter(AppState::Setup), setup_loading_screen)
+        .add_systems(OnExit(AppState::Loading), teardown_loading_screen)
         .add_systems(Startup, setup_density_map)
         .add_systems(
             Update,
@@ -58,7 +60,7 @@ fn main() -> AppExit {
                 check_assets_loaded.run_if(in_state(AppState::Loading)),
             ),
         )
-        .add_systems(OnEnter(AppState::InGame), spawn_landscape)
+        .add_systems(OnEnter(AppState::Loading), spawn_landscape)
         .add_systems(OnEnter(HeightMapState::Ready), spawn_scene)
         .add_systems(OnEnter(ScatterState::Ready), scatter)
         .add_systems(
@@ -910,4 +912,32 @@ fn create_spherical_fog_texture(size: u32) -> Image {
         TextureFormat::R8Unorm,
         RenderAssetUsages::default(),
     )
+}
+
+#[derive(Component)]
+struct LoadingScreen;
+
+fn setup_loading_screen(mut commands: Commands) {
+    let text_style = TextFont {
+        font_size: 67.0,
+        ..default()
+    };
+
+    commands
+        .spawn((
+            Node {
+                height: percent(100),
+                width: percent(100),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(Color::BLACK),
+            LoadingScreen,
+        ))
+        .with_child((Text::new("Loading..."), text_style.clone()));
+}
+
+fn teardown_loading_screen(mut cmd: Commands, loading_screen: Single<Entity, With<LoadingScreen>>) {
+    cmd.entity(*loading_screen).despawn();
 }
