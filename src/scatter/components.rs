@@ -5,11 +5,14 @@ use bevy_camera::prelude::Visibility;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
-use bevy_math::Vec3;
+use bevy_math::{IVec2, Quat, Vec3};
 use bevy_pbr::StandardMaterial;
+use bevy_platform::collections::HashMap;
 use bevy_reflect::Reflect;
 use bevy_tasks::Task;
 use bevy_transform::prelude::Transform;
+use rand::Rng;
+use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -66,8 +69,8 @@ pub struct ScatterTaskData {
     pub height_map_config: Option<HeightMapConfig>,
     /// Optional density map [`Image`] handle.
     pub density_map_image: Option<Image>,
-    /// A list of pre-existing [`AvoidanceData`] zones to avoid (e.g., from other layers).
-    pub external_avoidance_data: Vec<AvoidanceData>,
+    /// A list of pre-existing [`SpatialAvoidanceGrid`] zones to avoid (e.g., from other layers).
+    pub external_avoidance_data: ScatterOccupancyMap,
     /// Optional [`LodDensity`] for this scatter operation.
     pub density: Option<LodDensity>,
 }
@@ -253,13 +256,28 @@ where
 pub struct DistributionPattern(pub Handle<Image>);
 
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
-#[derive(Component, Reflect, Clone, Debug)]
+#[derive(Component, Reflect, Clone, Copy, Debug)]
 #[reflect(Component, Debug)]
 pub struct InstanceRotationYaw {
     /// The minimum rotation angle (in radians).
     pub min: f32,
     /// The maximum rotation angle (in radians).
     pub max: f32,
+}
+
+impl InstanceRotationYaw {
+    #[inline]
+    pub fn is_fixed(&self) -> bool {
+        self.min == self.max
+    }
+
+    pub fn into_quad(self, rng: &mut impl Rng) -> Quat {
+        Quat::from_rotation_y(
+            self.is_fixed()
+                .then(|| self.min)
+                .unwrap_or_else(|| rng.random_range(self.min..self.max)),
+        )
+    }
 }
 
 impl Default for InstanceRotationYaw {
@@ -279,6 +297,23 @@ pub struct InstanceScale {
     pub min: f32,
     /// The maximum scale.
     pub max: f32,
+}
+
+impl InstanceScale {
+    #[inline]
+    pub fn is_fixed(&self) -> bool {
+        self.min == self.max
+    }
+
+    pub fn into_f32(self, rng: &mut impl Rng) -> f32 {
+        self.is_fixed()
+            .then(|| self.min)
+            .unwrap_or_else(|| rng.random_range(self.min..self.max))
+    }
+
+    pub fn into_vec3(self, rng: &mut impl Rng) -> Vec3 {
+        Vec3::splat(self.into_f32(rng))
+    }
 }
 
 impl Default for InstanceScale {
@@ -322,7 +357,8 @@ impl Default for Avoidance {
 /// to fill the [`ScatterOccupancyMap`] before the next one runs.
 ///
 /// Required to prevent foliage from being scattered onto rocks etc.
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component, Debug)]
 pub struct HierarchicalScatterState<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -347,27 +383,203 @@ where
     }
 }
 
-/// Defines a 2D avoidance zone used by the scatter systems.
+/// A component on the [`ScatterRoot`] that accumulates obstacle data from processed layers.
+///
+/// This allows later layers to avoid spawning on top of instances from previous layers, e.g., no foliage on rocks.
+///
+/// Defines a 2.5D avoidance zone used by the scatter systems.
+///
+/// It stores the height of the obstacle at the occupied location,
+/// which is used to avoid spawning on top of it while still spawning above rocks in the ground.
 ///
 /// TODO
 /// https://github.com/NicoZweifel/bevy_feronia/issues/56
 /// https://github.com/NicoZweifel/bevy_feronia/issues/43
-#[derive(Clone, Debug)]
-pub struct AvoidanceData {
-    /// The center of the avoidance zone in world space.
-    pub world_pos: Vec3,
-    /// The squared radius of the zone.
-    pub radius_sq: f32,
-    /// The scale of the object at this position, influencing the final avoidance radius.
-    pub scale: f32,
+#[derive(Component, Reflect, Clone)]
+#[reflect(Component, Debug, Clone)]
+pub struct ScatterOccupancyMap {
+    pub cell_size: f32,
+    pub cells: HashMap<IVec2, f32>,
 }
 
-/// A component on the [`ScatterRoot`] that accumulates [`AvoidanceData`]
-/// from processed layers.
-///
-/// This allows later layers to avoid spawning on top of instances from previous layers, e.g., no foliage on rocks.
-#[derive(Component, Default, Debug)]
-pub struct ScatterOccupancyMap {
-    /// A list of occupied zones from previously scattered layers.
-    pub occupied_zones: Vec<AvoidanceData>,
+impl Default for ScatterOccupancyMap {
+    fn default() -> Self {
+        Self {
+            cell_size: 1.,
+            cells: HashMap::default(),
+        }
+    }
+}
+
+impl Debug for ScatterOccupancyMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ScatterOccupancyMap")
+            .field("cell_size", &self.cell_size)
+            .field("cells", &self.cells.len())
+            .finish()
+    }
+}
+
+impl ScatterOccupancyMap {
+    /// Convert a world position to a grid space coordinate.
+    #[inline]
+    fn to_grid(&self, pos: Vec3) -> IVec2 {
+        IVec2::new(
+            (pos.x / self.cell_size).floor() as i32,
+            (pos.z / self.cell_size).floor() as i32,
+        )
+    }
+
+    /// Check if a position is occupied and if it is, check if it is below the stored height in this cell, e.g.,
+    /// it's not above a rock in the ground, but inside/on it.
+    pub fn is_occupied(&self, pos: Vec3) -> bool {
+        let grid_pos = self.to_grid(pos);
+
+        self.cells
+            .get(&grid_pos)
+            .map(|height| pos.y <= *height)
+            .unwrap_or_default()
+    }
+
+    /// Adds a circular obstacle to the map.
+    ///
+    /// # Arguments
+    /// * `center` - World position of the object.
+    /// * `radius` - Scaled radius of the circle in world units.
+    pub fn add_circle(&mut self, center: Vec3, radius: f32) {
+        if radius <= 0.0 {
+            return;
+        }
+
+        let min_world = center - Vec3::new(radius, 0.0, radius);
+        let max_world = center + Vec3::new(radius, 0.0, radius);
+
+        let min_grid = self.to_grid(min_world);
+        let max_grid = self.to_grid(max_world);
+
+        let radius_sq = radius.powi(2);
+        let half_cell = self.cell_size / 2.0;
+
+        for x in min_grid.x..=max_grid.x {
+            for z in min_grid.y..=max_grid.y {
+                let grid_pos = IVec2::new(x, z);
+
+                let world_cell_x = (x as f32 * self.cell_size) + half_cell;
+                let world_cell_z = (z as f32 * self.cell_size) + half_cell;
+
+                let dist_x = world_cell_x - center.x;
+                let dist_z = world_cell_z - center.z;
+                let dist_sq = dist_x.powi(2) + dist_z.powi(2);
+
+                if dist_sq <= radius_sq {
+                    self.cells
+                        .entry(grid_pos)
+                        .and_modify(|h| *h = h.max(center.y))
+                        .or_insert(center.y);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::math::{IVec2, Vec3};
+
+    #[test]
+    fn test_to_grid_should_return_correct_coordinates() {
+        // Arrange
+        let map = ScatterOccupancyMap {
+            cell_size: 2.0,
+            ..Default::default()
+        };
+        let input_position = Vec3::new(2.5, 0.0, -1.5);
+        let expected = IVec2::new(1, -1);
+
+        // Act
+        let result = map.to_grid(input_position);
+
+        // Assert
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_position_should_be_occupied() {
+        // Arrange
+        let mut map = ScatterOccupancyMap::default();
+        let height = 5.0;
+        let cell_coord = IVec2::new(0, 0);
+
+        map.cells.insert(cell_coord, height);
+
+        //  Position is inside the rock (y < height)
+        let pos = Vec3::new(0.5, 4.0, 0.5);
+
+        // Act
+        let result = map.is_occupied(pos);
+
+        // Assert
+        assert!(result);
+    }
+
+    #[test]
+    fn test_positions_should_be_free() {
+        // Arrange
+        let mut map = ScatterOccupancyMap::default();
+        let height = 5.0;
+        let cell_coord = IVec2::new(0, 0);
+
+        map.cells.insert(cell_coord, height);
+
+        // Position is above the rock (y > height)
+        let pos = Vec3::new(0.5, 6.0, 0.5);
+
+        // Act
+        let result = !map.is_occupied(pos);
+
+        // Assert
+        assert!(result);
+    }
+
+    #[test]
+    fn test_circle_should_occupy_area() {
+        // Arrange
+        let mut map = ScatterOccupancyMap {
+            cell_size: 1.0,
+            ..Default::default()
+        };
+        let center = Vec3::new(0.5, 0.0, 0.5);
+
+        // Radius of 1.1 covers neighbor at 1,0 with distance 1.0,
+        // but not diagonal at 1,1 with distance 1.41 (sqrt(2)).
+        let radius = 1.1;
+
+        // Act
+        map.add_circle(center, radius);
+
+        // Assert
+        let center_occupied = map.cells.contains_key(&IVec2::new(0, 0));
+        let neighbor_occupied = map.cells.contains_key(&IVec2::new(1, 0));
+        let diagonal_occupied = map.cells.contains_key(&IVec2::new(1, 1));
+
+        assert!(center_occupied, "Center should be occupied");
+        assert!(neighbor_occupied, "Neighbor should be occupied");
+        assert!(!diagonal_occupied, "Diagonal should not be occupied");
+    }
+
+    #[test]
+    fn test_circle_should_store_height() {
+        // Arrange
+        let mut map = ScatterOccupancyMap::default();
+        let center = Vec3::new(0.5, 12.5, 0.5);
+        let radius = 0.5;
+
+        // Act
+        map.add_circle(center, radius);
+
+        // Assert
+        let stored_height = *map.cells.get(&IVec2::new(0, 0)).unwrap();
+        assert_eq!(stored_height, 12.5);
+    }
 }

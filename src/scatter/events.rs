@@ -77,11 +77,11 @@ pub struct ScatterResult {
 
 impl ScatterResult {
     // TODO add GPU pipeline
-    pub fn try_from_container_and_modifiers<R: Rng + ?Sized>(
+    pub fn try_from_container_and_modifiers(
         container: &Container,
         modifiers: &InstanceModifiers,
-        rng: &mut R,
-        external_avoidance_data: &[AvoidanceData],
+        rng: &mut impl Rng,
+        external_avoidance_data: &ScatterOccupancyMap,
     ) -> Option<ScatterResult> {
         let instances_dim_f = container.instances_dim;
         let cell_width = container.size.x / instances_dim_f;
@@ -117,54 +117,46 @@ impl ScatterResult {
             final_world_pos += random_offset;
         };
 
-        if let Some(sampler) = &modifiers.density_sampler
-            && rng.random::<f32>() > sampler.sample(final_world_pos)
+        if modifiers
+            .density_sampler
+            .as_ref()
+            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(final_world_pos))
         {
             return None;
         }
 
-        // TODO see [`AvoidanceData`]
-        if external_avoidance_data.iter().any(|obstacle| {
-            final_world_pos
-                .with_y(0.)
-                .distance_squared(obstacle.world_pos.with_y(0.))
-                < (obstacle.radius_sq * obstacle.scale)
-        }) {
+        if external_avoidance_data.is_occupied(final_world_pos) {
             return None;
         }
 
-        let mut instance_pos = final_world_pos - container.transform.translation;
-        instance_pos.y = match modifiers.map_height {
-            None => container.height,
-            Some(_) => {
-                modifiers.height_sampler.sample(final_world_pos) - container.transform.translation.y
-            }
+        final_world_pos.y = match modifiers.map_height {
+            None => container.transform.translation.y + container.height,
+            Some(_) => modifiers.height_sampler.sample(final_world_pos),
         };
 
-        let final_scale = modifiers.scale.map_or(1.0, |s| {
-            if s.min == s.max {
-                s.min
-            } else {
-                rng.random_range(s.min..s.max)
-            }
-        });
+        let parent_rot_inv = container.transform.rotation.inverse();
+        let world_offset_vector = final_world_pos - container.transform.translation;
+        let translation = parent_rot_inv * world_offset_vector;
 
-        let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
-            Quat::from_rotation_y(if r.min == r.max {
-                r.min
-            } else {
-                rng.random_range(r.min..r.max)
-            })
-        });
+        let scale = modifiers
+            .scale
+            .cloned()
+            .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng));
 
+        let intended_world_rotation = modifiers
+            .rotation
+            .cloned()
+            .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
+
+        let rotation = parent_rot_inv * intended_world_rotation;
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);
 
         Some(ScatterResult {
             seed: instance_seed,
             transform: Transform {
-                translation: instance_pos,
-                rotation: final_rotation,
-                scale: Vec3::splat(final_scale),
+                translation,
+                rotation,
+                scale,
             },
         })
     }
@@ -225,7 +217,7 @@ where
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
         let instance_modifiers = InstanceModifiers::from(&task_data)
-            .with_density_sampler(&density_sampler)
+            .with_density_sampler(density_sampler.as_ref())
             .with_height_sampler(&height_sampler);
 
         ScatterResults::<T>::from_container_with_data(
@@ -277,7 +269,7 @@ where
     pub fn from_container_with_data(
         container: &Container,
         modifiers: InstanceModifiers,
-        external_avoidance_data: &[AvoidanceData],
+        external_avoidance_data: &ScatterOccupancyMap,
     ) -> ScatterResults<T>
     where
         T: ScatterMaterial,

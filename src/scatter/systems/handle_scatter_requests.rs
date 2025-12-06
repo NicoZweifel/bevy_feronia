@@ -131,7 +131,7 @@ pub fn handle_scatter_requests<T>(
                 rotation: instance_rotation.cloned(),
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
-                external_avoidance_data: occupancy_map.occupied_zones.clone(),
+                external_avoidance_data: occupancy_map.clone(),
                 density: scale_density.map(|_| {
                     lod_config
                         .density
@@ -171,7 +171,7 @@ pub fn handle_scatter_requests<T>(
                 rotation: instance_rotation.cloned(),
                 jitter: instance_jitter.cloned(),
                 avoidance: avoidance.cloned(),
-                external_avoidance_data: occupancy_map.occupied_zones.clone(),
+                external_avoidance_data: occupancy_map.clone(),
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density: None,

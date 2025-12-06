@@ -4,7 +4,7 @@
 /// In a real scenario you would make use of [`CollisionLayers`] to prevent scattered entities from affecting each other,
 /// which stops them tanking the performance like crazy.
 ///
-/// In a level where we need to scatter around existing physics objects, we would have to populate the [`AvoidanceData`] component.
+/// In a level where we need to scatter around existing physics objects, we would have to populate the [`ScatterOccupancyMap`] component.
 ///
 /// TODO
 /// https://github.com/NicoZweifel/bevy_feronia/issues/56

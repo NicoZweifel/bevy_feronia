@@ -80,16 +80,14 @@ pub fn hierarchical_scatter<T>(
     };
 
     if let Ok(avoidance) = q_avoidance.get(finished_layer) {
-        let radius_sq = avoidance.powi(2);
+        let base_radius = avoidance;
         let container_transform = trigger.container_transform;
 
         for instance in &trigger.data {
             let world_pos = container_transform.transform_point(instance.transform.translation);
-            map.occupied_zones.push(AvoidanceData {
-                world_pos,
-                radius_sq,
-                scale: instance.transform.scale.element_sum() / 3.,
-            });
+            let max_scale = instance.transform.scale.max_element();
+
+            map.add_circle(world_pos, **base_radius * max_scale);
         }
     }
 
