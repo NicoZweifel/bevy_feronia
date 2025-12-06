@@ -83,24 +83,24 @@ impl ScatterResult {
         rng: &mut impl Rng,
         external_avoidance_data: &ScatterOccupancyMap,
     ) -> Option<ScatterResult> {
-        let instances_dim_f = container.instances_dim;
-        let cell_width = container.size.x / instances_dim_f;
-        let cell_depth = container.size.z / instances_dim_f;
+        let instances_dim = container.instances_dim;
+        let cell_width = container.size.x / instances_dim;
+        let cell_depth = container.size.z / instances_dim;
 
-        let world_corner_pos = container.global_transform.translation + container.corner;
+        let local_corner = container.corner;
 
-        let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
-        let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
+        let local_cell_x_idx = rng.random_range(0.0..instances_dim).floor();
+        let local_cell_z_idx = rng.random_range(0.0..instances_dim).floor();
 
-        let snapped_world_cell_corner = world_corner_pos
+        let snapped_local_cell_corner = local_corner
             + Vec3::new(
                 local_cell_x_idx * cell_width,
                 0.0,
                 local_cell_z_idx * cell_depth,
             );
 
-        let mut final_world_pos =
-            snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
+        let mut local_pos =
+            snapped_local_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
 
         let jitter_strength = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
 
@@ -114,8 +114,10 @@ impl ScatterResult {
                 rng.random_range(-max_offset_z..max_offset_z),
             );
 
-            final_world_pos += random_offset;
+            local_pos += random_offset;
         };
+
+        let mut final_world_pos = container.global_transform.transform_point(local_pos);
 
         if modifiers
             .density_sampler
@@ -129,14 +131,17 @@ impl ScatterResult {
             return None;
         }
 
-        final_world_pos.y = match modifiers.map_height {
-            None => container.global_transform.translation.y + container.height,
+        let world_y = match modifiers.map_height {
+            None => final_world_pos.y + container.height,
             Some(_) => modifiers.height_sampler.sample(final_world_pos),
         };
 
+        final_world_pos.y = world_y;
+
         let container_rot_inv = container.global_transform.rotation.inverse();
-        let world_offset= final_world_pos - container.global_transform.translation;
-        let translation = container_rot_inv * world_offset;
+        let world_offset_vector = final_world_pos - container.global_transform.translation;
+
+        let translation = container_rot_inv * world_offset_vector;
 
         let scale = modifiers
             .scale
@@ -149,6 +154,7 @@ impl ScatterResult {
             .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
 
         let rotation = container_rot_inv * intended_world_rotation;
+
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);
 
         Some(ScatterResult {

@@ -13,6 +13,7 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
+use bevy_color::palettes::css::RED;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
@@ -28,6 +29,9 @@ use rand_pcg::Pcg64;
 
 fn main() -> AppExit {
     App::new()
+        .init_resource::<AvoidanceDataDebugConfig>()
+        .register_type::<AvoidanceDataDebugConfig>()
+        .add_systems(Update, draw_scatter_debug_gizmos.run_if(resource_exists::<AvoidanceDataDebugConfig>))
         .insert_resource(ExamplePluginOptions {
             show_quality_settings: true,
             show_wind_settings: true,
@@ -940,4 +944,46 @@ fn setup_loading_screen(mut commands: Commands) {
 
 fn teardown_loading_screen(mut cmd: Commands, loading_screen: Single<Entity, With<LoadingScreen>>) {
     cmd.entity(*loading_screen).despawn();
+}
+
+#[derive(Resource, Reflect, Deref, DerefMut)]
+#[reflect(Resource)]
+pub struct AvoidanceDataDebugConfig(Color);
+
+impl AvoidanceDataDebugConfig {
+    pub fn new(color: impl Into<Color>) -> Self {
+        Self(color.into())
+    }
+}
+
+impl Default for AvoidanceDataDebugConfig {
+    fn default() -> Self {
+        Self::new(RED)
+    }
+}
+
+pub fn draw_scatter_debug_gizmos(
+    mut gizmos: Gizmos,
+    q_roots: Query<&ScatterOccupancyMap, With<ScatterRoot>>,
+) {
+    for map in q_roots.iter() {
+        let cell_size = map.cell_size;
+        let half_cell = cell_size / 2.0;
+
+        for (grid_pos, height) in &map.cells {
+            let world_x = (grid_pos.x as f32 * cell_size) + half_cell;
+            let world_z = (grid_pos.y as f32 * cell_size) + half_cell;
+
+            let cell_center = Vec3::new(world_x, *height, world_z);
+
+            gizmos.cuboid(
+                Transform {
+                    translation: cell_center,
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::new(cell_size * 0.95, 0.1, cell_size * 0.95),
+                },
+                RED,
+            );
+        }
+    }
 }
