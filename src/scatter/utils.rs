@@ -70,7 +70,8 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
-/// Used in CPU Scatter Tasks.
+/// Used in CPU Scatter Tasks to avoid copying/cloning data for every single instance.
+#[derive(Copy, Clone)]
 pub struct InstanceModifiers<'a> {
     pub map_height: Option<&'a MapHeight>,
     pub height_sampler: &'a HeightMapSampler<'a>,
@@ -123,7 +124,7 @@ pub struct Container {
     pub height: f32,
     pub size: Vec3,
     pub root_size: Vec3,
-    pub transform: Transform,
+    pub global_transform: Transform,
     pub seed: u64,
 }
 

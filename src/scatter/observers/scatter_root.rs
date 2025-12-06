@@ -81,7 +81,7 @@ pub fn hierarchical_scatter<T>(
 
     if let Ok(avoidance) = q_avoidance.get(finished_layer) {
         let base_radius = avoidance;
-        let container_transform = trigger.container_transform;
+        let container_transform = trigger.container_global_transform;
 
         for instance in &trigger.data {
             let world_pos = container_transform.transform_point(instance.transform.translation);

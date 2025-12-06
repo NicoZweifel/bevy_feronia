@@ -87,7 +87,7 @@ impl ScatterResult {
         let cell_width = container.size.x / instances_dim_f;
         let cell_depth = container.size.z / instances_dim_f;
 
-        let world_corner_pos = container.transform.translation + container.corner;
+        let world_corner_pos = container.global_transform.translation + container.corner;
 
         let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
         let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
@@ -130,13 +130,13 @@ impl ScatterResult {
         }
 
         final_world_pos.y = match modifiers.map_height {
-            None => container.transform.translation.y + container.height,
+            None => container.global_transform.translation.y + container.height,
             Some(_) => modifiers.height_sampler.sample(final_world_pos),
         };
 
-        let parent_rot_inv = container.transform.rotation.inverse();
-        let world_offset_vector = final_world_pos - container.transform.translation;
-        let translation = parent_rot_inv * world_offset_vector;
+        let container_rot_inv = container.global_transform.rotation.inverse();
+        let world_offset= final_world_pos - container.global_transform.translation;
+        let translation = container_rot_inv * world_offset;
 
         let scale = modifiers
             .scale
@@ -148,7 +148,7 @@ impl ScatterResult {
             .cloned()
             .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
 
-        let rotation = parent_rot_inv * intended_world_rotation;
+        let rotation = container_rot_inv * intended_world_rotation;
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);
 
         Some(ScatterResult {
@@ -191,7 +191,7 @@ where
     pub layer: Entity,
     pub root: Entity,
     pub seed: u64,
-    pub container_transform: Transform,
+    pub container_global_transform: Transform,
     _phantom: PhantomData<T>,
 }
 
@@ -256,7 +256,7 @@ where
             chunk,
             data,
             seed,
-            container_transform,
+            container_global_transform: container_transform,
             _phantom: PhantomData,
         }
     }
@@ -275,26 +275,25 @@ where
         T: ScatterMaterial,
     {
         let mut rng = Pcg64::seed_from_u64(container.seed);
-        let mut results = Vec::new();
 
         let density = modifiers.density.map_or(1.0, |d| **d).clamp(0.0, 1.0);
+        let total_cells = (container.instances_dim as u32).pow(2);
 
-        for _ in 0..(container.instances_dim as u32).pow(2) {
+        let capacity = (total_cells as f32 * density).ceil() as usize;
+        let mut results = Vec::with_capacity(capacity);
+
+        results.extend((0..total_cells).filter_map(|_| {
             if rng.random::<f32>() > density {
-                continue;
+                return None;
             }
 
-            let Some(candidate) = ScatterResult::try_from_container_and_modifiers(
+            ScatterResult::try_from_container_and_modifiers(
                 container,
                 &modifiers,
                 &mut rng,
                 external_avoidance_data,
-            ) else {
-                continue;
-            };
-
-            results.push(candidate);
-        }
+            )
+        }));
 
         ScatterResults::<T>::from(container).with_data(results)
     }
@@ -312,7 +311,7 @@ where
             value.chunk_entity,
             vec![],
             value.seed,
-            value.transform,
+            value.global_transform,
         )
     }
 }
