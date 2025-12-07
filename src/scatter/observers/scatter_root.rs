@@ -88,7 +88,7 @@ pub fn hierarchical_scatter<T>(
             let world_pos = container_transform.transform_point(instance.transform.translation);
             let max_scale = instance.transform.scale.max_element();
 
-            map.add_circle(world_pos, **base_radius * max_scale);
+            map.add_sphere(world_pos, **base_radius * max_scale);
         }
     }
 

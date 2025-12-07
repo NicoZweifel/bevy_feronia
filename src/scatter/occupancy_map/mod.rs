@@ -12,9 +12,9 @@ use std::fmt::Debug;
 
 use crate::prelude::ScatterRoot;
 
-pub struct ScatterOccupancyDebugPlugin;
+pub struct ScatterOccupancyMapDebugPlugin;
 
-impl Plugin for ScatterOccupancyDebugPlugin {
+impl Plugin for ScatterOccupancyMapDebugPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<AvoidanceDataDebugConfig>()
             .register_type::<AvoidanceDataDebugConfig>()
@@ -47,7 +47,7 @@ pub struct ScatterOccupancyMap {
 impl Default for ScatterOccupancyMap {
     fn default() -> Self {
         Self {
-            cell_size: 1.,
+            cell_size: 0.5,
             cells: HashMap::default(),
         }
     }
@@ -122,6 +122,51 @@ impl ScatterOccupancyMap {
             }
         }
     }
+
+    /// Adds a spherical obstacle to the map.
+    ///
+    /// Unlike `add_circle`, this calculates the height of the sphere surface
+    /// at each grid cell. Allows for scattering on top of sunken in objects, e.g. rocks in the ground.
+    ///
+    /// # Arguments
+    /// * `center` - World position of the sphere center.
+    /// * `radius` - Radius of the sphere.
+    pub fn add_sphere(&mut self, center: Vec3, radius: f32) {
+        if radius <= 0.0 {
+            return;
+        }
+
+        let min_world = center - Vec3::new(radius, 0.0, radius);
+        let max_world = center + Vec3::new(radius, 0.0, radius);
+
+        let min_grid = self.to_grid(min_world);
+        let max_grid = self.to_grid(max_world);
+
+        let radius_sq = radius.powi(2);
+        let half_cell = self.cell_size / 2.0;
+
+        for x in min_grid.x..=max_grid.x {
+            for z in min_grid.y..=max_grid.y {
+                let grid_pos = IVec2::new(x, z);
+
+                let world_cell_x = (x as f32 * self.cell_size) + half_cell;
+                let world_cell_z = (z as f32 * self.cell_size) + half_cell;
+
+                let dist_x = world_cell_x - center.x;
+                let dist_z = world_cell_z - center.z;
+                let dist_sq = dist_x.powi(2) + dist_z.powi(2);
+
+                if dist_sq <= radius_sq {
+                    let sphere_height = center.y + (radius_sq - dist_sq).sqrt();
+
+                    self.cells
+                        .entry(grid_pos)
+                        .and_modify(|h| *h = h.max(sphere_height))
+                        .or_insert(sphere_height);
+                }
+            }
+        }
+    }
 }
 
 #[derive(Resource, Reflect, Deref, DerefMut)]
@@ -158,7 +203,7 @@ pub fn draw_scatter_debug_gizmos(
                 Transform {
                     translation: cell_center,
                     rotation: Quat::IDENTITY,
-                    scale: Vec3::new(cell_size * 0.95, 0.1, cell_size * 0.95),
+                    scale: Vec3::new(cell_size, 0., cell_size),
                 },
                 RED,
             );
@@ -175,10 +220,10 @@ mod tests {
     fn test_to_grid_should_return_correct_coordinates() {
         // Arrange
         let map = ScatterOccupancyMap {
-            cell_size: 2.0,
+            cell_size: 4.0,
             ..Default::default()
         };
-        let input_position = Vec3::new(2.5, 0.0, -1.5);
+        let input_position = Vec3::new(5., 0.0, -3.);
         let expected = IVec2::new(1, -1);
 
         // Act
@@ -198,7 +243,7 @@ mod tests {
         map.cells.insert(cell_coord, height);
 
         //  Position is inside the rock (y < height)
-        let pos = Vec3::new(0.5, 4.0, 0.5);
+        let pos = Vec3::new(0., 4.0, 0.);
 
         // Act
         let result = map.is_occupied(pos);
@@ -265,5 +310,34 @@ mod tests {
         // Assert
         let stored_height = *map.cells.get(&IVec2::new(0, 0)).unwrap();
         assert_eq!(stored_height, 12.5);
+    }
+
+    #[test]
+    fn test_sphere_should_have_height_curve() {
+        // Arrange
+        let mut map = ScatterOccupancyMap {
+            cell_size: 1.0,
+            ..Default::default()
+        };
+        let center = Vec3::new(0.5, 0.0, 0.5);
+        let radius = 5.0;
+
+        // Act
+        map.add_sphere(center, radius);
+
+        // Assert
+        let center_height = *map.cells.get(&IVec2::new(0, 0)).unwrap();
+        let edge_height = *map.cells.get(&IVec2::new(4, 0)).unwrap();
+
+        assert!(
+            (center_height - radius).abs() < 0.1,
+            "Center height {center_height} should be close to radius {radius}"
+        );
+        // sqrt(5^2 - 4^2) = sqrt(25 - 16) = 3.0
+        assert!(
+            (edge_height - 3.0).abs() < 0.1,
+            "Edge height {} should be close to 3.0",
+            edge_height
+        );
     }
 }
