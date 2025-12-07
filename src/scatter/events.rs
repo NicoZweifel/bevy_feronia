@@ -146,12 +146,12 @@ impl ScatterResult {
             .cloned()
             .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng));
 
-        let intended_world_rotation = modifiers
+        let world_rotation = modifiers
             .rotation
             .cloned()
             .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
 
-        let rotation = container_rot_inv * intended_world_rotation;
+        let rotation = container_rot_inv * world_rotation;
 
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);
 
