@@ -126,7 +126,7 @@ impl ScatterOccupancyMap {
     /// Adds a spherical obstacle to the map.
     ///
     /// Unlike `add_circle`, this calculates the height of the sphere surface
-    /// at each grid cell. Allows for scattering on top of sunken in objects, e.g. rocks in the ground.
+    /// at each grid cell. Allows for scattering on top of sunken in objects, e.g., rocks on the ground.
     ///
     /// # Arguments
     /// * `center` - World position of the sphere center.

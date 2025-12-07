@@ -42,7 +42,7 @@ fn main() -> AppExit {
         .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
          */
         .add_plugins((
-            ScatterOccupancyMapDebugPlugin,
+            // ScatterOccupancyMapDebugPlugin,
             QualityPlugin,
             AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
