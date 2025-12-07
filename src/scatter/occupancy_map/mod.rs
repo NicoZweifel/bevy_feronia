@@ -88,7 +88,7 @@ impl ScatterOccupancyMap {
     /// # Arguments
     /// * `center` - World position of the object.
     /// * `radius` - Scaled radius of the circle in world units.
-    pub fn add_circle(&mut self, center: Vec3, radius: f32) {
+    pub fn add_cylinder(&mut self, center: Vec3, radius: f32) {
         if radius <= 0.0 {
             return;
         }
@@ -285,7 +285,7 @@ mod tests {
         let radius = 1.1;
 
         // Act
-        map.add_circle(center, radius);
+        map.add_cylinder(center, radius);
 
         // Assert
         let center_occupied = map.cells.contains_key(&IVec2::new(0, 0));
@@ -305,7 +305,7 @@ mod tests {
         let radius = 0.5;
 
         // Act
-        map.add_circle(center, radius);
+        map.add_cylinder(center, radius);
 
         // Assert
         let stored_height = *map.cells.get(&IVec2::new(0, 0)).unwrap();
