@@ -68,7 +68,7 @@ pub struct ScatterTaskData {
     pub height_map_config: Option<HeightMapConfig>,
     /// Optional density map [`Image`] handle.
     pub density_map_image: Option<Image>,
-    /// A list of pre-existing [`SpatialAvoidanceGrid`] zones to avoid (e.g., from other layers).
+    /// [`ScatterOccupancyMap`] containing a rasterized map of obstacles.
     pub external_avoidance_data: ScatterOccupancyMap,
     /// Optional [`LodDensity`] for this scatter operation.
     pub density: Option<LodDensity>,
