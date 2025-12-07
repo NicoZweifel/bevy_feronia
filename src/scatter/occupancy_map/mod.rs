@@ -34,7 +34,7 @@ impl Plugin for ScatterOccupancyMapDebugPlugin {
 /// It stores the height of the obstacle at the occupied location,
 /// which is used to avoid spawning on top of it while still spawning above rocks in the ground.
 ///
-/// TODO
+/// TODO trait for obstacles and complex shapes
 /// https://github.com/NicoZweifel/bevy_feronia/issues/56
 /// https://github.com/NicoZweifel/bevy_feronia/issues/43
 #[derive(Component, Reflect, Clone)]
