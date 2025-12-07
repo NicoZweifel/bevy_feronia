@@ -13,7 +13,6 @@ mod example;
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
-use bevy_color::palettes::css::RED;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
@@ -420,7 +419,7 @@ fn spawn_landscape(
     InstanceRotationYaw::default(),
     InstanceScale { min: 1., max: 2. },
     InstanceJitter::default(),
-    Avoidance(2.5),
+    Avoidance(2.),
 )]
 struct RockLayer;
 
@@ -433,7 +432,7 @@ struct RockLayer;
     InstanceRotationYaw::default(),
     InstanceScale { min: 1., max: 2. },
     InstanceJitter::default(),
-    Avoidance(0.5),
+    Avoidance(1.),
 )]
 struct TreeLayer;
 
