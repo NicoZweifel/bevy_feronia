@@ -30,7 +30,7 @@ pub struct ScatterLayerQueryData {
 // TODO refactor/split this up
 pub fn handle_scatter_requests<T>(
     mut cmd: Commands,
-    q_requests: Query<(Entity, &ScatterRequest<T>), With<ScatterRequest<T>>>,
+    q_requests: Query<(Entity, &ScatterRequest<T>)>,
     q_scatter_root: Query<(Entity, Option<&MapHeight>, &Aabb), With<ScatterRoot>>,
     q_chunk_root: Query<
         (
@@ -237,10 +237,10 @@ pub fn handle_finished_scatter_tasks<T>(
         debug!("Scattered {} instances", results.data.len());
 
         targets
-            .iter()
+            .into_iter()
             .map(|entity| {
                 let mut results = results.clone();
-                results.entity = *entity;
+                results.entity = entity;
                 results
             })
             .for_each(|results| cmd.trigger(results));
