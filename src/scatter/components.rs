@@ -5,11 +5,13 @@ use bevy_camera::prelude::Visibility;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
-use bevy_math::Vec3;
+use bevy_math::{Quat, Vec3};
 use bevy_pbr::StandardMaterial;
 use bevy_reflect::Reflect;
 use bevy_tasks::Task;
 use bevy_transform::prelude::Transform;
+use rand::Rng;
+
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -66,8 +68,8 @@ pub struct ScatterTaskData {
     pub height_map_config: Option<HeightMapConfig>,
     /// Optional density map [`Image`] handle.
     pub density_map_image: Option<Image>,
-    /// A list of pre-existing [`AvoidanceData`] zones to avoid (e.g., from other layers).
-    pub external_avoidance_data: Vec<AvoidanceData>,
+    /// [`ScatterOccupancyMap`] containing a rasterized map of obstacles.
+    pub external_avoidance_data: ScatterOccupancyMap,
     /// Optional [`LodDensity`] for this scatter operation.
     pub density: Option<LodDensity>,
 }
@@ -253,13 +255,28 @@ where
 pub struct DistributionPattern(pub Handle<Image>);
 
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
-#[derive(Component, Reflect, Clone, Debug)]
+#[derive(Component, Reflect, Clone, Copy, Debug)]
 #[reflect(Component, Debug)]
 pub struct InstanceRotationYaw {
     /// The minimum rotation angle (in radians).
     pub min: f32,
     /// The maximum rotation angle (in radians).
     pub max: f32,
+}
+
+impl InstanceRotationYaw {
+    #[inline]
+    pub fn is_fixed(&self) -> bool {
+        self.min == self.max
+    }
+
+    pub fn into_quad(self, rng: &mut impl Rng) -> Quat {
+        Quat::from_rotation_y(if self.is_fixed() {
+            self.min
+        } else {
+            rng.random_range(self.min..self.max)
+        })
+    }
 }
 
 impl Default for InstanceRotationYaw {
@@ -279,6 +296,25 @@ pub struct InstanceScale {
     pub min: f32,
     /// The maximum scale.
     pub max: f32,
+}
+
+impl InstanceScale {
+    #[inline]
+    pub fn is_fixed(&self) -> bool {
+        self.min == self.max
+    }
+
+    pub fn into_f32(self, rng: &mut impl Rng) -> f32 {
+        if self.is_fixed() {
+            self.min
+        } else {
+            rng.random_range(self.min..self.max)
+        }
+    }
+
+    pub fn into_vec3(self, rng: &mut impl Rng) -> Vec3 {
+        Vec3::splat(self.into_f32(rng))
+    }
 }
 
 impl Default for InstanceScale {
@@ -316,13 +352,14 @@ impl Default for Avoidance {
     }
 }
 
-/// Temporary component that manages the state of a hierarchical scatter.
+/// Manages the state of a hierarchical scatter.
 ///
 /// Used to process [`ScatterLayer`]s sequentially, allowing one layer
 /// to fill the [`ScatterOccupancyMap`] before the next one runs.
 ///
 /// Required to prevent foliage from being scattered onto rocks etc.
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Reflect, Default)]
+#[reflect(Component, Debug)]
 pub struct HierarchicalScatterState<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -331,43 +368,6 @@ where
     pub ordered_layers: Vec<Entity>,
     /// Index of the layer currently being processed.
     pub current_layer_index: usize,
+    pub pending_tasks: usize,
     pub _phantom: PhantomData<T>,
-}
-
-impl<T> Default for HierarchicalScatterState<T>
-where
-    T: ScatterMaterial,
-{
-    fn default() -> Self {
-        Self {
-            ordered_layers: vec![],
-            current_layer_index: 0,
-            _phantom: Default::default(),
-        }
-    }
-}
-
-/// Defines a 2D avoidance zone used by the scatter systems.
-///
-/// TODO
-/// https://github.com/NicoZweifel/bevy_feronia/issues/56
-/// https://github.com/NicoZweifel/bevy_feronia/issues/43
-#[derive(Clone, Debug)]
-pub struct AvoidanceData {
-    /// The center of the avoidance zone in world space.
-    pub world_pos: Vec3,
-    /// The squared radius of the zone.
-    pub radius_sq: f32,
-    /// The scale of the object at this position, influencing the final avoidance radius.
-    pub scale: f32,
-}
-
-/// A component on the [`ScatterRoot`] that accumulates [`AvoidanceData`]
-/// from processed layers.
-///
-/// This allows later layers to avoid spawning on top of instances from previous layers, e.g., no foliage on rocks.
-#[derive(Component, Default, Debug)]
-pub struct ScatterOccupancyMap {
-    /// A list of occupied zones from previously scattered layers.
-    pub occupied_zones: Vec<AvoidanceData>,
 }

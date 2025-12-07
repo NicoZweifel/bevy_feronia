@@ -77,30 +77,30 @@ pub struct ScatterResult {
 
 impl ScatterResult {
     // TODO add GPU pipeline
-    pub fn try_from_container_and_modifiers<R: Rng + ?Sized>(
+    pub fn try_from_container_and_modifiers(
         container: &Container,
         modifiers: &InstanceModifiers,
-        rng: &mut R,
-        external_avoidance_data: &[AvoidanceData],
+        rng: &mut impl Rng,
+        external_avoidance_data: &ScatterOccupancyMap,
     ) -> Option<ScatterResult> {
-        let instances_dim_f = container.instances_dim;
-        let cell_width = container.size.x / instances_dim_f;
-        let cell_depth = container.size.z / instances_dim_f;
+        let instances_dim = container.instances_dim;
+        let cell_width = container.size.x / instances_dim;
+        let cell_depth = container.size.z / instances_dim;
 
-        let world_corner_pos = container.transform.translation + container.corner;
+        let local_corner = container.corner;
 
-        let local_cell_x_idx = rng.random_range(0.0..instances_dim_f).floor();
-        let local_cell_z_idx = rng.random_range(0.0..instances_dim_f).floor();
+        let local_cell_x_idx = rng.random_range(0.0..instances_dim).floor();
+        let local_cell_z_idx = rng.random_range(0.0..instances_dim).floor();
 
-        let snapped_world_cell_corner = world_corner_pos
+        let snapped_local_cell_corner = local_corner
             + Vec3::new(
                 local_cell_x_idx * cell_width,
                 0.0,
                 local_cell_z_idx * cell_depth,
             );
 
-        let mut final_world_pos =
-            snapped_world_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
+        let mut local_pos =
+            snapped_local_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
 
         let jitter_strength = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
 
@@ -114,57 +114,53 @@ impl ScatterResult {
                 rng.random_range(-max_offset_z..max_offset_z),
             );
 
-            final_world_pos += random_offset;
+            local_pos += random_offset;
         };
 
-        if let Some(sampler) = &modifiers.density_sampler
-            && rng.random::<f32>() > sampler.sample(final_world_pos)
+        let mut final_world_pos = container.global_transform.transform_point(local_pos);
+
+        if modifiers
+            .density_sampler
+            .as_ref()
+            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(final_world_pos))
         {
             return None;
         }
 
-        // TODO see [`AvoidanceData`]
-        if external_avoidance_data.iter().any(|obstacle| {
-            final_world_pos
-                .with_y(0.)
-                .distance_squared(obstacle.world_pos.with_y(0.))
-                < (obstacle.radius_sq * obstacle.scale)
-        }) {
+        final_world_pos.y = modifiers
+            .map_height
+            .map(|_| modifiers.height_sampler.sample(final_world_pos))
+            .unwrap_or_else(|| final_world_pos.y + container.height);
+
+        if external_avoidance_data.is_occupied(final_world_pos) {
             return None;
         }
 
-        let mut instance_pos = final_world_pos - container.transform.translation;
-        instance_pos.y = match modifiers.map_height {
-            None => container.height,
-            Some(_) => {
-                modifiers.height_sampler.sample(final_world_pos) - container.transform.translation.y
-            }
-        };
+        let container_rot_inv = container.global_transform.rotation.inverse();
+        let world_offset_vector = final_world_pos - container.global_transform.translation;
 
-        let final_scale = modifiers.scale.map_or(1.0, |s| {
-            if s.min == s.max {
-                s.min
-            } else {
-                rng.random_range(s.min..s.max)
-            }
-        });
+        let translation = container_rot_inv * world_offset_vector;
 
-        let final_rotation = modifiers.rotation.map_or(Quat::IDENTITY, |r| {
-            Quat::from_rotation_y(if r.min == r.max {
-                r.min
-            } else {
-                rng.random_range(r.min..r.max)
-            })
-        });
+        let scale = modifiers
+            .scale
+            .cloned()
+            .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng));
+
+        let world_rotation = modifiers
+            .rotation
+            .cloned()
+            .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
+
+        let rotation = container_rot_inv * world_rotation;
 
         let instance_seed = generate_instance_seed(container.seed, final_world_pos);
 
         Some(ScatterResult {
             seed: instance_seed,
             transform: Transform {
-                translation: instance_pos,
-                rotation: final_rotation,
-                scale: Vec3::splat(final_scale),
+                translation,
+                rotation,
+                scale,
             },
         })
     }
@@ -199,7 +195,7 @@ where
     pub layer: Entity,
     pub root: Entity,
     pub seed: u64,
-    pub container_transform: Transform,
+    pub container_global_transform: Transform,
     _phantom: PhantomData<T>,
 }
 
@@ -225,7 +221,7 @@ where
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
         let instance_modifiers = InstanceModifiers::from(&task_data)
-            .with_density_sampler(&density_sampler)
+            .with_density_sampler(density_sampler.as_ref())
             .with_height_sampler(&height_sampler);
 
         ScatterResults::<T>::from_container_with_data(
@@ -264,7 +260,7 @@ where
             chunk,
             data,
             seed,
-            container_transform,
+            container_global_transform: container_transform,
             _phantom: PhantomData,
         }
     }
@@ -277,32 +273,31 @@ where
     pub fn from_container_with_data(
         container: &Container,
         modifiers: InstanceModifiers,
-        external_avoidance_data: &[AvoidanceData],
+        external_avoidance_data: &ScatterOccupancyMap,
     ) -> ScatterResults<T>
     where
         T: ScatterMaterial,
     {
         let mut rng = Pcg64::seed_from_u64(container.seed);
-        let mut results = Vec::new();
 
         let density = modifiers.density.map_or(1.0, |d| **d).clamp(0.0, 1.0);
+        let total_cells = (container.instances_dim as u32).pow(2);
 
-        for _ in 0..(container.instances_dim as u32).pow(2) {
+        let capacity = (total_cells as f32 * density).ceil() as usize;
+        let mut results = Vec::with_capacity(capacity);
+
+        results.extend((0..total_cells).filter_map(|_| {
             if rng.random::<f32>() > density {
-                continue;
+                return None;
             }
 
-            let Some(candidate) = ScatterResult::try_from_container_and_modifiers(
+            ScatterResult::try_from_container_and_modifiers(
                 container,
                 &modifiers,
                 &mut rng,
                 external_avoidance_data,
-            ) else {
-                continue;
-            };
-
-            results.push(candidate);
-        }
+            )
+        }));
 
         ScatterResults::<T>::from(container).with_data(results)
     }
@@ -320,7 +315,7 @@ where
             value.chunk_entity,
             vec![],
             value.seed,
-            value.transform,
+            value.global_transform,
         )
     }
 }

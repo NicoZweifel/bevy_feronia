@@ -9,7 +9,7 @@ use tracing::{debug, warn};
 pub fn scatter_root<T>(
     trigger: On<Scatter<T>>,
     mut cmd: Commands,
-    q_root: Query<(&ScatterRoot, Option<&HierarchicalScatterState<T>>)>,
+    q_root: Query<(&ScatterRoot, &HierarchicalScatterState<T>)>,
     q_layer: Query<Entity, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
 ) where
     T: ScatterMaterial,
@@ -20,7 +20,7 @@ pub fn scatter_root<T>(
         return;
     };
 
-    if state.is_some() {
+    if state.pending_tasks > 0 {
         #[cfg(feature = "trace")]
         warn!(
             "Hierarchical scatter is already in progress for root {:?}. Ignoring new request.",
@@ -64,12 +64,13 @@ pub fn hierarchical_scatter<T>(
     q_layer_parent: Query<&ScatterLayerOf, With<ScatterLayer>>,
     mut q_roots: Query<(&mut HierarchicalScatterState<T>, &mut ScatterOccupancyMap)>,
     q_avoidance: Query<&Avoidance>,
+    q_requests: Query<&ScatterRequest<T>>,
 ) where
     T: ScatterMaterial,
 {
-    let finished_layer = trigger.layer;
+    let layer = trigger.layer;
 
-    let Ok(parent) = q_layer_parent.get(finished_layer) else {
+    let Ok(parent) = q_layer_parent.get(layer) else {
         return;
     };
 
@@ -79,34 +80,51 @@ pub fn hierarchical_scatter<T>(
         return;
     };
 
-    if let Ok(avoidance) = q_avoidance.get(finished_layer) {
-        let radius_sq = avoidance.powi(2);
-        let container_transform = trigger.container_transform;
+    if let Ok(avoidance) = q_avoidance.get(layer) {
+        let base_radius = avoidance;
+        let container_transform = trigger.container_global_transform;
 
         for instance in &trigger.data {
             let world_pos = container_transform.transform_point(instance.transform.translation);
-            map.occupied_zones.push(AvoidanceData {
-                world_pos,
-                radius_sq,
-                scale: instance.transform.scale.element_sum() / 3.,
-            });
+            let max_scale = instance.transform.scale.max_element();
+
+            map.add_sphere(world_pos, **base_radius * max_scale);
         }
+    }
+
+    if state.pending_tasks > 0 {
+        state.pending_tasks -= 1;
+    }
+
+    if state.pending_tasks > 0 {
+        #[cfg(feature = "trace")]
+        debug!("Layer {layer} has pending tasks...");
+        return;
+    }
+
+    let has_pending_requests = q_requests.iter().any(|req| req.layer_entity == layer);
+
+    if has_pending_requests {
+        #[cfg(feature = "trace")]
+        debug!("Layer {layer} has pending requests...",);
+        return;
     }
 
     state.current_layer_index += 1;
 
     if state.current_layer_index < state.ordered_layers.len() {
-        let next_layer_entity = state.ordered_layers[state.current_layer_index];
+        let next = state.ordered_layers[state.current_layer_index];
         #[cfg(feature = "trace")]
-        debug!(
-            "Hierarchical scatter advancing to layer: {:?}",
-            next_layer_entity
-        );
-        cmd.trigger(Scatter::<T>::new(next_layer_entity));
-    } else {
-        #[cfg(feature = "trace")]
-        debug!("Hierarchical scatter finished for root: {:?}", root_entity);
-        cmd.entity(root_entity)
-            .remove::<HierarchicalScatterState<T>>();
+        debug!("Hierarchical scatter advancing to layer: {:?}", next);
+        cmd.trigger(Scatter::<T>::new(next));
+        return;
     }
+
+    cmd.entity(root_entity)
+        .insert(HierarchicalScatterState::<T>::default());
+
+    cmd.trigger(ScatterFinished::<T>::new(root_entity));
+
+    #[cfg(feature = "trace")]
+    debug!("Hierarchical scatter finished for root: {:?}", root_entity);
 }

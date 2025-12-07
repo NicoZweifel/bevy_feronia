@@ -15,6 +15,7 @@ where
     debug!("Added ScatterRoot {root}.");
 
     cmd.entity(root)
+        .insert(HierarchicalScatterState::<T>::default())
         .observe(scatter_root::<T>)
         .observe(hierarchical_scatter::<T>)
         .observe(scatter_observer::<T>);

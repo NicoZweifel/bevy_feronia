@@ -41,6 +41,7 @@ fn main() -> AppExit {
         .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
          */
         .add_plugins((
+            // ScatterOccupancyMapDebugPlugin,
             QualityPlugin,
             AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
@@ -418,7 +419,7 @@ fn spawn_landscape(
     InstanceRotationYaw::default(),
     InstanceScale { min: 1., max: 2. },
     InstanceJitter::default(),
-    Avoidance(2.5),
+    Avoidance(2.),
 )]
 struct RockLayer;
 
@@ -431,7 +432,7 @@ struct RockLayer;
     InstanceRotationYaw::default(),
     InstanceScale { min: 1., max: 2. },
     InstanceJitter::default(),
-    Avoidance(0.5),
+    Avoidance(1.),
 )]
 struct TreeLayer;
 

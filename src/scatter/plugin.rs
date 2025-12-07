@@ -59,7 +59,6 @@ where
             .add_observer(on_add_scatter_root::<T>)
             .add_observer(on_add_scatter_layer::<T>)
             .add_observer(on_chunk_add::<T>)
-            .add_observer(scatter_finished::<T>)
             .add_systems(Update, chunk_init_scatter::<T>.in_set(ChunkSet::Ready))
             .add_systems(
                 PreUpdate,

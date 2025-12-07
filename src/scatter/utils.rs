@@ -70,10 +70,12 @@ pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
     )
 }
 
+/// Used in CPU Scatter Tasks to avoid copying/cloning data for every single instance.
+#[derive(Copy, Clone)]
 pub struct InstanceModifiers<'a> {
     pub map_height: Option<&'a MapHeight>,
     pub height_sampler: &'a HeightMapSampler<'a>,
-    pub density_sampler: &'a Option<DensityMapSampler<'a>>,
+    pub density_sampler: Option<&'a DensityMapSampler<'a>>,
     pub scale: Option<&'a InstanceScale>,
     pub rotation: Option<&'a InstanceRotationYaw>,
     pub jitter: Option<&'a InstanceJitter>,
@@ -91,7 +93,7 @@ impl<'a> From<&'a ScatterTaskData> for InstanceModifiers<'a> {
             rotation: value.rotation.as_ref(),
             density: value.density.as_ref(),
             height_sampler: &HeightMapSampler::Default(DefaultSampler),
-            density_sampler: &None,
+            density_sampler: None,
         }
     }
 }
@@ -104,7 +106,7 @@ impl<'a> InstanceModifiers<'a> {
 
     pub fn with_density_sampler(
         mut self,
-        density_sampler: &'a Option<DensityMapSampler<'a>>,
+        density_sampler: Option<&'a DensityMapSampler<'a>>,
     ) -> Self {
         self.density_sampler = density_sampler;
         self
@@ -122,7 +124,7 @@ pub struct Container {
     pub height: f32,
     pub size: Vec3,
     pub root_size: Vec3,
-    pub transform: Transform,
+    pub global_transform: Transform,
     pub seed: u64,
 }
 
