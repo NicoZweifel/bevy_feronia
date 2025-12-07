@@ -61,6 +61,8 @@ pub fn handle_scatter_requests<T>(
 
     // NOTE: handle 2 per frame. TODO optimize / create compute pipeline for this.
     for (entity, request) in q_requests.iter().take(2) {
+        let layer = request.layer_entity;
+
         let Ok(ScatterLayerQueryDataItem {
             scatter_root,
             density_dist,
@@ -71,23 +73,23 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
-        }) = q_layer.get(request.layer_entity)
+        }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]
-            warn!("ScatterLayer not found!");
+            warn!("ScatterLayer {layer} not found!");
             continue;
         };
 
-        let scatter_root_entity = **scatter_root;
-        let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root_entity) else {
+        let scatter_root = **scatter_root;
+        let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root) else {
             #[cfg(feature = "trace")]
-            debug!("ScatterLayer {scatter_root_entity} state not found!");
+            debug!("ScatterRoot {scatter_root} state not found!");
             continue;
         };
 
-        let Ok(occupancy_map) = q_occupancy_map.get(scatter_root_entity) else {
+        let Ok(occupancy_map) = q_occupancy_map.get(scatter_root) else {
             #[cfg(feature = "trace")]
-            debug!("ScatterLayer {scatter_root_entity} occupancy not found!");
+            debug!("ScatterRoot {scatter_root} occupancy not found!");
             continue;
         };
 
@@ -103,10 +105,10 @@ pub fn handle_scatter_requests<T>(
 
         let task_data = if let Some(chunk) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
-                q_chunk_root.get(**scatter_root)
+                q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
-                warn!("ChunkRoot {} not found!", **scatter_root);
+                warn!("ChunkRoot {} not found!", scatter_root);
                 continue;
             };
 
@@ -154,9 +156,9 @@ pub fn handle_scatter_requests<T>(
                 density_map_image,
             })
         } else {
-            let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
+            let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(scatter_root) else {
                 #[cfg(feature = "trace")]
-                warn!("ScatterRoot {} not found!", **scatter_root);
+                warn!("ScatterRoot {} not found!", scatter_root);
                 continue;
             };
 
