@@ -272,11 +272,11 @@ impl InstanceRotationYaw {
     }
 
     pub fn into_quad(self, rng: &mut impl Rng) -> Quat {
-        Quat::from_rotation_y(
-            self.is_fixed()
-                .then(|| self.min)
-                .unwrap_or_else(|| rng.random_range(self.min..self.max)),
-        )
+        Quat::from_rotation_y(if self.is_fixed() {
+            self.min
+        } else {
+            rng.random_range(self.min..self.max)
+        })
     }
 }
 
@@ -306,9 +306,11 @@ impl InstanceScale {
     }
 
     pub fn into_f32(self, rng: &mut impl Rng) -> f32 {
-        self.is_fixed()
-            .then(|| self.min)
-            .unwrap_or_else(|| rng.random_range(self.min..self.max))
+        if self.is_fixed() {
+            self.min
+        } else {
+            rng.random_range(self.min..self.max)
+        }
     }
 
     pub fn into_vec3(self, rng: &mut impl Rng) -> Vec3 {
