@@ -27,6 +27,7 @@ pub struct ScatterLayerQueryData {
     layer_gtf: &'static GlobalTransform,
 }
 
+// TODO refactor/split this up
 pub fn handle_scatter_requests<T>(
     mut cmd: Commands,
     q_requests: Query<(Entity, &ScatterRequest<T>), With<ScatterRequest<T>>>,
@@ -46,7 +47,8 @@ pub fn handle_scatter_requests<T>(
         (&ChunkSize, &GlobalTransform, &ChunkLevel, &ChunkCoord),
         (With<Chunk>, Without<Merging>),
     >,
-    q_scatter_root_with_map: Query<&ScatterOccupancyMap, With<ScatterRoot>>,
+    mut q_scatter_state: Query<&mut HierarchicalScatterState<T>, With<ScatterRoot>>,
+    q_occupancy_map: Query<&ScatterOccupancyMap, With<ScatterRoot>>,
     height_map_cfg: Option<Res<HeightMapConfig>>,
     height_map: Option<Res<HeightMap>>,
     world_seed: Res<WorldSeed>,
@@ -76,33 +78,41 @@ pub fn handle_scatter_requests<T>(
             continue;
         };
 
-        let default_map = ScatterOccupancyMap::default();
         let scatter_root_entity = **scatter_root;
-        let occupancy_map = q_scatter_root_with_map
-            .get(scatter_root_entity)
-            .unwrap_or(&default_map);
+        let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root_entity) else {
+            #[cfg(feature = "trace")]
+            debug!("ScatterLayer {scatter_root_entity} state not found!");
+            continue;
+        };
+
+        let Ok(occupancy_map) = q_occupancy_map.get(scatter_root_entity) else {
+            #[cfg(feature = "trace")]
+            debug!("ScatterLayer {scatter_root_entity} occupancy not found!");
+            continue;
+        };
 
         let density = density_dist.map_or(1.0, |d| **d);
 
         #[cfg(feature = "trace")]
         debug!(
-            "Scattering {} instances in ScatterLayer {}",
-            density, request.layer_entity,
+            "Scattering {density} instances in ScatterLayer {}",
+            request.layer_entity
         );
 
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
 
-        let task_data = if let Some(chunk_entity) = request.chunk_entity {
+        let task_data = if let Some(chunk) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
                 q_chunk_root.get(**scatter_root)
             else {
                 #[cfg(feature = "trace")]
-                warn!("ChunkRoot not found!");
+                warn!("ChunkRoot {} not found!", **scatter_root);
                 continue;
             };
 
-            let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk_entity)
-            else {
+            let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk) else {
+                #[cfg(feature = "trace")]
+                warn!("Chunk {chunk} not found!");
                 continue;
             };
 
@@ -116,7 +126,7 @@ pub fn handle_scatter_requests<T>(
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
-                    chunk_entity: Some(chunk_entity),
+                    chunk_entity: Some(chunk),
                     root_entity,
                     instances_dim,
                     corner: -size / 2.0,
@@ -146,7 +156,7 @@ pub fn handle_scatter_requests<T>(
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(**scatter_root) else {
                 #[cfg(feature = "trace")]
-                warn!("ScatterRoot not found!");
+                warn!("ScatterRoot {} not found!", **scatter_root);
                 continue;
             };
 
@@ -190,6 +200,8 @@ pub fn handle_scatter_requests<T>(
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
+
+        scatter_state.pending_tasks += 1;
     }
 }
 

@@ -357,7 +357,7 @@ impl Default for Avoidance {
 /// to fill the [`ScatterOccupancyMap`] before the next one runs.
 ///
 /// Required to prevent foliage from being scattered onto rocks etc.
-#[derive(Component, Debug, Reflect)]
+#[derive(Component, Debug, Reflect, Default)]
 #[reflect(Component, Debug)]
 pub struct HierarchicalScatterState<T = StandardMaterial>
 where
@@ -367,20 +367,8 @@ where
     pub ordered_layers: Vec<Entity>,
     /// Index of the layer currently being processed.
     pub current_layer_index: usize,
+    pub pending_tasks: usize,
     pub _phantom: PhantomData<T>,
-}
-
-impl<T> Default for HierarchicalScatterState<T>
-where
-    T: ScatterMaterial,
-{
-    fn default() -> Self {
-        Self {
-            ordered_layers: vec![],
-            current_layer_index: 0,
-            _phantom: Default::default(),
-        }
-    }
 }
 
 /// A component on the [`ScatterRoot`] that accumulates obstacle data from processed layers.

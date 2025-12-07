@@ -127,16 +127,14 @@ impl ScatterResult {
             return None;
         }
 
+        final_world_pos.y = modifiers
+            .map_height
+            .map(|_| final_world_pos.y + container.height)
+            .unwrap_or_else(|| modifiers.height_sampler.sample(final_world_pos));
+
         if external_avoidance_data.is_occupied(final_world_pos) {
             return None;
         }
-
-        let world_y = match modifiers.map_height {
-            None => final_world_pos.y + container.height,
-            Some(_) => modifiers.height_sampler.sample(final_world_pos),
-        };
-
-        final_world_pos.y = world_y;
 
         let container_rot_inv = container.global_transform.rotation.inverse();
         let world_offset_vector = final_world_pos - container.global_transform.translation;

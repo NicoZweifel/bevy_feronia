@@ -31,7 +31,10 @@ fn main() -> AppExit {
     App::new()
         .init_resource::<AvoidanceDataDebugConfig>()
         .register_type::<AvoidanceDataDebugConfig>()
-        .add_systems(Update, draw_scatter_debug_gizmos.run_if(resource_exists::<AvoidanceDataDebugConfig>))
+        .add_systems(
+            Update,
+            draw_scatter_debug_gizmos.run_if(resource_exists::<AvoidanceDataDebugConfig>),
+        )
         .insert_resource(ExamplePluginOptions {
             show_quality_settings: true,
             show_wind_settings: true,
