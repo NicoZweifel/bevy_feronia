@@ -16,10 +16,16 @@ pub fn spawn<T>(
     q_root: Query<&LodConfig, With<ScatterRoot>>,
     q_scatter_chunked: Query<(), With<ScatterChunked>>,
     q_transforms: Query<&GlobalTransform>,
+    q_target: Query<Entity, Without<Merging>>,
 ) where
     T: ScatterMaterial,
 {
     for event in mr_spawn.read() {
+        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
+        if q_target.get(parent).is_err() {
+            return;
+        }
+
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             #[cfg(feature = "trace")]
             warn!("Couldn't get ScatterRoot!");
@@ -65,8 +71,6 @@ pub fn spawn<T>(
 
         let mut names: Vec<Name> = name_map.keys().cloned().collect();
         names.sort();
-
-        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
 
         T::spawn(
             &mut cmd,
