@@ -69,6 +69,7 @@ pub fn setup_chunks(
 
                 let mut local_pos = Vec3::from(aabb.center) + grid_offset;
 
+                // TODO see [`HeightMapCpuSampler`]
                 if has_height_map {
                     let world_pos = gtf.transform_point(local_pos);
 

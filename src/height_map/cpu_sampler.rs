@@ -46,6 +46,7 @@ impl<'a> HeightMapCpuSampler<'a> {
 impl<'a> Sampler for HeightMapCpuSampler<'a> {
     /// Calculates the terrain height at a given world position using bilinear interpolation.
     fn sample(&self, world_pos: Vec3) -> f32 {
+        // TODO
         let map_local_pos = world_pos.xz() - self.world_center;
 
         // Convert world coordinates to floating-point pixel coordinates.
