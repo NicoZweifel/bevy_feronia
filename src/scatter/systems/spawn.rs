@@ -53,10 +53,12 @@ pub fn spawn<T>(
                     .inspect_err(|_| {
                         #[cfg(feature = "trace")]
                         debug!(
-                            "Couldn't get chunk {:?}, it might've been despawned already or is in the process of merging!",
+                            "Couldn't get chunk {:?}, \
+                            it might've been despawned already or is in the process of merging!",
                             event.trigger.chunk
                         );
-                    }).ok()
+                    })
+                    .ok()
             })
             .map(|(x, y)| (*x, *y))
             .unwrap_or_else(|| {
