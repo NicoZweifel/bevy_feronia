@@ -1,11 +1,12 @@
 use bevy_color::{Color, LinearRgba};
 use bevy_derive::{Deref, DerefMut};
-use bevy_ecs::prelude::*;
-use bevy_ecs::query::QueryItem;
-use bevy_math::{Vec3, Vec4};
+use bevy_ecs::{prelude::*, query::QueryItem};
+use bevy_math::{Mat4, Vec3, Vec4};
 use bevy_reflect::Reflect;
-use bevy_render::render_resource::Buffer;
-use bevy_render::{extract_component::ExtractComponent, render_resource::BindGroup};
+use bevy_render::{
+    extract_component::ExtractComponent, render_resource::BindGroup, render_resource::Buffer,
+};
+use bevy_transform::prelude::GlobalTransform;
 use bevy_utils::default;
 use bytemuck::{Pod, Zeroable};
 use std::fmt;
@@ -193,7 +194,7 @@ pub struct InstanceData {
     pub _padding: [u32; 3],
 }
 
-#[derive(Component, Clone, Reflect)]
+#[derive(Component, Clone, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct InstanceMaterialData {
     #[reflect(ignore)]
@@ -225,12 +226,14 @@ impl fmt::Debug for InstanceMaterialData {
 }
 
 impl ExtractComponent for InstanceMaterialData {
-    type QueryData = &'static InstanceMaterialData;
+    type QueryData = (&'static Self, &'static GlobalTransform);
     type QueryFilter = ();
-    type Out = Self;
+    type Out = (Self, GlobalTransform);
 
-    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
-        Some(item.clone())
+    fn extract_component(
+        (data, transform): QueryItem<'_, '_, Self::QueryData>,
+    ) -> Option<Self::Out> {
+        Some((data.clone(), *transform))
     }
 }
 
@@ -254,6 +257,8 @@ pub struct InstanceLodBuffer {
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 #[repr(C)]
 pub struct InstanceUniforms {
+    pub world_from_local: Mat4,
+
     pub top_color: LinearRgba,
 
     pub bottom_color: LinearRgba,

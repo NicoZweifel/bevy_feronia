@@ -6,7 +6,7 @@ use bevy_ecs::prelude::*;
 use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::warn;
 
 pub fn spawn<T>(
     mut cmd: Commands,
@@ -15,6 +15,7 @@ pub fn spawn<T>(
     q_chunks: Query<(&GlobalTransform, &ChunkLevel), (With<Chunk>, Without<Merging>)>,
     q_root: Query<&LodConfig, With<ScatterRoot>>,
     q_scatter_chunked: Query<(), With<ScatterChunked>>,
+    q_transforms: Query<&GlobalTransform>,
 ) where
     T: ScatterMaterial,
 {
@@ -32,24 +33,25 @@ pub fn spawn<T>(
             continue;
         }
 
+        let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
+
         let is_chunked =
             event.trigger.chunk.is_some() && q_scatter_chunked.get(event.trigger.layer).is_ok();
 
-        let (chunk_gtf_translation, chunk_level) = event
+        let (container_gtf, chunk_level) = event
             .trigger
             .chunk
-            .and_then(|e| q_chunks.get(e).ok())
-            .map(|(gtf, level)| (gtf.translation(), level.clone()))
-            .unwrap_or_default();
-
-        if is_chunked && q_chunks.get(event.trigger.chunk.unwrap()).is_err() {
-            #[cfg(feature = "trace")]
-            debug!(
-                "Couldn't get chunk {:?}, it might've been despawned already or is in the process of merging!",
-                event.trigger.chunk
-            );
-            continue;
-        };
+            .and_then(|c| q_chunks.get(c).ok())
+            .map(|(x, y)| (*x, *y))
+            .unwrap_or_else(|| {
+                (
+                    q_transforms
+                        .get(parent)
+                        .cloned()
+                        .unwrap_or(GlobalTransform::IDENTITY),
+                    ChunkLevel::default(),
+                )
+            });
 
         let mut names: Vec<Name> = name_map.keys().cloned().collect();
         names.sort();
@@ -61,7 +63,7 @@ pub fn spawn<T>(
             SpawnRequest {
                 event,
                 chunk_level,
-                chunk_gtf_translation,
+                container_gtf,
                 parent,
                 lod_config,
                 names,

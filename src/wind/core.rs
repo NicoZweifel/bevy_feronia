@@ -19,6 +19,7 @@ use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
 use avian3d::prelude::Collider;
+use bevy_transform::components::GlobalTransform;
 
 pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
 
@@ -47,7 +48,7 @@ where
     pub name_map: &'w HashMap<Name, Vec<ScatterHandleAsset<'w, T>>>,
     pub is_chunked: bool,
     pub chunk_level: ChunkLevel,
-    pub chunk_gtf_translation: Vec3,
+    pub container_gtf: GlobalTransform,
     pub lod_config: &'w LodConfig,
     pub parent: Entity,
 }

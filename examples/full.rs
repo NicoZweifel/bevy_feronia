@@ -8,8 +8,12 @@
 //!
 //! The instanced grass layer is controlled by a procedurally generated `DensityMap`
 //! (using Perlin noise) to create natural, patchy placement.
+//!
+//! TODO Using a non-world center Transform on the ScatterRoot is not working currently if using the height map plugin.
 #[path = "utils/example.rs"]
 mod example;
+
+use example::*;
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
@@ -21,7 +25,6 @@ use bevy_feronia::quality::*;
 use bevy_image::*;
 use bevy_mesh::PlaneMeshBuilder;
 use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use example::*;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, RngCore, SeedableRng, rng};
 use rand_pcg::Pcg64;
@@ -35,6 +38,16 @@ fn main() -> AppExit {
         })
         .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
+        /*.insert_resource(ChunkDebugConfig {
+            lod_colors: vec![
+                RED_500.into(),
+                ORANGE_500.into(),
+                YELLOW_500.into(),
+                WHITE.into(),
+            ],
+            aabb_color: GREEN_500.into(),
+        })
+         */
         /*
         .register_type::<ScatterAsset<StandardMaterial>>()
         .register_type::<ScatterAsset<ExtendedWindAffectedMaterial>>()
@@ -405,7 +418,10 @@ fn spawn_landscape(
     }
      */
 
-    cmd.spawn(Landscape);
+    cmd.spawn((
+        Landscape, // TODO fix world center for height mapped use-case
+                   // Transform::from_xyz(10., 0., 10.)
+    ));
 
     ns_scatter.set(ScatterState::Setup);
     ns_height_map.set(HeightMapState::Setup);

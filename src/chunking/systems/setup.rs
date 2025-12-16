@@ -25,37 +25,59 @@ pub fn setup_chunks(
         (With<ChunkRoot>, Without<BaseChunkSize>),
     >,
 ) {
-    let height_sampler = get_height_map_sampler(
-        images.into_inner(),
-        height_map_cfg.map(|x| x.into_inner()),
-        height_map.map(|x| x.into_inner()),
-    );
+    let has_height_map = height_map_cfg.is_some();
 
     for (entity, lod_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
-        let world_size = Vec3::from(aabb.half_extents * 2.0);
+        let height_sampler =
+            get_height_map_sampler(&images, height_map_cfg.as_deref(), height_map.as_deref());
 
+        let root_scale = gtf.compute_transform().scale;
+
+        let local_aabb_size = Vec3::from(aabb.half_extents * 2.0);
         let center_offset = Vec3::from(aabb.half_extents);
+
+        let world_aabb_size = local_aabb_size * root_scale;
 
         let top_lod = lod_cfg.get_max_lod();
         let top_scalar_config = scalar_config.get_scalar_config(top_lod);
 
-        let top_chunk_size = (world_size / **chunk_root_size as f32).with_y(world_size.y);
+        let top_chunk_size_local =
+            (local_aabb_size / **chunk_root_size as f32).with_y(local_aabb_size.y);
+        let top_chunk_size_world =
+            (world_aabb_size / **chunk_root_size as f32).with_y(world_aabb_size.y);
 
-        let base_chunk_size = BaseChunkSize(top_chunk_size / **top_scalar_config as f32);
+        let base_chunk_size_world =
+            BaseChunkSize(top_chunk_size_world / **top_scalar_config as f32);
 
-        let chunk_lod_cfg = ChunkLodConfig::from_sources(lod_cfg, scalar_config, &base_chunk_size);
+        let chunk_lod_cfg =
+            ChunkLodConfig::from_sources(lod_cfg, scalar_config, &base_chunk_size_world, 5.0);
 
-        cmd.entity(entity)
-            .insert((ChunkRoot::default(), base_chunk_size, chunk_lod_cfg.clone()));
+        cmd.entity(entity).insert((
+            ChunkRoot::default(),
+            base_chunk_size_world,
+            chunk_lod_cfg.clone(),
+        ));
+
+        let inverse_transform = gtf.affine().inverse();
 
         for z in 0..**chunk_root_size {
             for x in 0..**chunk_root_size {
-                let mut world_pos = gtf.translation()
-                    + Vec3::new(x as f32, 0., z as f32) * top_chunk_size.with_y(0.)
-                    + top_chunk_size.with_y(0.) / 2.
+                let grid_offset = Vec3::new(x as f32, 0., z as f32)
+                    * top_chunk_size_local.with_y(0.)
+                    + top_chunk_size_local.with_y(0.) / 2.
                     - center_offset.with_y(0.);
 
-                world_pos.y = height_sampler.sample(world_pos);
+                let mut local_pos = Vec3::from(aabb.center) + grid_offset;
+
+                if has_height_map {
+                    let world_pos = gtf.transform_point(local_pos);
+
+                    let height = height_sampler.sample(world_pos);
+
+                    let target_world_pos = Vec3::new(world_pos.x, height, world_pos.z);
+
+                    local_pos = inverse_transform.transform_point3(target_world_pos);
+                }
 
                 let child_lod_config =
                     chunk_lod_cfg.get_lod_config(chunk_lod_cfg.get_max_lod() - 1);
@@ -64,7 +86,7 @@ pub fn setup_chunks(
                     Chunk,
                     ChunkLevel(top_lod),
                     ChunkSize(**top_scalar_config),
-                    Transform::from_translation(world_pos),
+                    Transform::from_translation(local_pos),
                     ChildOf(entity),
                     ChunkOf(entity),
                     SplitDistance(*child_lod_config),

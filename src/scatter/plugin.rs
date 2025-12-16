@@ -11,6 +11,7 @@ use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_pbr::prelude::StandardMaterial;
 use bevy_state::prelude::*;
 
+use bevy_transform::TransformSystems;
 use std::marker::PhantomData;
 
 pub struct ScatterAssetPlugin<T = StandardMaterial>
@@ -91,11 +92,25 @@ impl Plugin for ScatterPlugin {
                     ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
                 ),
             )
+            .configure_sets(
+                PostUpdate,
+                (
+                    ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
+                    ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
+                    ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
+                    ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
+                ),
+            )
             .init_resource::<WorldSeed>()
             .add_message::<ClearScatterLayer>()
             .add_message::<ClearScatterRoot>()
             .add_observer(on_add_scatter_item)
-            .add_systems(PostUpdate, setup_root_aabb.in_set(ScatterSet::Setup))
+            .add_systems(
+                PostUpdate,
+                setup_root_aabb
+                    .in_set(ScatterSet::Setup)
+                    .after(TransformSystems::Propagate),
+            )
             .add_systems(
                 Update,
                 (transition_to_collecting,).in_set(ScatterSet::Setup),

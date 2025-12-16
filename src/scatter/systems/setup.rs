@@ -1,8 +1,9 @@
 use crate::prelude::*;
-use crate::scatter::utils::*;
 use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
+use bevy_math::{Mat3A, Vec3A};
 use bevy_state::state::NextState;
+use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
 use tracing::debug;
@@ -23,25 +24,54 @@ pub fn transition_to_collecting(
 
 pub fn setup_root_aabb(
     mut cmd: Commands,
-    q_root: Query<(Entity, &Children), (With<ScatterRoot>, Without<Aabb>)>,
+    q_root: Query<(Entity, &Children, &GlobalTransform), (With<ScatterRoot>, Without<Aabb>)>,
     q_children: Query<&Children, Without<ScatterLayer>>,
-    q_aabb: Query<&Aabb>,
+    q_mesh_info: Query<(&Aabb, &GlobalTransform), Without<ScatterLayer>>,
 ) {
-    for (root_entity, children) in &q_root {
-        let aabb: Option<Aabb> = children
+    for (root_entity, children, root_transform) in &q_root {
+        let mut local_min = Vec3A::splat(f32::MAX);
+        let mut local_max = Vec3A::splat(f32::MIN);
+        let mut found_any = false;
+
+        let root_inv = root_transform.affine().inverse();
+
+        for (child_aabb, child_transform) in children
             .iter()
             .flat_map(|child| std::iter::once(child).chain(q_children.iter_descendants(child)))
-            .filter_map(|entity| q_aabb.get(entity).ok())
-            .fold(None, |aabb, child| {
-                aabb.map(|aabb| combine_aabbs(&aabb, child))
-                    .or(Some(*child))
-            });
+            .filter_map(|entity| q_mesh_info.get(entity).ok())
+        {
+            found_any = true;
+
+            let relative_affine = root_inv * child_transform.affine();
+
+            let relative_mat = Mat3A::from_cols(
+                relative_affine.x_axis,
+                relative_affine.y_axis,
+                relative_affine.z_axis,
+            );
+
+            let local_center = relative_affine.transform_point3a(child_aabb.center);
+            let local_half_extents = relative_mat.abs() * child_aabb.half_extents;
+
+            local_min = local_min.min(local_center - local_half_extents);
+            local_max = local_max.max(local_center + local_half_extents);
+        }
+
+        if !found_any {
+            continue;
+        }
+
+        let center = (local_min + local_max) * 0.5;
+        let half_extents = (local_max - local_min) * 0.5;
+
+        let final_aabb = Aabb {
+            center,
+            half_extents,
+        };
 
         #[cfg(feature = "trace")]
-        debug!("Calculated and inserted AABB for ScatterRoot. {aabb:?}");
+        debug!("Calculated Root AABB: {:?}", final_aabb);
 
-        if let Some(aabb) = aabb {
-            cmd.entity(root_entity).insert(aabb);
-        }
+        cmd.entity(root_entity).insert(final_aabb);
     }
 }

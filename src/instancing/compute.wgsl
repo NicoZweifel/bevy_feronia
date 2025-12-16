@@ -22,6 +22,7 @@ struct CameraCullData {
 
 struct LodCullData {
     visibility_range: vec4<f32>,
+    world_from_local: mat4x4<f32>,
 }
 
 @group(0) @binding(0) var<storage, read> source_buffer: array<InstanceData>;
@@ -42,9 +43,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (i >= arrayLength(&source_buffer)) { return; }
 
     let instance = source_buffer[i];
-    let position = instance.pos_and_scale.xyz;
+    let local_pos = vec4<f32>(instance.pos_and_scale.xyz, 1.0);
+    let world_pos = lod_data.world_from_local * local_pos;
 
-    let dist = distance(position, camera.view_pos.xyz);
+    let dist = distance(world_pos.xyz, camera.view_pos.xyz);
 
     if (dist < lod_data.visibility_range.x || dist > lod_data.visibility_range.w) {
         return;

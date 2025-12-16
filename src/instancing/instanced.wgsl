@@ -5,6 +5,7 @@
 #import bevy_pbr::clustered_forward::{fragment_cluster_index, unpack_clusterable_object_index_ranges, get_clusterable_object_id}
 
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
+#import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::utils::rand_f
 #import bevy_pbr::mesh_bindings::mesh
 
@@ -15,6 +16,7 @@
 #import bevy_feronia::noise::sample_noise
 
 struct InstanceUniforms {
+    world_from_local: mat4x4<f32>,
     top_color: vec4<f32>,
     bottom_color: vec4<f32>,
     visibility_range: vec4<f32>,
@@ -75,9 +77,6 @@ struct VertexOutput {
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 
-    // --- INSTANCE ---
-    var instance: InstanceInfo;
-
     var scale = vertex.i_pos_scale.w;
     var translation = vertex.i_pos_scale.xyz;
 
@@ -116,11 +115,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 #endif
 
-    instance.world_from_local = world_from_local_matrix;
-    instance.instance_position = instance.world_from_local[3];
+   var instance_world_matrix = instance_uniforms.world_from_local * world_from_local_matrix;
+
+    var instance: InstanceInfo;
+    instance.world_from_local = instance_world_matrix;
+    instance.instance_position = instance_world_matrix[3];
     instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
-
 
 #ifdef STATIC_BEND
     let raw_rand = rand_f(&rand_state);
@@ -159,7 +160,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.world_normal = displaced.world_normal;
     out.local_pos = vertex.position;
     out.world_tangent = displaced.world_tangent;
-    out.clip_position = view.clip_from_world * vec4<f32>(out.world_position, 1.0);
+    out.clip_position = position_world_to_clip(out.world_position);
 
 #ifdef VERTEX_UVS_A
     out.uv = vertex.uv;

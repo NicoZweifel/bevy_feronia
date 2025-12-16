@@ -12,15 +12,13 @@ pub fn update_chunk_height(
     height_map: Res<HeightMap>,
     height_map_config: Res<HeightMapConfig>,
 ) {
-    let height_sampler = images
-        .get(&height_map.0)
-        .map(|img| HeightMapCpuSampler::new(img, height_map_config.into_inner()));
-
-    let Some(sampler) = height_sampler else {
+    let Some(img) = images.get(&height_map.0) else {
         return;
     };
 
     for mut tf in &mut q_chunk {
+        let sampler = HeightMapCpuSampler::new(img, &height_map_config);
+
         tf.translation.y = sampler.sample(tf.translation);
     }
 }

@@ -15,6 +15,7 @@ pub(super) struct CameraCullData {
 #[repr(C)]
 pub(super) struct LodCullData {
     pub visibility_range: Vec4,
+    pub world_from_local: Mat4,
 }
 
 #[derive(Resource)]

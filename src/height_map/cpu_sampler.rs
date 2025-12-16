@@ -6,11 +6,13 @@ use std::ops::Range;
 #[cfg(feature = "trace")]
 use tracing::warn;
 
+// TODO fix world_center
 pub struct HeightMapCpuSampler<'a> {
     image_data: &'a Option<Vec<u8>>,
     image_size: u32,
     world_height_range: Range<f32>,
     total_world_size: f32,
+    world_center: Vec2,
 }
 
 impl<'a> HeightMapCpuSampler<'a> {
@@ -20,17 +22,16 @@ impl<'a> HeightMapCpuSampler<'a> {
             image_size: image.texture_descriptor.size.width,
             world_height_range: config.world_height_range.clone(),
             total_world_size: config.world_size,
+            world_center: config.world_center,
         }
     }
 
-    /// Fetches the raw, normalized height value [0.0, 1.0] from the texture data at a given pixel coordinate.
     fn get_normalized_height_at(&self, x: u32, y: u32) -> f32 {
         let Some(data) = self.image_data.as_ref() else {
             return 0.0;
         };
         let byte_index = (y * self.image_size + x) as usize * 4;
 
-        // Each pixel is an R32Float, which is 4 bytes.
         data.get(byte_index..byte_index + 4)
             .and_then(|slice| slice.try_into().ok())
             .map(f32::from_le_bytes)
@@ -45,9 +46,11 @@ impl<'a> HeightMapCpuSampler<'a> {
 impl<'a> Sampler for HeightMapCpuSampler<'a> {
     /// Calculates the terrain height at a given world position using bilinear interpolation.
     fn sample(&self, world_pos: Vec3) -> f32 {
+        let map_local_pos = world_pos.xz() - self.world_center;
+
         // Convert world coordinates to floating-point pixel coordinates.
-        let uv =
-            (world_pos.xz() + Vec2::splat(self.total_world_size / 2.0)) / self.total_world_size;
+        let uv = (map_local_pos + Vec2::splat(self.total_world_size / 2.0)) / self.total_world_size;
+
         let pixel_f = uv.clamp(Vec2::ZERO, Vec2::ONE) * (self.image_size - 1) as f32;
 
         // Get corner coordinates and interpolation weights.
@@ -59,7 +62,7 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
         let x1 = (x0 + 1).min(self.image_size - 1);
         let y1 = (y0 + 1).min(self.image_size - 1);
 
-        //  Fetch the four corner height values.
+        // Fetch the four corner height values.
         let h00 = self.get_normalized_height_at(x0, y0); // Top-left
         let h10 = self.get_normalized_height_at(x1, y0); // Top-right
         let h01 = self.get_normalized_height_at(x0, y1); // Bottom-left

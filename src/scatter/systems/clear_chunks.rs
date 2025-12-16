@@ -1,3 +1,4 @@
+use crate::core::utils::despawn;
 use crate::prelude::{Chunk, ClearScatterLayer, ScatteredInstance};
 
 use bevy_ecs::prelude::*;
@@ -19,17 +20,18 @@ pub fn clear_chunks(
         acc
     });
 
-    for child in q_chunks
-        .iter()
-        .filter_map(|chunk| q_children.get(chunk).ok())
-        .flatten()
-        .filter_map(|child| {
-            q_instances
-                .get(*child)
-                .ok()
-                .and_then(|(_, instance)| layers.contains(&**instance).then_some(child))
-        })
-    {
-        cmd.entity(*child).despawn();
-    }
+    despawn(
+        &mut cmd,
+        q_chunks
+            .iter()
+            .filter_map(|chunk| q_children.get(chunk).ok())
+            .flatten()
+            .filter_map(|child| {
+                q_instances
+                    .get(*child)
+                    .ok()
+                    .and_then(|(_, instance)| layers.contains(&**instance).then_some(child))
+                    .cloned()
+            }),
+    );
 }

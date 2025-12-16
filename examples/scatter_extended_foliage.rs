@@ -7,7 +7,7 @@ use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
-use std::f32::consts::TAU;
+use std::f32::consts::{FRAC_PI_8, TAU};
 
 fn main() -> AppExit {
     App::new()
@@ -94,6 +94,7 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
+        Transform::from_xyz(5., 0., 0.).with_rotation(Quat::from_rotation_y(FRAC_PI_8)),
         children![(
             scatter_layer("Foliage Layer"),
             // Scatter options

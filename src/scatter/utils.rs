@@ -5,7 +5,7 @@ use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::Vec3;
-use bevy_transform::prelude::Transform;
+use bevy_transform::prelude::GlobalTransform;
 use std::hash::Hash;
 use std::hash::Hasher;
 use xxh3::hash64_with_seed;
@@ -124,7 +124,7 @@ pub struct Container {
     pub height: f32,
     pub size: Vec3,
     pub root_size: Vec3,
-    pub global_transform: Transform,
+    pub global_transform: GlobalTransform,
     pub seed: u64,
 }
 

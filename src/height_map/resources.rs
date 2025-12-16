@@ -4,13 +4,15 @@ use bevy_camera::visibility::RenderLayers;
 use bevy_derive::Deref;
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
+use bevy_math::Vec2;
 use bevy_reflect::Reflect;
 use std::ops::Range;
 
-#[derive(Resource, Clone, Reflect)]
-#[reflect(Resource)]
+#[derive(Resource, Clone, Reflect, Debug)]
+#[reflect(Resource, Clone, Debug)]
 pub struct HeightMapConfig {
     pub world_size: f32,
+    pub world_center: Vec2,
     pub render_layer: RenderLayers,
     pub world_height_range: Range<f32>,
 }
@@ -21,6 +23,7 @@ impl Default for HeightMapConfig {
             world_height_range: -28. ..100.,
             world_size: 8.0 * 8.0 * 4.0,
             render_layer: RenderLayers::layer(1),
+            world_center: Vec2::ZERO,
         }
     }
 }

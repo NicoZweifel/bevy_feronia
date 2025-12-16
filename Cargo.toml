@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.5.3"
+version = "0.5.4"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -48,7 +48,6 @@ avian3d = { version = "0.4", optional = true }
 [dev-dependencies]
 bevy-inspector-egui = "0.35.0"
 bevy = { version = "0.17", features = [
-    "dynamic_linking",
     "file_watcher",
     "jpeg",
     "embedded_watcher",

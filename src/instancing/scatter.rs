@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use bevy_asset::Handle;
-use bevy_camera::{primitives::Aabb, visibility::Visibility};
+use bevy_camera::primitives::Aabb;
 use bevy_color::{Color, LinearRgba};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
@@ -93,7 +93,8 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             })
             .enumerate()
             .fold(HashMap::new(), |mut acc, (i, (name, res))| {
-                let position = res.transform.translation + request.chunk_gtf_translation;
+                let position = res.transform.translation;
+
                 let scale = res.transform.scale.element_sum() / 3.0;
 
                 let instance = InstanceData {
@@ -134,13 +135,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     Vec3::from(asset.properties.aabb.half_extents * group_data.max_scale);
                 let center_offset = Vec3::from(asset.properties.aabb.center * group_data.max_scale);
 
-                let world_min = group_data.min_pos + center_offset - half_extents;
-                let world_max = group_data.max_pos + center_offset + half_extents;
+                let local_min = group_data.min_pos + center_offset - half_extents;
+                let local_max = group_data.max_pos + center_offset + half_extents;
 
-                let local_aabb = Aabb::from_min_max(
-                    world_min - request.chunk_gtf_translation,
-                    world_max - request.chunk_gtf_translation,
-                );
+                let local_aabb = Aabb::from_min_max(local_min, local_max);
 
                 let visibility_range = request
                     .lod_config
@@ -203,7 +201,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                     cmd.entity(entity).insert((
                         Transform::default(),
-                        Visibility::Visible,
                         local_aabb,
                         ChildOf(request.parent),
                     ));

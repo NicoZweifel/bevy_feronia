@@ -3,6 +3,7 @@ use crate::prelude::*;
 use bevy_app::*;
 use bevy_ecs::prelude::*;
 use bevy_state::prelude::*;
+use bevy_transform::TransformSystems;
 
 pub struct ChunkPlugin;
 
@@ -29,11 +30,27 @@ impl Plugin for ChunkPlugin {
                         .run_if(in_state(HeightMapState::Ready)),
                 ),
             )
+            .configure_sets(
+                PostUpdate,
+                (
+                    ChunkSet::Loading
+                        .run_if(in_state(ScatterState::Setup))
+                        .run_if(not(in_state(HeightMapState::Ready))),
+                    ChunkSet::Ready
+                        .run_if(in_state(ScatterState::Ready))
+                        .run_if(in_state(HeightMapState::Ready)),
+                ),
+            )
             .add_systems(Update, update_root_lod_config)
+            .add_systems(
+                PostUpdate,
+                setup_chunks
+                    .after(TransformSystems::Propagate)
+                    .in_set(ChunkSet::Ready),
+            )
             .add_systems(
                 Update,
                 (
-                    setup_chunks,
                     update_chunk_height.run_if(resource_exists_and_changed::<HeightMap>),
                     (split, handle_split).chain(),
                     (merge_check, handle_merge_check).chain(),

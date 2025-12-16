@@ -59,7 +59,7 @@ pub fn handle_scatter_requests<T>(
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
-    // NOTE: handle 2 per frame. TODO optimize / create compute pipeline for this.
+    // NOTE: handle 2 per tick. TODO optimize / create compute pipeline for this.
     for (entity, request) in q_requests.iter().take(2) {
         let layer = request.layer_entity;
 
@@ -135,7 +135,7 @@ pub fn handle_scatter_requests<T>(
                     height: 0.0,
                     size,
                     root_size: Vec3::from(aabb.half_extents * 2.),
-                    global_transform: chunk_gtf.compute_transform(),
+                    global_transform: *chunk_gtf,
                     seed,
                 },
                 map_height: map_height.cloned(),
@@ -175,7 +175,7 @@ pub fn handle_scatter_requests<T>(
                     height: 0.0,
                     size,
                     root_size: size,
-                    global_transform: layer_gtf.compute_transform(),
+                    global_transform: *layer_gtf,
                     seed: **world_seed,
                 },
                 map_height: map_height.cloned(),

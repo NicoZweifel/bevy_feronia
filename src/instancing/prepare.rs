@@ -16,10 +16,11 @@ use bevy_render::render_resource::{
 use bevy_render::renderer::{RenderDevice, RenderQueue};
 use bevy_render::sync_world::MainEntity;
 use bevy_render::view::ExtractedView;
+use bevy_transform::prelude::GlobalTransform;
 use bytemuck::bytes_of;
 
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::trace;
 
 pub(super) fn prepare_instance_buffer(
     mut cmd: Commands,
@@ -73,6 +74,7 @@ pub(super) fn prepare_instance_uniform_buffer(
     query: Query<(
         Entity,
         &InstanceMaterialData,
+        &GlobalTransform,
         Option<&InstanceUniformBuffer>,
     )>,
     render_device: Res<RenderDevice>,
@@ -81,8 +83,11 @@ pub(super) fn prepare_instance_uniform_buffer(
 ) {
     let bind_group_layout = pipeline.instance_uniform_layout.clone();
 
-    for (entity, instance_data, uniform_buffer_opt) in &query {
-        let uniforms: InstanceUniforms = instance_data.into();
+    for (entity, instance_data, gtf, uniform_buffer_opt) in &query {
+        let uniforms: InstanceUniforms = InstanceUniforms {
+            world_from_local: gtf.to_matrix(),
+            ..instance_data.into()
+        };
         let contents = bytes_of(&uniforms);
 
         if let Some(uniform_buffer) = uniform_buffer_opt {
@@ -179,8 +184,8 @@ pub(super) fn prepare_global_cull_buffer(
 ) {
     if views.is_empty() {
         #[cfg(feature = "trace")]
-        warn!(
-            "No active camera/view found culling. Did you add `Center` to the camera/player controller?"
+        trace!(
+            "No camera/view found for culling. Did you add `Center` to the camera/player controller?"
         );
         return;
     }
@@ -211,7 +216,7 @@ pub(super) fn prepare_global_cull_buffer(
 
 pub(super) fn prepare_instanced_compute_resources(
     mut commands: Commands,
-    query: Query<(Entity, &MainEntity, &InstanceMaterialData), With<GpuCull>>,
+    query: Query<(Entity, &MainEntity, &InstanceMaterialData, &GlobalTransform), With<GpuCull>>,
     render_device: Res<RenderDevice>,
     render_mesh_instances: Res<RenderMeshInstances>,
     meshes: Res<RenderAssets<RenderMesh>>,
@@ -224,7 +229,7 @@ pub(super) fn prepare_instanced_compute_resources(
         return;
     };
 
-    for (entity, main_entity, instance_data) in &query {
+    for (entity, main_entity, instance_data, gtf) in &query {
         let count = instance_data.instances.len();
         if count == 0 {
             continue;
@@ -269,6 +274,7 @@ pub(super) fn prepare_instanced_compute_resources(
 
         let lod_data = LodCullData {
             visibility_range: instance_data.visibility_range,
+            world_from_local: gtf.to_matrix(),
         };
 
         let contents = bytes_of(&lod_data);

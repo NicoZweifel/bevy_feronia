@@ -7,7 +7,7 @@ pub fn update_root_lod_config(
 ) {
     for (entity, lod_config, size_scalars, base_size) in &q_root {
         let derived_chunk_lod_config =
-            ChunkLodConfig::from_sources(lod_config, size_scalars, base_size);
+            ChunkLodConfig::from_sources(lod_config, size_scalars, base_size, 5.);
 
         cmd.entity(entity).insert(derived_chunk_lod_config);
     }

@@ -8,6 +8,7 @@ use bevy_ecs::prelude::*;
 use bevy_math::{Quat, Vec3};
 use bevy_pbr::StandardMaterial;
 use bevy_reflect::Reflect;
+use bevy_transform::components::GlobalTransform;
 use bevy_transform::prelude::Transform;
 use rand::Rng;
 use rand_pcg::Pcg64;
@@ -130,39 +131,41 @@ impl ScatterResult {
         final_world_pos.y = modifiers
             .map_height
             .map(|_| modifiers.height_sampler.sample(final_world_pos))
-            .unwrap_or_else(|| final_world_pos.y + container.height);
+            .unwrap_or(final_world_pos.y);
 
         if external_avoidance_data.is_occupied(final_world_pos) {
             return None;
         }
 
-        let container_rot_inv = container.global_transform.rotation.inverse();
-        let world_offset_vector = final_world_pos - container.global_transform.translation;
+        let container_rotation = container.global_transform.rotation();
 
-        let translation = container_rot_inv * world_offset_vector;
+        let rotation = container_rotation.inverse()
+            * modifiers
+                .rotation
+                .cloned()
+                .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
 
         let scale = modifiers
             .scale
             .cloned()
-            .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng));
+            .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng))
+            / container.global_transform.scale();
 
-        let world_rotation = modifiers
-            .rotation
-            .cloned()
-            .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
+        let seed = generate_instance_seed(container.seed, final_world_pos);
+        let translation = container
+            .global_transform
+            .compute_transform()
+            .compute_affine()
+            .inverse()
+            .transform_point3(final_world_pos);
 
-        let rotation = container_rot_inv * world_rotation;
+        let transform = Transform {
+            translation,
+            rotation,
+            scale,
+        };
 
-        let instance_seed = generate_instance_seed(container.seed, final_world_pos);
-
-        Some(ScatterResult {
-            seed: instance_seed,
-            transform: Transform {
-                translation,
-                rotation,
-                scale,
-            },
-        })
+        Some(ScatterResult { seed, transform })
     }
 }
 
@@ -195,7 +198,7 @@ where
     pub layer: Entity,
     pub root: Entity,
     pub seed: u64,
-    pub container_global_transform: Transform,
+    pub container_global_transform: GlobalTransform,
     _phantom: PhantomData<T>,
 }
 
@@ -251,7 +254,7 @@ where
         chunk: Option<Entity>,
         data: Vec<ScatterResult>,
         seed: u64,
-        container_transform: Transform,
+        container_gtf: GlobalTransform,
     ) -> Self {
         Self {
             entity,
@@ -260,7 +263,7 @@ where
             chunk,
             data,
             seed,
-            container_global_transform: container_transform,
+            container_global_transform: container_gtf,
             _phantom: PhantomData,
         }
     }

@@ -54,6 +54,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
+        Transform::from_xyz(20., 0., 0.),
         children![(
             scatter_layer("Grass Layer"),
             // Scatter options

@@ -5,6 +5,7 @@ use bevy_ecs::relationship::Relationship;
 use bevy_platform::collections::HashMap;
 use bevy_transform::prelude::GlobalTransform;
 
+use crate::core::utils::despawn;
 #[cfg(feature = "trace")]
 use tracing::{debug, error, warn};
 
@@ -124,9 +125,7 @@ pub fn handle_merge(mut cmd: Commands, mut mr_merge: MessageReader<MergeChunks>)
         #[cfg(feature = "trace")]
         debug!("Merging Chunks: {children:?} into {parent}");
 
-        for child in children {
-            cmd.entity(*child).despawn();
-        }
+        despawn(&mut cmd, children.clone());
 
         cmd.entity(*parent).insert(CanSplit);
     }

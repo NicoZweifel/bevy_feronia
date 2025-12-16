@@ -155,18 +155,18 @@ pub struct CanSplit;
 pub struct CanMerge;
 
 /// Component storing the current LOD of a chunk (0 is the highest detail).
-#[derive(Component, Reflect, Deref, DerefMut, Default, Debug, Clone)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Default, Debug, Clone, Copy)]
+#[reflect(Component, Clone, Debug)]
 pub struct ChunkLevel(pub u32);
 
 /// Component storing the scalar size in [`BaseChunkSize`] units of this chunk.
-#[derive(Component, Reflect, Deref, DerefMut, Debug)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug, Clone, Copy)]
+#[reflect(Component, Debug, Clone)]
 pub struct ChunkSize(pub u32);
 
 /// Component storing the base size of a level 0 (the highest detail) chunk.
-#[derive(Component, Reflect, Deref, DerefMut, Debug)]
-#[reflect(Component)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug, Clone)]
+#[reflect(Component, Debug, Clone)]
 pub struct BaseChunkSize(pub Vec3);
 
 impl BaseChunkSize {
@@ -340,11 +340,12 @@ impl ChunkLodConfig {
     /// with chunk radii calculated from size scalars and a base chunk size.
     ///
     /// This ensures LOD switches are "pop-free" by compensating for the
-    /// chunk's physical size at each LOD.
+    /// chunk's physical size at each LOD and adding a buffer.
     pub fn from_sources(
         lod_config: &LodConfig,
         size_scalars: &ChunkSizeScalarConfig,
         base_size: &BaseChunkSize,
+        buffer: f32,
     ) -> Self {
         let radii = size_scalars
             .iter()
@@ -362,11 +363,11 @@ impl ChunkLodConfig {
 
                 radii
                     .get(i + 1)
-                    .map(|r_parent|LodDistance(**base_dist + r_parent))
+                    .map(|r_parent|LodDistance(**base_dist + r_parent + buffer))
                     .unwrap_or_else(|| {
                         #[cfg(feature = "trace")]
                         warn!("Failed to calculate LOD distance for chunk at level {}. Using base distance.", i);
-                        *base_dist
+                        LodDistance(**base_dist + buffer)
                     })
             })
             .collect::<Vec<_>>().into()
@@ -450,21 +451,23 @@ mod tests {
             ..default()
         };
 
-        // CD_i = D_i + R_{i+1}
-        // CD_0 = D_0 + R_1 = 30.0 + 20.0 = 50.0
-        // CD_1 = D_1 + R_2 = 60.0 + 40.0 = 100.0
-        // CD_2 = D_2 + R_3 = 120.0 + 80.0 = 200.0
+        let buffer = 5.0;
+
+        // CD_i = D_i + R_{i+1} + Buffer
+        // CD_0 = 30.0 + 20.0 + 5.0 = 55.0
+        // CD_1 = 60.0 + 40.0 + 5.0 = 105.0
+        // CD_2 = 120.0 + 80.0 + 5.0 = 205.0
         // CD_3 = f32::MAX
         let expected_config = ChunkLodConfig(vec![
-            50.0.into(),
-            100.0.into(),
-            200.0.into(),
+            55.0.into(),
+            105.0.into(),
+            205.0.into(),
             LodDistance::default(),
         ]);
 
         // Act
         let calculated_config =
-            ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size);
+            ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size, buffer);
 
         // Assert
         assert_eq!(calculated_config, expected_config);
@@ -491,21 +494,22 @@ mod tests {
             ],
             ..default()
         };
+        let buffer = 10.0;
 
-        // CD_0 = D_0 + R_1 = 30.0 + 20.0 = 50.0
-        // CD_1 = D_1. `radii.get(2)` is None. Fallback: pushes `D_1` (60.0)
-        // CD_2 = D_2. `radii.get(3)` is None. Fallback: pushes `D_2` (120.0)
+        // CD_0 = D_0 + R_1 = 30.0 + 20.0 + 10.0 = 60.0
+        // CD_1 = D_1. `radii.get(2)` is None. Fallback: pushes `D_1` (70.0)
+        // CD_2 = D_2. `radii.get(3)` is None. Fallback: pushes `D_2` (130.0)
         // CD_3 = f32::MAX
         let expected_config = ChunkLodConfig(vec![
-            50.0.into(),
             60.0.into(),
-            120.0.into(),
+            70.0.into(),
+            130.0.into(),
             LodDistance::default(),
         ]);
 
         // Act
         let calculated_config =
-            ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size);
+            ChunkLodConfig::from_sources(&lod_config, &size_scalars, &base_size, buffer);
 
         // Assert
         assert_eq!(calculated_config, expected_config);

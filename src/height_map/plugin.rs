@@ -1,11 +1,13 @@
 use super::systems::*;
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
+
 use bevy_app::*;
 use bevy_asset::embedded_asset;
 use bevy_ecs::prelude::*;
 use bevy_pbr::MaterialPlugin;
 use bevy_state::prelude::*;
+use bevy_transform::TransformSystems;
 
 pub struct HeightMapPlugin;
 
@@ -16,9 +18,19 @@ impl Plugin for HeightMapPlugin {
         app.init_state::<HeightMapState>()
             .add_plugins(MaterialPlugin::<HeightMapMaterial>::default())
             .add_systems(
+                PostUpdate,
+                setup_config
+                    .chain()
+                    .after(TransformSystems::Propagate)
+                    .run_if(
+                        not(resource_exists::<HeightMapConfig>)
+                            .and(in_state(HeightMapState::Setup)),
+                    ),
+            )
+            .add_systems(
                 Update,
                 (
-                    (setup_config, skip_setup).run_if(
+                    skip_setup.run_if(
                         not(resource_exists::<HeightMapConfig>)
                             .and(in_state(HeightMapState::Setup)),
                     ),
