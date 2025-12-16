@@ -6,7 +6,7 @@ use bevy_ecs::prelude::*;
 use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::{debug, warn};
 
 pub fn spawn<T>(
     mut cmd: Commands,
@@ -41,7 +41,17 @@ pub fn spawn<T>(
         let (container_gtf, chunk_level) = event
             .trigger
             .chunk
-            .and_then(|c| q_chunks.get(c).ok())
+            .and_then(|c| {
+                q_chunks
+                    .get(c)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        debug!(
+                            "Couldn't get chunk {:?}, it might've been despawned already or is in the process of merging!",
+                            event.trigger.chunk
+                        );
+                    }).ok()
+            })
             .map(|(x, y)| (*x, *y))
             .unwrap_or_else(|| {
                 (
