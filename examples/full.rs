@@ -420,7 +420,7 @@ fn spawn_landscape(
 
     cmd.spawn((
         Landscape,
-        Transform::from_xyz(80., 0., 80.)
+        Transform::from_xyz(80., 5., 80.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
     ));
 
