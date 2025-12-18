@@ -62,7 +62,6 @@ pub fn setup_config(
         world_center,
         world_height_range: min_pt.y..max_pt.y,
         render_layer: RenderLayers::layer(1),
-        ..default()
     };
 
     cmd.insert_resource(config);
