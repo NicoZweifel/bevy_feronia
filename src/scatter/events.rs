@@ -114,7 +114,7 @@ impl ScatterResult {
         let world_pos = container.global_transform.transform_point(local_pos);
 
         // Convert to root local space, the container is possibly a chunk.
-        let mut root_local_pos = container
+        let mut root_space_local_pos = container
             .root_global_transform
             .affine()
             .inverse()
@@ -123,25 +123,25 @@ impl ScatterResult {
         if modifiers
             .density_sampler
             .as_ref()
-            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(root_local_pos))
+            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(root_space_local_pos))
         {
             return None;
         }
 
-        root_local_pos.y = modifiers
+        root_space_local_pos.y = modifiers
             .map_height
-            .map(|_| modifiers.height_sampler.sample(root_local_pos))
-            .unwrap_or(root_local_pos.y);
+            .map(|_| modifiers.height_sampler.sample(root_space_local_pos))
+            .unwrap_or(root_space_local_pos.y);
 
-        if external_avoidance_data.is_occupied(root_local_pos) {
+        if external_avoidance_data.is_occupied(root_space_local_pos) {
             return None;
         }
 
         let final_world_pos = container
             .root_global_transform
-            .transform_point(root_local_pos);
+            .transform_point(root_space_local_pos);
 
-        let final_pos_in_container = container
+        let root_space_final_pos = container
             .global_transform
             .affine()
             .inverse()
@@ -161,10 +161,10 @@ impl ScatterResult {
             .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng))
             / container.global_transform.scale();
 
-        let seed = generate_instance_seed(container.seed, root_local_pos);
+        let seed = generate_instance_seed(container.seed, root_space_local_pos);
 
         let transform = Transform {
-            translation: final_pos_in_container,
+            translation: root_space_final_pos,
             rotation,
             scale,
         };
