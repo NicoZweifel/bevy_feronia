@@ -1,9 +1,6 @@
-use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
-use bevy_image::Image;
 use bevy_math::Vec3;
 use bevy_transform::prelude::GlobalTransform;
 use std::hash::Hash;
