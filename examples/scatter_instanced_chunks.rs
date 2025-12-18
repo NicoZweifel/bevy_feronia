@@ -2,27 +2,18 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_color::palettes::css::WHITE;
-use bevy_color::palettes::tailwind::*;
-use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
-use bevy_feronia::instancing::scatter::scatter_layer;
-use bevy_feronia::prelude::*;
+use bevy_feronia::{
+    asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
+    prelude::*,
+};
 use example::*;
 
 fn main() -> AppExit {
     App::new()
         .insert_resource(Wind { ..default() })
-        .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![
-                RED_500.into(),
-                ORANGE_500.into(),
-                YELLOW_500.into(),
-                WHITE.into(),
-            ],
-            aabb_color: GREEN_500.into(),
-        })
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
+            show_debug_options: true,
             ..default()
         })
         .add_plugins((

@@ -54,7 +54,11 @@ impl Plugin for ChunkPlugin {
                     (split, handle_split).chain(),
                     (merge_check, handle_merge_check).chain(),
                     (merge, handle_merge).chain(),
-                    (draw_aabbs, draw_chunks, draw_lod_ranges)
+                    (
+                        draw_aabbs.run_if(|res: Res<ChunkDebugConfig>| res.show_aabbs),
+                        draw_chunks,
+                        draw_lod_ranges,
+                    )
                         .run_if(resource_exists::<ChunkDebugConfig>),
                 )
                     .in_set(ChunkSet::Ready),

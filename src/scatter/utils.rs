@@ -4,8 +4,8 @@ use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
 use bevy_math::Vec3;
 use bevy_transform::prelude::GlobalTransform;
-use std::hash::Hash;
-use std::hash::Hasher;
+
+use std::hash::{Hash, Hasher};
 use xxh3::hash64_with_seed;
 
 #[cfg(feature = "trace")]

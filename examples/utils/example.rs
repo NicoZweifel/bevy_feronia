@@ -1,6 +1,11 @@
 #[path = "camera_controller.rs"]
 mod camera_controller;
 
+#[path = "quality.rs"]
+pub mod quality;
+
+use quality::*;
+
 #[cfg(not(feature = "dlss"))]
 use bevy::anti_alias::taa::TemporalAntiAliasing;
 use bevy::diagnostic::*;
@@ -18,7 +23,6 @@ use bevy::{
     render::view::ColorGrading,
 };
 use bevy_feronia::prelude::*;
-use bevy_feronia::quality::{QualitySettings, QualitySettingsSetup, QualitySettingsUpdated};
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
@@ -33,6 +37,15 @@ pub struct ExamplePluginOptions {
     pub show_quality_settings: bool,
     pub show_wind_settings: bool,
     pub show_inspector: bool,
+    pub show_debug_options: bool,
+}
+
+#[derive(Resource, Default, PartialEq, Reflect)]
+#[reflect(Resource)]
+pub struct ExampleDebugOptions {
+    pub debug_chunks: bool,
+    pub debug_height_map: bool,
+    pub debug_occupancy_map: bool,
 }
 
 pub struct ExamplePlugin;
@@ -62,7 +75,64 @@ impl Plugin for ExamplePlugin {
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_wind_settings),
                 ResourceInspectorPlugin::<QualitySettings>::default()
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_quality_settings),
+                ResourceInspectorPlugin::<ExampleDebugOptions>::default()
+                    .run_if(|res: Res<ExamplePluginOptions>| res.show_debug_options),
+                ResourceInspectorPlugin::<ChunkDebugConfig>::default().run_if(
+                    resource_exists::<ChunkDebugConfig>
+                        .and(|res: Res<ExampleDebugOptions>| res.debug_chunks),
+                ),
+                ResourceInspectorPlugin::<HeightMapDebugConfig>::default().run_if(
+                    resource_exists::<HeightMapDebugConfig>
+                        .and(|res: Res<ExampleDebugOptions>| res.debug_height_map),
+                ),
+                ResourceInspectorPlugin::<ScatterOccupancyMapDebugConfig>::default().run_if(
+                    resource_exists::<ScatterOccupancyMapDebugConfig>
+                        .and(|res: Res<ExampleDebugOptions>| res.debug_occupancy_map),
+                ),
             ))
+            .add_systems(
+                Update,
+                (|mut cmd: Commands,
+                  res: Res<ExamplePluginOptions>,
+                  debug_options: Option<Res<ExampleDebugOptions>>| {
+                    if res.show_debug_options && debug_options.is_none() {
+                        cmd.init_resource::<ExampleDebugOptions>();
+                    } else if !res.show_debug_options && debug_options.is_some() {
+                        cmd.remove_resource::<ExampleDebugOptions>();
+                    }
+                })
+                .run_if(resource_exists::<ExamplePluginOptions>),
+            )
+            .add_systems(
+                Update,
+                (
+                    |mut cmd: Commands,
+                     res: Res<ExampleDebugOptions>,
+                     chunk_debug_config: Option<Res<ChunkDebugConfig>>,
+                     height_debug_config: Option<Res<HeightMapDebugConfig>>,
+                     occupancy_debug_config:Option<Res<ScatterOccupancyMapDebugConfig>>
+                    | {
+                        if chunk_debug_config.is_none() && res.debug_chunks {
+                            cmd.init_resource::<ChunkDebugConfig>();
+                        } else if chunk_debug_config.is_some() && !res.debug_chunks {
+                            cmd.remove_resource::<ChunkDebugConfig>();
+                        }
+
+                        if height_debug_config.is_none() && res.debug_height_map {
+                            cmd.init_resource::<HeightMapDebugConfig>();
+                        } else if height_debug_config.is_some() && !res.debug_height_map {
+                            cmd.remove_resource::<HeightMapDebugConfig>();
+                        }
+
+                       if occupancy_debug_config.is_none() && res.debug_occupancy_map {
+                           cmd.init_resource::<ScatterOccupancyMapDebugConfig>();
+                       } else if occupancy_debug_config.is_some() && !res.debug_occupancy_map {
+                           cmd.remove_resource::<ScatterOccupancyMapDebugConfig>();
+                       }
+                    },
+                )
+                    .run_if(resource_exists::<ExampleDebugOptions>),
+            )
             .add_plugins(CameraControllerPlugin)
             .add_systems(
                 Startup,

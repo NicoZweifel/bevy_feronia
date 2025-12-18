@@ -8,12 +8,10 @@
 //!
 //! The instanced grass layer is controlled by a procedurally generated `DensityMap`
 //! (using Perlin noise) to create natural, patchy placement.
-//!
-//! TODO Using a non-world center Transform on the ScatterRoot is not working currently if using the height map plugin.
 #[path = "utils/example.rs"]
 mod example;
 
-use example::*;
+use example::{quality::*, *};
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
@@ -21,7 +19,6 @@ use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
-use bevy_feronia::quality::*;
 use bevy_image::*;
 use bevy_mesh::PlaneMeshBuilder;
 use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
@@ -35,19 +32,10 @@ fn main() -> AppExit {
             show_quality_settings: true,
             show_wind_settings: true,
             show_inspector: true,
+            show_debug_options: true,
         })
         .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
-        /*.insert_resource(ChunkDebugConfig {
-            lod_colors: vec![
-                RED_500.into(),
-                ORANGE_500.into(),
-                YELLOW_500.into(),
-                WHITE.into(),
-            ],
-            aabb_color: GREEN_500.into(),
-        })
-         */
         /*
         .register_type::<ScatterAsset<StandardMaterial>>()
         .register_type::<ScatterAsset<ExtendedWindAffectedMaterial>>()
@@ -55,7 +43,6 @@ fn main() -> AppExit {
          */
         .add_plugins((
             QualityPlugin,
-            AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
             SceneAssetBackendPlugin,
             StandardScatterPlugin,
@@ -428,6 +415,7 @@ fn spawn_landscape(
 }
 
 #[derive(Component)]
+#[component(on_add = Self::on_add)]
 #[require(
     Name::new("Rock Layer"),
     ScatterLayerType::<StandardMaterial>::default(),
@@ -438,6 +426,52 @@ fn spawn_landscape(
     Avoidance(2.),
 )]
 struct RockLayer;
+
+impl RockLayer {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let QualitySettings { model_quality, .. } = world
+            .get_resource::<QualitySettings>()
+            .cloned()
+            .unwrap_or_default();
+
+        let handles = world
+            .get_resource::<Scenes>()
+            .cloned()
+            .expect("Scene handles should be added!");
+
+        let mut cmd = world.commands();
+
+        cmd.spawn((
+            LevelOfDetail(0),
+            ChildOf(ctx.entity),
+            SceneRoot(match model_quality {
+                ModelQuality::Low => handles.rocks_lod_low.clone(),
+                ModelQuality::Medium => handles.rocks_lod_medium.clone(),
+                ModelQuality::High => handles.rocks_lod_high.clone(),
+            }),
+        ));
+
+        if matches!(model_quality, ModelQuality::High | ModelQuality::Medium) {
+            cmd.spawn((
+                LevelOfDetail(1),
+                ChildOf(ctx.entity),
+                SceneRoot(match model_quality {
+                    ModelQuality::High => handles.rocks_lod_medium.clone(),
+                    ModelQuality::Medium => handles.rocks_lod_low.clone(),
+                    _ => default(),
+                }),
+            ));
+        }
+
+        if model_quality == ModelQuality::High {
+            cmd.spawn((
+                LevelOfDetail(2),
+                ChildOf(ctx.entity),
+                SceneRoot(handles.rocks_lod_low.clone()),
+            ));
+        }
+    }
+}
 
 #[derive(Component)]
 #[component(on_add = Self::on_add)]
@@ -458,31 +492,87 @@ impl TreeLayer {
             disable_sss,
             disable_wind_displacement,
             static_shadows,
+            model_quality,
             ..
         } = world
             .get_resource::<QualitySettings>()
             .cloned()
             .unwrap_or_default();
 
+        let handles = world
+            .get_resource::<Scenes>()
+            .cloned()
+            .expect("Scene handles should be added!");
+
+        let mut cmd = world.commands();
+
         if !disable_sss {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(SssBundle::default());
+            cmd.entity(ctx.entity).insert(SssBundle::default());
         }
 
         if !disable_wind_displacement {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(WindAffected::default());
+            cmd.entity(ctx.entity).insert(WindAffected::default());
         }
 
         if static_shadows {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(StaticShadow::default());
+            cmd.entity(ctx.entity).insert(StaticShadow::default());
+        }
+
+        match model_quality {
+            ModelQuality::Low => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_low.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_billboards.clone()),
+                    Unlit,
+                ));
+            }
+            ModelQuality::Medium => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_low.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(2),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_billboards.clone()),
+                    Unlit,
+                ));
+            }
+            ModelQuality::High => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_high.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(2),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_lod_low.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(3),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.trees_billboards.clone()),
+                    Unlit,
+                ));
+            }
         }
     }
 }
@@ -506,14 +596,22 @@ impl FoliageLayer {
             disable_sss,
             disable_wind_displacement,
             static_shadows,
+            model_quality,
             ..
         } = world
             .get_resource::<QualitySettings>()
             .cloned()
             .unwrap_or_default();
 
+        let handles = world
+            .get_resource::<Scenes>()
+            .cloned()
+            .expect("Scene handles should be added!");
+
+        let mut cmd = world.commands();
+
         if !disable_sss {
-            world.commands().entity(ctx.entity).insert((
+            cmd.entity(ctx.entity).insert((
                 SubsurfaceScattering,
                 SubsurfaceScatteringIntensity(4.),
                 SubsurfaceScatteringScale(5.),
@@ -521,17 +619,50 @@ impl FoliageLayer {
         }
 
         if !disable_wind_displacement {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(WindAffected::default());
+            cmd.entity(ctx.entity).insert(WindAffected::default());
         }
 
         if static_shadows {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(StaticShadow::default());
+            cmd.entity(ctx.entity).insert(StaticShadow::default());
+        }
+
+        match model_quality {
+            ModelQuality::Low => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_low.clone()),
+                ));
+            }
+            ModelQuality::Medium => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_low.clone()),
+                ));
+            }
+            ModelQuality::High => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_high.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(2),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.foliage_lod_low.clone()),
+                ));
+            }
         }
     }
 }
@@ -572,35 +703,79 @@ impl GrassLayer {
             disable_grass_directional_lights,
             disable_wind_displacement,
             grass_density,
+            model_quality,
             ..
         } = world
             .get_resource::<QualitySettings>()
             .cloned()
             .unwrap_or_default();
 
+        let handles = world
+            .get_resource::<Scenes>()
+            .cloned()
+            .expect("Scene handles should be added!");
+
         let density_map = world
             .get_resource::<DensityMap>()
             .map(|x| x.0.clone())
             .expect("Density map should be added!");
 
-        world.commands().entity(ctx.entity).insert((
+        let mut cmd = world.commands();
+
+        cmd.entity(ctx.entity).insert((
             DistributionDensity::from(grass_density),
             DistributionPattern(density_map),
         ));
 
         if !disable_grass_directional_lights {
-            world
-                .commands()
-                .entity(ctx.entity)
-                .insert(DirectionalLights);
+            cmd.entity(ctx.entity).insert(DirectionalLights);
         }
 
         if !disable_grass_point_lights {
-            world.commands().entity(ctx.entity).insert(PointLights);
+            cmd.entity(ctx.entity).insert(PointLights);
         }
 
         if !disable_wind_displacement {
-            world.commands().entity(ctx.entity).insert(WindAffected);
+            cmd.entity(ctx.entity).insert(WindAffected);
+        }
+
+        match model_quality {
+            ModelQuality::Low => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_low.clone()),
+                ));
+            }
+            ModelQuality::Medium => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_low.clone()),
+                ));
+            }
+            ModelQuality::High => {
+                cmd.spawn((
+                    LevelOfDetail(0),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_high.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(1),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_medium.clone()),
+                ));
+                cmd.spawn((
+                    LevelOfDetail(2),
+                    ChildOf(ctx.entity),
+                    SceneRoot(handles.grass_lod_low.clone()),
+                ));
+            }
         }
     }
 }
@@ -608,7 +783,6 @@ impl GrassLayer {
 fn spawn_scene(
     mut cmd: Commands,
     landscape: Single<Entity, With<Landscape>>,
-    handles: Res<Scenes>,
     mut images: ResMut<Assets<Image>>,
     settings: Res<QualitySettings>,
 ) {
@@ -637,116 +811,10 @@ fn spawn_scene(
     }
      */
 
-    cmd.spawn((
-        RockLayer,
-        ChildOf(*landscape),
-        children![
-            (
-                AssetSelect::progressive(
-                    handles.rocks_lod_high.clone(),
-                    handles.rocks_lod_medium.clone(),
-                    handles.rocks_lod_low.clone(),
-                ),
-                LevelOfDetail(0)
-            ),
-            (
-                AssetSelect::new(handles.rocks_lod_medium.clone())
-                    .with_med(handles.rocks_lod_low.clone()),
-                LevelOfDetail(1)
-            ),
-            (
-                AssetSelect::new(handles.rocks_lod_low.clone()),
-                LevelOfDetail(2)
-            )
-        ],
-    ));
-
-    cmd.spawn((
-        TreeLayer,
-        ChildOf(*landscape),
-        children![
-            (
-                AssetSelect::progressive(
-                    handles.trees_lod_high.clone(),
-                    handles.trees_lod_medium.clone(),
-                    handles.trees_lod_low.clone(),
-                ),
-                LevelOfDetail(0),
-            ),
-            (
-                AssetSelect::progressive(
-                    handles.trees_lod_medium.clone(),
-                    handles.trees_lod_low.clone(),
-                    handles.trees_billboards.clone()
-                ),
-                AddIf::new(QualityRule::LowModel, Unlit),
-                LevelOfDetail(1)
-            ),
-            (
-                AssetSelect::new(handles.trees_lod_low.clone())
-                    .with_med(handles.trees_billboards.clone()),
-                AddIf::new(QualityRule::MediumModel, Unlit),
-                LevelOfDetail(2)
-            ),
-            (
-                AssetSelect::new(handles.trees_billboards.clone()),
-                Unlit,
-                LevelOfDetail(3)
-            )
-        ],
-    ));
-
-    cmd.spawn((
-        FoliageLayer,
-        ChildOf(*landscape),
-        children![
-            (
-                AssetSelect::progressive(
-                    handles.foliage_lod_high.clone(),
-                    handles.foliage_lod_medium.clone(),
-                    handles.foliage_lod_low.clone(),
-                ),
-                LevelOfDetail(0)
-            ),
-            (
-                AssetSelect::new(handles.foliage_lod_medium.clone())
-                    .with_med(handles.foliage_lod_low.clone()),
-                LevelOfDetail(1)
-            ),
-            (
-                AssetSelect::new(handles.foliage_lod_low.clone()),
-                LevelOfDetail(2)
-            ),
-        ],
-    ));
-
-    cmd.spawn((
-        GrassLayer,
-        ChildOf(*landscape),
-        children![
-            (
-                AssetSelect::progressive(
-                    handles.grass_lod_high.clone(),
-                    handles.grass_lod_medium.clone(),
-                    handles.grass_lod_low.clone(),
-                ),
-                LevelOfDetail(0)
-            ),
-            (
-                AssetSelect::progressive(
-                    handles.grass_lod_high.clone(),
-                    handles.grass_lod_medium.clone(),
-                    handles.grass_lod_low.clone(),
-                ),
-                LevelOfDetail(1)
-            ),
-            (
-                AssetSelect::new(handles.grass_lod_medium.clone())
-                    .with_med(handles.grass_lod_low.clone()),
-                LevelOfDetail(2)
-            ),
-        ],
-    ));
+    cmd.spawn((RockLayer, ChildOf(*landscape)));
+    cmd.spawn((TreeLayer, ChildOf(*landscape)));
+    cmd.spawn((FoliageLayer, ChildOf(*landscape)));
+    cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
 
 fn scatter_on_keypress(

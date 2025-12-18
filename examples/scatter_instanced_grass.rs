@@ -4,25 +4,14 @@ mod example;
 use example::*;
 
 use bevy::prelude::*;
-use bevy_color::palettes::basic::WHITE;
-use bevy_color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
-use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin;
-use bevy_feronia::chunking::systems::draw_aabbs;
-use bevy_feronia::instancing::scatter_layer;
-use bevy_feronia::prelude::*;
+use bevy_feronia::{
+    asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin,
+    instancing::scatter_layer, prelude::*,
+};
 use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(ChunkDebugConfig {
-            lod_colors: vec![
-                RED_500.into(),
-                ORANGE_500.into(),
-                YELLOW_500.into(),
-                WHITE.into(),
-            ],
-            aabb_color: GREEN_500.into(),
-        })
         .insert_resource(Wind { ..default() })
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
@@ -37,7 +26,7 @@ fn main() -> AppExit {
         .add_systems(Startup, setup)
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
-        .add_systems(Update, (scatter_on_keypress, draw_aabbs))
+        .add_systems(Update, scatter_on_keypress)
         .run()
 }
 
