@@ -1,11 +1,15 @@
 use crate::prelude::HeightMapMaterial;
+
 use bevy_asset::Handle;
 use bevy_camera::visibility::RenderLayers;
+use bevy_color::{Color, palettes::tailwind::GREEN_500};
 use bevy_derive::Deref;
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::Vec2;
 use bevy_reflect::Reflect;
+use derive_more::{From, Into};
+
 use std::ops::Range;
 
 #[derive(Resource, Clone, Reflect, Debug)]
@@ -15,6 +19,23 @@ pub struct HeightMapConfig {
     pub world_center: Vec2,
     pub render_layer: RenderLayers,
     pub world_height_range: Range<f32>,
+    pub debug: bool,
+}
+
+#[derive(Resource, Clone, Reflect, Debug, From, Into, Copy)]
+#[reflect(Resource, Clone, Debug)]
+pub struct HeightMapDebugConfig(pub Color);
+
+impl HeightMapDebugConfig {
+    pub fn new(color: impl Into<Color>) -> Self {
+        Self(color.into())
+    }
+}
+
+impl Default for HeightMapDebugConfig {
+    fn default() -> Self {
+        Self::new(GREEN_500)
+    }
 }
 
 impl Default for HeightMapConfig {
@@ -24,6 +45,7 @@ impl Default for HeightMapConfig {
             world_size: 8.0 * 8.0 * 4.0,
             render_layer: RenderLayers::layer(1),
             world_center: Vec2::ZERO,
+            debug: false,
         }
     }
 }

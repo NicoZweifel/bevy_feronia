@@ -185,6 +185,7 @@ A bunch of issues are already open, but some of the larger milestones could be:
 
 - Allow physics-based and other entities to impact the displacement/wind.
 - Make use of compute shaders (Allow scattering on CPU and GPU, improve culling).
+- Allow for multiple `ScatterRoots` when baking height maps (otherwise it should work... probably but it isn't tested yet)
 
 
 

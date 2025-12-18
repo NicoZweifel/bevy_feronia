@@ -66,13 +66,14 @@ impl Plugin for ExamplePlugin {
             .add_plugins(CameraControllerPlugin)
             .add_systems(
                 Startup,
-                ((setup, spawn_directional_light).in_set(QualitySettingsSetup),),
+                (setup, spawn_directional_light.in_set(QualitySettingsSetup)),
             )
             .add_systems(
                 Update,
                 (
+                    setup_camera,
                     anisotropic_filtering,
-                    rotate_sun,
+                    (rotate_sun, move_on_key_press).in_set(ScatterSet::Ready),
                     respawn_directional_light
                         .run_if(resource_changed::<DirectionalLightShadowMap>)
                         .in_set(QualitySettingsUpdated),
@@ -121,9 +122,33 @@ pub fn setup(
     mut cmd: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
-    // options: Res<ExamplePluginOptions>,
 ) {
+    cmd.spawn((
+        Mesh3d(meshes.add(Sphere::new(3.0).mesh().uv(120, 64))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::srgba(0.5, 0.5, 5.0, 0.5),
+            unlit: true,
+            ..default()
+        })),
+        Transform::from_xyz(0., 5., 0.),
+    ))
+    .with_child(PointLight {
+        radius: 3.0,
+        color: Color::srgb(0.1, 0.1, 1.),
+        shadows_enabled: false,
+        range: 20.,
+        intensity: 500_000.,
+        ..default()
+    });
+
+    cmd.spawn(PerfUiDefaultEntries::default());
+}
+
+pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera: Query<&Camera>) {
+    if !q_camera.is_empty() {
+        return;
+    };
+
     cmd.spawn((
         Camera::default(),
         Hdr,
@@ -156,26 +181,6 @@ pub fn setup(
             ..default()
         },
     ));
-
-    cmd.spawn((
-        Mesh3d(meshes.add(Sphere::new(3.0).mesh().uv(120, 64))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Color::srgba(0.5, 0.5, 5.0, 0.5),
-            unlit: true,
-            ..default()
-        })),
-        Transform::from_xyz(0., 5., 0.),
-    ))
-    .with_child(PointLight {
-        radius: 3.0,
-        color: Color::srgb(0.1, 0.1, 1.),
-        shadows_enabled: false,
-        range: 20.,
-        intensity: 500_000.,
-        ..default()
-    });
-
-    cmd.spawn(PerfUiDefaultEntries::default());
 }
 
 fn anisotropic_filtering(
@@ -233,5 +238,26 @@ fn rotate_sun(
         for mut transform in &mut sky_query {
             transform.rotation = rotation * transform.rotation;
         }
+    }
+}
+
+fn move_on_key_press(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<ScatterRoot>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+    if !keyboard_input.pressed(KeyCode::KeyM) {
+        return;
+    }
+
+    let delta = time.delta_secs();
+    let rotation = Quat::from_rotation_y(0.5 * delta);
+
+    let step = time.elapsed_secs().cos() * 10.0 * delta;
+
+    for mut transform in &mut query {
+        transform.translation.y += step;
+
+        transform.rotate_around(Vec3::ZERO, rotation);
     }
 }

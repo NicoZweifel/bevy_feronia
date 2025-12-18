@@ -5,7 +5,7 @@
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) world_y: f32,
+    @location(0) height: f32,
 };
 
 @vertex
@@ -15,7 +15,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let world_position = model_matrix * vec4<f32>(vertex.position, 1.0);
 
     out.clip_position = view.clip_from_world * world_position;
-    out.world_y = world_position.y;
+
+    out.height = vertex.position.y;
 
     return out;
 }
@@ -36,7 +37,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
 
-    let normalized_height = (in.world_y - settings.min_height) / span;
+    let normalized_height = (in.height - settings.min_height) / span;
 
     return vec4<f32>(normalized_height, 0.0, 0.0, 1.0);
 }

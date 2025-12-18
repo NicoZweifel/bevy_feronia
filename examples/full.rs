@@ -54,7 +54,6 @@ fn main() -> AppExit {
         .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
          */
         .add_plugins((
-            // ScatterOccupancyMapDebugPlugin,
             QualityPlugin,
             AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
@@ -82,7 +81,7 @@ fn main() -> AppExit {
             (
                 setup_density_map_inspection.run_if(resource_added::<DensityMap>),
                 setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
-                scatter_on_keypress,
+                scatter_on_keypress.in_set(ScatterSet::Ready),
                 respawn_scene
                     .run_if(in_state(AppState::InGame))
                     .run_if(resource_changed::<QualitySettings>)
@@ -419,8 +418,9 @@ fn spawn_landscape(
      */
 
     cmd.spawn((
-        Landscape, // TODO fix world center for height mapped use-case
-                   // Transform::from_xyz(10., 0., 10.)
+        Landscape,
+        Transform::from_xyz(80., 5., 80.)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
     ));
 
     ns_scatter.set(ScatterState::Setup);
@@ -637,111 +637,116 @@ fn spawn_scene(
     }
      */
 
-    cmd.entity(*landscape).insert(children![
-        (
-            RockLayer,
-            children![
-                (
-                    AssetSelect::progressive(
-                        handles.rocks_lod_high.clone(),
-                        handles.rocks_lod_medium.clone(),
-                        handles.rocks_lod_low.clone(),
-                    ),
-                    LevelOfDetail(0)
+    cmd.spawn((
+        RockLayer,
+        ChildOf(*landscape),
+        children![
+            (
+                AssetSelect::progressive(
+                    handles.rocks_lod_high.clone(),
+                    handles.rocks_lod_medium.clone(),
+                    handles.rocks_lod_low.clone(),
                 ),
-                (
-                    AssetSelect::new(handles.rocks_lod_medium.clone())
-                        .with_med(handles.rocks_lod_low.clone()),
-                    LevelOfDetail(1)
+                LevelOfDetail(0)
+            ),
+            (
+                AssetSelect::new(handles.rocks_lod_medium.clone())
+                    .with_med(handles.rocks_lod_low.clone()),
+                LevelOfDetail(1)
+            ),
+            (
+                AssetSelect::new(handles.rocks_lod_low.clone()),
+                LevelOfDetail(2)
+            )
+        ],
+    ));
+
+    cmd.spawn((
+        TreeLayer,
+        ChildOf(*landscape),
+        children![
+            (
+                AssetSelect::progressive(
+                    handles.trees_lod_high.clone(),
+                    handles.trees_lod_medium.clone(),
+                    handles.trees_lod_low.clone(),
                 ),
-                (
-                    AssetSelect::new(handles.rocks_lod_low.clone()),
-                    LevelOfDetail(2)
-                )
-            ]
-        ),
-        (
-            TreeLayer,
-            children![
-                (
-                    AssetSelect::progressive(
-                        handles.trees_lod_high.clone(),
-                        handles.trees_lod_medium.clone(),
-                        handles.trees_lod_low.clone(),
-                    ),
-                    LevelOfDetail(0),
+                LevelOfDetail(0),
+            ),
+            (
+                AssetSelect::progressive(
+                    handles.trees_lod_medium.clone(),
+                    handles.trees_lod_low.clone(),
+                    handles.trees_billboards.clone()
                 ),
-                (
-                    AssetSelect::progressive(
-                        handles.trees_lod_medium.clone(),
-                        handles.trees_lod_low.clone(),
-                        handles.trees_billboards.clone()
-                    ),
-                    AddIf::new(QualityRule::LowModel, Unlit),
-                    LevelOfDetail(1)
+                AddIf::new(QualityRule::LowModel, Unlit),
+                LevelOfDetail(1)
+            ),
+            (
+                AssetSelect::new(handles.trees_lod_low.clone())
+                    .with_med(handles.trees_billboards.clone()),
+                AddIf::new(QualityRule::MediumModel, Unlit),
+                LevelOfDetail(2)
+            ),
+            (
+                AssetSelect::new(handles.trees_billboards.clone()),
+                Unlit,
+                LevelOfDetail(3)
+            )
+        ],
+    ));
+
+    cmd.spawn((
+        FoliageLayer,
+        ChildOf(*landscape),
+        children![
+            (
+                AssetSelect::progressive(
+                    handles.foliage_lod_high.clone(),
+                    handles.foliage_lod_medium.clone(),
+                    handles.foliage_lod_low.clone(),
                 ),
-                (
-                    AssetSelect::new(handles.trees_lod_low.clone())
-                        .with_med(handles.trees_billboards.clone()),
-                    AddIf::new(QualityRule::MediumModel, Unlit),
-                    LevelOfDetail(2)
+                LevelOfDetail(0)
+            ),
+            (
+                AssetSelect::new(handles.foliage_lod_medium.clone())
+                    .with_med(handles.foliage_lod_low.clone()),
+                LevelOfDetail(1)
+            ),
+            (
+                AssetSelect::new(handles.foliage_lod_low.clone()),
+                LevelOfDetail(2)
+            ),
+        ],
+    ));
+
+    cmd.spawn((
+        GrassLayer,
+        ChildOf(*landscape),
+        children![
+            (
+                AssetSelect::progressive(
+                    handles.grass_lod_high.clone(),
+                    handles.grass_lod_medium.clone(),
+                    handles.grass_lod_low.clone(),
                 ),
-                (
-                    AssetSelect::new(handles.trees_billboards.clone()),
-                    Unlit,
-                    LevelOfDetail(3)
-                )
-            ]
-        ),
-        (
-            FoliageLayer,
-            children![
-                (
-                    AssetSelect::progressive(
-                        handles.foliage_lod_high.clone(),
-                        handles.foliage_lod_medium.clone(),
-                        handles.foliage_lod_low.clone(),
-                    ),
-                    LevelOfDetail(0)
+                LevelOfDetail(0)
+            ),
+            (
+                AssetSelect::progressive(
+                    handles.grass_lod_high.clone(),
+                    handles.grass_lod_medium.clone(),
+                    handles.grass_lod_low.clone(),
                 ),
-                (
-                    AssetSelect::new(handles.foliage_lod_medium.clone())
-                        .with_med(handles.foliage_lod_low.clone()),
-                    LevelOfDetail(1)
-                ),
-                (
-                    AssetSelect::new(handles.foliage_lod_low.clone()),
-                    LevelOfDetail(2)
-                ),
-            ]
-        ),
-        (
-            GrassLayer,
-            children![
-                (
-                    AssetSelect::progressive(
-                        handles.grass_lod_high.clone(),
-                        handles.grass_lod_medium.clone(),
-                        handles.grass_lod_low.clone(),
-                    ),
-                    LevelOfDetail(0)
-                ),
-                (
-                    AssetSelect::progressive(
-                        handles.grass_lod_high.clone(),
-                        handles.grass_lod_medium.clone(),
-                        handles.grass_lod_low.clone(),
-                    ),
-                    LevelOfDetail(1)
-                ),
-                (
-                    AssetSelect::new(handles.grass_lod_medium.clone())
-                        .with_med(handles.grass_lod_low.clone()),
-                    LevelOfDetail(2)
-                ),
-            ],
-        )
-    ]);
+                LevelOfDetail(1)
+            ),
+            (
+                AssetSelect::new(handles.grass_lod_medium.clone())
+                    .with_med(handles.grass_lod_low.clone()),
+                LevelOfDetail(2)
+            ),
+        ],
+    ));
 }
 
 fn scatter_on_keypress(

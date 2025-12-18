@@ -19,17 +19,18 @@ impl Plugin for HeightMapPlugin {
             .add_plugins(MaterialPlugin::<HeightMapMaterial>::default())
             .add_systems(
                 PostUpdate,
-                setup_config
-                    .chain()
-                    .after(TransformSystems::Propagate)
-                    .run_if(
-                        not(resource_exists::<HeightMapConfig>)
-                            .and(in_state(HeightMapState::Setup)),
-                    ),
+                setup_config.after(TransformSystems::Propagate).run_if(
+                    not(resource_exists::<HeightMapConfig>).and(in_state(HeightMapState::Setup)),
+                ),
             )
             .add_systems(
                 Update,
                 (
+                    debug_height_map_sampler.run_if(
+                        resource_exists::<HeightMap>
+                            .and(resource_exists::<HeightMapConfig>)
+                            .and(resource_exists::<HeightMapDebugConfig>),
+                    ),
                     skip_setup.run_if(
                         not(resource_exists::<HeightMapConfig>)
                             .and(in_state(HeightMapState::Setup)),

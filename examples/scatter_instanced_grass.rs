@@ -1,6 +1,8 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use example::*;
+
 use bevy::prelude::*;
 use bevy_color::palettes::basic::WHITE;
 use bevy_color::palettes::tailwind::{GREEN_500, ORANGE_500, RED_500, YELLOW_500};
@@ -8,7 +10,6 @@ use bevy_feronia::asset::backend::mesh_material_backend::MeshMaterialAssetBacken
 use bevy_feronia::chunking::systems::draw_aabbs;
 use bevy_feronia::instancing::scatter_layer;
 use bevy_feronia::prelude::*;
-use example::*;
 use rand::{RngCore, rng};
 
 fn main() -> AppExit {
@@ -46,6 +47,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         Transform::from_xyz(5., 0., 0.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
         ScatterRoot::default(),
+        MapHeight,
         children![(
             scatter_layer("Grass Layer"),
             // Scatter Options

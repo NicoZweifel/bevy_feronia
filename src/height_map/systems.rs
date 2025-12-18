@@ -1,5 +1,7 @@
+use crate::core::Sampler;
 use crate::height_map::state::HeightMapState;
 use crate::prelude::*;
+
 use bevy_asset::Assets;
 use bevy_camera::{
     Camera, Camera3d, ImageRenderTarget, OrthographicProjection, Projection, RenderTarget,
@@ -8,6 +10,7 @@ use bevy_camera::{
     visibility::{NoFrustumCulling, RenderLayers},
 };
 use bevy_ecs::prelude::*;
+use bevy_gizmos::gizmos::Gizmos;
 use bevy_image::Image;
 use bevy_math::*;
 use bevy_mesh::Mesh3d;
@@ -21,13 +24,14 @@ use bevy_transform::prelude::{GlobalTransform, Transform};
 use bevy_utils::default;
 
 use crate::core::utils::despawn;
+use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 #[cfg(feature = "trace")]
 use tracing::{debug, info};
 
 pub fn setup_config(
     mut cmd: Commands,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
-    q_processed_landscapes: Query<(&Aabb, &GlobalTransform), With<MapHeight>>,
+    q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
 ) {
     if !q_pending_landscapes.is_empty() {
         return;
@@ -37,19 +41,10 @@ pub fn setup_config(
     let mut max_pt = Vec3::splat(f32::MIN);
     let mut found_any = false;
 
-    for (aabb, transform) in &q_processed_landscapes {
+    for aabb in &q_processed_landscapes {
         found_any = true;
-
-        let matrix = transform.to_matrix();
-
-        for i in 0..8 {
-            let corner = aabb.min()
-                + (aabb.max() - aabb.min())
-                    * Vec3A::new((i & 1) as f32, ((i >> 1) & 1) as f32, ((i >> 2) & 1) as f32);
-            let world_corner = matrix.transform_point3(corner.into());
-            min_pt = min_pt.min(world_corner);
-            max_pt = max_pt.max(world_corner);
-        }
+        min_pt = min_pt.min(aabb.min().into());
+        max_pt = max_pt.max(aabb.max().into());
     }
 
     if !found_any {
@@ -67,17 +62,16 @@ pub fn setup_config(
         world_center,
         world_height_range: min_pt.y..max_pt.y,
         render_layer: RenderLayers::layer(1),
+        ..default()
     };
 
-    println!("{config:?}");
+    cmd.insert_resource(config);
 
     #[cfg(feature = "trace")]
     debug!(
-        "HeightMapConfig ready: Center {:?}, Size {}",
+        "HeightMapConfig: Center {:?}, Size {}",
         world_center, world_size
     );
-
-    cmd.insert_resource(config);
 }
 
 pub fn setup_materials(
@@ -141,7 +135,6 @@ pub fn create_height_map_ghost(
     }
 }
 
-// bake_height_map REMAINS UNCHANGED
 pub fn bake_height_map(
     mut commands: Commands,
     height_map_texture: Res<HeightMapTexture>,
@@ -170,11 +163,12 @@ pub fn bake_height_map(
         );
 }
 
-// setup_height_map_pipeline REMAINS UNCHANGED
 pub fn setup_height_map_pipeline(
     mut cmd: Commands,
     mut images: ResMut<Assets<Image>>,
     cfg: Res<HeightMapConfig>,
+    // TODO, should work on a component basis on multiple roots with multiple landscapes.
+    q_root: Single<Entity, With<ScatterRoot>>,
 ) {
     let world_size = cfg.world_size;
     let world_center = cfg.world_center;
@@ -216,6 +210,7 @@ pub fn setup_height_map_pipeline(
             },
         }),
         cfg.render_layer.clone(),
+        ChildOf(*q_root),
     ));
 
     cmd.insert_resource(HeightMapTexture(image_handle));
@@ -234,5 +229,45 @@ pub fn teardown_height_map_pipeline(
 
     for entity in &q_mapped_landscapes {
         cmd.entity(entity).remove::<HeightMapped>();
+    }
+}
+
+pub fn debug_height_map_sampler(
+    mut gizmos: Gizmos,
+    q_camera: Query<&GlobalTransform, With<Camera3d>>,
+    images: Res<Assets<Image>>,
+    config: Res<HeightMapConfig>,
+    debug_config: Res<HeightMapDebugConfig>,
+    height_map: Res<HeightMap>,
+    q_landscape: Query<&GlobalTransform, With<MapHeight>>,
+) {
+    let Some(image) = images.get(&height_map.0) else {
+        return;
+    };
+
+    for landscape in &q_landscape {
+        let sampler = HeightMapCpuSampler::new(image, &config, landscape);
+
+        let Ok(cam_tf) = q_camera.single() else {
+            return;
+        };
+        let center = cam_tf.translation();
+
+        let range = 100;
+        let step = 1.0;
+
+        for x in -range..range {
+            for z in -range..range {
+                let sample_x = center.x + (x as f32 * step);
+                let sample_z = center.z + (z as f32 * step);
+
+                let sampled_y = sampler.sample(Vec3::new(sample_x, 0.0, sample_z));
+
+                let start = Vec3::new(sample_x, sampled_y, sample_z);
+                let end = Vec3::new(sample_x, sampled_y + 0.5, sample_z);
+
+                gizmos.line(start, end, *debug_config);
+            }
+        }
     }
 }

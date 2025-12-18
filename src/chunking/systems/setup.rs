@@ -1,5 +1,5 @@
+use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::prelude::*;
-use crate::scatter::utils::get_height_map_sampler;
 
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
@@ -28,8 +28,16 @@ pub fn setup_chunks(
     let has_height_map = height_map_cfg.is_some();
 
     for (entity, lod_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
-        let height_sampler =
-            get_height_map_sampler(&images, height_map_cfg.as_deref(), height_map.as_deref());
+        let height_sampler = height_map
+            .as_deref()
+            .and_then(|height_map_image| {
+                height_map_cfg.as_deref().and_then(|cfg| {
+                    images
+                        .get(&height_map_image.0)
+                        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg, gtf)))
+                })
+            })
+            .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
         let root_scale = gtf.compute_transform().scale;
 
@@ -52,11 +60,8 @@ pub fn setup_chunks(
         let chunk_lod_cfg =
             ChunkLodConfig::from_sources(lod_cfg, scalar_config, &base_chunk_size_world, 5.0);
 
-        cmd.entity(entity).insert((
-            ChunkRoot::default(),
-            base_chunk_size_world,
-            chunk_lod_cfg.clone(),
-        ));
+        cmd.entity(entity)
+            .insert((base_chunk_size_world, chunk_lod_cfg.clone()));
 
         let inverse_transform = gtf.affine().inverse();
 
@@ -69,7 +74,6 @@ pub fn setup_chunks(
 
                 let mut local_pos = Vec3::from(aabb.center) + grid_offset;
 
-                // TODO see [`HeightMapCpuSampler`]
                 if has_height_map {
                     let world_pos = gtf.transform_point(local_pos);
 
