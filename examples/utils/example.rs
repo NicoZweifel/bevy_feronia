@@ -46,6 +46,7 @@ pub struct ExampleDebugOptions {
     pub debug_chunks: bool,
     pub debug_height_map: bool,
     pub debug_occupancy_map: bool,
+    pub debug_scattered_entities: bool,
 }
 
 pub struct ExamplePlugin;
@@ -141,6 +142,8 @@ impl Plugin for ExamplePlugin {
             .add_systems(
                 Update,
                 (
+                    (update_extended_materials,
+                    update_instanced_materials).run_if(resource_exists_and_changed::<ExampleDebugOptions>),
                     setup_camera,
                     anisotropic_filtering,
                     (rotate_sun, move_on_key_press).in_set(ScatterSet::Ready),
@@ -149,6 +152,24 @@ impl Plugin for ExamplePlugin {
                         .in_set(QualitySettingsUpdated),
                 ),
             );
+    }
+}
+
+fn update_extended_materials(
+    mut assets: ResMut<Assets<ExtendedWindAffectedMaterial>>,
+    res: Res<ExampleDebugOptions>,
+) {
+    for (_, asset) in assets.iter_mut() {
+        asset.extension.options.debug = res.debug_scattered_entities;
+    }
+}
+
+fn update_instanced_materials(
+    mut assets: ResMut<Assets<InstancedWindAffectedMaterial>>,
+    res: Res<ExampleDebugOptions>,
+) {
+    for (_, asset) in assets.iter_mut() {
+        asset.options.debug = res.debug_scattered_entities;
     }
 }
 
