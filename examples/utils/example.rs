@@ -102,7 +102,7 @@ impl Plugin for ExamplePlugin {
                         cmd.remove_resource::<ExampleDebugOptions>();
                     }
                 })
-                .run_if(resource_exists::<ExamplePluginOptions>),
+                    .run_if(resource_exists::<ExamplePluginOptions>),
             )
             .add_systems(
                 Update,
@@ -111,8 +111,7 @@ impl Plugin for ExamplePlugin {
                      res: Res<ExampleDebugOptions>,
                      chunk_debug_config: Option<Res<ChunkDebugConfig>>,
                      height_debug_config: Option<Res<HeightMapDebugConfig>>,
-                     occupancy_debug_config:Option<Res<ScatterOccupancyMapDebugConfig>>
-                    | {
+                     occupancy_debug_config: Option<Res<ScatterOccupancyMapDebugConfig>>| {
                         if chunk_debug_config.is_none() && res.debug_chunks {
                             cmd.init_resource::<ChunkDebugConfig>();
                         } else if chunk_debug_config.is_some() && !res.debug_chunks {
@@ -125,11 +124,11 @@ impl Plugin for ExamplePlugin {
                             cmd.remove_resource::<HeightMapDebugConfig>();
                         }
 
-                       if occupancy_debug_config.is_none() && res.debug_occupancy_map {
-                           cmd.init_resource::<ScatterOccupancyMapDebugConfig>();
-                       } else if occupancy_debug_config.is_some() && !res.debug_occupancy_map {
-                           cmd.remove_resource::<ScatterOccupancyMapDebugConfig>();
-                       }
+                        if occupancy_debug_config.is_none() && res.debug_occupancy_map {
+                            cmd.init_resource::<ScatterOccupancyMapDebugConfig>();
+                        } else if occupancy_debug_config.is_some() && !res.debug_occupancy_map {
+                            cmd.remove_resource::<ScatterOccupancyMapDebugConfig>();
+                        }
                     },
                 )
                     .run_if(resource_exists::<ExampleDebugOptions>),
@@ -142,8 +141,10 @@ impl Plugin for ExamplePlugin {
             .add_systems(
                 Update,
                 (
-                    (update_extended_materials,
-                    update_instanced_materials).run_if(resource_exists_and_changed::<ExampleDebugOptions>),
+                    (
+                        update_extended_materials.run_if(resource_exists::<Assets<ExtendedWindAffectedMaterial>>),
+                        update_instanced_materials.run_if(resource_exists::<Assets<InstancedWindAffectedMaterial>>)
+                    ).run_if(resource_exists_and_changed::<ExampleDebugOptions>),
                     setup_camera,
                     anisotropic_filtering,
                     (rotate_sun, move_on_key_press).in_set(ScatterSet::Ready),

@@ -36,11 +36,6 @@ fn main() -> AppExit {
         })
         .insert_resource(Wind { ..default() })
         .insert_resource(DensityMapConfig { size: 128 })
-        /*
-        .register_type::<ScatterAsset<StandardMaterial>>()
-        .register_type::<ScatterAsset<ExtendedWindAffectedMaterial>>()
-        .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
-         */
         .add_plugins((
             QualityPlugin,
             ExamplePlugin,
