@@ -3,6 +3,8 @@
 
 - Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
+- Press `M` to rotate/move the `ScatterRoot`.
+- Press `E` or `Q` to rotate the sun and skybox.
 
 All examples have the window and a performance overlay,
 but the `Wind` resource doesn't automatically sync all the materials in all of the examples.
