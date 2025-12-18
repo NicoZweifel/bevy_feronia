@@ -1,5 +1,4 @@
-use bevy_color::palettes::css::WHITE;
-use bevy_color::{Color, palettes::tailwind::*};
+use bevy_color::{Color, palettes::css::WHITE, palettes::tailwind::*};
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
 
@@ -9,6 +8,7 @@ pub struct ChunkDebugConfig {
     pub aabb_color: Color,
     pub lod_colors: Vec<Color>,
     pub show_aabbs: bool,
+    pub show_lod_ranges: bool,
 }
 
 impl Default for ChunkDebugConfig {
@@ -22,6 +22,7 @@ impl Default for ChunkDebugConfig {
             ],
             aabb_color: GREEN_500.into(),
             show_aabbs: false,
+            show_lod_ranges: false,
         }
     }
 }
