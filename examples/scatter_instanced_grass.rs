@@ -47,7 +47,6 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         Transform::from_xyz(5., 0., 0.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
         ScatterRoot::default(),
-        MapHeight,
         children![(
             scatter_layer("Grass Layer"),
             // Scatter Options

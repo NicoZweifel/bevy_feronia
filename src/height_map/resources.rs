@@ -19,7 +19,6 @@ pub struct HeightMapConfig {
     pub world_center: Vec2,
     pub render_layer: RenderLayers,
     pub world_height_range: Range<f32>,
-    pub debug: bool,
 }
 
 #[derive(Resource, Clone, Reflect, Debug, From, Into, Copy)]
@@ -45,7 +44,6 @@ impl Default for HeightMapConfig {
             world_size: 8.0 * 8.0 * 4.0,
             render_layer: RenderLayers::layer(1),
             world_center: Vec2::ZERO,
-            debug: false,
         }
     }
 }

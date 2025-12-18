@@ -29,7 +29,7 @@ fn main() -> AppExit {
             check_assets_loaded.run_if(in_state(AppState::Loading)),
         )
         .add_systems(OnEnter(AppState::InGame), spawn_scene)
-        .add_systems(Update, scatter_on_keypress)
+        .add_systems(Update, scatter_on_keypress.in_set(ScatterSet::Ready))
         .run()
 }
 

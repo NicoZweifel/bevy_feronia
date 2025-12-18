@@ -54,7 +54,6 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
-        MapHeight,
         Transform::from_xyz(20., 0., 0.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
         children![(

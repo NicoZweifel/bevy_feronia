@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.5.5"
+version = "0.5.6"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
