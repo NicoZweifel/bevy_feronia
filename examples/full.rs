@@ -963,6 +963,8 @@ fn update_density_map(
 /// Generates a 3D texture with a spherical density gradient.
 ///
 /// The density is 1.0 (255) at the center and fades to 0.0 (0) at the edges.
+///
+/// TODO: not used currently since FogVolumes are too expensise and kinda buggy
 fn create_spherical_fog_texture(size: u32) -> Image {
     let mut data = vec![0; (size * size * size) as usize];
     let center = size as f32 / 2.0;

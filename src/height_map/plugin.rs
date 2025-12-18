@@ -26,7 +26,7 @@ impl Plugin for HeightMapPlugin {
             .add_systems(
                 Update,
                 (
-                    debug_height_map_sampler.run_if(
+                    draw_height_map.run_if(
                         resource_exists::<HeightMap>
                             .and(resource_exists::<HeightMapConfig>)
                             .and(resource_exists::<HeightMapDebugConfig>),

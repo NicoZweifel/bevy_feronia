@@ -231,41 +231,32 @@ pub fn teardown_height_map_pipeline(
     }
 }
 
-pub fn debug_height_map_sampler(
+pub fn draw_height_map(
     mut gizmos: Gizmos,
-    q_camera: Query<&GlobalTransform, With<Camera3d>>,
     images: Res<Assets<Image>>,
     config: Res<HeightMapConfig>,
     debug_config: Res<HeightMapDebugConfig>,
     height_map: Res<HeightMap>,
-    q_landscape: Query<&GlobalTransform, With<MapHeight>>,
+    q_root: Query<&GlobalTransform, With<ScatterRoot>>,
 ) {
     let Some(image) = images.get(&height_map.0) else {
         return;
     };
 
-    for landscape in &q_landscape {
-        let sampler = HeightMapCpuSampler::new(image, &config, landscape);
+    let sampler = HeightMapCpuSampler::new(image, &config);
 
-        let Ok(cam_tf) = q_camera.single() else {
-            return;
-        };
-        let center = cam_tf.translation();
+    let range = (config.world_size / 2.) as i32;
 
-        let range = 100;
-        let step = 1.0;
-
+    for gtf in &q_root {
         for x in -range..range {
             for z in -range..range {
-                let sample_x = center.x + (x as f32 * step);
-                let sample_z = center.z + (z as f32 * step);
+                let local_x = x as f32;
+                let local_z = z as f32;
 
-                let sampled_y = sampler.sample(Vec3::new(sample_x, 0.0, sample_z));
+                let height = sampler.sample(Vec3::new(local_x, 0.0, local_z));
+                let start = gtf.transform_point(Vec3::new(local_x, height, local_z));
 
-                let start = Vec3::new(sample_x, sampled_y, sample_z);
-                let end = Vec3::new(sample_x, sampled_y + 0.5, sample_z);
-
-                gizmos.line(start, end, *debug_config);
+                gizmos.line(start, start.with_y(start.y + 0.5), *debug_config);
             }
         }
     }

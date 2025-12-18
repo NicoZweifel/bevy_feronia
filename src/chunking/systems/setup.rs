@@ -34,7 +34,7 @@ pub fn setup_chunks(
                 height_map_cfg.as_deref().and_then(|cfg| {
                     images
                         .get(&height_map_image.0)
-                        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg, gtf)))
+                        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
                 })
             })
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));

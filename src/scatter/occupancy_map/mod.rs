@@ -5,15 +5,14 @@ use bevy_color::{Color, palettes::basic::RED};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_gizmos::gizmos::Gizmos;
-use bevy_math::{IVec2, Quat, Vec3};
+use bevy_math::{IVec2, Vec3};
 use bevy_platform::collections::HashMap;
 use bevy_reflect::Reflect;
-use bevy_transform::components::Transform;
-
+use bevy_transform::components::{GlobalTransform, Transform};
+use bevy_utils::default;
 use derive_more::{From, Into};
 
-use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
 pub struct ScatterOccupancyMapPlugin;
 
@@ -23,7 +22,8 @@ impl Plugin for ScatterOccupancyMapPlugin {
             .register_type::<ScatterOccupancyMapDebugConfig>()
             .add_systems(
                 Update,
-                draw_scatter_debug_gizmos.run_if(resource_exists::<ScatterOccupancyMapDebugConfig>),
+                draw_scatter_occupancy_map
+                    .run_if(resource_exists::<ScatterOccupancyMapDebugConfig>),
             );
     }
 }
@@ -32,10 +32,10 @@ impl Plugin for ScatterOccupancyMapPlugin {
 ///
 /// This allows later layers to avoid spawning on top of instances from previous layers, e.g., no foliage on rocks.
 ///
-/// Defines a 2.5D avoidance zone used by the scatter systems.
-///
 /// It stores the height of the obstacle at the occupied location,
 /// which is used to avoid spawning on top of it while still spawning above rocks in the ground.
+///
+/// **Note:** All positions and heights stored here are in **Local Space** relative to the [`ScatterRoot`].
 ///
 /// TODO trait for obstacles and complex shapes
 /// https://github.com/NicoZweifel/bevy_feronia/issues/56
@@ -44,6 +44,7 @@ impl Plugin for ScatterOccupancyMapPlugin {
 #[reflect(Component, Debug, Clone)]
 pub struct ScatterOccupancyMap {
     pub cell_size: f32,
+    /// Stores the maximum local Y height at a specific 2D grid cell.
     pub cells: HashMap<IVec2, f32>,
 }
 
@@ -66,7 +67,7 @@ impl Debug for ScatterOccupancyMap {
 }
 
 impl ScatterOccupancyMap {
-    /// Convert a world position to a grid space coordinate.
+    /// Convert a local position inside a [`ScatterRoot`] to a grid space coordinate.
     #[inline]
     fn to_grid(&self, pos: Vec3) -> IVec2 {
         IVec2::new(
@@ -75,32 +76,28 @@ impl ScatterOccupancyMap {
         )
     }
 
-    /// Check if a position is occupied and if it is, check if it is below the stored height in this cell, e.g.,
-    /// it's not above a rock in the ground, but inside/on it.
-    pub fn is_occupied(&self, pos: Vec3) -> bool {
-        let grid_pos = self.to_grid(pos);
+    /// Check if a local position inside a [`ScatterRoot`] is occupied.
+    /// Returns true if the position overlaps an existing obstacle, i.e., local_pos.y <= obstacle_height.
+    pub fn is_occupied(&self, local_pos: Vec3) -> bool {
+        let grid_pos = self.to_grid(local_pos);
 
         self.cells
             .get(&grid_pos)
-            .map(|height| pos.y <= *height)
+            .map(|height| local_pos.y <= *height)
             .unwrap_or_default()
     }
 
-    /// Adds a circular obstacle to the map.
-    ///
-    /// # Arguments
-    /// * `center` - World position of the object.
-    /// * `radius` - Scaled radius of the circle in world units.
-    pub fn add_cylinder(&mut self, center: Vec3, radius: f32) {
+    /// Adds a circular obstacle to the map using **Local Coordinates**.
+    pub fn add_cylinder(&mut self, local_center: Vec3, radius: f32) {
         if radius <= 0.0 {
             return;
         }
 
-        let min_world = center - Vec3::new(radius, 0.0, radius);
-        let max_world = center + Vec3::new(radius, 0.0, radius);
+        let min_local = local_center - Vec3::new(radius, 0.0, radius);
+        let max_local = local_center + Vec3::new(radius, 0.0, radius);
 
-        let min_grid = self.to_grid(min_world);
-        let max_grid = self.to_grid(max_world);
+        let min_grid = self.to_grid(min_local);
+        let max_grid = self.to_grid(max_local);
 
         let radius_sq = radius.powi(2);
         let half_cell = self.cell_size / 2.0;
@@ -109,41 +106,34 @@ impl ScatterOccupancyMap {
             for z in min_grid.y..=max_grid.y {
                 let grid_pos = IVec2::new(x, z);
 
-                let world_cell_x = (x as f32 * self.cell_size) + half_cell;
-                let world_cell_z = (z as f32 * self.cell_size) + half_cell;
+                let local_cell_x = (x as f32 * self.cell_size) + half_cell;
+                let local_cell_z = (z as f32 * self.cell_size) + half_cell;
 
-                let dist_x = world_cell_x - center.x;
-                let dist_z = world_cell_z - center.z;
+                let dist_x = local_cell_x - local_center.x;
+                let dist_z = local_cell_z - local_center.z;
                 let dist_sq = dist_x.powi(2) + dist_z.powi(2);
 
                 if dist_sq <= radius_sq {
                     self.cells
                         .entry(grid_pos)
-                        .and_modify(|h| *h = h.max(center.y))
-                        .or_insert(center.y);
+                        .and_modify(|h| *h = h.max(local_center.y))
+                        .or_insert(local_center.y);
                 }
             }
         }
     }
 
-    /// Adds a spherical obstacle to the map.
-    ///
-    /// Unlike `add_circle`, this calculates the height of the sphere surface
-    /// at each grid cell. Allows for scattering on top of sunken in objects, e.g., rocks on the ground.
-    ///
-    /// # Arguments
-    /// * `center` - World position of the sphere center.
-    /// * `radius` - Radius of the sphere.
-    pub fn add_sphere(&mut self, center: Vec3, radius: f32) {
+    /// Adds a spherical obstacle to the map using **Local Coordinates**.
+    pub fn add_sphere(&mut self, local_center: Vec3, radius: f32) {
         if radius <= 0.0 {
             return;
         }
 
-        let min_world = center - Vec3::new(radius, 0.0, radius);
-        let max_world = center + Vec3::new(radius, 0.0, radius);
+        let min_local = local_center - Vec3::new(radius, 0.0, radius);
+        let max_local = local_center + Vec3::new(radius, 0.0, radius);
 
-        let min_grid = self.to_grid(min_world);
-        let max_grid = self.to_grid(max_world);
+        let min_grid = self.to_grid(min_local);
+        let max_grid = self.to_grid(max_local);
 
         let radius_sq = radius.powi(2);
         let half_cell = self.cell_size / 2.0;
@@ -152,15 +142,15 @@ impl ScatterOccupancyMap {
             for z in min_grid.y..=max_grid.y {
                 let grid_pos = IVec2::new(x, z);
 
-                let world_cell_x = (x as f32 * self.cell_size) + half_cell;
-                let world_cell_z = (z as f32 * self.cell_size) + half_cell;
+                let local_cell_x = (x as f32 * self.cell_size) + half_cell;
+                let local_cell_z = (z as f32 * self.cell_size) + half_cell;
 
-                let dist_x = world_cell_x - center.x;
-                let dist_z = world_cell_z - center.z;
+                let dist_x = local_cell_x - local_center.x;
+                let dist_z = local_cell_z - local_center.z;
                 let dist_sq = dist_x.powi(2) + dist_z.powi(2);
 
                 if dist_sq <= radius_sq {
-                    let sphere_height = center.y + (radius_sq - dist_sq).sqrt();
+                    let sphere_height = local_center.y + (radius_sq - dist_sq).sqrt();
 
                     self.cells
                         .entry(grid_pos)
@@ -188,28 +178,30 @@ impl Default for ScatterOccupancyMapDebugConfig {
     }
 }
 
-pub fn draw_scatter_debug_gizmos(
+pub fn draw_scatter_occupancy_map(
     mut gizmos: Gizmos,
-    q_roots: Query<&ScatterOccupancyMap, With<ScatterRoot>>,
+    q_roots: Query<(&ScatterOccupancyMap, &GlobalTransform), With<ScatterRoot>>,
 ) {
-    for map in q_roots.iter() {
+    for (map, gtf) in q_roots.iter() {
         let cell_size = map.cell_size;
         let half_cell = cell_size / 2.0;
 
         for (grid_pos, height) in &map.cells {
-            let world_x = (grid_pos.x as f32 * cell_size) + half_cell;
-            let world_z = (grid_pos.y as f32 * cell_size) + half_cell;
+            let local_x = (grid_pos.x as f32 * cell_size) + half_cell;
+            let local_z = (grid_pos.y as f32 * cell_size) + half_cell;
 
-            let cell_center = Vec3::new(world_x, *height, world_z);
+            let scale = Vec3::new(cell_size, 1.0, cell_size);
+            let translation = Vec3::new(local_x, *height, local_z);
 
-            gizmos.cuboid(
-                Transform {
-                    translation: cell_center,
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::new(cell_size, 0., cell_size),
-                },
-                RED,
-            );
+            let tf = gtf
+                .mul_transform(Transform {
+                    translation,
+                    scale,
+                    ..default()
+                })
+                .compute_transform();
+
+            gizmos.cuboid(tf.with_scale(tf.scale.with_y(0.)), RED);
         }
     }
 }

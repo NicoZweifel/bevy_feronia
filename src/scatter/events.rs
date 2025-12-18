@@ -77,7 +77,6 @@ pub struct ScatterResult {
 }
 
 impl ScatterResult {
-    // TODO add GPU pipeline
     pub fn try_from_container_and_modifiers(
         container: &Container,
         modifiers: &InstanceModifiers,
@@ -88,54 +87,65 @@ impl ScatterResult {
         let cell_width = container.size.x / instances_dim;
         let cell_depth = container.size.z / instances_dim;
 
-        let local_corner = container.corner;
-
         let local_cell_x_idx = rng.random_range(0.0..instances_dim).floor();
         let local_cell_z_idx = rng.random_range(0.0..instances_dim).floor();
 
-        let snapped_local_cell_corner = local_corner
+        let local_cell_corner = container.corner
             + Vec3::new(
                 local_cell_x_idx * cell_width,
                 0.0,
                 local_cell_z_idx * cell_depth,
             );
 
-        let mut local_pos =
-            snapped_local_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
+        let mut local_pos = local_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
 
         let jitter_strength = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
-
         if jitter_strength > 0. {
             let max_offset_x = (cell_width * jitter_strength) / 2.0;
             let max_offset_z = (cell_depth * jitter_strength) / 2.0;
 
-            let random_offset = Vec3::new(
+            local_pos += Vec3::new(
                 rng.random_range(-max_offset_x..max_offset_x),
                 0.0,
                 rng.random_range(-max_offset_z..max_offset_z),
             );
-
-            local_pos += random_offset;
         };
 
-        let mut final_world_pos = container.global_transform.transform_point(local_pos);
+        let world_pos = container.global_transform.transform_point(local_pos);
+
+        // Convert to root local space, the container is possibly a chunk.
+        let mut root_local_pos = container
+            .root_global_transform
+            .affine()
+            .inverse()
+            .transform_point3(world_pos);
 
         if modifiers
             .density_sampler
             .as_ref()
-            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(final_world_pos))
+            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(root_local_pos))
         {
             return None;
         }
 
-        final_world_pos.y = modifiers
+        root_local_pos.y = modifiers
             .map_height
-            .map(|_| modifiers.height_sampler.sample(final_world_pos))
-            .unwrap_or(final_world_pos.y);
+            .map(|_| modifiers.height_sampler.sample(root_local_pos))
+            .unwrap_or(root_local_pos.y);
 
-        if external_avoidance_data.is_occupied(final_world_pos) {
+        if external_avoidance_data.is_occupied(root_local_pos) {
             return None;
         }
+
+        let final_world_pos = container
+            .root_global_transform
+            .transform_point(root_local_pos);
+
+        let final_pos_in_container = container
+            .global_transform
+            .affine()
+            .inverse()
+            .transform_point3(final_world_pos);
 
         let container_rotation = container.global_transform.rotation();
 
@@ -151,15 +161,10 @@ impl ScatterResult {
             .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng))
             / container.global_transform.scale();
 
-        let seed = generate_instance_seed(container.seed, final_world_pos);
-        let translation = container
-            .global_transform
-            .affine()
-            .inverse()
-            .transform_point3(final_world_pos);
+        let seed = generate_instance_seed(container.seed, root_local_pos);
 
         let transform = Transform {
-            translation,
+            translation: final_pos_in_container,
             rotation,
             scale,
         };
@@ -215,13 +220,10 @@ where
             .height_map_config
             .as_ref()
             .and_then(|cfg| {
-                task_data.height_map_image.as_ref().map(|img| {
-                    HeightMapSampler::Cpu(HeightMapCpuSampler::new(
-                        img,
-                        cfg,
-                        &task_data.container.root_global_transform,
-                    ))
-                })
+                task_data
+                    .height_map_image
+                    .as_ref()
+                    .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
             })
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
