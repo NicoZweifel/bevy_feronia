@@ -25,7 +25,7 @@ fn main() -> AppExit {
         .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
         .add_systems(Startup, setup)
-        .add_systems(Update, scatter_on_keypress)
+        .add_systems(Update, scatter_on_keypress.in_set(ScatterSet::Ready))
         .run()
 }
 

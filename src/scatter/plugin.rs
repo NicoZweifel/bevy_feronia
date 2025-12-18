@@ -66,9 +66,14 @@ where
                 process_scatter_queue::<T>.run_if(in_state(ScatterState::Ready)),
             )
             .add_systems(
+                PostUpdate,
+                handle_scatter_requests::<T>
+                    .after(TransformSystems::Propagate)
+                    .run_if(in_state(ScatterState::Ready)),
+            )
+            .add_systems(
                 Update,
                 (
-                    handle_scatter_requests::<T>,
                     handle_finished_scatter_tasks::<T>,
                     spawn::<T>.run_if(resource_exists::<Assets<ScatterAsset<T>>>),
                 )
@@ -81,57 +86,62 @@ pub struct ScatterPlugin;
 
 impl Plugin for ScatterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ChunkPlugin, HeightMapPlugin, WindPlugin))
-            .init_state::<ScatterState>()
-            .configure_sets(
-                Update,
-                (
-                    ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
-                    ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
-                    ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
-                    ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
-                ),
+        app.add_plugins((
+            ChunkPlugin,
+            HeightMapPlugin,
+            WindPlugin,
+            ScatterOccupancyMapPlugin,
+        ))
+        .init_state::<ScatterState>()
+        .configure_sets(
+            Update,
+            (
+                ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
+                ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
+                ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
+                ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
+            ),
+        )
+        .configure_sets(
+            PostUpdate,
+            (
+                ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
+                ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
+                ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
+                ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
+            ),
+        )
+        .init_resource::<WorldSeed>()
+        .add_message::<ClearScatterLayer>()
+        .add_message::<ClearScatterRoot>()
+        .add_observer(on_add_scatter_item)
+        .add_systems(
+            PostUpdate,
+            setup_root_aabb
+                .in_set(ScatterSet::Setup)
+                .after(TransformSystems::Propagate),
+        )
+        .add_systems(
+            Update,
+            (transition_to_collecting,).in_set(ScatterSet::Setup),
+        )
+        .add_systems(
+            Update,
+            (
+                check_unprocessed_layers,
+                check_unprocessed_items,
+                check_unprocessed_root,
             )
-            .configure_sets(
-                PostUpdate,
-                (
-                    ScatterSet::Loading.run_if(in_state(ScatterState::Loading)),
-                    ScatterSet::Setup.run_if(in_state(ScatterState::Setup)),
-                    ScatterSet::Collecting.run_if(in_state(ScatterState::Collecting)),
-                    ScatterSet::Ready.run_if(in_state(ScatterState::Ready)),
-                ),
+                .in_set(ScatterSet::Collecting),
+        )
+        .add_systems(
+            Update,
+            (
+                clear_scatter_roots,
+                (clear_chunks, clear_scatter_layers).after(clear_scatter_roots),
             )
-            .init_resource::<WorldSeed>()
-            .add_message::<ClearScatterLayer>()
-            .add_message::<ClearScatterRoot>()
-            .add_observer(on_add_scatter_item)
-            .add_systems(
-                PostUpdate,
-                setup_root_aabb
-                    .in_set(ScatterSet::Setup)
-                    .after(TransformSystems::Propagate),
-            )
-            .add_systems(
-                Update,
-                (transition_to_collecting,).in_set(ScatterSet::Setup),
-            )
-            .add_systems(
-                Update,
-                (
-                    check_unprocessed_layers,
-                    check_unprocessed_items,
-                    check_unprocessed_root,
-                )
-                    .in_set(ScatterSet::Collecting),
-            )
-            .add_systems(
-                Update,
-                (
-                    clear_scatter_roots,
-                    (clear_chunks, clear_scatter_layers).after(clear_scatter_roots),
-                )
-                    .in_set(ScatterSet::Ready),
-            );
+                .in_set(ScatterSet::Ready),
+        );
     }
 }
 

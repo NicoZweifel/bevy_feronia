@@ -13,26 +13,6 @@ use xxh3::hash64_with_seed;
 #[cfg(feature = "trace")]
 use tracing::warn;
 
-pub fn get_height_map_sampler<'a>(
-    images: &'a Assets<Image>,
-    height_map_cfg: Option<&HeightMapConfig>,
-    height_map: Option<&HeightMap>,
-) -> HeightMapSampler<'a> {
-    height_map
-        .and_then(|height_map_image| {
-            height_map_cfg
-                .and_then(|cfg| create_height_map_sampler(images.get(&height_map_image.0), cfg))
-        })
-        .unwrap_or(HeightMapSampler::Default(DefaultSampler))
-}
-
-fn create_height_map_sampler<'a>(
-    height_map_image: Option<&'a Image>,
-    cfg: &HeightMapConfig,
-) -> Option<HeightMapSampler<'a>> {
-    height_map_image.map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
-}
-
 pub fn scatter_layer_enabled(
     cmd: &mut Commands,
     layer_entity: Entity,
@@ -125,6 +105,7 @@ pub struct Container {
     pub size: Vec3,
     pub root_size: Vec3,
     pub global_transform: GlobalTransform,
+    pub root_global_transform: GlobalTransform,
     pub seed: u64,
 }
 

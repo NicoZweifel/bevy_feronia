@@ -28,7 +28,7 @@ fn main() -> AppExit {
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
-        .add_systems(Update, scatter_on_keypress)
+        .add_systems(Update, scatter_on_keypress.in_set(ScatterSet::Ready))
         .run()
 }
 

@@ -1,3 +1,5 @@
+use crate::prelude::ScatterRoot;
+
 use bevy_app::{App, Plugin, Update};
 use bevy_color::{Color, palettes::basic::RED};
 use bevy_derive::{Deref, DerefMut};
@@ -7,20 +9,21 @@ use bevy_math::{IVec2, Quat, Vec3};
 use bevy_platform::collections::HashMap;
 use bevy_reflect::Reflect;
 use bevy_transform::components::Transform;
+
+use derive_more::{From, Into};
+
 use std::fmt;
 use std::fmt::Debug;
 
-use crate::prelude::ScatterRoot;
+pub struct ScatterOccupancyMapPlugin;
 
-pub struct ScatterOccupancyMapDebugPlugin;
-
-impl Plugin for ScatterOccupancyMapDebugPlugin {
+impl Plugin for ScatterOccupancyMapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<AvoidanceDataDebugConfig>()
-            .register_type::<AvoidanceDataDebugConfig>()
+        app.register_type::<ScatterOccupancyMap>()
+            .register_type::<ScatterOccupancyMapDebugConfig>()
             .add_systems(
                 Update,
-                draw_scatter_debug_gizmos.run_if(resource_exists::<AvoidanceDataDebugConfig>),
+                draw_scatter_debug_gizmos.run_if(resource_exists::<ScatterOccupancyMapDebugConfig>),
             );
     }
 }
@@ -169,17 +172,17 @@ impl ScatterOccupancyMap {
     }
 }
 
-#[derive(Resource, Reflect, Deref, DerefMut)]
-#[reflect(Resource)]
-pub struct AvoidanceDataDebugConfig(Color);
+#[derive(Resource, Reflect, Deref, DerefMut, From, Into, Clone, Copy)]
+#[reflect(Resource, Clone)]
+pub struct ScatterOccupancyMapDebugConfig(Color);
 
-impl AvoidanceDataDebugConfig {
+impl ScatterOccupancyMapDebugConfig {
     pub fn new(color: impl Into<Color>) -> Self {
         Self(color.into())
     }
 }
 
-impl Default for AvoidanceDataDebugConfig {
+impl Default for ScatterOccupancyMapDebugConfig {
     fn default() -> Self {
         Self::new(RED)
     }

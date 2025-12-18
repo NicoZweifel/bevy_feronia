@@ -54,7 +54,6 @@ fn main() -> AppExit {
         .register_type::<ScatterAsset<InstancedWindAffectedMaterial>>()
          */
         .add_plugins((
-            // ScatterOccupancyMapDebugPlugin,
             QualityPlugin,
             AssetSelectPlugin::<Scene>::new(),
             ExamplePlugin,
@@ -82,7 +81,7 @@ fn main() -> AppExit {
             (
                 setup_density_map_inspection.run_if(resource_added::<DensityMap>),
                 setup_height_map_inspection.run_if(resource_added::<HeightMapTexture>),
-                scatter_on_keypress,
+                scatter_on_keypress.in_set(ScatterSet::Ready),
                 respawn_scene
                     .run_if(in_state(AppState::InGame))
                     .run_if(resource_changed::<QualitySettings>)

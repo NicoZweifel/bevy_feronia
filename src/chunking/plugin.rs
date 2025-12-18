@@ -41,17 +41,16 @@ impl Plugin for ChunkPlugin {
                         .run_if(in_state(HeightMapState::Ready)),
                 ),
             )
-            .add_systems(Update, update_root_lod_config)
             .add_systems(
                 PostUpdate,
                 setup_chunks
                     .after(TransformSystems::Propagate)
                     .in_set(ChunkSet::Ready),
             )
+            .add_systems(Update, update_root_lod_config)
             .add_systems(
                 Update,
                 (
-                    update_chunk_height.run_if(resource_exists_and_changed::<HeightMap>),
                     (split, handle_split).chain(),
                     (merge_check, handle_merge_check).chain(),
                     (merge, handle_merge).chain(),

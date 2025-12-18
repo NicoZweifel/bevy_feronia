@@ -154,8 +154,7 @@ impl ScatterResult {
         let seed = generate_instance_seed(container.seed, final_world_pos);
         let translation = container
             .global_transform
-            .compute_transform()
-            .compute_affine()
+            .affine()
             .inverse()
             .transform_point3(final_world_pos);
 
@@ -216,10 +215,13 @@ where
             .height_map_config
             .as_ref()
             .and_then(|cfg| {
-                task_data
-                    .height_map_image
-                    .as_ref()
-                    .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
+                task_data.height_map_image.as_ref().map(|img| {
+                    HeightMapSampler::Cpu(HeightMapCpuSampler::new(
+                        img,
+                        cfg,
+                        &task_data.container.root_global_transform,
+                    ))
+                })
             })
             .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
