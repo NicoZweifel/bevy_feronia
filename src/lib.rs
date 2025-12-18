@@ -188,10 +188,9 @@ pub mod density_map;
 pub mod extension;
 pub mod height_map;
 pub mod instancing;
-pub mod quality;
+
 pub mod scatter;
 pub mod wind;
-
 pub mod prelude {
     pub use crate::asset::prelude::*;
     pub use crate::chunking::prelude::*;
