@@ -46,7 +46,6 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
     /// Calculates the terrain height at a given **local** position using bilinear interpolation.
     fn sample(&self, local_pos: Vec3) -> f32 {
         let map_local = local_pos.xz() - self.local_center;
-
         let uv = (map_local + Vec2::splat(self.total_size / 2.0)) / self.total_size;
 
         let pixel = uv.clamp(Vec2::ZERO, Vec2::ONE) * (self.image_size - 1) as f32;
@@ -59,11 +58,13 @@ impl<'a> Sampler for HeightMapCpuSampler<'a> {
         let x1 = (x0 + 1).min(self.image_size - 1);
         let y1 = (y0 + 1).min(self.image_size - 1);
 
+        // Fetch Corners
         let h00 = self.get_normalized_height_at(x0, y0);
         let h10 = self.get_normalized_height_at(x1, y0);
         let h01 = self.get_normalized_height_at(x0, y1);
         let h11 = self.get_normalized_height_at(x1, y1);
 
+        // Interpolate && denormalize
         let top = h00.lerp(h10, weight.x);
         let bottom = h01.lerp(h11, weight.x);
         let normalized_height = top.lerp(bottom, weight.y);
