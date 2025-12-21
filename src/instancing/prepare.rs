@@ -84,7 +84,7 @@ pub(super) fn prepare_instance_uniform_buffer(
     let bind_group_layout = pipeline.instance_uniform_layout.clone();
 
     for (entity, instance_data, gtf, uniform_buffer_opt) in &query {
-        let uniforms: InstanceUniforms = InstanceUniforms {
+        let uniforms = InstanceUniforms {
             world_from_local: gtf.to_matrix(),
             ..instance_data.into()
         };

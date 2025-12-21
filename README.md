@@ -157,11 +157,11 @@ fn scatter_instanced(
 
 ## Compatibility
 
-There are very experimental releases before 0.5.0 but I wouldn't use them.
+There are very experimental releases before 0.5.0, but I wouldn't use them.
 
 | bevy        | bevy_feronia |
-|-------------|------------------------|
-| 0.17        | 0.5                    |
+|-------------|--------------|
+| 0.17        | 0.5          |
 
 ## Credits/Inspirations/References
 
