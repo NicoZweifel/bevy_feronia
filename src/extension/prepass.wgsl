@@ -59,7 +59,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance.wrapped_time = globals.time;
         instance.instance_index = vertex.instance_index;
 
-        let noise = sample_noise(instance, vertex.position);
+        let noise = sample_noise(instance, wind, vertex.position);
 
         var static_shadows = false;
 
@@ -152,7 +152,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance_prev.wrapped_time = (globals.time - globals.delta_time);
         instance_prev.instance_index = vertex.instance_index;
 
-        let noise_prev = sample_noise(instance_prev, vertex.position);
+        // TODO prev wind https://github.com/NicoZweifel/bevy_feronia/issues/34
+        let noise_prev = sample_noise(instance_prev, wind, vertex.position);
 
         /// --- DISPLACEMENT ---
         let displaced_prev = displace_vertex_and_calc_normal(

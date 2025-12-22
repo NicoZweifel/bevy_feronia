@@ -16,6 +16,8 @@ use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 use example::*;
 use std::sync::Arc;
+use bevy_eidolon::prelude::InstancedMeshMaterial;
+use bevy_feronia::instancing::material_v2::{InstancedWindAffectedMaterialV2, InstancedWindAffectedPluginV2};
 
 fn main() -> AppExit {
     App::new()
@@ -28,7 +30,7 @@ fn main() -> AppExit {
             // Some features that depend on the `ScatterAssets` won't work automatically e.g.,
             // syncing the wind of the materials with the resource.
             WindPlugin,
-            InstancedWindAffectedPlugin,
+            InstancedWindAffectedPluginV2,
         ))
         // Need to wait for the wind noise texture.
         .add_systems(Startup, setup.after(WindTextureSetup))
@@ -38,7 +40,7 @@ fn main() -> AppExit {
 fn setup(
     mut cmd: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
+    mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterialV2>>,
     mut meshes: ResMut<Assets<Mesh>>,
     wind: Res<Wind>,
     noise_texture: Res<WindTexture>,
@@ -66,16 +68,24 @@ fn setup(
         static_bend_strength: 0.5,
         // or test individual settings
         edge_correction_factor: 1.0,
+
+        top_color: Some(GREEN_500.into()),
+        bottom_color:Some(GREEN_900.into()),
+
+        specular_power: 32.,
+        specular_strength: 0.6,
+        translucency: 0.6,
         ..default()
     };
 
-    let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
+    let material_handle = instanced_materials.add(InstancedWindAffectedMaterialV2 {
         // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
         // we need an update system.
         wind: *wind,
         aabb,
         options,
         noise_texture: (**noise_texture).clone(),
+
     });
 
     const SIZE: i32 = 10;
@@ -83,7 +93,7 @@ fn setup(
     let instances = (-SIZE..SIZE)
         .enumerate()
         .map(|(i, x)| {
-            InstanceData {
+            bevy_eidolon::components::InstanceData {
                 position: Vec3::new(x as f32, 0.25 * 4., x as f32),
                 scale: 4.0,
                 // NOTE:
@@ -94,20 +104,15 @@ fn setup(
         })
         .collect();
 
-    let instance_material_data = InstanceMaterialData {
-        specular_power: 32.,
-        specular_strength: 0.6,
-        translucency: 0.6,
-        top_color: GREEN_500.into(),
-        bottom_color: GREEN_900.into(),
+    let instance_material_data = bevy_eidolon::components::InstanceMaterialData {
+        // TODO
+        color: default(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
-        static_bend_strength: options.static_bend_strength,
-        curve_factor: options.curve_factor,
     };
 
     cmd.spawn((
-        InstancedWindAffectedMeshMaterial(material_handle),
+        InstancedMeshMaterial(material_handle),
         Mesh3d(mesh_handle),
         instance_material_data,
         NoAutomaticBatching,

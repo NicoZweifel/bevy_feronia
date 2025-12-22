@@ -172,7 +172,7 @@ impl ScatterMaterial for StandardMaterial {
 }
 
 #[repr(C)]
-#[derive(ShaderType, Clone, Zeroable, Copy)]
+#[derive(ShaderType, Clone, Zeroable, Copy, Debug)]
 pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,
@@ -265,5 +265,38 @@ bitflags! {
         const POINT_LIGHTS = 1 << 11;
         const DIRECTIONAL_LIGHTS = 1 << 12;
         const GPU_CULL = 1 << 13;
+    }
+}
+
+impl From<ScatterMaterialOptions> for WindAffectedKey {
+    fn from(options: ScatterMaterialOptions) -> Self {
+        let mut key = WindAffectedKey::empty();
+
+        key.set(WindAffectedKey::BILLBOARDING, options.enable_billboarding);
+        key.set(
+            WindAffectedKey::EDGE_CORRECTION,
+            options.edge_correction_factor > 0.,
+        );
+        key.set(WindAffectedKey::WIND_LOW_QUALITY, options.low_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, options.fast_normals);
+        key.set(WindAffectedKey::WIND_AFFECTED, options.wind_affected);
+        key.set(
+            WindAffectedKey::STATIC_BEND,
+            options.static_bend_strength > 0.,
+        );
+        key.set(WindAffectedKey::DEBUG, options.debug);
+        key.set(
+            WindAffectedKey::ANALYTICAL_NORMALS,
+            options.analytical_normals,
+        );
+        key.set(WindAffectedKey::CURVE_NORMALS, options.curve_factor > 0.);
+        key.set(WindAffectedKey::POINT_LIGHTS, options.point_lights);
+        key.set(
+            WindAffectedKey::DIRECTIONAL_LIGHTS,
+            options.directional_lights,
+        );
+        key.set(WindAffectedKey::GPU_CULL, options.gpu_cull);
+
+        key
     }
 }

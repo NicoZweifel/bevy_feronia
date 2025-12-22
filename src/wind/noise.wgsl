@@ -11,16 +11,15 @@
 #ifdef BINDLESS
 #import bevy_feronia::bindings::{wind_indices, wind_material}
 #else
-#import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
+#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
 #endif
 
-fn sample_noise(instance: InstanceInfo, local_vertex_pos: vec3<f32>) -> SampledNoise {
+fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>) -> SampledNoise {
     var noise: SampledNoise;
 
 #ifdef WIND_AFFECTED
 #ifdef BINDLESS
     let slot = mesh[instance.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-    let wind =  wind_material[wind_indices[slot].material];
     let noise_texture =  bindless_textures_2d[wind_indices[slot].noise_texture];
     let noise_texture_sampler = bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
 #endif

@@ -74,6 +74,7 @@ pub(crate) fn add_instance_key_component(
         );
         key.set(WindAffectedKey::GPU_CULL, material.options.gpu_cull);
 
+        // TODO
         if material.options.gpu_cull {
             commands.entity(entity).insert(GpuCull);
         }

@@ -9,17 +9,16 @@
 #import bevy_pbr::utils::rand_f
 #import bevy_pbr::mesh_bindings::mesh
 
-#import bevy_feronia::wind::{Wind, BindlessWindIndices}
+#import bevy_feronia::wind::Wind
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
-#import bevy_feronia::bindings::wind
 #import bevy_feronia::displace::displace_vertex_and_calc_normal
 #import bevy_feronia::noise::sample_noise
+#import bevy_eidolon::render::bindings::instance_uniforms
 
-struct InstanceUniforms {
-    world_from_local: mat4x4<f32>,
+struct InstancedMaterialUniforms {
+    wind: Wind,
     top_color: vec4<f32>,
     bottom_color: vec4<f32>,
-    visibility_range: vec4<f32>,
     static_bend_strength: f32,
     curve_factor: f32,
     translucency: f32,
@@ -27,8 +26,9 @@ struct InstanceUniforms {
     specular_power: f32,
 };
 
-@group(4) @binding(0)
-var<uniform> instance_uniforms: InstanceUniforms;
+@group(3) @binding(50) var<uniform> material: InstancedMaterialUniforms;
+@group(3) @binding(51) var noise_texture: texture_2d<f32>;
+@group(3) @binding(52) var noise_texture_sampler: sampler;
 
 struct Vertex {
     @location(0) position: vec3<f32>,
@@ -54,7 +54,8 @@ struct Vertex {
 #endif
 
     @location(8) i_pos_scale: vec4<f32>,
-    @location(9) i_index: u32,
+    @location(9) i_rotation: f32,
+    @location(10) i_index: u32,
 };
 
 struct VertexOutput {
@@ -91,7 +92,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(translation, 1.0)
     );
 #else
-    // TODO pre-calculate / expose
+    // TODO pre-calculate (use i_rotation)
 
     let angle = rand_f(&rand_state) * 6.2831853;
 
@@ -125,16 +126,17 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 #ifdef STATIC_BEND
     let raw_rand = rand_f(&rand_state);
-    let biased_rand = instance_uniforms.static_bend_strength + (raw_rand * (1. - instance_uniforms.static_bend_strength));
+    let biased_rand = material.static_bend_strength + (raw_rand * (1. - material.static_bend_strength));
 
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
 
-    let static_bend_strength = biased_rand * instance_uniforms.static_bend_strength;
+    let static_bend_strength = biased_rand * material.static_bend_strength;
 
     let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
 #endif
 
-    let noise = sample_noise(instance, vertex.position);
+    let wind = material.wind;
+    let noise = sample_noise(instance, wind, vertex.position);
 
     // --- DISPLACEMENT ---
     let displaced = displace_vertex_and_calc_normal(
@@ -222,8 +224,8 @@ fn fragment(
     #endif
 #endif
 
-    var top_color = instance_uniforms.top_color.rgb;
-    var bottom_color = instance_uniforms.bottom_color.rgb;
+    var top_color = material.top_color.rgb;
+    var bottom_color = material.bottom_color.rgb;
 
     // Blender exports UVs with Y=0 at bottom.
     let corrected_uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
@@ -316,13 +318,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
+        let NdotL_back = saturate(-NdotL_raw) * material.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
+        let specular_factor = pow(NdotH, material.specular_power);
 
         let shadow = fetch_directional_shadow(
             i,
@@ -337,7 +339,7 @@ fn fragment(
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * specular_factor * instance_uniforms.specular_strength * shadow;
+            final_specular += scaled_light_color * specular_factor * material.specular_strength * shadow;
         }
     }
 #endif
@@ -377,13 +379,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * instance_uniforms.translucency;
+        let NdotL_back = saturate(-NdotL_raw) * material.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, instance_uniforms.specular_power);
+        let specular_factor = pow(NdotH, material.specular_power);
 
         var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
@@ -396,7 +398,7 @@ fn fragment(
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * attenuation * specular_factor * instance_uniforms.specular_strength * shadow;
+            final_specular += scaled_light_color * attenuation * specular_factor * material.specular_strength * shadow;
         }
     }
 #endif // POINT_LIGHTS

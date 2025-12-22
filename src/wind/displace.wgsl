@@ -6,13 +6,13 @@
 // "Advanced Graphics Summit: Procedural Grass in 'Ghost of Tsushima'".
 
 #define_import_path bevy_feronia::displace
+
 #import bevy_pbr::mesh_functions::{mesh_normal_local_to_world, mesh_tangent_local_to_world}
 #import bevy_pbr::mesh_view_bindings::view
 #import bevy_render::view::{position_world_to_view, position_view_to_world}
 
-
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
-#import bevy_feronia::wind::{Wind, BindlessWindIndices}
+#import bevy_feronia::wind::Wind
 #import bevy_feronia::noise::sample_noise
 
 struct CurveResult {
@@ -162,7 +162,7 @@ fn displace_vertex_and_calc_normal(
 
     // Sample Neighbor along Tangent
     let neighbor_tangent_origin = vertex_pos + local_tangent * sample_offset;
-    let noise_tangent = sample_noise(instance, neighbor_tangent_origin);
+    let noise_tangent = sample_noise(instance, wind, neighbor_tangent_origin);
     let curve_tangent = calculate_macro_curve(neighbor_tangent_origin, wind, noise_tangent, instance,
         #ifdef STATIC_BEND
         static_bend
@@ -172,7 +172,7 @@ fn displace_vertex_and_calc_normal(
 
     // Sample Neighbor along Bitangent
     let neighbor_bitangent_origin = vertex_pos + local_bitangent * sample_offset;
-    let noise_bitangent = sample_noise(instance, neighbor_bitangent_origin);
+    let noise_bitangent = sample_noise(instance, wind, neighbor_bitangent_origin);
     let curve_bitangent = calculate_macro_curve(neighbor_bitangent_origin, wind, noise_bitangent, instance,
         #ifdef STATIC_BEND
         static_bend

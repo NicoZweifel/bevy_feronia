@@ -32,6 +32,7 @@ bevy_shader= { version = "0.17.2" ,default-features = false}
 bevy_utils= { version = "0.17.2" ,default-features = false}
 bevy_core_pipeline= { version = "0.17.2" ,default-features = false}
 bevy_light= { version = "0.17.2" ,default-features = false}
+bevy_eidolon = "0.1.0"
 
 bytemuck = "1.23.1"
 noise = "0.9.0"
