@@ -1,5 +1,5 @@
 # bevy_feronia
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/NicoZweifel/bevy_feronia?tab=readme-ov-file#creditsinspirationsreferences)
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/NicoZweifel/bevy_feronia?tab=readme-ov-file#licensecreditsinspirationsreferences)
 [![Crates.io](https://img.shields.io/crates/v/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
 [![Downloads](https://img.shields.io/crates/d/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
 [![Docs](https://docs.rs/bevy_feronia/badge.svg)](https://docs.rs/bevy_feronia/)
