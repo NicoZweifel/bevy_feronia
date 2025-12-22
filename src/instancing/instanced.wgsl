@@ -225,10 +225,12 @@ fn fragment(
     var top_color = instance_uniforms.top_color.rgb;
     var bottom_color = instance_uniforms.bottom_color.rgb;
 
-    // Blender exports UVs with Y=0 at bottom.
-    let corrected_uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
+    // UV Requirements:
+    // - uv.y = 0.0 corresponds to the tip (Top).
+    // - uv.y = 1.0 corresponds to the root (Bottom).
+    let height_factor = 1.0 - in.uv.y;
 
-    let gradient_mix = pow(corrected_uv.y, 0.8);
+    let gradient_mix = pow(height_factor, 0.8);
     let blade_color_rgb = mix(bottom_color, top_color, gradient_mix);
 
     // TODO: allow texture usage here

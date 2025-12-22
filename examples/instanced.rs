@@ -98,8 +98,8 @@ fn setup(
         specular_power: 32.,
         specular_strength: 0.6,
         translucency: 0.6,
-        top_color: GREEN_500.into(),
-        bottom_color: GREEN_900.into(),
+        top_color: RED_400.into(),
+        bottom_color: GREEN_400.into(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
         static_bend_strength: options.static_bend_strength,
@@ -128,16 +128,16 @@ fn create_triangle_with_foliage_uvs() -> Mesh {
     let pos_top_center = [0.25, 0.5, 0.0];
     let pos_bottom_right = [0.5, -0.25, 0.0];
 
-    let uv_bottom_left = [0.0, 0.0];
-    let uv_top_center = [0.5, 1.0];
-    let uv_bottom_right = [1.0, 0.0];
+    let uv_bottom_left = [0.0, 1.0];
+    let uv_top_center = [0.5, 0.0];
+    let uv_bottom_right = [1.0, 1.0];
 
     // Midpoints
     let pos_bottom_center = [0.25, -0.25, 0.0];
     let pos_mid_left = [0.125, 0.125, 0.0];
     let pos_mid_right = [0.375, 0.125, 0.0];
 
-    let uv_bottom_center = [0.5, 0.0];
+    let uv_bottom_center = [0.5, 1.0];
     let uv_mid_left = [0.25, 0.5];
     let uv_mid_right = [0.75, 0.5];
 
