@@ -186,16 +186,8 @@ pub struct WindUniform {
     pub bop_strength: f32,
     pub twist_strength: f32,
     pub edge_correction_factor: f32,
-
-    /// TODO use in both materials or rename [`WindUniform`] to `ExtendedUniforms`
-    pub sss_strength: f32,
-    pub sss_scale: f32,
-
-    /// TODO use in both materials move to separate uniform e.g.
-    /// or move to [`InstanceUniforms`]
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
-    pub debug_color: Vec4,
 }
 
 impl From<&Wind> for WindUniform {
@@ -215,9 +207,6 @@ impl From<&Wind> for WindUniform {
             edge_correction_factor: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
-            debug_color: Vec4::splat(1.),
-            sss_strength: 0.,
-            sss_scale: 0.,
         }
     }
 }
@@ -231,17 +220,6 @@ impl WindUniform {
     pub fn with_aabb(mut self, aabb: &Aabb) -> Self {
         self.aabb_min = aabb.min().into();
         self.aabb_max = aabb.max().into();
-        self
-    }
-
-    pub fn with_debug_color(mut self, color: Vec4) -> Self {
-        self.debug_color = color;
-        self
-    }
-
-    pub fn with_sss(mut self, sss_strength: f32, sss_scale: f32) -> Self {
-        self.sss_strength = sss_strength;
-        self.sss_scale = sss_scale;
         self
     }
 }

@@ -86,6 +86,5 @@ impl<'a> From<&'a InstancedWindAffectedMaterial> for WindUniform {
         WindUniform::from(&material.wind)
             .with_edge_correction_factor(material.options.edge_correction_factor)
             .with_aabb(&material.aabb)
-            .with_debug_color(material.options.debug_color.to_linear().to_vec4())
     }
 }

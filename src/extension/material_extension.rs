@@ -42,11 +42,6 @@ impl<'a> From<&'a WindAffectedExtension> for WindUniform {
         WindUniform::from(&material_extension.wind)
             .with_edge_correction_factor(material_extension.options.edge_correction_factor)
             .with_aabb(&material_extension.aabb)
-            .with_debug_color(material_extension.options.debug_color.to_linear().to_vec4())
-            .with_sss(
-                material_extension.options.subsurface_scattering_scale,
-                material_extension.options.subsurface_scattering_intensity,
-            )
     }
 }
 

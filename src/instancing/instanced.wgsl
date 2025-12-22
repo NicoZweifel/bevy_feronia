@@ -13,7 +13,9 @@
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::displace::displace_vertex_and_calc_normal
 #import bevy_feronia::noise::sample_noise
+
 #import bevy_eidolon::render::bindings::instance_uniforms
+#import bevy_eidolon::render::io_types::Vertex
 
 struct InstancedMaterialUniforms {
     wind: Wind,
@@ -30,48 +32,22 @@ struct InstancedMaterialUniforms {
 @group(3) @binding(51) var noise_texture: texture_2d<f32>;
 @group(3) @binding(52) var noise_texture_sampler: sampler;
 
-struct Vertex {
-    @location(0) position: vec3<f32>,
-
-#ifdef VERTEX_NORMALS
-    @location(1) normal: vec3<f32>,
-#endif
-#ifdef VERTEX_UVS_A
-    @location(2) uv: vec2<f32>,
-#endif
-#ifdef VERTEX_UVS_B
-    @location(3) uv_b: vec2<f32>,
-#endif
-#ifdef VERTEX_TANGENTS
-    @location(4) tangent: vec4<f32>,
-#endif
-#ifdef VERTEX_COLORS
-    @location(5) color: vec4<f32>,
-#endif
-#ifdef SKINNED
-    @location(6) joint_indices: vec4<u32>,
-    @location(7) joint_weights: vec4<f32>,
-#endif
-
-    @location(8) i_pos_scale: vec4<f32>,
-    @location(9) i_rotation: f32,
-    @location(10) i_index: u32,
-};
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) ao: f32,
 
 #ifdef VISIBILITY_RANGE_DITHER
-    @location(1) @interpolate(flat) visibility_range_dither: i32,
+    @location(0) @interpolate(flat) visibility_range_dither: i32,
 #endif
 
-    @location(2) world_position: vec3<f32>,
-    @location(3) world_normal: vec3<f32>,
-    @location(4) uv: vec2<f32>,
+    @location(1) world_position: vec4<f32>,
+    @location(2) world_normal: vec3<f32>,
+    @location(3) uv: vec2<f32>,
+    @location(4) world_tangent: vec4<f32>,
     @location(5) local_pos: vec3<f32>,
-    @location(6) world_tangent: vec4<f32>,
-    @location(7) curve_factor: f32,
+
+    @location(6) curve_factor: f32,
+    @location(7) ao: f32,
 };
 
 @vertex
@@ -158,11 +134,11 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #endif
     );
 
-    out.world_position = displaced.world_position.xyz;
+    out.world_position = displaced.world_position;
     out.world_normal = displaced.world_normal;
     out.local_pos = vertex.position;
     out.world_tangent = displaced.world_tangent;
-    out.clip_position = position_world_to_clip(out.world_position);
+    out.clip_position = position_world_to_clip(out.world_position.xyz);
 
 #ifdef VERTEX_UVS_A
     out.uv = vertex.uv;
@@ -217,7 +193,6 @@ fn fragment(
     @builtin(front_facing) is_front: bool,
 ) -> @location(0) vec4<f32> {
 
-
 #ifdef VISIBILITY_RANGE_DITHER
     #ifndef SHADOW_PASS
         bevy_pbr::pbr_functions::visibility_range_dither(in.clip_position, in.visibility_range_dither);
@@ -227,10 +202,7 @@ fn fragment(
     var top_color = material.top_color.rgb;
     var bottom_color = material.bottom_color.rgb;
 
-    // Blender exports UVs with Y=0 at bottom.
-    let corrected_uv = vec2<f32>(in.uv.x, 1.0 - in.uv.y);
-
-    let gradient_mix = pow(corrected_uv.y, 0.8);
+    let gradient_mix = pow(in.uv.y, 0.8);
     let blade_color_rgb = mix(bottom_color, top_color, gradient_mix);
 
     // TODO: allow texture usage here
@@ -297,14 +269,14 @@ fn fragment(
     var final_color_rgb = color_for_lighting.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.);
     
-    let V = normalize(view.world_position.xyz - in.world_position);
+    let V = normalize(view.world_position.xyz - in.world_position.xyz);
 
     let view_z = dot(vec4<f32>(
         view.view_from_world[0].z,
         view.view_from_world[1].z,
         view.view_from_world[2].z,
         view.view_from_world[3].z
-    ), vec4<f32>(in.world_position, 1.));
+    ),  in.world_position);
 
 #ifdef DIRECTIONAL_LIGHTS
 
@@ -328,7 +300,7 @@ fn fragment(
 
         let shadow = fetch_directional_shadow(
             i,
-            vec4<f32>(in.world_position, 1.),
+            in.world_position,
             normal,
             view_z
         );
@@ -389,7 +361,7 @@ fn fragment(
 
         var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
-            shadow = fetch_point_shadow(light_id, vec4<f32>(in.world_position, 1.), normal);
+            shadow = fetch_point_shadow(light_id, in.world_position, normal);
         }
         let final_shadow = clamp(shadow, 0.1, 1.);
 
