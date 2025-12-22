@@ -1,4 +1,9 @@
-# bevy_feronia ![crates.io](https://img.shields.io/crates/v/bevy_feronia.svg)
+# bevy_feronia
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/NicoZweifel/bevy_feronia?tab=readme-ov-file#creditsinspirationsreferences)
+[![Crates.io](https://img.shields.io/crates/v/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
+[![Downloads](https://img.shields.io/crates/d/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
+[![Docs](https://docs.rs/bevy_feronia/badge.svg)](https://docs.rs/bevy_feronia/)
+[![CI](https://github.com/bevyengine/bevy/workflows/CI/badge.svg)](https://github.com/NicoZweifel/bevy_feronia/actions)
 
 Environment scattering tools and shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
 
@@ -163,7 +168,12 @@ There are very experimental releases before 0.5.0, but I wouldn't use them.
 |-------------|--------------|
 | 0.17        | 0.5          |
 
-## Credits/Inspirations/References
+## License/Credits/Inspirations/References
+
+The code is dual-licensed:
+
+* MIT License ([LICENSE-MIT](LICENSE-MIT) or [http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
 
 Feel free to copy the grass assets. All the other assets used in the examples are licensed assets.
 
