@@ -7,6 +7,10 @@ use bevy_camera::primitives::Aabb;
 use bevy_camera::visibility::Visibility;
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
+use bevy_eidolon::prelude::InstancedMeshMaterial;
+use bevy_feronia::instancing::material_v2::{
+    InstancedWindAffectedMaterialV2, InstancedWindAffectedPluginV2,
+};
 use bevy_feronia::prelude::*;
 use bevy_math::{Vec3, Vec3A};
 use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
@@ -16,8 +20,6 @@ use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 use example::*;
 use std::sync::Arc;
-use bevy_eidolon::prelude::InstancedMeshMaterial;
-use bevy_feronia::instancing::material_v2::{InstancedWindAffectedMaterialV2, InstancedWindAffectedPluginV2};
 
 fn main() -> AppExit {
     App::new()
@@ -70,7 +72,7 @@ fn setup(
         edge_correction_factor: 1.0,
 
         top_color: Some(GREEN_500.into()),
-        bottom_color:Some(GREEN_900.into()),
+        bottom_color: Some(GREEN_900.into()),
 
         specular_power: 32.,
         specular_strength: 0.6,
@@ -85,7 +87,6 @@ fn setup(
         aabb,
         options,
         noise_texture: (**noise_texture).clone(),
-
     });
 
     const SIZE: i32 = 10;

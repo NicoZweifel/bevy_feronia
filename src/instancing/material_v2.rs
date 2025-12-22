@@ -103,9 +103,8 @@ impl InstancedMaterial for InstancedWindAffectedMaterialV2 {
         _layout: &MeshVertexBufferLayoutRef,
         key: Self::Data,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
 
-            descriptor.primitive.cull_mode = None;
-        
         let shader_defs = &mut descriptor.vertex.shader_defs;
         if key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
             shader_defs.push("BILLBOARDING".into());

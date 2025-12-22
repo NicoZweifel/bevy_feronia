@@ -1,7 +1,10 @@
+use crate::backend::ScatterApp;
 use crate::chunking::systems::*;
 use crate::prelude::*;
+
 use bevy_app::*;
 use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::ScheduleLabel;
 use bevy_state::prelude::*;
 use bevy_transform::TransformSystems;
 
@@ -13,34 +16,35 @@ pub enum ChunkSet {
     Ready,
 }
 
+pub trait ChunkApp {
+    fn configure_chunk_set<M: ScheduleLabel + Default>(&mut self) -> &mut App;
+}
+
+impl ChunkApp for App {
+    fn configure_chunk_set<M: ScheduleLabel + Default>(&mut self) -> &mut App {
+        self.configure_sets(
+            M::default(),
+            (
+                ChunkSet::Loading
+                    .run_if(in_state(ScatterState::Setup))
+                    .run_if(not(in_state(HeightMapState::Ready))),
+                ChunkSet::Ready
+                    .run_if(in_state(ScatterState::Ready))
+                    .run_if(in_state(HeightMapState::Ready)),
+            ),
+        )
+    }
+}
+
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Chunk>()
+        app.configure_scatter_set::<PreUpdate>()
+            .configure_scatter_set::<Update>()
+            .configure_scatter_set::<PostUpdate>()
+            .register_type::<Chunk>()
             .add_message::<SplitChunk>()
             .add_message::<MergeCheck>()
             .add_message::<MergeChunks>()
-            .configure_sets(
-                Update,
-                (
-                    ChunkSet::Loading
-                        .run_if(in_state(ScatterState::Setup))
-                        .run_if(not(in_state(HeightMapState::Ready))),
-                    ChunkSet::Ready
-                        .run_if(in_state(ScatterState::Ready))
-                        .run_if(in_state(HeightMapState::Ready)),
-                ),
-            )
-            .configure_sets(
-                PostUpdate,
-                (
-                    ChunkSet::Loading
-                        .run_if(in_state(ScatterState::Setup))
-                        .run_if(not(in_state(HeightMapState::Ready))),
-                    ChunkSet::Ready
-                        .run_if(in_state(ScatterState::Ready))
-                        .run_if(in_state(HeightMapState::Ready)),
-                ),
-            )
             .add_systems(
                 PostUpdate,
                 setup_chunks
