@@ -52,6 +52,15 @@ impl Default for LodConfig {
     }
 }
 
+impl LodConfig {
+    pub fn none() -> Self {
+        Self {
+            distance: vec![default()],
+            density: vec![1.0.into()],
+        }
+    }
+}
+
 impl From<Vec<LodDistance>> for LodConfig {
     fn from(value: Vec<LodDistance>) -> Self {
         Self {
