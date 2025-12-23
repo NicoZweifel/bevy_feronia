@@ -52,6 +52,15 @@ impl Default for LodConfig {
     }
 }
 
+impl LodConfig {
+    pub fn none() -> Self {
+        Self {
+            distance: vec![default()],
+            density: vec![1.0.into()],
+        }
+    }
+}
+
 impl From<Vec<LodDistance>> for LodConfig {
     fn from(value: Vec<LodDistance>) -> Self {
         Self {
@@ -171,6 +180,7 @@ pub struct BaseChunkSize(pub Vec3);
 
 impl BaseChunkSize {
     /// Calculate the bounding radius (half-diagonal) of a chunk.
+    #[inline]
     fn get_chunk_radius(&self, scalar: u32) -> f32 {
         let scalar = scalar as f32;
 
@@ -313,6 +323,8 @@ impl ChunkSizeScalarConfig {
 }
 
 /// Component specifying the LOD distance thresholds specifically for a chunk hierarchy.
+///
+/// This will get created automatically from the [`LodConfig`].
 #[derive(Component, Clone, Reflect, Deref, DerefMut, Debug, PartialEq)]
 #[reflect(Component)]
 pub struct ChunkLodConfig(pub Vec<LodDistance>);

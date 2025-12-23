@@ -102,6 +102,19 @@ pub struct PointLights;
 /// center (0.0) to its edges (1.0), using the **`uv.x`** coordinate of the mesh.
 /// The final curve angle is hard-capped at **1.4 radians (~80°)**.
 ///
+/// ### UV Requirements
+/// **Important:** This feature relies on specific UV mapping:
+///
+/// **Horizontal (`uv.x`):** Must range from **0.0 to 1.0**.
+///     * `0.0`: Left edge
+///     * `0.5`: Center spine
+///     * `1.0`: Right edge
+///
+/// If `uv.x` isn't mapped to this range, the curve math (`x * 2.0 - 1.0`) will produce
+/// incorrect normal offsets and visual artifacts.
+///
+/// ### Behavior
+///
 /// The behavior changes significantly depending on the value:
 ///
 /// - **`CurveFactor < 1.4`**: Creates a gentle, shallow curve. The blade will
@@ -113,6 +126,8 @@ pub struct PointLights;
 /// - **`CurveFactor > 1.4`**: The blade hits the 80° cap *before* reaching the edge.
 ///   This creates a sharp "crease" or "spine" down the center, with the rest
 ///   of the blade remaining flat at the maximum angle.
+///
+/// ### Notes
 ///
 /// Corresponds to `wind.curve_factor` in shaders.
 ///
@@ -153,7 +168,23 @@ impl Default for StaticBendStrength {
 #[derive(Component, Clone, Copy, Default, ExtractComponent)]
 pub struct GpuCull;
 
-/// Sets a material color tint.
+/// Sets a material color gradient.
+///
+/// ### UV Requirements
+///
+/// **Important:** This feature relies on specific UV mapping:
+///
+/// **Vertical (`uv.y`):** Must range from **0.0 to 1.0**.
+///    - `0.0`: **Tip / Top** of the mesh.
+///    - `1.0`: **Root / Base** of the mesh.
+///
+/// #### Troubleshooting:
+///   - If you have black spots or other artifacts on your mesh, `uv.y` might not be ranging from `0.0` to `1.0`.
+///
+///   - If your colors appear upside down (Top Color at the bottom), your mesh likely uses
+///     UVs where `0.0` is at the bottom. You should flip the UVs vertically (so the root is at `1.0`).
+///
+/// ### Notes
 ///
 /// Corresponds to `instance_uniforms.color` in shaders.
 ///

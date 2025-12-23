@@ -44,7 +44,6 @@ where
     T: ScatterMaterialAsset,
 {
     pub event: &'w SpawnScatterAssets<T>,
-    pub names: Vec<Name>,
     pub name_map: &'w HashMap<Name, Vec<ScatterHandleAsset<'w, T>>>,
     pub is_chunked: bool,
     pub chunk_level: ChunkLevel,
@@ -84,8 +83,9 @@ where
     ) -> impl Iterator<Item = &'w ScatterHandleAsset<'w, T>> {
         let mut rng = Pcg64::seed_from_u64(seed);
 
-        self.names
+        self.get_sorted_names()
             .choose(&mut rng)
+            .copied()
             .into_iter()
             .flat_map(|name| self.prototypes_from_name_iter(name))
     }
@@ -99,6 +99,12 @@ where
             .map_or(&[][..], |prototypes| prototypes.as_slice())
             .iter()
             .filter(|&handle_asset| handle_asset.is_lod(self.is_chunked, *self.chunk_level))
+    }
+
+    pub fn get_sorted_names(&self) -> Vec<&'w Name> {
+        let mut names: Vec<&Name> = self.name_map.keys().collect();
+        names.sort();
+        names
     }
 }
 
