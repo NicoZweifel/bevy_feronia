@@ -57,8 +57,13 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
-        let names: HashSet<Name> = request
-            .names
+        let names = request
+            .get_sorted_names()
+            .into_iter()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let name_set: HashSet<Name> = names
             .iter()
             .filter_map(|name| Some((name, request.name_map.get(name)?)))
             .fold(HashSet::new(), |mut acc, (name, group)| {
@@ -81,15 +86,15 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             .data
             .iter()
             .filter_map(|res| {
-                (names.len() == 1)
-                    .then(|| names.iter().next().map(|x| (x, res)))
+                (name_set.len() == 1)
+                    .then(|| name_set.iter().next().map(|x| (x, res)))
                     .flatten();
 
                 let mut rng = Pcg64::seed_from_u64(res.seed);
 
-                let name = request.names.choose(&mut rng)?;
+                let name = names.choose(&mut rng)?;
 
-                names.contains(name).then_some((name, res))
+                name_set.contains(name).then_some((name, res))
             })
             .enumerate()
             .fold(HashMap::new(), |mut acc, (i, (name, res))| {

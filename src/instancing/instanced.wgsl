@@ -228,7 +228,7 @@ fn fragment(
     // UV Requirements:
     // - uv.y = 0.0 corresponds to the tip (Top).
     // - uv.y = 1.0 corresponds to the root (Bottom).
-    let height_factor = 1.0 - in.uv.y;
+    let height_factor = saturate(1.0 - in.uv.y);
 
     let gradient_mix = pow(height_factor, 0.8);
     let blade_color_rgb = mix(bottom_color, top_color, gradient_mix);

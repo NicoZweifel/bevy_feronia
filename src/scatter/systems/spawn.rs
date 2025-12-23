@@ -71,9 +71,6 @@ pub fn spawn<T>(
                 )
             });
 
-        let mut names: Vec<Name> = name_map.keys().cloned().collect();
-        names.sort();
-
         T::spawn(
             &mut cmd,
             SpawnRequest {
@@ -82,7 +79,6 @@ pub fn spawn<T>(
                 container_gtf,
                 parent,
                 lod_config,
-                names,
                 name_map,
                 is_chunked,
             },

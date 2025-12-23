@@ -4,6 +4,7 @@ mod example;
 use example::*;
 
 use bevy::prelude::*;
+use bevy_color::palettes::tailwind::{BLUE_400, RED_400};
 use bevy_feronia::{
     asset::backend::mesh_material_backend::MeshMaterialAssetBackendPlugin,
     instancing::scatter_layer, prelude::*,
@@ -52,6 +53,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 StaticBendStrength::default(),
                 AnalyticalNormals,
                 PointLights,
+                DirectionalLights,
+                InstanceColor::new(RED_400.into(), BLUE_400.into())
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),

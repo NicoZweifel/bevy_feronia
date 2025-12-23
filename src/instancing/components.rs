@@ -179,10 +179,10 @@ pub struct GpuCull;
 ///    - `1.0`: **Root / Base** of the mesh.
 ///
 /// #### Troubleshooting:
-///   - If you have black spots on your mesh, `uv.y` isn't ranging from `0.0` to `1.0`.
+///   - If you have black spots or other artifacts on your mesh, `uv.y` might not be ranging from `0.0` to `1.0`.
 ///
 ///   - If your colors appear upside down (Top Color at the bottom), your mesh likely uses
-///   UVs where `0.0` is at the bottom. You should flip the UVs vertically (so the root is at `1.0`).
+///     UVs where `0.0` is at the bottom. You should flip the UVs vertically (so the root is at `1.0`).
 ///
 /// ### Notes
 ///
