@@ -80,11 +80,13 @@ fn scatter_on_keypress(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut world_seed: ResMut<WorldSeed>,
     root: Single<Entity, With<ScatterRoot>>,
+    mut mw_clear_root: MessageWriter<ClearScatterRoot>,
 ) {
     if !keyboard_input.just_pressed(KeyCode::Space) {
         return;
     };
 
+    mw_clear_root.write((*root).into());
     **world_seed = rng().next_u64();
 
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
