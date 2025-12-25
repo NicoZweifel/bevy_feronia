@@ -48,7 +48,7 @@ impl<'a> Sampler for DensityMapSampler<'a> {
                 f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
             }
             TextureFormat::Rg16Float | TextureFormat::R16Float | TextureFormat::Rgba16Float => {
-                f32::from_le_bytes([0, 0, bytes[0], bytes[1]])
+                half::f16::from_le_bytes([bytes[0], bytes[1]]).to_f32()
             }
             TextureFormat::Rg16Unorm
             | TextureFormat::Rg16Uint
