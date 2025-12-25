@@ -28,7 +28,13 @@ fn main() -> AppExit {
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, (setup_density_map, setup).chain())
-        .add_systems(Update, scatter_on_keypress.in_set(ScatterSet::Ready))
+        .add_systems(
+            Update,
+            (
+                scatter_on_keypress.in_set(ScatterSet::Ready),
+                select_map_on_keypress,
+            ),
+        )
         .run()
 }
 
@@ -41,7 +47,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             // Scatter options
             (
                 DistributionDensity(100.),
-                DistributionPattern(density_map.clone()),
+                DistributionPattern(density_map.images[0].clone()),
                 InstanceRotationYaw::default(),
                 InstanceScale::default(),
                 ScaleDensity,
@@ -84,9 +90,30 @@ fn scatter_on_keypress(
     cmd.trigger(Scatter::<InstancedWindAffectedMaterial>::new(*root));
 }
 
+fn select_map_on_keypress(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    density_map: Res<DensityMap>,
+    mut distribution_pattern_query: Query<&mut DistributionPattern>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Digit1) {
+        for mut pattern in &mut distribution_pattern_query {
+            pattern.0 = density_map.images[0].clone();
+        }
+        info!("Density map is set to: Generated perlin noise");
+    };
+
+    if keyboard_input.just_pressed(KeyCode::Digit2) {
+        for mut pattern in &mut distribution_pattern_query {
+            pattern.0 = density_map.images[1].clone();
+        }
+        info!("Density map is set to: 'assets/density_map.png' image file");
+    };
+}
+
 /// Simulates an artist drawing density until tooling to do that is ready.
 fn setup_density_map(
     mut commands: Commands,
+    assets: Res<AssetServer>,
     mut images: ResMut<Assets<Image>>,
     config: Res<DensityMapConfig>,
 ) {
@@ -123,8 +150,9 @@ fn setup_density_map(
         ..default()
     });
 
-    let handle = images.add(density_image);
-    commands.insert_resource(DensityMap(handle));
+    let images = [images.add(density_image), assets.load("density_map.png")];
+
+    commands.insert_resource(DensityMap { images });
 }
 
 #[derive(Resource)]
@@ -132,5 +160,7 @@ pub struct DensityMapConfig {
     pub size: u32,
 }
 
-#[derive(Resource, Deref, DerefMut)]
-struct DensityMap(Handle<Image>);
+#[derive(Resource)]
+struct DensityMap {
+    images: [Handle<Image>; 2],
+}
