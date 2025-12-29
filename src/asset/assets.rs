@@ -1,17 +1,19 @@
 use crate::core::*;
 use crate::prelude::*;
+
 use bevy_asset::*;
 use bevy_camera::primitives::Aabb;
+use bevy_color::Color;
 use bevy_ecs::prelude::*;
 use bevy_mesh::Mesh;
-use bevy_pbr::{Material, StandardMaterial};
-use bevy_reflect::prelude::{Reflect, ReflectDefault};
-use bevy_transform::prelude::Transform;
+use bevy_pbr::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_transform::prelude::*;
+
 use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
 use avian3d::prelude::{Collider, RigidBody};
-use bevy_color::Color;
 
 /// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug, Reflect, Default)]
@@ -153,13 +155,17 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
                 || layer_material_option_data.wind_affected.is_some(),
         };
 
+        let root_space_tf = child_data
+            .global_transform
+            .relative_to(item_root_data.global_transform);
+
         Some(ScatterAssetPartEntity {
             entity,
             part: ScatterAssetPart::new(
                 item_of.name.clone(),
                 material.0.clone(),
                 mesh.0.clone(),
-                *child_data.transform,
+                root_space_tf,
                 part_properties,
                 #[cfg(feature = "avian")]
                 child_data.o_collider.cloned(),

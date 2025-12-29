@@ -3,6 +3,7 @@ pub mod events;
 pub mod utils;
 
 pub use components::*;
+pub use utils::*;
 
 use crate::prelude::*;
 

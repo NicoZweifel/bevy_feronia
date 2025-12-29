@@ -1,20 +1,21 @@
-use crate::core::{LevelOfDetail, MaterialOptionData};
-use crate::prelude::{WindAffected, WindConfig, WindOptionData};
+use crate::prelude::*;
+
 use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QueryData;
 use bevy_mesh::Mesh3d;
-use bevy_pbr::{Material, MeshMaterial3d, StandardMaterial};
-use bevy_transform::prelude::Transform;
+use bevy_pbr::prelude::*;
+use bevy_transform::prelude::*;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::{Collider, RigidBody};
+use avian3d::prelude::*;
 
 #[derive(QueryData)]
 #[query_data()]
 pub struct CollectableQueryData<T: Material = StandardMaterial> {
     pub entity: Entity,
     pub transform: &'static Transform,
+    pub global_transform: &'static GlobalTransform,
     pub o_material: Option<&'static MeshMaterial3d<T>>,
     pub o_mesh: Option<&'static Mesh3d>,
     pub o_aabb: Option<&'static Aabb>,
