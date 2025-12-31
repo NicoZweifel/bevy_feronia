@@ -24,13 +24,15 @@
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 
 #ifdef BINDLESS
-#import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
+#import bevy_feronia::extension::bindings::material_uniforms_array
+#else
+#import bevy_feronia::extension::bindings::material_uniforms
 #endif
 
 #ifdef BINDLESS
-#import bevy_feronia::bindings::{wind_indices, wind_material}
+#import bevy_feronia::wind::bindings::wind_affected_material_indices
 #else
-#import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
+#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
 #endif
 
 #import bevy_feronia::displace::{displace_vertex_and_calc_normal}
@@ -43,9 +45,11 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 
 #ifdef BINDLESS
-        let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-        let wind =  wind_material[wind_indices[slot].material];
+    let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
+    let material_uniforms = material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
+
+    let wind = material_uniforms.wind;
 
     // --- CURRENT FRAME ---
     {

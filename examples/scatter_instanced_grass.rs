@@ -54,7 +54,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 AnalyticalNormals,
                 PointLights,
                 DirectionalLights,
-                InstanceColor::new(RED_400.into(), BLUE_400.into())
+                InstanceColorGradient::new(RED_400.into(), BLUE_400.into())
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),

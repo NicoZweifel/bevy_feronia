@@ -4,7 +4,6 @@
 #import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::forward_io::Vertex
 
-
 #import bevy_feronia::forward_sss_io::VertexOutput
 #import bevy_feronia::wind::Wind
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
@@ -12,11 +11,16 @@
 #import bevy_feronia::noise::sample_noise
 
 #ifdef BINDLESS
-    #import bevy_feronia::bindings::{wind_indices, wind_material}
+#import bevy_feronia::extension::bindings::material_uniforms_array
 #else
-    #import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
+#import bevy_feronia::extension::bindings::material_uniforms
 #endif
 
+#ifdef BINDLESS
+#import bevy_feronia::wind::bindings::wind_affected_material_indices
+#else
+#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
+#endif
 
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
@@ -24,9 +28,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
 #ifdef BINDLESS
     let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-    let wind =  wind_material[wind_indices[slot].material];
+    let material_uniforms = material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
 
+    let wind = material_uniforms.wind;
     let world_from_local = get_world_from_local(vertex.instance_index);
 
     // --- INSTANCE ---

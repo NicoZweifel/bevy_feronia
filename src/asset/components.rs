@@ -67,6 +67,7 @@ where
 
         let mut union_aabb = parts[0].properties.aabb;
         for part in &parts[1..] {
+            // TODO transforms
             union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
         }
 

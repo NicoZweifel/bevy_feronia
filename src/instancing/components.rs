@@ -1,16 +1,7 @@
-use bevy_color::{Color, LinearRgba};
+use bevy_color::Color;
 use bevy_derive::{Deref, DerefMut};
-use bevy_ecs::{prelude::*, query::QueryItem};
-use bevy_math::{Mat4, Vec3, Vec4};
+use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
-use bevy_render::{
-    extract_component::ExtractComponent, render_resource::BindGroup, render_resource::Buffer,
-};
-use bevy_transform::prelude::GlobalTransform;
-use bevy_utils::default;
-use bytemuck::{Pod, Zeroable};
-use std::fmt;
-use std::sync::Arc;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
 ///
@@ -18,7 +9,7 @@ use std::sync::Arc;
 /// * **Higher values** (e.g., 32.0, 64.0) result in smaller, tighter, sharper highlights (wet/glossy look).
 /// * **Lower values** (e.g., 4.0, 8.0) result in broader, duller highlights (rough surface).
 ///
-/// Maps to `specular_power` in the shader.
+/// Maps to `material_uniforms.specular_power` in the shader.
 ///
 /// Defaults to `32.0`.
 ///
@@ -32,6 +23,15 @@ impl Default for SpecularPower {
         Self(32.0)
     }
 }
+
+/// Enabled a fake Ambient Occlusion effect.
+///
+/// Enables `#ifdef AMBIENT_OCCLUSION` in shaders.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct AmbientOcclusion;
 
 /// Controls the intensity of the specular highlight.
 ///
@@ -62,7 +62,7 @@ impl Default for SpecularStrength {
 /// * `0.0`: Opaque (no light passes through).
 /// * Higher values increase the brightness of backlit surfaces.
 ///
-/// Maps to `translucency` in the shader.
+/// Corresponds to `material_uniforms.translucency` in the shader.
 /// Defaults to `0.6`.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
@@ -129,7 +129,7 @@ pub struct PointLights;
 ///
 /// ### Notes
 ///
-/// Corresponds to `wind.curve_factor` in shaders.
+/// Corresponds to `material_uniforms.curve_factor` in shaders.
 ///
 /// Defaults to `0.3`.
 ///
@@ -146,10 +146,10 @@ impl Default for CurveFactor {
 
 /// Controls a persistent, non-wind bend.
 ///
-/// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
-///
 /// A higher value will apply a stronger Bézier curve and will affect the instances more uniformly,
 /// while a lower value will affect them more randomly and apply less curve.
+///
+/// Corresponds to `material_uniforms.static_bend_strength` in shaders.
 ///
 /// Defaults to `0.5`.
 ///
@@ -164,9 +164,10 @@ impl Default for StaticBendStrength {
     }
 }
 
-/// Marker component to opt in to GPU-driven culling/preparation.
-#[derive(Component, Clone, Copy, Default, ExtractComponent)]
-pub struct GpuCull;
+/// Sets the material base color.
+#[derive(Component, Clone, Copy, Debug, Reflect, Default, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct InstanceColor(pub Color);
 
 /// Sets a material color gradient.
 ///
@@ -186,152 +187,40 @@ pub struct GpuCull;
 ///
 /// ### Notes
 ///
-/// Corresponds to `instance_uniforms.color` in shaders.
+/// Corresponds to the following uniforms in shaders.
+///   - `material.bottom_color`
+///   - `material.top_color`
+///   - `material.tint_factor`
+///   - `material.gradient_start`
+///   - `material.gradient_end`
 ///
 /// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Copy, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
-pub struct InstanceColor {
+pub struct InstanceColorGradient {
+    /// The top color if the gradient.
     pub top: Color,
+    /// The bottom color of the gradient.
     pub bottom: Color,
+    /// The tint factor of the gradient.
+    /// - 0.0 = no tint
+    /// - 1.0 = full tint
+    pub tint: f32,
+    /// The height (0.0 to 1.0) where the bottom color stops being solid
+    /// and the gradient begins transitioning to be top-colored.
+    pub start: f32,
+    /// The height (0.0 to 1.0) where the gradient finishes, becoming fully top-colored.
+    pub end: f32,
 }
 
-impl InstanceColor {
+impl InstanceColorGradient {
     pub fn new(top: Color, bottom: Color) -> Self {
-        Self { top, bottom }
-    }
-}
-
-#[derive(Component, Clone, Copy, Deref, DerefMut)]
-pub(crate) struct InstancePipelineKey(pub u64);
-
-impl ExtractComponent for InstancePipelineKey {
-    type QueryData = &'static InstancePipelineKey;
-    type QueryFilter = ();
-    type Out = Self;
-
-    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
-        Some(*item)
-    }
-}
-
-#[derive(Clone, Copy, Pod, Zeroable, Default)]
-#[repr(C)]
-pub struct InstanceData {
-    pub position: Vec3,
-    pub scale: f32,
-
-    pub index: u32,
-    pub _padding: [u32; 3],
-}
-
-#[derive(Component, Clone, Reflect, Default)]
-#[reflect(Component, Clone, Debug)]
-pub struct InstanceMaterialData {
-    #[reflect(ignore)]
-    pub instances: Arc<Vec<InstanceData>>,
-    pub top_color: LinearRgba,
-    pub bottom_color: LinearRgba,
-    pub visibility_range: Vec4,
-    pub static_bend_strength: f32,
-    pub curve_factor: f32,
-    pub translucency: f32,
-    pub specular_strength: f32,
-    pub specular_power: f32,
-}
-
-impl fmt::Debug for InstanceMaterialData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("InstanceMaterialData")
-            .field("instances", &self.instances.len())
-            .field("top_color", &self.top_color)
-            .field("bottom_color", &self.bottom_color)
-            .field("visibility_range", &self.visibility_range)
-            .field("static_bend_strength", &self.static_bend_strength)
-            .field("curve_factor", &self.curve_factor)
-            .field("translucency", &self.translucency)
-            .field("specular_strength", &self.specular_strength)
-            .field("specular_power", &self.specular_power)
-            .finish()
-    }
-}
-
-impl ExtractComponent for InstanceMaterialData {
-    type QueryData = (&'static Self, &'static GlobalTransform);
-    type QueryFilter = ();
-    type Out = (Self, GlobalTransform);
-
-    fn extract_component(
-        (data, transform): QueryItem<'_, '_, Self::QueryData>,
-    ) -> Option<Self::Out> {
-        Some((data.clone(), *transform))
-    }
-}
-
-#[derive(Component)]
-pub struct InstanceBuffer {
-    pub buffer: Buffer,
-    pub length: usize,
-}
-
-#[derive(Component)]
-pub struct GpuDrawIndexedIndirect {
-    pub buffer: Buffer,
-    pub offset: u64,
-}
-
-#[derive(Component)]
-pub struct InstanceLodBuffer {
-    pub buffer: Buffer,
-}
-
-#[derive(Clone, Copy, Pod, Zeroable, Default)]
-#[repr(C)]
-pub struct InstanceUniforms {
-    pub world_from_local: Mat4,
-
-    pub top_color: LinearRgba,
-
-    pub bottom_color: LinearRgba,
-
-    pub visibility_range: Vec4,
-
-    pub static_bend_strength: f32,
-    pub curve_factor: f32,
-    pub translucency: f32,
-    pub specular_strength: f32,
-
-    pub specular_power: f32,
-    pub _padding: [f32; 3],
-}
-
-impl From<&InstanceMaterialData> for InstanceUniforms {
-    fn from(value: &InstanceMaterialData) -> Self {
-        InstanceUniforms {
-            top_color: value.top_color,
-            bottom_color: value.bottom_color,
-            visibility_range: value.visibility_range,
-            static_bend_strength: value.static_bend_strength,
-            curve_factor: value.curve_factor,
-            translucency: value.translucency,
-            specular_power: value.specular_power,
-            specular_strength: value.specular_strength,
-            ..default()
+        Self {
+            top,
+            bottom,
+            tint: 1.0,
+            start: 0.0,
+            end: 1.0,
         }
     }
 }
-
-#[derive(Component)]
-pub struct InstanceUniformBuffer {
-    pub buffer: Buffer,
-    pub bind_group: BindGroup,
-}
-
-#[derive(Component)]
-pub struct InstancedComputeSourceBuffer {
-    pub buffer: Buffer,
-    pub count: u32,
-}
-
-#[derive(Component)]
-pub struct InstancedComputeBindGroup(pub BindGroup);

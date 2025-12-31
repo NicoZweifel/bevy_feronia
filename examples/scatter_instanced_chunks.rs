@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
     prelude::*,
@@ -56,6 +57,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 InstanceJitter(1.),
                 ScatterChunked,
                 ScaleDensity,
+                InstanceRotationYaw::default(),
             ),
             // Material options
             (
@@ -66,7 +68,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 CurveFactor::default(),
                 DirectionalLights,
                 PointLights,
-                GpuCull
+                GpuCullCompute
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

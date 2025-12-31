@@ -9,29 +9,16 @@
 #import bevy_pbr::utils::rand_f
 #import bevy_pbr::mesh_bindings::mesh
 
+
 #import bevy_feronia::wind::Wind
+#import bevy_feronia::instancing::bindings::material_uniforms
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 #import bevy_feronia::displace::displace_vertex_and_calc_normal
 #import bevy_feronia::noise::sample_noise
 
+#import bevy_eidolon::render::utils
 #import bevy_eidolon::render::bindings::instance_uniforms
 #import bevy_eidolon::render::io_types::Vertex
-
-struct InstancedMaterialUniforms {
-    wind: Wind,
-    top_color: vec4<f32>,
-    bottom_color: vec4<f32>,
-    static_bend_strength: f32,
-    curve_factor: f32,
-    translucency: f32,
-    specular_strength: f32,
-    specular_power: f32,
-};
-
-@group(3) @binding(50) var<uniform> material: InstancedMaterialUniforms;
-@group(3) @binding(51) var noise_texture: texture_2d<f32>;
-@group(3) @binding(52) var noise_texture_sampler: sampler;
-
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
@@ -47,7 +34,9 @@ struct VertexOutput {
     @location(5) local_pos: vec3<f32>,
 
     @location(6) curve_factor: f32,
+#ifdef AMBIENT_OCCLUSION
     @location(7) ao: f32,
+#endif
 };
 
 @vertex
@@ -67,51 +56,33 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         vec4<f32>(0.0, 0.0, scale, 0.0),
         vec4<f32>(translation, 1.0)
     );
+   var final_matrix = instance_uniforms.world_from_local * world_from_local_matrix;
 #else
-    // TODO pre-calculate (use i_rotation)
-
-    let angle = rand_f(&rand_state) * 6.2831853;
-
-    let c = cos(angle);
-    let s = sin(angle);
-
-    let rot_y_matrix = mat3x3<f32>(
-        vec3<f32>(c, 0.0, s),
-        vec3<f32>(0.0, 1.0, 0.0),
-        vec3<f32>(-s, 0.0, c)
+   let final_matrix = utils::calculate_instance_world_matrix(
+        vertex.i_pos_scale,
+        vertex.i_rotation,
+        instance_uniforms.world_from_local
     );
-
-    let rot_scale_matrix = rot_y_matrix * scale;
-
-    world_from_local_matrix = mat4x4<f32>(
-        vec4<f32>(rot_scale_matrix[0], 0.0),
-        vec4<f32>(rot_scale_matrix[1], 0.0),
-        vec4<f32>(rot_scale_matrix[2], 0.0),
-        vec4<f32>(translation, 1.0)
-    );
-
 #endif
 
-   var instance_world_matrix = instance_uniforms.world_from_local * world_from_local_matrix;
-
     var instance: InstanceInfo;
-    instance.world_from_local = instance_world_matrix;
-    instance.instance_position = instance_world_matrix[3];
+    instance.world_from_local = final_matrix;
+    instance.instance_position = final_matrix[3];
     instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
 
 #ifdef STATIC_BEND
     let raw_rand = rand_f(&rand_state);
-    let biased_rand = material.static_bend_strength + (raw_rand * (1. - material.static_bend_strength));
+    let biased_rand = material_uniforms.static_bend_strength + (raw_rand * (1. - material_uniforms.static_bend_strength));
 
     let static_bend_angle = rand_f(&rand_state) * 6.28318;
 
-    let static_bend_strength = biased_rand * material.static_bend_strength;
+    let static_bend_strength = biased_rand * material_uniforms.static_bend_strength;
 
     let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
 #endif
 
-    let wind = material.wind;
+    let wind = material_uniforms.wind;
     let noise = sample_noise(instance, wind, vertex.position);
 
     // --- DISPLACEMENT ---
@@ -144,48 +115,24 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.uv = vertex.uv;
 #endif
 
-    // Calculate the AO here, but leave the gradient/texture for the fragment shader.
+#ifdef AMBIENT_OCCLUSION
     let height_range = wind.aabb_max.y - wind.aabb_min.y;
     let normalized_height = saturate((vertex.position.y - wind.aabb_min.y) / max(height_range, 0.0001));
 
-    // 1.0 = full brightness, 0.0 = dark root area (global)
     out.ao = normalized_height;
-
-#ifdef VISIBILITY_RANGE_DITHER
-    out.visibility_range_dither = get_visibility_range_dither_level(
-        instance_uniforms.visibility_range, instance.world_from_local[3]);
 #endif
 
+    out.visibility_range_dither = utils::get_visibility_range_dither_level(
+        instance_uniforms.visibility_range,
+        final_matrix[3]
+    );
+
 #ifdef CURVE_NORMALS
-    out.curve_factor = instance_uniforms.curve_factor;
+    out.curve_factor = material_uniforms.curve_factor;
 #endif
 
     return out;
 }
-
-
-
-
-#ifdef VISIBILITY_RANGE_DITHER
-// taken/adapted from https://github.com/bevyengine/bevy/blob/main/crates/bevy_pbr/src/render/mesh_functions.wgsl
-fn get_visibility_range_dither_level(lod_range: vec4<f32>, world_position: vec4<f32>) -> i32 {
-    let camera_distance = length(view.world_position.xyz - world_position.xyz);
-
-    // This encodes the following mapping:
-    //
-    //     `lod_range.`          x        y        z        w           camera distance
-    //                   ←───────┼────────┼────────┼────────┼────────→
-    //     Dither Level  -16    -16       0        0        16      16  Dither Level
-
-    let offset = select(-16, 0, camera_distance >= lod_range.z);
-    let bounds = select(lod_range.xy, lod_range.zw, camera_distance >= lod_range.z);
-    let level = i32(round((camera_distance - bounds.x) / (bounds.y - bounds.x) * 16.));
-    return offset + clamp(level, 0, 16);
-}
-#endif
-
-
-
 
 @fragment
 fn fragment(
@@ -199,39 +146,47 @@ fn fragment(
     #endif
 #endif
 
-    var top_color = material.top_color.rgb;
-    var bottom_color = material.bottom_color.rgb;
-
     // UV Requirements:
     // - uv.y = 0.0 corresponds to the tip (Top).
     // - uv.y = 1.0 corresponds to the root (Bottom).
     let height_factor = saturate(1.0 - in.uv.y);
+    let gradient_mix = smoothstep(
+        material_uniforms.gradient_start,
+        material_uniforms.gradient_end,
+        height_factor
+    );
+    
+    let raw_gradient_color = mix(
+        material_uniforms.bottom_color.rgb,
+        material_uniforms.top_color.rgb,
+        gradient_mix
+    );
 
-    let gradient_mix = pow(height_factor, 0.8);
-    let blade_color_rgb = mix(bottom_color, top_color, gradient_mix);
+    let gradient_lum = dot(raw_gradient_color, vec3<f32>(0.299, 0.587, 0.114));
+    let instance_shaded_color = instance_uniforms.color.rgb * gradient_lum;
 
     // TODO: allow texture usage here
-    var albedo = blade_color_rgb;
+    var albedo = mix(
+        instance_shaded_color,
+        raw_gradient_color,
+        material_uniforms.tint_factor
+    );;
 
-    // in.color.r holds the normalized world height
-    let global_height_factor = in.ao;
-
-    // fake ao
-    let ambient_occlusion = mix(0.4, 1.0, global_height_factor);
-
+#ifdef AMBIENT_OCCLUSION
+    // fake ao TODO
+    let ambient_occlusion = mix(0.4, 1.0, in.ao);
     albedo = albedo * ambient_occlusion;
+#endif
 
-    var color_for_lighting = vec4<f32>(albedo, 1.0);
-
+    var pbr_color = vec4<f32>(albedo, 1.0);
     var normal = in.world_normal;
-
     if !is_front {
         normal = -normal;
     }
 
 #ifndef DIRECTIONAL_LIGHTS
 #ifndef POINT_LIGHTS
-    return vec4<f32>(blade_color_rgb, in.ao);
+    return pbr_color;
 #endif
 #endif
 
@@ -271,9 +226,9 @@ fn fragment(
     const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
     const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
 
-    var final_color_rgb = color_for_lighting.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
+    var final_color_rgb = pbr_color.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.);
-    
+
     let V = normalize(view.world_position.xyz - in.world_position.xyz);
 
     let view_z = dot(vec4<f32>(
@@ -295,13 +250,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * material.translucency;
+        let NdotL_back = saturate(-NdotL_raw) * material_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, material.specular_power);
+        let specular_factor = pow(NdotH, material_uniforms.specular_power);
 
         let shadow = fetch_directional_shadow(
             i,
@@ -312,11 +267,11 @@ fn fragment(
         let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
-        final_color_rgb += color_for_lighting.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
+        final_color_rgb += pbr_color.rgb * scaled_light_color * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * specular_factor * material.specular_strength * shadow;
+            final_specular += scaled_light_color * specular_factor * material_uniforms.specular_strength * shadow;
         }
     }
 #endif
@@ -356,13 +311,13 @@ fn fragment(
         // Translucency
         let NdotL_raw = dot(normal, L);
         let NdotL_front = saturate(NdotL_raw);
-        let NdotL_back = saturate(-NdotL_raw) * material.translucency;
+        let NdotL_back = saturate(-NdotL_raw) * material_uniforms.translucency;
         let NdotL = NdotL_front + NdotL_back;
 
         // Specular Term
         let H = normalize(V + L);
         let NdotH = saturate(dot(normal, H));
-        let specular_factor = pow(NdotH, material.specular_power);
+        let specular_factor = pow(NdotH, material_uniforms.specular_power);
 
         var shadow = 1.;
         if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
@@ -371,18 +326,18 @@ fn fragment(
         let final_shadow = clamp(shadow, 0.1, 1.);
 
         // Accumulate Diffuse
-        final_color_rgb += color_for_lighting.rgb * scaled_light_color * attenuation * NdotL * final_shadow * DIFFUSE_SCALING;
+        final_color_rgb += pbr_color.rgb * scaled_light_color * attenuation * NdotL * final_shadow * DIFFUSE_SCALING;
 
         //  Accumulate Specular
         if NdotL_raw > 0. {
-            final_specular += scaled_light_color * attenuation * specular_factor * material.specular_strength * shadow;
+            final_specular += scaled_light_color * attenuation * specular_factor * material_uniforms.specular_strength * shadow;
         }
     }
 #endif // POINT_LIGHTS
 
     final_color_rgb += final_specular;
 
-    var final_color = vec4<f32>(final_color_rgb, in.ao);
+    var final_color = vec4<f32>(final_color_rgb, pbr_color.w);
 
 #ifdef MATERIAL_DEBUG
     final_color = wind.debug_color;

@@ -28,6 +28,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use bevy_light::{CascadeShadowConfig, DirectionalLightShadowMap};
 use bevy_render::view::Hdr;
+use bevy_show_prepass::{ShowPrepass, ShowPrepassPlugin};
 use camera_controller::*;
 use iyes_perf_ui::prelude::*;
 
@@ -67,6 +68,7 @@ impl Plugin for ExamplePlugin {
                 EntityCountDiagnosticsPlugin::default(),
                 SystemInformationDiagnosticsPlugin,
                 PerfUiPlugin,
+                ShowPrepassPlugin,
             ))
             .add_plugins((
                 EguiPlugin::default(),
@@ -147,7 +149,7 @@ impl Plugin for ExamplePlugin {
                     ).run_if(resource_exists_and_changed::<ExampleDebugOptions>),
                     setup_camera,
                     anisotropic_filtering,
-                    (rotate_sun, move_on_key_press).in_set(ScatterSet::Ready),
+                    (rotate_sun, move_on_key_press, choose_show_prepass_mode).in_set(ScatterSet::Ready),
                     respawn_directional_light
                         .run_if(resource_changed::<DirectionalLightShadowMap>)
                         .in_set(QualitySettingsUpdated),
@@ -351,5 +353,21 @@ fn move_on_key_press(
         transform.translation.y += step;
 
         transform.rotate_around(Vec3::ZERO, rotation);
+    }
+}
+
+fn choose_show_prepass_mode(
+    mut commands: Commands,
+    camera: Single<Entity, With<Camera3d>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::F1) {
+        commands.entity(*camera).remove::<ShowPrepass>();
+    } else if keyboard.just_pressed(KeyCode::F2) {
+        commands.entity(*camera).insert(ShowPrepass::Depth);
+    } else if keyboard.just_pressed(KeyCode::F3) {
+        commands.entity(*camera).insert(ShowPrepass::Normals);
+    } else if keyboard.just_pressed(KeyCode::F4) {
+        commands.entity(*camera).insert(ShowPrepass::MotionVectors);
     }
 }

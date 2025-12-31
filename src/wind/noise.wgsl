@@ -1,17 +1,16 @@
 #define_import_path bevy_feronia::noise
+
 #import bevy_feronia::types::{SampledNoise, InstanceInfo}
 #import bevy_feronia::wind::{Wind}
+
 #import bevy_pbr::utils::rand_f
 #import bevy_pbr::mesh_bindings::mesh
 
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
-#endif
-
-#ifdef BINDLESS
-#import bevy_feronia::bindings::{wind_indices, wind_material}
+#import bevy_feronia::wind::bindings::wind_affected_material_indices
 #else
-#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
+#import bevy_feronia::wind::bindings::{noise_texture, noise_texture_sampler}
 #endif
 
 fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>) -> SampledNoise {
@@ -20,8 +19,8 @@ fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>)
 #ifdef WIND_AFFECTED
 #ifdef BINDLESS
     let slot = mesh[instance.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-    let noise_texture =  bindless_textures_2d[wind_indices[slot].noise_texture];
-    let noise_texture_sampler = bindless_samplers_filtering[wind_indices[slot].noise_texture_sampler];
+    let noise_texture =  bindless_textures_2d[wind_affected_material_indices[slot].noise_texture];
+    let noise_texture_sampler = bindless_samplers_filtering[wind_affected_material_indices[slot].noise_texture_sampler];
 #endif
 
     // Need to use local_vertex_pos here.

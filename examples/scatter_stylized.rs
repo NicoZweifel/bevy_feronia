@@ -27,7 +27,6 @@ fn main() -> AppExit {
             ExtendedWindAffectedScatterPlugin,
         ))
         .init_state::<AppState>()
-        .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
@@ -49,17 +48,13 @@ enum AppState {
 #[derive(Resource)]
 struct Scenes {
     landscape: Handle<Scene>,
-    lod_high: Handle<Scene>,
-    lod_medium: Handle<Scene>,
     lod_low: Handle<Scene>,
 }
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Scenes {
         landscape: asset_server.load("landscape_flat_large.glb#Scene0"),
-        lod_high: asset_server.load("trees_high_lod.glb#Scene0"),
-        lod_medium: asset_server.load("trees_medium_lod.glb#Scene0"),
-        lod_low: asset_server.load("trees_low_lod.glb#Scene0"),
+        lod_low: asset_server.load("trees_stylized.glb#Scene0"),
     });
 }
 
@@ -68,18 +63,13 @@ fn check_assets_loaded(
     asset_server: Res<AssetServer>,
     handles: Res<Scenes>,
 ) {
-    let all_loaded = [
-        handles.landscape.id(),
-        handles.lod_high.id(),
-        handles.lod_medium.id(),
-        handles.lod_low.id(),
-    ]
-    .iter()
-    .all(|id| {
-        asset_server
-            .get_load_state(*id)
-            .is_some_and(|s| s.is_loaded())
-    });
+    let all_loaded = [handles.landscape.id(), handles.lod_low.id()]
+        .iter()
+        .all(|id| {
+            asset_server
+                .get_load_state(*id)
+                .is_some_and(|s| s.is_loaded())
+        });
 
     if all_loaded {
         next_state.set(AppState::InGame);
@@ -94,7 +84,7 @@ fn spawn_scene(
     cmd.spawn((
         SceneRoot(handles.landscape.clone()),
         ScatterRoot::default(),
-        LodConfig::from(vec![10.0.into(), 35.0.into(), 85.0.into()]),
+        LodConfig::none(),
         children![(
             extension::scatter_layer("Tree Layer"),
             DistributionDensity(10.),
@@ -105,11 +95,7 @@ fn spawn_scene(
             InstanceScale { min: 1., max: 4. },
             WindAffected,
             Avoidance(3.),
-            children![
-                (SceneRoot(handles.lod_high.clone()),),
-                (LevelOfDetail(1), SceneRoot(handles.lod_medium.clone()),),
-                (LevelOfDetail(2), SceneRoot(handles.lod_low.clone()),)
-            ]
+            children![SceneRoot(handles.lod_low.clone()),]
         )],
     ));
 

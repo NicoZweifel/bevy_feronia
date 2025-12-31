@@ -829,9 +829,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_eidolon"
-version = "0.1.0"
+version = "0.1.1-rc.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11e746a31183af18341713df86c8d2671dd76045527f719d84af8ce2bbcc6aac"
+checksum = "6c6690255001c5b0c87f17447e07eb45d3ab9240aae9732c9794023b2da004e1"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -843,6 +843,7 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
+ "bevy_platform",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -850,6 +851,7 @@ dependencies = [
  "bevy_utils",
  "bitflags 2.10.0",
  "bytemuck",
+ "derive_more",
  "tracing",
 ]
 
@@ -865,7 +867,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "avian3d",
  "bevy",
@@ -874,7 +876,6 @@ dependencies = [
  "bevy_asset",
  "bevy_camera",
  "bevy_color",
- "bevy_core_pipeline",
  "bevy_derive",
  "bevy_ecs",
  "bevy_eidolon",
@@ -889,6 +890,7 @@ dependencies = [
  "bevy_render",
  "bevy_scene",
  "bevy_shader",
+ "bevy_show_prepass",
  "bevy_state",
  "bevy_tasks",
  "bevy_transform",
@@ -896,6 +898,7 @@ dependencies = [
  "bitflags 2.10.0",
  "bytemuck",
  "derive_more",
+ "half",
  "iyes_perf_ui",
  "log",
  "noise",
@@ -1484,6 +1487,15 @@ dependencies = [
  "thiserror 2.0.17",
  "tracing",
  "wgpu-types",
+]
+
+[[package]]
+name = "bevy_show_prepass"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddcea96cb3b8981b8849bb5993af305a84c0965f435949034cd04d0a806c0dfb"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -2135,6 +2147,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "convert_case"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "633458d4ef8c78b72454de2d54fd6ab2e60f9e02be22f3c6104cdc8a4e0fceb9"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2356,21 +2377,23 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
 name = "derive_more"
-version = "2.0.1"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+checksum = "d751e9e49156b02b44f9c1815bcb94b984cdcc4396ecc32521c739452808b134"
 dependencies = [
  "derive_more-impl",
 ]
 
 [[package]]
 name = "derive_more-impl"
-version = "2.0.1"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+checksum = "799a97264921d8623a957f6c3b9011f3b5492f557bbb7a5a19b7fa6d06ba8dcb"
 dependencies = [
+ "convert_case",
  "proc-macro2",
  "quote",
+ "rustc_version",
  "syn",
  "unicode-xid",
 ]
@@ -3157,9 +3180,9 @@ dependencies = [
 
 [[package]]
 name = "half"
-version = "2.7.0"
+version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54c115d4f30f52c67202f079c5f9d8b49db4691f460fdb0b4c2e838261b2ba5"
+checksum = "6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b"
 dependencies = [
  "cfg-if",
  "crunchy",
@@ -5038,6 +5061,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
+name = "rustc_version"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5149,6 +5181,12 @@ name = "self_cell"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f7d95a54511e0c7be3f51e8867aa8cf35148d7b9445d44de2f943e2b206e749"
+
+[[package]]
+name = "semver"
+version = "1.0.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
 
 [[package]]
 name = "send_wrapper"

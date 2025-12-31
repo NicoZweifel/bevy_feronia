@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.5.9"
+version = "0.6.0"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -30,9 +30,8 @@ bevy_platform= { version = "0.17.2" ,default-features = false}
 bevy_render= { version = "0.17.2" ,default-features = false}
 bevy_shader= { version = "0.17.2" ,default-features = false}
 bevy_utils= { version = "0.17.2" ,default-features = false}
-bevy_core_pipeline= { version = "0.17.2" ,default-features = false}
 bevy_light= { version = "0.17.2" ,default-features = false}
-bevy_eidolon = "0.1.0"
+bevy_eidolon = "0.1.1-rc.9"
 
 bytemuck = "1.23.1"
 noise = "0.9.0"
@@ -42,6 +41,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 xxh3 = "0.1.1"
 rand_pcg = "0.9.0"
 derive_more = "2.0.1"
+half = "2.7.1"
 
 tracing = { version = "0.1.41", default-features = false, optional = true }
 avian3d = { version = "0.4", optional = true }
@@ -69,6 +69,7 @@ tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
+bevy_show_prepass = "0.1.1"
 
 # Idiomatic Bevy code often triggers these lints, and the CI workflow treats them as errors.
 # In some cases they may still signal poor code quality however, so consider commenting out these lines.

@@ -238,17 +238,9 @@ bitflags! {
         const EDGE_CORRECTION = 1 << 1;
         const WIND_LOW_QUALITY = 1 << 2;
         const FAST_NORMALS = 1 << 3;
-        const DEBUG = 1 << 4;
-        const WIND_AFFECTED= 1 << 5;
-        const STATIC_SHADOW = 1<< 6;
-        const STATIC_BEND = 1 << 7;
-        const ANALYTICAL_NORMALS = 1 << 8;
-        const CURVE_NORMALS = 1 << 9;
-         /// TODO use in both materials create separate keys
-        const SUBSURFACE_SCATTERING = 1 << 10;
-        const POINT_LIGHTS = 1 << 11;
-        const DIRECTIONAL_LIGHTS = 1 << 12;
-        const GPU_CULL = 1 << 13;
+        const WIND_AFFECTED= 1 << 4;
+        const STATIC_BEND = 1 << 5;
+        const ANALYTICAL_NORMALS = 1 << 6;
     }
 }
 
@@ -268,18 +260,10 @@ impl From<ScatterMaterialOptions> for WindAffectedKey {
             WindAffectedKey::STATIC_BEND,
             options.static_bend_strength > 0.,
         );
-        key.set(WindAffectedKey::DEBUG, options.debug);
         key.set(
             WindAffectedKey::ANALYTICAL_NORMALS,
             options.analytical_normals,
         );
-        key.set(WindAffectedKey::CURVE_NORMALS, options.curve_factor > 0.);
-        key.set(WindAffectedKey::POINT_LIGHTS, options.point_lights);
-        key.set(
-            WindAffectedKey::DIRECTIONAL_LIGHTS,
-            options.directional_lights,
-        );
-        key.set(WindAffectedKey::GPU_CULL, options.gpu_cull);
 
         key
     }

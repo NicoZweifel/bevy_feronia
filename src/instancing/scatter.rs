@@ -1,10 +1,11 @@
 use crate::prelude::*;
+use bevy_eidolon::prelude::*;
+
 use bevy_asset::Handle;
 use bevy_camera::primitives::Aabb;
-use bevy_color::{Color, LinearRgba};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
-use bevy_math::{Vec3, Vec4};
+use bevy_math::{EulerRot, Vec3, Vec4};
 use bevy_mesh::Mesh3d;
 use bevy_pbr::StandardMaterial;
 use bevy_platform::collections::{HashMap, HashSet, hash_map::Entry};
@@ -12,6 +13,8 @@ use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 use rand::SeedableRng;
+
+use avian3d::math::AsF32;
 use rand::prelude::IndexedRandom;
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
@@ -53,7 +56,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
     }
 
     fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
-        InstancedWindAffectedMeshMaterial(material)
+        InstancedMeshMaterial(material)
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
@@ -99,12 +102,13 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             .enumerate()
             .fold(HashMap::new(), |mut acc, (i, (name, res))| {
                 let position = res.transform.translation;
-
-                let scale = res.transform.scale.element_sum() / 3.0;
+                let (rotation,..) = res.transform.rotation.to_euler(EulerRot::YXZ);
+                let scale = res.transform.scale.x;
 
                 let instance = InstanceData {
                     position,
                     scale,
+                    rotation,
                     index: i as u32,
                     ..default()
                 };
@@ -159,7 +163,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                 .map(|original| {
                                     let mut inst = *original;
                                     inst.position += part.transform.translation * inst.scale;
-                                    inst.scale *= part.transform.scale.element_sum() / 3.0;
+                                    inst.scale *= part.transform.scale.x;
+                                    let ( rotation,..) = part.transform.rotation.to_euler(EulerRot::YXZ);
+                                    inst.rotation += rotation;
+                                    println!("{}", inst.rotation);
                                     inst
                                 })
                                 .collect(),
@@ -168,26 +175,9 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                     let entity = cmd
                         .spawn((
-                            InstancedWindAffectedMeshMaterial(part.material().clone()),
+                            InstancedMeshMaterial(part.material().clone()),
                             Mesh3d(part.mesh().clone()),
                             InstanceMaterialData {
-                                specular_power: asset.properties.options.specular_power,
-                                specular_strength: asset.properties.options.specular_strength,
-                                translucency: asset.properties.options.translucency,
-                                top_color: LinearRgba::from(
-                                    asset
-                                        .properties
-                                        .options
-                                        .top_color
-                                        .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
-                                ),
-                                bottom_color: LinearRgba::from(
-                                    asset
-                                        .properties
-                                        .options
-                                        .bottom_color
-                                        .unwrap_or(Color::hsla(105., 0.54, 0.37, 1.0)),
-                                ),
                                 visibility_range: Vec4::new(
                                     visibility_range.start_margin.start,
                                     visibility_range.start_margin.end,
@@ -195,8 +185,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     visibility_range.end_margin.end,
                                 ),
                                 instances,
-                                static_bend_strength: asset.properties.options.static_bend_strength,
-                                curve_factor: asset.properties.options.curve_factor,
+                                color: default(),
                             },
                             NoAutomaticBatching,
                             ScatteredInstance(request.event.trigger.layer),
@@ -215,7 +204,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     }
 
                     if asset.properties.options.gpu_cull {
-                        cmd.entity(entity).insert(GpuCull);
+                        cmd.entity(entity).insert(GpuCullCompute);
                     }
                 }
             }

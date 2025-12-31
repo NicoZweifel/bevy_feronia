@@ -3,10 +3,12 @@ pub mod events;
 pub mod utils;
 
 pub use components::*;
+pub use utils::*;
 
 use crate::prelude::*;
 
 use bevy_asset::{Asset, Handle};
+use bevy_eidolon::prelude::GpuCullCompute;
 
 use bevy_camera::primitives::Aabb;
 use bevy_color::Color;
@@ -52,7 +54,7 @@ where
 }
 
 /// Collection of material settings defining shader behavior.
-#[derive(Clone, Debug, Reflect, Copy, Default)]
+#[derive(Clone, Debug, Reflect, Copy, Default, PartialEq)]
 pub struct ScatterMaterialOptions {
     /// If true, material is not automatically synced with global [`Wind`].
     // TODO fix this und update options/material settings properly
@@ -80,9 +82,17 @@ pub struct ScatterMaterialOptions {
     /// See [`AnalyticalNormals`].
     pub analytical_normals: bool,
     /// See [`InstanceColor`].
+    pub base_color: Option<Color>,
+    /// See [`InstanceColorGradient`].
     pub top_color: Option<Color>,
-    /// See [`InstanceColor`].
+    /// See [`InstanceColorGradient`].
     pub bottom_color: Option<Color>,
+    /// See [`InstanceColorGradient`].
+    pub tint_factor: f32,
+    /// See [`InstanceColorGradient`].
+    pub gradient_start: f32,
+    /// See [`InstanceColorGradient`].
+    pub gradient_end: f32,
     /// See [`SubsurfaceScattering`].
     pub subsurface_scattering: bool,
     /// See [`SubsurfaceScatteringScale`].
@@ -97,13 +107,15 @@ pub struct ScatterMaterialOptions {
     pub unlit: bool,
     /// See [`GpuCull`].
     pub gpu_cull: bool,
-
     /// See [`Translucency`].
     pub translucency: f32,
     /// See [`SpecularStrength`].
     pub specular_strength: f32,
     /// See [`SpecularPower`].
     pub specular_power: f32,
+
+    /// See [`AmbientOcclusion`].
+    pub ambient_occlusion: bool,
 }
 
 /// Collection of optional material components, usable as `QueryData`.
@@ -119,7 +131,8 @@ pub struct MaterialOptionData {
     pub sss: Option<&'static SubsurfaceScattering>,
     pub sss_scale: Option<&'static SubsurfaceScatteringScale>,
     pub sss_intensity: Option<&'static SubsurfaceScatteringIntensity>,
-    pub scatter_material_color: Option<&'static InstanceColor>,
+    pub base_color: Option<&'static InstanceColor>,
+    pub color_gradient: Option<&'static InstanceColorGradient>,
     pub fast_normals: Option<&'static FastNormals>,
     pub static_bend_strength: Option<&'static StaticBendStrength>,
     pub analytical_normals: Option<&'static AnalyticalNormals>,
@@ -127,10 +140,11 @@ pub struct MaterialOptionData {
     pub point_lights: Option<&'static PointLights>,
     pub static_shadow: Option<&'static StaticShadow>,
     pub unlit: Option<&'static Unlit>,
-    pub gpu_cull: Option<&'static GpuCull>,
+    pub gpu_cull: Option<&'static GpuCullCompute>,
     pub translucency: Option<&'static Translucency>,
     pub specular_strength: Option<&'static SpecularStrength>,
     pub specular_power: Option<&'static SpecularPower>,
+    pub ambient_occlusion: Option<&'static AmbientOcclusion>,
 }
 
 impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
@@ -145,8 +159,12 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             subsurface_scattering: data.sss.is_some(),
             subsurface_scattering_intensity: data.sss_intensity.map(|s| **s).unwrap_or(0.),
             subsurface_scattering_scale: data.sss_scale.map(|s| **s).unwrap_or(0.),
-            top_color: data.scatter_material_color.map(|s| s.top),
-            bottom_color: data.scatter_material_color.map(|s| s.bottom),
+            base_color: data.base_color.map(|c| **c),
+            top_color: data.color_gradient.map(|g| g.top),
+            bottom_color: data.color_gradient.map(|g| g.bottom),
+            tint_factor: data.color_gradient.map(|g| g.tint).unwrap_or(0.),
+            gradient_end: data.color_gradient.map(|g| g.end).unwrap_or(0.),
+            gradient_start: data.color_gradient.map(|g| g.start).unwrap_or(0.),
             fast_normals: data.fast_normals.is_some(),
             static_bend_strength: data.static_bend_strength.map(|s| **s).unwrap_or(0.),
             analytical_normals: data.analytical_normals.is_some(),
@@ -158,6 +176,7 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             translucency: data.translucency.map(|s| **s).unwrap_or(0.),
             specular_strength: data.specular_strength.map(|s| **s).unwrap_or(0.),
             specular_power: data.specular_power.map(|s| **s).unwrap_or(0.),
+            ambient_occlusion: data.ambient_occlusion.is_some(),
             ..default()
         }
     }
@@ -185,14 +204,21 @@ impl ScatterMaterialOptions {
                 .sss_intensity
                 .map(|s| **s)
                 .unwrap_or(self.subsurface_scattering_intensity),
-            top_color: data
-                .scatter_material_color
-                .map(|c| c.top)
-                .or(self.top_color),
-            bottom_color: data
-                .scatter_material_color
-                .map(|c| c.bottom)
-                .or(self.bottom_color),
+            base_color: data.base_color.map(|b| **b).or(self.base_color),
+            top_color: data.color_gradient.map(|c| c.top).or(self.top_color),
+            bottom_color: data.color_gradient.map(|c| c.bottom).or(self.bottom_color),
+            tint_factor: data
+                .color_gradient
+                .map(|c| c.tint)
+                .unwrap_or(self.tint_factor),
+            gradient_start: data
+                .color_gradient
+                .map(|c| c.start)
+                .unwrap_or(self.gradient_start),
+            gradient_end: data
+                .color_gradient
+                .map(|c| c.end)
+                .unwrap_or(self.gradient_end),
             fast_normals: data.fast_normals.is_some() || self.fast_normals,
             static_bend_strength: data
                 .static_bend_strength
@@ -213,6 +239,7 @@ impl ScatterMaterialOptions {
                 .specular_power
                 .map(|s| **s)
                 .unwrap_or(self.specular_power),
+            ambient_occlusion: data.ambient_occlusion.is_some() || self.ambient_occlusion,
             ..*self
         }
     }
@@ -234,8 +261,24 @@ impl ScatterMaterialOptions {
         self.wind_affected = other.wind_affected || self.wind_affected;
         self.low_quality = other.low_quality || self.low_quality;
         self.subsurface_scattering = other.subsurface_scattering || self.subsurface_scattering;
+        self.base_color = other.base_color.or(self.base_color);
         self.top_color = other.top_color.or(self.top_color);
         self.bottom_color = other.bottom_color.or(self.bottom_color);
+        self.tint_factor = if other.tint_factor > 0. {
+            other.tint_factor
+        } else {
+            self.tint_factor
+        };
+        self.gradient_start = if other.gradient_start > 0. {
+            other.gradient_start
+        } else {
+            self.gradient_start
+        };
+        self.gradient_end = if other.gradient_end > 0. {
+            other.gradient_end
+        } else {
+            self.gradient_end
+        };
         self.fast_normals = other.fast_normals || self.fast_normals;
         self.static_bend_strength = if other.static_bend_strength > 0. {
             other.static_bend_strength
@@ -249,7 +292,7 @@ impl ScatterMaterialOptions {
         self.unlit = other.unlit || self.unlit;
         self.gpu_cull = other.gpu_cull || self.gpu_cull;
         self.translucency = if other.translucency > 0. {
-            other.specular_power
+            other.translucency
         } else {
             self.translucency
         };
@@ -263,6 +306,7 @@ impl ScatterMaterialOptions {
         } else {
             self.specular_power
         };
+        self.ambient_occlusion = other.ambient_occlusion || self.ambient_occlusion;
         self
     }
 
@@ -307,9 +351,42 @@ mod tests {
     use super::*;
     use bevy_color::palettes::css::*;
 
+    fn get_base_options() -> ScatterMaterialOptions {
+        ScatterMaterialOptions {
+            controlled: true,
+            debug_color: RED.into(),
+            debug: false,
+            enable_billboarding: false,
+            edge_correction_factor: 10.0,
+            curve_factor: 10.0,
+            wind_affected: false,
+            low_quality: false,
+            subsurface_scattering: false,
+            subsurface_scattering_scale: 10.0,
+            subsurface_scattering_intensity: 10.0,
+            base_color: Some(BLACK.into()),
+            top_color: Some(BLACK.into()),
+            bottom_color: Some(BLACK.into()),
+            tint_factor: 10.0,
+            gradient_start: 10.0,
+            gradient_end: 10.0,
+            fast_normals: false,
+            static_bend_strength: 10.0,
+            analytical_normals: false,
+            directional_lights: false,
+            point_lights: false,
+            static_shadows: false,
+            unlit: false,
+            gpu_cull: false,
+            translucency: 10.0,
+            specular_strength: 10.0,
+            specular_power: 10.0,
+            ambient_occlusion: false,
+        }
+    }
+
     #[test]
-    fn test_from_material_option_data_all_some_should_set() {
-        // Arrange
+    fn test_from_data_all_some_should_set_all_fields() {
         let debug = EnableDebug;
         let billboarding = EnableBillboarding;
         let edge = EdgeCorrectionFactor(1.1);
@@ -319,7 +396,14 @@ mod tests {
         let sss = SubsurfaceScattering;
         let sss_scale = SubsurfaceScatteringScale(0.5);
         let sss_intensity = SubsurfaceScatteringIntensity(0.2);
-        let color = InstanceColor::new(RED.into(), BLUE.into());
+        let base_color = InstanceColor(GREEN.into());
+        let color_gradient = InstanceColorGradient {
+            top: RED.into(),
+            bottom: BLUE.into(),
+            tint: 1.0,
+            start: 0.1,
+            end: 0.9,
+        };
         let fast_normals = FastNormals;
         let bend = StaticBendStrength(3.3);
         let analytical_normals = AnalyticalNormals;
@@ -327,12 +411,13 @@ mod tests {
         let point_lights = PointLights;
         let static_shadow = StaticShadow;
         let unlit = Unlit;
-        let gpu_cull = GpuCull;
+        let gpu_cull = GpuCullCompute;
         let translucency = Translucency(0.3);
         let specular_strength = SpecularStrength(0.5);
         let specular_power = SpecularPower(0.5);
+        let ambient_occlusion = AmbientOcclusion;
 
-        let data_all_some = MaterialOptionDataItem {
+        let data = MaterialOptionDataItem {
             enable_debug: Some(&debug),
             enable_billboarding: Some(&billboarding),
             edge_correction_factor: Some(&edge),
@@ -342,7 +427,8 @@ mod tests {
             sss: Some(&sss),
             sss_scale: Some(&sss_scale),
             sss_intensity: Some(&sss_intensity),
-            scatter_material_color: Some(&color),
+            base_color: Some(&base_color),
+            color_gradient: Some(&color_gradient),
             fast_normals: Some(&fast_normals),
             static_bend_strength: Some(&bend),
             analytical_normals: Some(&analytical_normals),
@@ -354,41 +440,54 @@ mod tests {
             translucency: Some(&translucency),
             specular_strength: Some(&specular_strength),
             specular_power: Some(&specular_power),
+            ambient_occlusion: Some(&ambient_occlusion),
         };
 
         // Act
-        let opts = ScatterMaterialOptions::from(data_all_some);
+        let result = ScatterMaterialOptions::from(data);
 
-        // Assert
-        assert_eq!(opts.debug, true);
-        assert_eq!(opts.enable_billboarding, true);
-        assert_eq!(opts.edge_correction_factor, 1.1);
-        assert_eq!(opts.curve_factor, 2.2);
-        assert_eq!(opts.wind_affected, true);
-        assert_eq!(opts.low_quality, true);
-        assert_eq!(opts.subsurface_scattering, true);
-        assert_eq!(opts.top_color, Some(RED.into()));
-        assert_eq!(opts.bottom_color, Some(BLUE.into()));
-        assert_eq!(opts.fast_normals, true);
-        assert_eq!(opts.static_bend_strength, 3.3);
-        assert_eq!(opts.analytical_normals, true);
-        assert_eq!(opts.point_lights, true);
-        assert_eq!(opts.directional_lights, true);
-        assert_eq!(opts.point_lights, true);
-        assert_eq!(opts.static_shadows, true);
-        assert_eq!(opts.unlit, true);
-        assert_eq!(opts.controlled, false);
-        assert_eq!(opts.debug_color, Color::default());
-        assert_eq!(opts.gpu_cull, true);
-        assert_eq!(opts.translucency, 0.3);
-        assert_eq!(opts.specular_strength, 0.5);
-        assert_eq!(opts.specular_power, 0.5);
+        let expected = ScatterMaterialOptions {
+            // defaults
+            controlled: false,
+            debug_color: Color::default(),
+
+            // changed
+            debug: true,
+            enable_billboarding: true,
+            edge_correction_factor: 1.1,
+            curve_factor: 2.2,
+            wind_affected: true,
+            low_quality: true,
+            subsurface_scattering: true,
+            subsurface_scattering_scale: 0.5,
+            subsurface_scattering_intensity: 0.2,
+            base_color: Some(GREEN.into()),
+            top_color: Some(RED.into()),
+            bottom_color: Some(BLUE.into()),
+            tint_factor: 1.0,
+            gradient_start: 0.1,
+            gradient_end: 0.9,
+            fast_normals: true,
+            static_bend_strength: 3.3,
+            analytical_normals: true,
+            directional_lights: true,
+            point_lights: true,
+            static_shadows: true,
+            unlit: true,
+            gpu_cull: true,
+            translucency: 0.3,
+            specular_strength: 0.5,
+            specular_power: 0.5,
+            ambient_occlusion: true,
+        };
+
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_from_material_option_data_all_none_should_default() {
+    fn test_from_data_all_none_should_be_default() {
         // Arrange
-        let data_none = MaterialOptionDataItem {
+        let data = MaterialOptionDataItem {
             enable_debug: None,
             enable_billboarding: None,
             edge_correction_factor: None,
@@ -398,7 +497,8 @@ mod tests {
             sss: None,
             sss_scale: None,
             sss_intensity: None,
-            scatter_material_color: None,
+            base_color: None,
+            color_gradient: None,
             fast_normals: None,
             static_bend_strength: None,
             analytical_normals: None,
@@ -410,91 +510,135 @@ mod tests {
             translucency: None,
             specular_strength: None,
             specular_power: None,
+            ambient_occlusion: None,
         };
-        let default_opts = ScatterMaterialOptions::default();
 
         // Act
-        let opts_none = ScatterMaterialOptions::from(data_none);
+        let result = ScatterMaterialOptions::from(data);
 
         // Assert
-        assert_eq!(opts_none.debug, default_opts.debug);
-        assert_eq!(
-            opts_none.enable_billboarding,
-            default_opts.enable_billboarding
-        );
-        assert_eq!(
-            opts_none.edge_correction_factor,
-            default_opts.edge_correction_factor
-        );
-        assert_eq!(opts_none.curve_factor, default_opts.curve_factor);
-        assert_eq!(opts_none.wind_affected, default_opts.wind_affected);
-        assert_eq!(opts_none.low_quality, default_opts.low_quality);
-        assert_eq!(
-            opts_none.subsurface_scattering,
-            default_opts.subsurface_scattering
-        );
-        assert_eq!(
-            opts_none.subsurface_scattering_scale,
-            default_opts.subsurface_scattering_scale
-        );
-        assert_eq!(
-            opts_none.subsurface_scattering_intensity,
-            default_opts.subsurface_scattering_intensity
-        );
-        assert_eq!(opts_none.top_color, default_opts.top_color);
-        assert_eq!(opts_none.bottom_color, default_opts.bottom_color);
-        assert_eq!(opts_none.fast_normals, default_opts.fast_normals);
-        assert_eq!(
-            opts_none.static_bend_strength,
-            default_opts.static_bend_strength
-        );
-        assert_eq!(
-            opts_none.analytical_normals,
-            default_opts.analytical_normals
-        );
-        assert_eq!(opts_none.controlled, default_opts.controlled);
-        assert_eq!(opts_none.debug_color, default_opts.debug_color);
-        assert_eq!(
-            opts_none.directional_lights,
-            default_opts.directional_lights
-        );
-        assert_eq!(opts_none.point_lights, default_opts.point_lights);
-        assert_eq!(opts_none.static_shadows, default_opts.static_shadows);
-        assert_eq!(opts_none.unlit, default_opts.unlit);
-        assert_eq!(opts_none.gpu_cull, default_opts.gpu_cull);
-        assert_eq!(opts_none.translucency, default_opts.translucency);
-        assert_eq!(opts_none.specular_strength, default_opts.specular_strength);
-        assert_eq!(opts_none.specular_power, default_opts.specular_power);
+        assert_eq!(result, ScatterMaterialOptions::default());
     }
 
     #[test]
-    fn test_with_data_should_merge_and_override() {
+    fn test_with_data_full_override() {
         // Arrange
-        let base_opts = ScatterMaterialOptions {
-            debug: true,
-            edge_correction_factor: 5.0,
-            top_color: Some(BLUE.into()),
-            curve_factor: 9.9,
-            wind_affected: false,
-            ..default()
-        };
+        let base = get_base_options();
 
-        let billboarding = EnableBillboarding;
-        let edge = EdgeCorrectionFactor(1.5); // Override
-        let color = InstanceColor::new(RED.into(), default()); // Override
-        let wind = WindAffected; // Merge
+        let debug = EnableDebug;
+        let edge = EdgeCorrectionFactor(0.5);
+        let col = InstanceColor(WHITE.into());
+        let bb = EnableBillboarding;
+        let cur = CurveFactor(1.0);
+        let wnd = WindAffected;
+        let lq = LowQuality;
+        let ss = SubsurfaceScattering;
+        let sss_s = SubsurfaceScatteringScale(1.0);
+        let sss_i = SubsurfaceScatteringIntensity(1.0);
+        let grad = InstanceColorGradient {
+            top: BLUE.into(),
+            bottom: GREEN.into(),
+            tint: 0.5,
+            start: 0.1,
+            end: 0.9,
+        };
+        let fnorm = FastNormals;
+        let bend = StaticBendStrength(1.0);
+        let anorm = AnalyticalNormals;
+        let dl = DirectionalLights;
+        let pl = PointLights;
+        let shad = StaticShadow;
+        let unl = Unlit;
+        let cull = GpuCullCompute;
+        let trans = Translucency(1.0);
+        let spec_s = SpecularStrength(1.0);
+        let spec_p = SpecularPower(1.0);
+        let ao = AmbientOcclusion;
 
         let data = MaterialOptionDataItem {
-            enable_debug: None,
-            enable_billboarding: Some(&billboarding),
+            enable_debug: Some(&debug),
+            enable_billboarding: Some(&bb),
             edge_correction_factor: Some(&edge),
+            curve_factor: Some(&cur),
+            wind_affected: Some(&wnd),
+            low_q: Some(&lq),
+            sss: Some(&ss),
+            sss_scale: Some(&sss_s),
+            sss_intensity: Some(&sss_i),
+            base_color: Some(&col),
+            color_gradient: Some(&grad),
+            fast_normals: Some(&fnorm),
+            static_bend_strength: Some(&bend),
+            analytical_normals: Some(&anorm),
+            directional_lights: Some(&dl),
+            point_lights: Some(&pl),
+            static_shadow: Some(&shad),
+            unlit: Some(&unl),
+            gpu_cull: Some(&cull),
+            translucency: Some(&trans),
+            specular_strength: Some(&spec_s),
+            specular_power: Some(&spec_p),
+            ambient_occlusion: Some(&ao),
+        };
+
+        // Act
+        let result = base.with(data);
+
+        // Assert
+        let expected = ScatterMaterialOptions {
+            // Preserve
+            controlled: true,
+            debug_color: RED.into(),
+
+            // Override
+            debug: true,
+            enable_billboarding: true,
+            edge_correction_factor: 0.5,
+            curve_factor: 1.0,
+            wind_affected: true,
+            low_quality: true,
+            subsurface_scattering: true,
+            subsurface_scattering_scale: 1.0,
+            subsurface_scattering_intensity: 1.0,
+            base_color: Some(WHITE.into()),
+            top_color: Some(BLUE.into()),
+            bottom_color: Some(GREEN.into()),
+            tint_factor: 0.5,
+            gradient_start: 0.1,
+            gradient_end: 0.9,
+            fast_normals: true,
+            static_bend_strength: 1.0,
+            analytical_normals: true,
+            directional_lights: true,
+            point_lights: true,
+            static_shadows: true,
+            unlit: true,
+            gpu_cull: true,
+            translucency: 1.0,
+            specular_strength: 1.0,
+            specular_power: 1.0,
+            ambient_occlusion: true,
+        };
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_with_data_preserve_if_none() {
+        // Arrange
+        let base = get_base_options();
+        let data_empty = MaterialOptionDataItem {
+            enable_debug: None,
+            enable_billboarding: None,
+            edge_correction_factor: None,
             curve_factor: None,
-            wind_affected: Some(&wind),
+            wind_affected: None,
             low_q: None,
             sss: None,
             sss_scale: None,
             sss_intensity: None,
-            scatter_material_color: Some(&color),
+            base_color: None,
+            color_gradient: None,
             fast_normals: None,
             static_bend_strength: None,
             analytical_normals: None,
@@ -506,126 +650,72 @@ mod tests {
             translucency: None,
             specular_strength: None,
             specular_power: None,
+            ambient_occlusion: None,
         };
 
         // Act
-        let merged_opts = base_opts.with(data);
+        let result = base.with(data_empty);
 
         // Assert
-        assert_eq!(merged_opts.debug, true, "Debug should be preserved");
-        assert_eq!(
-            merged_opts.enable_billboarding, true,
-            "Billboarding should be set"
-        );
-        assert_eq!(
-            merged_opts.edge_correction_factor, 1.5,
-            "Edge should be overridden"
-        );
-        assert_eq!(
-            merged_opts.curve_factor, 9.9,
-            "Curve factor should be preserved"
-        );
-        assert_eq!(
-            merged_opts.wind_affected, true,
-            "Wind affected should merge"
-        );
-        assert_eq!(
-            merged_opts.top_color,
-            Some(RED.into()),
-            "Color should be overridden"
-        );
+        let expected = base;
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_with_options_should_merge_and_override() {
+    fn test_with_options_merge_logic() {
         // Arrange
-        let base = ScatterMaterialOptions {
-            debug: true,
-            edge_correction_factor: 5.0,
-            top_color: Some(BLUE.into()),
-            bottom_color: Some(BLUE.into()),
-            static_bend_strength: 8.0,
-            ..default()
-        };
-
+        let base = get_base_options();
         let other = ScatterMaterialOptions {
-            enable_billboarding: true,        // Merge: true
-            edge_correction_factor: 1.0,      // Override: 1.0 (since > 0)
-            top_color: Some(RED.into()),      // Override
-            bottom_color: Some(GREEN.into()), // Override
-            static_bend_strength: 0.0,        // Keep base (since not > 0)
-            ..default()
-        };
-
-        let merged = base.with_options(other);
-
-        assert_eq!(merged.debug, true, "Debug should be preserved");
-        assert_eq!(
-            merged.enable_billboarding, true,
-            "Billboarding should be merged"
-        );
-        assert_eq!(
-            merged.edge_correction_factor, 1.0,
-            "Edge factor should be overridden"
-        );
-        assert_eq!(
-            merged.static_bend_strength, 8.0,
-            "Bend strength should be preserved"
-        );
-        assert_eq!(
-            merged.top_color,
-            Some(RED.into()),
-            "Color should be overridden"
-        );
-        assert_eq!(
-            merged.bottom_color,
-            Some(GREEN.into()),
-            "Color should be overridden"
-        );
-    }
-
-    #[test]
-    fn test_with_options_should_keep_colors_when_no_options_provided() {
-        // Arrange
-        let base_with_color = ScatterMaterialOptions {
-            top_color: Some(BLUE.into()),
-            bottom_color: Some(RED.into()),
-            ..default()
-        };
-        let other_no_color = ScatterMaterialOptions {
-            top_color: None,
-            bottom_color: None,
+            enable_billboarding: true,     // True (OR)
+            edge_correction_factor: 0.5,   // Override
+            static_bend_strength: 0.0,     // Preserve
+            top_color: Some(WHITE.into()), // Override
             ..default()
         };
 
         // Act
-        let merged_keep_color = base_with_color.with_options(other_no_color);
+        let result = base.with_options(other);
 
         // Assert
-        assert_eq!(
-            merged_keep_color.top_color,
-            Some(BLUE.into()),
-            "Should keep base color"
-        );
+        let expected = ScatterMaterialOptions {
+            // OR
+            enable_billboarding: true,
 
-        assert_eq!(
-            merged_keep_color.bottom_color,
-            Some(RED.into()),
-            "Should keep base color"
-        );
-    }
+            // Preserve
+            debug: false,
+            static_bend_strength: 10.0,
+            curve_factor: 10.0,
+            translucency: 10.0,
+            base_color: Some(BLACK.into()),
 
-    #[test]
-    fn test_builder_methods_should_set() {
-        let opts = ScatterMaterialOptions::default()
-            .with_controlled(true)
-            .with_debug_color(GREEN.into());
+            // Override
+            edge_correction_factor: 0.5,
+            top_color: Some(WHITE.into()),
 
-        assert_eq!(opts.controlled, true);
-        assert_eq!(opts.debug_color, GREEN.into());
+            // Defaults
+            controlled: true,
+            debug_color: RED.into(),
+            wind_affected: false,
+            low_quality: false,
+            subsurface_scattering: false,
+            subsurface_scattering_scale: 10.0,
+            subsurface_scattering_intensity: 10.0,
+            bottom_color: Some(BLACK.into()),
+            tint_factor: 10.0,
+            gradient_start: 10.0,
+            gradient_end: 10.0,
+            fast_normals: false,
+            analytical_normals: false,
+            directional_lights: false,
+            point_lights: false,
+            static_shadows: false,
+            unlit: false,
+            gpu_cull: false,
+            specular_strength: 10.0,
+            specular_power: 10.0,
+            ambient_occlusion: false,
+        };
 
-        // default
-        assert_eq!(opts.debug, false);
-        assert_eq!(opts.edge_correction_factor, 0.0);
+        assert_eq!(result, expected);
     }
 }

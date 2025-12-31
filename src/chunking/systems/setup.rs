@@ -26,19 +26,18 @@ pub fn setup_chunks(
     >,
 ) {
     let has_height_map = height_map_cfg.is_some();
+    let height_sampler = height_map
+        .as_deref()
+        .and_then(|height_map_image| {
+            height_map_cfg.as_deref().and_then(|cfg| {
+                images
+                    .get(&height_map_image.0)
+                    .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
+            })
+        })
+        .unwrap_or(HeightMapSampler::Default(DefaultSampler));
 
     for (entity, lod_cfg, scalar_config, aabb, gtf, chunk_root_size) in &q_root {
-        let height_sampler = height_map
-            .as_deref()
-            .and_then(|height_map_image| {
-                height_map_cfg.as_deref().and_then(|cfg| {
-                    images
-                        .get(&height_map_image.0)
-                        .map(|img| HeightMapSampler::Cpu(HeightMapCpuSampler::new(img, cfg)))
-                })
-            })
-            .unwrap_or(HeightMapSampler::Default(DefaultSampler));
-
         let root_scale = gtf.compute_transform().scale;
 
         let local_aabb_size = Vec3::from(aabb.half_extents * 2.0);

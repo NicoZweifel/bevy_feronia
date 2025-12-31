@@ -1,21 +1,23 @@
-use crate::core::Sampler;
-use crate::density_map::DensityMapSampler;
-use crate::height_map::cpu_sampler::HeightMapCpuSampler;
-use crate::prelude::*;
-use crate::scatter::utils::*;
+use crate::{
+    density_map::DensityMapSampler, height_map::cpu_sampler::HeightMapCpuSampler, prelude::*,
+    scatter::utils::*,
+};
+
 use bevy_derive::Deref;
 use bevy_ecs::prelude::*;
 use bevy_math::{Quat, Vec3};
 use bevy_pbr::StandardMaterial;
 use bevy_reflect::Reflect;
-use bevy_transform::components::GlobalTransform;
-use bevy_transform::prelude::Transform;
+use bevy_transform::prelude::*;
+
 use rand::Rng;
-use rand_pcg::Pcg64;
-use rand_pcg::rand_core::SeedableRng;
-use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
-use std::slice::Iter;
+use rand_pcg::{Pcg64, rand_core::SeedableRng};
+
+use std::{
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+    slice::Iter,
+};
 
 #[derive(EntityEvent, Message, Component, Reflect)]
 pub struct Scatter<T = StandardMaterial>
@@ -84,25 +86,21 @@ impl ScatterResult {
         external_avoidance_data: &ScatterOccupancyMap,
     ) -> Option<ScatterResult> {
         let instances_dim = container.instances_dim;
-        let cell_width = container.size.x / instances_dim;
-        let cell_depth = container.size.z / instances_dim;
+        let cell_x = container.size.x / instances_dim;
+        let cell_z = container.size.z / instances_dim;
 
-        let local_cell_x_idx = rng.random_range(0.0..instances_dim).floor();
-        let local_cell_z_idx = rng.random_range(0.0..instances_dim).floor();
+        let local_cell_x = rng.random_range(0.0..instances_dim).floor();
+        let local_cell_z = rng.random_range(0.0..instances_dim).floor();
 
-        let local_cell_corner = container.corner
-            + Vec3::new(
-                local_cell_x_idx * cell_width,
-                0.0,
-                local_cell_z_idx * cell_depth,
-            );
+        let local_cell_corner =
+            container.corner + Vec3::new(local_cell_x * cell_x, 0.0, local_cell_z * cell_z);
 
-        let mut local_pos = local_cell_corner + Vec3::new(cell_width / 2.0, 0.0, cell_depth / 2.0);
+        let mut local_pos = local_cell_corner + Vec3::new(cell_x / 2.0, 0.0, cell_z / 2.0);
 
-        let jitter_strength = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
-        if jitter_strength > 0. {
-            let max_offset_x = (cell_width * jitter_strength) / 2.0;
-            let max_offset_z = (cell_depth * jitter_strength) / 2.0;
+        let jitter = modifiers.jitter.map_or(0., |j| **j).clamp(0.0, 1.0);
+        if jitter > 0. {
+            let max_offset_x = (cell_x * jitter) / 2.0;
+            let max_offset_z = (cell_z * jitter) / 2.0;
 
             local_pos += Vec3::new(
                 rng.random_range(-max_offset_x..max_offset_x),
@@ -111,10 +109,9 @@ impl ScatterResult {
             );
         };
 
-        let world_pos = container.global_transform.transform_point(local_pos);
+        let mut world_pos = container.global_transform.transform_point(local_pos);
 
-        // Convert to root local space, the container is possibly a chunk.
-        let mut root_space_local_pos = container
+        let mut root_pos = container
             .root_global_transform
             .affine()
             .inverse()
@@ -123,51 +120,40 @@ impl ScatterResult {
         if modifiers
             .density_sampler
             .as_ref()
-            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(root_space_local_pos))
+            .is_some_and(|sampler| rng.random::<f32>() > sampler.sample(root_pos))
         {
             return None;
         }
 
-        root_space_local_pos.y = modifiers
+        root_pos.y = modifiers
             .map_height
-            .map(|_| modifiers.height_sampler.sample(root_space_local_pos))
-            .unwrap_or(root_space_local_pos.y);
+            .map(|_| modifiers.height_sampler.sample(root_pos))
+            .unwrap_or(root_pos.y);
 
-        if external_avoidance_data.is_occupied(root_space_local_pos) {
+        if external_avoidance_data.is_occupied(root_pos) {
             return None;
         }
 
-        let final_world_pos = container
-            .root_global_transform
-            .transform_point(root_space_local_pos);
+        world_pos = container.root_global_transform.transform_point(root_pos);
 
-        let root_space_final_pos = container
-            .global_transform
-            .affine()
-            .inverse()
-            .transform_point3(final_world_pos);
+        let world_rotation = modifiers
+            .rotation
+            .cloned()
+            .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
 
-        let container_rotation = container.global_transform.rotation();
-
-        let rotation = container_rotation.inverse()
-            * modifiers
-                .rotation
-                .cloned()
-                .map_or(Quat::IDENTITY, |r| r.into_quad(rng));
-
-        let scale = modifiers
+        let world_scale = modifiers
             .scale
             .cloned()
-            .map_or(Vec3::splat(1.0), |s| s.into_vec3(rng))
-            / container.global_transform.scale();
+            .map_or(Vec3::ONE, |s| s.into_vec3(rng));
 
-        let seed = generate_instance_seed(container.seed, root_space_local_pos);
+        let instance_gtf = GlobalTransform::from(Transform {
+            translation: world_pos,
+            rotation: world_rotation,
+            scale: world_scale,
+        });
 
-        let transform = Transform {
-            translation: root_space_final_pos,
-            rotation,
-            scale,
-        };
+        let seed = generate_instance_seed(container.seed, root_pos);
+        let transform = instance_gtf.relative_to(&container.global_transform);
 
         Some(ScatterResult { seed, transform })
     }

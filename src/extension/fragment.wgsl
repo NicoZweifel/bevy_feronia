@@ -22,13 +22,19 @@
 }
 
 #import bevy_feronia::forward_sss_io::VertexOutput
-#import bevy_feronia::wind::Wind
 
 #ifdef BINDLESS
-    #import bevy_feronia::bindings::{wind_indices, wind_material}
+#import bevy_feronia::extension::bindings::material_uniforms_array
 #else
-    #import bevy_feronia::bindings::{wind}
+#import bevy_feronia::extension::bindings::material_uniforms
 #endif
+
+#ifdef BINDLESS
+#import bevy_feronia::wind::bindings::wind_affected_material_indices
+#else
+#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
+#endif
+
 
 @fragment
 fn fragment(
@@ -70,12 +76,14 @@ fn fragment(
 
 #ifdef BINDLESS
     let slot = mesh[in.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-    let wind =  wind_material[wind_indices[slot].material];
+    let material_uniforms =  material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
+
+    let wind = material_uniforms.wind;
 
     if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
         #ifdef SUBSURFACE_SCATTERING
-            let sss_glow = calculate_sss_lighting(wind.sss_scale, wind.sss_intensity, pbr_input, in.thinness_factor);
+            let sss_glow = calculate_sss_lighting(material_uniforms.sss_scale, material_uniforms.sss_intensity, pbr_input, in.thinness_factor);
 
             #ifdef DEBUG_SSS
                 out.color = vec4<f32>(sss_glow, 1.0);

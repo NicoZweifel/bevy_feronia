@@ -1,6 +1,11 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use example::*;
+
+use bevy_feronia::instancing::prelude::*;
+use bevy_feronia::prelude::*;
+
 use bevy_app::{App, AppExit, Startup};
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
@@ -8,17 +13,13 @@ use bevy_camera::visibility::Visibility;
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
 use bevy_eidolon::prelude::InstancedMeshMaterial;
-use bevy_feronia::instancing::material_v2::{
-    InstancedWindAffectedMaterialV2, InstancedWindAffectedPluginV2,
-};
-use bevy_feronia::prelude::*;
 use bevy_math::{Vec3, Vec3A};
 use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
-use example::*;
+
 use std::sync::Arc;
 
 fn main() -> AppExit {
@@ -32,7 +33,7 @@ fn main() -> AppExit {
             // Some features that depend on the `ScatterAssets` won't work automatically e.g.,
             // syncing the wind of the materials with the resource.
             WindPlugin,
-            InstancedWindAffectedPluginV2,
+            InstancedWindAffectedPlugin,
         ))
         // Need to wait for the wind noise texture.
         .add_systems(Startup, setup.after(WindTextureSetup))
@@ -42,7 +43,7 @@ fn main() -> AppExit {
 fn setup(
     mut cmd: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterialV2>>,
+    mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     wind: Res<Wind>,
     noise_texture: Res<WindTexture>,
@@ -71,16 +72,19 @@ fn setup(
         // or test individual settings
         edge_correction_factor: 1.0,
 
-        top_color: Some(GREEN_500.into()),
-        bottom_color: Some(GREEN_900.into()),
-
+        top_color: Some(RED_400.into()),
+        bottom_color: Some(BLUE_400.into()),
+        base_color: Some(GREEN_400.into()),
+        gradient_start: 0.1,
+        gradient_end: 0.9,
+        tint_factor: 0.5,
         specular_power: 32.,
         specular_strength: 0.6,
         translucency: 0.6,
         ..default()
     };
 
-    let material_handle = instanced_materials.add(InstancedWindAffectedMaterialV2 {
+    let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
         // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
         // we need an update system.
         wind: *wind,
@@ -106,8 +110,7 @@ fn setup(
         .collect();
 
     let instance_material_data = bevy_eidolon::components::InstanceMaterialData {
-        // TODO
-        color: default(),
+        color: GREEN_400.into(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
     };

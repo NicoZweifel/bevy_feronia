@@ -17,6 +17,7 @@ use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
+use bevy_eidolon::prelude::GpuCullCompute;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
 use bevy_image::*;
@@ -472,11 +473,11 @@ impl RockLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Tree Layer"),
-    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>,
     DistributionDensity(20.),
-    InstanceRotationYaw::default(),
+    InstanceRotationYaw,
     InstanceScale { min: 1., max: 2. },
-    InstanceJitter::default(),
+    InstanceJitter,
     Avoidance(1.),
 )]
 struct TreeLayer;
@@ -576,11 +577,11 @@ impl TreeLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Foliage Layer"),
-    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>,
     DistributionDensity(20.),
-    InstanceRotationYaw::default(),
+    InstanceRotationYaw,
     InstanceScale { min: 4., max: 8. },
-    InstanceJitter::default(),
+    InstanceJitter,
     Avoidance(0.2),
 )]
 struct FoliageLayer;
@@ -666,27 +667,29 @@ impl FoliageLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Grass Layer"),
-    ScatterLayerType::<InstancedWindAffectedMaterial>::default(),
+    ScatterLayerType::<InstancedWindAffectedMaterial>,
 
     // Scatter options
 
-    InstanceJitter::default(),
-    InstanceScale::default(),
+    InstanceJitter,
+    InstanceScale,
     ScatterChunked,
     ScaleDensity,
 
     // Material options
 
-    GpuCull,
-    EdgeCorrectionFactor::default(),
-    CurveFactor::default(),
+    GpuCullCompute,
+    EdgeCorrectionFactor,
+    CurveFactor,,
     Strength(1.2),
     MicroStrength(1.2),
     SCurveStrength(1.2),
     BopStrength(1.2),
     AnalyticalNormals,
-    InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
-    StaticBendStrength::default(),
+    InstanceRotationYaw,
+    InstanceColor(Color::hsla(84., 0.49, 0.35, 1.)),
+    InstanceColorGradient::new(Color::hsla(84.2, 0.48, 0.5, 1.),Color::hsla(84., 0.49, 0.14, 1.)),
+    StaticBendStrength,
     SpecularStrength(0.2)
 )]
 struct GrassLayer;
