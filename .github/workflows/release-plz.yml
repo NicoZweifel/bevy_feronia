@@ -16,21 +16,21 @@ jobs:
     steps:
       - &checkout
         name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
-      - &install-rust
+      - &rust-toolchain
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - &cache
         name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
         with:
           shared-key: "release-plz"
       - name: Run release-plz
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
         with:
           command: release
         env:
@@ -48,11 +48,11 @@ jobs:
       cancel-in-progress: false
     steps:
       - *checkout
-      - *install-rust
+      - *rust-toolchain
       - *cache
       - name: Run release-plz
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
         with:
-          command: release-pr
+            command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
