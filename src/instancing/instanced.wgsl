@@ -7,8 +7,6 @@
 #import bevy_pbr::mesh_functions::mesh_normal_local_to_world
 #import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::utils::rand_f
-#import bevy_pbr::mesh_bindings::mesh
-
 
 #import bevy_feronia::wind::Wind
 #import bevy_feronia::instancing::bindings::material_uniforms

@@ -21,6 +21,7 @@ fn main() -> AppExit {
             ExamplePlugin,
             SceneAssetBackendPlugin,
             InstancedWindAffectedScatterPlugin,
+            GpuComputeCullPlugin,
         ))
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)

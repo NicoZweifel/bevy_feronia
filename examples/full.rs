@@ -17,7 +17,7 @@ use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
-use bevy_eidolon::prelude::GpuCullCompute;
+use bevy_eidolon::prelude::{GpuComputeCullPlugin, GpuCullCompute};
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
 use bevy_image::*;
@@ -43,6 +43,7 @@ fn main() -> AppExit {
             SceneAssetBackendPlugin,
             StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
+            GpuComputeCullPlugin,
             ExtendedWindAffectedScatterPlugin,
         ))
         .init_state::<AppState>()
