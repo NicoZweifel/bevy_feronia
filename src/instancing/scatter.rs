@@ -101,7 +101,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
             .enumerate()
             .fold(HashMap::new(), |mut acc, (i, (name, res))| {
                 let position = res.transform.translation;
-                let (rotation,..) = res.transform.rotation.to_euler(EulerRot::YXZ);
+                let (rotation, ..) = res.transform.rotation.to_euler(EulerRot::YXZ);
                 let scale = res.transform.scale.x;
 
                 let instance = InstanceData {
@@ -163,7 +163,8 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     let mut inst = *original;
                                     inst.position += part.transform.translation * inst.scale;
                                     inst.scale *= part.transform.scale.x;
-                                    let ( rotation,..) = part.transform.rotation.to_euler(EulerRot::YXZ);
+                                    let (rotation, ..) =
+                                        part.transform.rotation.to_euler(EulerRot::YXZ);
                                     inst.rotation += rotation;
                                     println!("{}", inst.rotation);
                                     inst

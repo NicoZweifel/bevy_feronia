@@ -39,6 +39,7 @@ struct VertexOutput {
 #endif
 };
 
+
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
@@ -48,7 +49,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     var world_from_local_matrix: mat4x4<f32>;
 
-    var rand_state = vertex.i_index;
 #ifdef BILLBOARDING
     world_from_local_matrix = mat4x4<f32>(
         vec4<f32>(scale, 0.0, 0.0, 0.0),
@@ -65,6 +65,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     );
 #endif
 
+
     var instance: InstanceInfo;
     instance.world_from_local = final_matrix;
     instance.instance_position = final_matrix[3];
@@ -72,14 +73,9 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.instance_index = vertex.i_index;
 
 #ifdef STATIC_BEND
-    let raw_rand = rand_f(&rand_state);
-    let biased_rand = material_uniforms.static_bend_strength + (raw_rand * (1. - material_uniforms.static_bend_strength));
+    const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
 
-    let static_bend_angle = rand_f(&rand_state) * 6.28318;
-
-    let static_bend_strength = biased_rand * material_uniforms.static_bend_strength;
-
-    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
+    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength * 0.0;
 #endif
 
     let wind = material_uniforms.wind;

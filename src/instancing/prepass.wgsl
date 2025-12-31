@@ -39,8 +39,8 @@ struct PrepassVertexOutput {
 
 // TODO
 
-#define EDGE_CORRECTION
 #define STATIC_BEND
+#define EDGE_CORRECTION
 #define WIND_AFFECTED
 #define VISIBILITY_RANGE_DITHER
 #ifdef NORMAL_PREPASS
@@ -48,26 +48,23 @@ struct PrepassVertexOutput {
 #endif
 #define ANALYTICAL_NORMALS
 
+
 @vertex
 fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     var out: PrepassVertexOutput;
     let wind = material_uniforms.wind;
-
-    var rand_state = vertex.i_index;
-
-#ifdef STATIC_BEND
-    let raw_rand = rand_f(&rand_state);
-    let biased_rand = material_uniforms.static_bend_strength + (raw_rand * (1. - material_uniforms.static_bend_strength));
-    let static_bend_angle = rand_f(&rand_state) * 6.28318;
-    let static_bend_strength = biased_rand * material_uniforms.static_bend_strength;
-    let static_bend = vec2<f32>(cos(static_bend_angle), sin(static_bend_angle)) * static_bend_strength;
-#endif
 
     let final_matrix = utils::calculate_instance_world_matrix(
         vertex.i_pos_scale,
         vertex.i_rotation,
         instance_uniforms.world_from_local
     );
+
+#ifdef STATIC_BEND
+    const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
+
+    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength * 0.0;
+#endif
 
     var instance: InstanceInfo;
     instance.world_from_local = final_matrix;

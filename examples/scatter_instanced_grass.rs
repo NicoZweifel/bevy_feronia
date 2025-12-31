@@ -13,9 +13,7 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
-        .insert_resource(ExamplePluginOptions {
-            show_wind_settings: true,
+        .insert_resource(Wind {
             ..default()
         })
         .add_plugins((
@@ -54,7 +52,8 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 AnalyticalNormals,
                 PointLights,
                 DirectionalLights,
-                InstanceColorGradient::new(RED_400.into(), BLUE_400.into())
+                InstanceColorGradient::new(RED_400.into(), BLUE_400.into()),
+                InstanceRotationYaw::default()
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),
