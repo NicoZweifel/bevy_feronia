@@ -54,7 +54,7 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     var out: PrepassVertexOutput;
     let wind = material_uniforms.wind;
 
-    let final_matrix = utils::calculate_instance_world_matrix(
+    let final_matrix = utils::calc_instance_world_matrix(
         vertex.i_pos_scale,
         vertex.i_rotation,
         instance_uniforms.world_from_local
@@ -107,7 +107,7 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     out.previous_world_position = displaced.world_position;
 
 #ifdef MOTION_VECTOR_PREPASS
-    let prev_final_matrix = utils::calculate_instance_world_matrix(
+    let prev_final_matrix = utils::calc_instance_world_matrix(
         vertex.i_pos_scale,
         vertex.i_rotation,
         instance_uniforms.previous_world_from_local

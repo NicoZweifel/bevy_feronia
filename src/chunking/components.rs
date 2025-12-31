@@ -439,7 +439,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_sources_standard_should_calculate_correctly() {
+    fn test_from_sources_standard_should_calc_correctly() {
         // Arrange
         // Use a simple 1D chunk for easy math: radius = scalar * 10
         let base_size = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));

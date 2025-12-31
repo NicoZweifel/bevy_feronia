@@ -44,7 +44,7 @@ fn displace_vertex_and_calc_normal(
     var result: DisplacedVertex;
 
     // Macro (wind bend, static bend)
-    let curve_data = calculate_macro_curve(
+    let curve_data = calc_macro_curve(
         vertex_pos,
         wind,
         noise,
@@ -163,7 +163,7 @@ fn displace_vertex_and_calc_normal(
     // Sample Neighbor along Tangent
     let neighbor_tangent_origin = vertex_pos + local_tangent * sample_offset;
     let noise_tangent = sample_noise(instance, wind, neighbor_tangent_origin);
-    let curve_tangent = calculate_macro_curve(neighbor_tangent_origin, wind, noise_tangent, instance,
+    let curve_tangent = calc_macro_curve(neighbor_tangent_origin, wind, noise_tangent, instance,
         #ifdef STATIC_BEND
         static_bend
         #endif
@@ -173,7 +173,7 @@ fn displace_vertex_and_calc_normal(
     // Sample Neighbor along Bitangent
     let neighbor_bitangent_origin = vertex_pos + local_bitangent * sample_offset;
     let noise_bitangent = sample_noise(instance, wind, neighbor_bitangent_origin);
-    let curve_bitangent = calculate_macro_curve(neighbor_bitangent_origin, wind, noise_bitangent, instance,
+    let curve_bitangent = calc_macro_curve(neighbor_bitangent_origin, wind, noise_bitangent, instance,
         #ifdef STATIC_BEND
         static_bend
         #endif
@@ -209,7 +209,7 @@ fn displace_vertex_and_calc_normal(
 
 #ifdef EDGE_CORRECTION
 #ifdef VERTEX_UVS_A
-    let edge_correction_offset = calculate_edge_correction(
+    let edge_correction_offset = calc_edge_correction(
         result.world_position.xyz,
         result.world_normal,
         uv.x,
@@ -223,7 +223,7 @@ fn displace_vertex_and_calc_normal(
     return result;
 }
 
-fn calculate_macro_curve(
+fn calc_macro_curve(
     local_pos: vec3<f32>,
     wind: Wind,
     noise: SampledNoise,
@@ -401,7 +401,7 @@ fn billboarding(
 ) -> vec3<f32> {
     let billboard_anchor_point = instance.instance_position;
 
-    let billboard_matrix = calculate_billboard_matrix(
+    let billboard_matrix = calc_billboard_matrix(
         billboard_anchor_point,
         view.world_position.xyz,
         instance.world_from_local
@@ -412,7 +412,7 @@ fn billboarding(
     return billboard_base_pos + vec3(0.0, total_offset.y, 0.0);
 }
 
-fn calculate_billboard_matrix(
+fn calc_billboard_matrix(
     instance_position: vec4<f32>,
     camera_world_pos: vec3<f32>,
     world_from_local: mat4x4<f32>
@@ -431,7 +431,7 @@ fn calculate_billboard_matrix(
     return mat3x3<f32>(billboard_x * scale.x, billboard_y * scale.y, billboard_z * scale.z);
 }
 
-fn calculate_edge_correction(
+fn calc_edge_correction(
     world_pos: vec3<f32>,
     world_normal: vec3<f32>,
     uv_x: f32,

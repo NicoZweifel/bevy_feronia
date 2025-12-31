@@ -83,7 +83,7 @@ fn fragment(
 
     if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
         #ifdef SUBSURFACE_SCATTERING
-            let sss_glow = calculate_sss_lighting(material_uniforms.sss_scale, material_uniforms.sss_intensity, pbr_input, in.thinness_factor);
+            let sss_glow = calc_sss_lighting(material_uniforms.sss_scale, material_uniforms.sss_intensity, pbr_input, in.thinness_factor);
 
             #ifdef DEBUG_SSS
                 out.color = vec4<f32>(sss_glow, 1.0);
@@ -128,7 +128,7 @@ const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
 // Scale down light rgb
 const LIGHT_INTENSITY_SCALE = 0.00005;
 
-fn calculate_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
+fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
     var sss_light = vec3<f32>(0.0);
 
     let view_pos = view.view_from_world * pbr_input.world_position;
