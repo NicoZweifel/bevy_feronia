@@ -74,7 +74,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #ifdef STATIC_BEND
     const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
 
-    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength * 0.0;
+    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength;
 #endif
 
     let wind = material_uniforms.wind;
