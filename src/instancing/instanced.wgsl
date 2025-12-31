@@ -72,6 +72,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
 
+// TODO
 #ifdef STATIC_BEND
     const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
 

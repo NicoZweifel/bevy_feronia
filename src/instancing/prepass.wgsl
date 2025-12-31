@@ -60,6 +60,7 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
         instance_uniforms.world_from_local
     );
 
+// TODO
 #ifdef STATIC_BEND
     const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
 
