@@ -24,6 +24,11 @@ jobs:
       - &install-rust
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - &cache
+        name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "release-plz"
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
@@ -44,6 +49,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
+      - *cache
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
