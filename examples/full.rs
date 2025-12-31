@@ -414,11 +414,11 @@ fn spawn_landscape(
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Rock Layer"),
-    ScatterLayerType::<StandardMaterial>::default(),
+    ScatterLayerType::<StandardMaterial>,
     DistributionDensity(15.),
-    InstanceRotationYaw::default(),
+    InstanceRotationYaw,
     InstanceScale { min: 1., max: 2. },
-    InstanceJitter::default(),
+    InstanceJitter,
     Avoidance(2.),
 )]
 struct RockLayer;
@@ -680,7 +680,7 @@ impl FoliageLayer {
 
     GpuCullCompute,
     EdgeCorrectionFactor,
-    CurveFactor,,
+    CurveFactor,
     Strength(1.2),
     MicroStrength(1.2),
     SCurveStrength(1.2),

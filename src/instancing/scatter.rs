@@ -14,7 +14,6 @@ use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 use rand::SeedableRng;
 
-use avian3d::math::AsF32;
 use rand::prelude::IndexedRandom;
 use rand_pcg::Pcg64;
 use std::borrow::Cow;

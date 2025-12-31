@@ -153,7 +153,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
         instance_prev.world_from_local = get_previous_world_from_local(vertex.instance_index);
         instance_prev.instance_position = instance_prev.world_from_local[3];
-        instance_prev.wrapped_time = (globals.time - globals.delta_time);
+        instance_prev.wrapped_time = globals.time - globals.delta_time;
         instance_prev.instance_index = vertex.instance_index;
 
         // TODO prev wind https://github.com/NicoZweifel/bevy_feronia/issues/34
