@@ -34,19 +34,20 @@ jobs:
     steps:
       - &checkout
         name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - &cache
         name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
         with:
           shared-key: "ci"
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: Install Dependencies
+      - &install-deps
+        name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
       - name: Run cargo test
         run: cargo test
@@ -59,12 +60,11 @@ jobs:
     steps:
       - *checkout
       - *cache
-      - name: Install stable toolchain
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev
+      - *install-deps
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - *checkout
-      - name: Install stable toolchain
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
