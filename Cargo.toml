@@ -15,11 +15,11 @@ bevy_state= { version = "0.17.2" ,default-features = false, features = ["bevy_ap
 bevy_gizmos= { version = "0.17.2" ,default-features = false}
 bevy_pbr= { version = "0.17.2" ,default-features = false}
 bevy_mesh= { version = "0.17.2" ,default-features = false}
-bevy_color= { version = "0.17.2" ,default-features = false}
-bevy_app = { version = "0.17.2" ,default-features = false}
+bevy_color= { version = "0.17.3" ,default-features = false}
+bevy_app = { version = "0.17.3" ,default-features = false}
 bevy_ecs = { version = "0.17.2" ,default-features = false}
-bevy_asset= { version = "0.17.2" ,default-features = false}
-bevy_camera= { version = "0.17.2" ,default-features = false}
+bevy_asset= { version = "0.17.3" ,default-features = false}
+bevy_camera= { version = "0.17.3" ,default-features = false}
 bevy_derive = { version = "0.17.2" ,default-features = false}
 bevy_reflect= { version = "0.17.2" ,default-features = false}
 bevy_transform= { version = "0.17.2" ,default-features = false}
@@ -27,23 +27,23 @@ bevy_tasks= { version = "0.17.2" ,default-features = false}
 bevy_math= { version = "0.17.2" ,default-features = false}
 bevy_image= { version = "0.17.2" ,default-features = false}
 bevy_platform= { version = "0.17.2" ,default-features = false}
-bevy_render= { version = "0.17.2" ,default-features = false}
+bevy_render= { version = "0.17.3" ,default-features = false}
 bevy_shader= { version = "0.17.2" ,default-features = false}
 bevy_utils= { version = "0.17.2" ,default-features = false}
-bevy_core_pipeline= { version = "0.17.2" ,default-features = false}
-bevy_light= { version = "0.17.2" ,default-features = false}
+bevy_core_pipeline= { version = "0.17.3" ,default-features = false}
+bevy_light= { version = "0.17.3" ,default-features = false}
 
 bytemuck = "1.23.1"
 noise = "0.9.0"
-bitflags = "2.9.1"
+bitflags = "2.10.0"
 rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
 xxh3 = "0.1.1"
 rand_pcg = "0.9.0"
-derive_more = "2.0.1"
+derive_more = "2.1.1"
 half = "2.7.1"
 
-tracing = { version = "0.1.41", default-features = false, optional = true }
+tracing = { version = "0.1.44", default-features = false, optional = true }
 avian3d = { version = "0.4", optional = true }
 
 [dev-dependencies]
