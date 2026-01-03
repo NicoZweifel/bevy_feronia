@@ -17,10 +17,6 @@ jobs:
       - &checkout
         name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-        with:
-          fetch-depth: 0
-          persist-credentials: true
-          token: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - &rust-toolchain
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
