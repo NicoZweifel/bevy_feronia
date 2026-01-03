@@ -1,8 +1,9 @@
 use crate::prelude::*;
+use crate::scatter::utils::combine_aabbs;
+
 use bevy_ecs::prelude::*;
 use std::marker::PhantomData;
 
-use crate::scatter::utils::combine_aabbs;
 #[cfg(feature = "avian")]
 use avian3d::prelude::RigidBody;
 use bevy_pbr::StandardMaterial;
@@ -70,7 +71,7 @@ where
             union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
         }
 
-        let any_wind_affected = parts.iter().any(|part| part.properties.wind_affected);
+        let wind_affected = parts.iter().any(|part| part.properties.wind_affected);
 
         ScatterAssetCreationRequest::<T>::new(
             ScatterAssetProperties {
@@ -85,7 +86,7 @@ where
                     .unwrap_or_default(),
                 #[allow(deprecated)]
                 layer: Some(item_of.layer),
-                wind_affected: any_wind_affected,
+                wind_affected,
             },
             parts,
             item_of.layer,
