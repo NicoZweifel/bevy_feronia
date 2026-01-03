@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # crates
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+#  # rustc
+#  - package-ecosystem: "rust-toolchain"
+#    directory: "/"
+#    schedule:
+#      interval: "weekly"
