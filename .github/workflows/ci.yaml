@@ -1,13 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main, dev]
-    paths:
-      - '**.rs'
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
-      - '.github/workflows/ci.yaml'
   pull_request:
     branches: [main, dev]
     paths:
