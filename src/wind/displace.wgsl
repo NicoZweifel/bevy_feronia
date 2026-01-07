@@ -44,6 +44,7 @@ fn displace_vertex_and_calc_normal(
     var result: DisplacedVertex;
 
     // Macro (wind bend, static bend)
+    // Macro, i.e., wind bend, static bend
     let curve_data = calc_macro_curve(
         vertex_pos,
         wind,
@@ -55,6 +56,7 @@ fn displace_vertex_and_calc_normal(
     );
 
     // Micro, s-curve, bop
+    // Micro, i.e., s-curve, bop
     let final_local_pos = apply_micro_details(
         curve_data.local_pos,
         curve_data,
