@@ -12,8 +12,8 @@ use bevy_platform::collections::{HashMap, HashSet, hash_map::Entry};
 use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
-use rand::SeedableRng;
 
+use rand::SeedableRng;
 use rand::prelude::IndexedRandom;
 use rand_pcg::Pcg64;
 use std::borrow::Cow;

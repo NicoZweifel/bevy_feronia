@@ -6,12 +6,14 @@
 #import bevy_pbr::utils::rand_f
 #import bevy_pbr::mesh_bindings::mesh
 
+#ifdef WIND_AFFECTED
 #ifdef BINDLESS
 #import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
 #import bevy_feronia::wind::bindings::wind_affected_material_indices
 #else
 #import bevy_feronia::wind::bindings::{noise_texture, noise_texture_sampler}
-#endif
+#endif // BINDLESS
+#endif // WIND_AFFECTED
 
 fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>) -> SampledNoise {
     var noise: SampledNoise;
@@ -21,7 +23,7 @@ fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>)
     let slot = mesh[instance.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
     let noise_texture =  bindless_textures_2d[wind_affected_material_indices[slot].noise_texture];
     let noise_texture_sampler = bindless_samplers_filtering[wind_affected_material_indices[slot].noise_texture_sampler];
-#endif
+#endif // BINDLESS
 
     // Need to use local_vertex_pos here.
     // Sampling the same noise for neighbors, breaks motion vectors / DLSS / TAA
