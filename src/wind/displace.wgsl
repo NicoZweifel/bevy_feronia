@@ -17,7 +17,7 @@
 
 struct CurveResult {
     local_pos: vec3<f32>,
-    slope: vec3<f32>,
+    tangent: vec3<f32>,
     twist: f32,
     height_factor: f32,
     local_wind_dir: vec3<f32>
@@ -114,7 +114,7 @@ fn displace_vertex_and_calc_normal(
     //
     // Typically used for billboarded foliage or flat meshes like grass.
 
-    let local_spine_direction = normalize(vec3<f32>(curve_data.slope.x, 1.0, curve_data.slope.z));
+    let local_spine_direction = curve_data.tangent;
 
     let cos_twist = cos(curve_data.twist);
     let sin_twist = sin(curve_data.twist);
@@ -129,7 +129,11 @@ fn displace_vertex_and_calc_normal(
     let world_spine = normalize(model_rotation_matrix * local_spine_direction);
     let world_width = normalize(model_rotation_matrix * local_width_direction);
 
-    result.world_normal = normalize(cross(world_width, world_spine));
+    let raw_normal = cross(world_width, world_spine);
+    let len_sq = dot(raw_normal, raw_normal);
+    let safe_normal = select(vec3<f32>(0.0, 1.0, 0.0), raw_normal, len_sq > 1.0e-6);
+
+    result.world_normal = normalize(safe_normal);
     result.world_tangent = vec4<f32>(world_width, 1.0);
 
 #else
@@ -213,7 +217,7 @@ fn displace_vertex_and_calc_normal(
         result.world_position.xyz,
         result.world_normal,
         uv.x,
-        wind.edge_correction_factor
+        instance.edge_correction_factor
     );
 
     result.world_position += vec4<f32>(edge_correction_offset, 0.);
@@ -235,19 +239,9 @@ fn calc_macro_curve(
     var result: CurveResult;
 
     let height_range = max(wind.aabb_max.y - wind.aabb_min.y, 0.001);
-
-    // Normalized progress along the vertical axis (0.0 at bottom, 1.0 at top)
     let height_progress = clamp((local_pos.y - wind.aabb_min.y) / height_range, 0.0, 1.0);
-
     result.height_factor = height_progress;
-
     result.twist = 0.0;
-    result.local_wind_dir = vec3<f32>(0.0);
-    var target_bend_vector = vec2<f32>(0.0);
-
-    #ifdef STATIC_BEND
-        target_bend_vector += static_bend;
-    #endif
 
     #ifdef WIND_AFFECTED
         // Get scale from the instance matrix to apply wind correctly in local space
@@ -263,22 +257,17 @@ fn calc_macro_curve(
 
         let world_wind_direction = vec3<f32>(wind.direction.x, 0.0, wind.direction.y);
         let local_wind_unscaled = transpose(rotation_matrix) * world_wind_direction;
-        result.local_wind_dir = normalize(local_wind_unscaled);
 
-        let macro_noise_value = clamp(noise.macro_noise, 0.001, 0.999) * 2.0 - 1.0;
+        let safe_wind_vec = local_wind_unscaled + vec3<f32>(1.0e-5, 0.0, 0.0);
+        result.local_wind_dir = normalize(safe_wind_vec);
+    #else
+        result.local_wind_dir = vec3<f32>(1.0, 0.0, 0.0);
+    #endif
 
-        let scale_compensation = vec2<f32>(1.0 / max(scale_x, 0.001), 1.0 / max(scale_z, 0.001));
+    var target_bend_vector = vec2<f32>(0.0);
 
-        let wind_force = vec2<f32>(local_wind_unscaled.x, local_wind_unscaled.z)
-                         * wind.strength
-                         * macro_noise_value
-                         * scale_compensation;
-
-        target_bend_vector += wind_force;
-
-        #ifndef BILLBOARDING
-            result.twist = macro_noise_value * wind.twist_strength * height_progress;
-        #endif
+    #ifdef STATIC_BEND
+        target_bend_vector += static_bend;
     #endif
 
     let total_bend_amount = length(target_bend_vector);
@@ -291,6 +280,7 @@ fn calc_macro_curve(
 
     // Estimate vertical height
     var tip_height = sqrt(max(height_range * height_range - safe_bend_amount * safe_bend_amount, 0.0));
+
     // The resulting Bezier curve arc is longer than the estimated straight-line distance.
     // Compensate by shortening the grass to prevent it from appearing to "grow" or stretch as it bends outward.
     let stretch_compensation = 1.0 - (bend_factor * 0.1);
@@ -324,24 +314,29 @@ fn calc_macro_curve(
     let bezier_tangent = 2.0 * inverse_progress * (point_control - point_start)
                        + 2.0 * height_progress * (point_end - point_control);
 
-    // Twist
-    let cos_twist = cos(result.twist);
-    let sin_twist = sin(result.twist);
-    let twisted_x = local_pos.x * cos_twist - local_pos.z * sin_twist;
-    let twisted_z = local_pos.x * sin_twist + local_pos.z * cos_twist;
-
-    // Calculate delta and apply to vertex.
-    let spine_delta = bezier_position - vec3<f32>(0.0, local_pos.y - wind.aabb_min.y, 0.0);
+    let effective_spine_y = height_progress * height_range;
+    let spine_delta = bezier_position - vec3<f32>(0.0, effective_spine_y, 0.0);
 
     result.local_pos = vec3<f32>(
-        twisted_x + spine_delta.x,
+        local_pos.x + spine_delta.x,
         local_pos.y + spine_delta.y,
-        twisted_z + spine_delta.z
+        local_pos.z + spine_delta.z
     );
 
-    let slope_xz = vec2<f32>(bezier_tangent.x, bezier_tangent.z) / max(bezier_tangent.y, 0.001);
+    #ifdef WIND_AFFECTED
+        let forward_dir = result.local_wind_dir;
 
-    result.slope = vec3<f32>(slope_xz.x, 1.0, slope_xz.y);
+        let macro_noise = clamp(noise.macro_noise, 0.001, 0.999) * 2.0 - 1.0;
+        let macro_wind_offset = forward_dir * (macro_noise * wind.strength * 0.5 * result.height_factor);
+
+        result.local_pos += macro_wind_offset;
+
+        #ifndef BILLBOARDING
+            result.twist = macro_noise * wind.twist_strength * height_progress;
+        #endif
+    #endif
+
+    result.tangent = normalize(bezier_tangent + vec3<f32>(0.0, 1.0e-5, 0.0));
 
     return result;
 }
@@ -364,8 +359,8 @@ fn apply_micro_details(
     let right_dir = normalize(cross(forward_dir, up_dir));
 
     // Micro
-    let micro_noise_val = (clamp(noise.micro_noise, 0.001, 0.999) * 2.0 - 1.0);
-    let micro_offset = forward_dir * (micro_noise_val * wind.micro_strength * 0.5 * curve_data.height_factor);
+    let micro_noise = (clamp(noise.micro_noise, 0.001, 0.999) * 2.0 - 1.0);
+    let micro = forward_dir * (micro_noise * wind.micro_strength * 0.5 * curve_data.height_factor);
 
     // S-Curve
     let s_curve_seed = noise.phase_noise.x * 6.28;
@@ -375,7 +370,7 @@ fn apply_micro_details(
     let s_primary_oscillation = sin(s_curve_input);
     let s_secondary_oscillation = cos(s_curve_input * 0.7) * 0.5;
 
-    let s_curve_offset = (forward_dir * s_primary_oscillation + right_dir * s_secondary_oscillation)
+    let s_curve = (forward_dir * s_primary_oscillation + right_dir * s_secondary_oscillation)
                  * wind.s_curve_strength
                  * curve_data.height_factor;
 
@@ -384,9 +379,9 @@ fn apply_micro_details(
     let bop_input = instance.wrapped_time * wind.bop_speed + bop_seed + s_curve_lag;
     let bop_val = sin(bop_input);
 
-    let bop_offset = vec3<f32>(0.0, bop_val * wind.bop_strength * curve_data.height_factor, 0.0);
+    let bop = vec3<f32>(0.0, bop_val * wind.bop_strength * curve_data.height_factor, 0.0);
 
-    final_pos += micro_offset + s_curve_offset + bop_offset;
+    final_pos += micro + s_curve + bop;
 #endif
 #endif
 
@@ -431,6 +426,7 @@ fn calc_billboard_matrix(
     return mat3x3<f32>(billboard_x * scale.x, billboard_y * scale.y, billboard_z * scale.z);
 }
 
+// TODO requires previous camera/view
 fn calc_edge_correction(
     world_pos: vec3<f32>,
     world_normal: vec3<f32>,
@@ -452,6 +448,7 @@ fn calc_edge_correction(
     let top_down_factor = abs(dot(to_camera_dir, world_up));
     let top_down_fade = pow(1.0 - top_down_factor, 0.5);
 
+    // TODO remove * 0.
     let strength = grazing_angle_factor * edge_correction_factor * 0. * top_down_fade;
 
     let correction_shift = view_side_dir * -signed_edge_factor;

@@ -11,7 +11,7 @@ use std::f32::consts::TAU;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             ..default()

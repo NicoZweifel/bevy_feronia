@@ -47,10 +47,12 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
     fn update_material(
         material: &mut InstancedWindAffectedMaterial,
-        wind: Wind,
+        current_wind: Wind,
+        previous_wind: Wind,
         options: ScatterMaterialOptions,
     ) {
-        material.wind = wind;
+        material.current= current_wind;
+        material.previous = previous_wind;
         material.options = options;
     }
 

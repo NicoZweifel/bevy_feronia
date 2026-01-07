@@ -35,7 +35,7 @@ fn main() -> AppExit {
             show_inspector: true,
             show_debug_options: true,
         })
-        .insert_resource(Wind { ..default() })
+        .init_resource::<GlobalWind>()
         .insert_resource(DensityMapConfig { size: 128 })
         .add_plugins((
             QualityPlugin,

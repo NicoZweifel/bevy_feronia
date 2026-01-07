@@ -20,7 +20,8 @@ use bytemuck::{Pod, Zeroable};
 #[uniform(50, InstancedWindAffectedMaterialUniform)]
 #[bind_group_data(InstancedWindAffectedMaterialKey)]
 pub struct InstancedWindAffectedMaterial {
-    pub wind: Wind,
+    pub current: Wind,
+    pub previous: Wind,
     pub aabb: Aabb,
     pub options: ScatterMaterialOptions,
     #[texture(51)]
@@ -31,7 +32,8 @@ pub struct InstancedWindAffectedMaterial {
 impl InstancedWindAffectedMaterial {
     pub fn new(properties: &ScatterAssetProperties, noise_texture: Handle<Image>) -> Self {
         Self {
-            wind: properties.wind,
+            previous: properties.wind,
+            current: properties.wind,
             aabb: properties.aabb,
             options: properties.options,
             noise_texture,
@@ -41,7 +43,8 @@ impl InstancedWindAffectedMaterial {
 
 #[derive(Clone, ShaderType, Debug)]
 struct InstancedWindAffectedMaterialUniform {
-    pub wind: WindUniform,
+    pub current: WindUniform,
+    pub previous: WindUniform,
     pub top_color: LinearRgba,
     pub bottom_color: LinearRgba,
     pub tint_factor: f32,
@@ -52,12 +55,14 @@ struct InstancedWindAffectedMaterialUniform {
     pub translucency: f32,
     pub specular_strength: f32,
     pub specular_power: f32,
+    pub edge_correction_factor: f32,
 }
 
 impl From<&InstancedWindAffectedMaterial> for InstancedWindAffectedMaterialUniform {
     fn from(material: &InstancedWindAffectedMaterial) -> Self {
         Self {
-            wind: WindUniform::from(&material.wind).with_aabb(&material.aabb),
+            current: WindUniform::from(&material.current).with_aabb(&material.aabb),
+            previous: WindUniform::from(&material.previous).with_aabb(&material.aabb),
             top_color: material.options.top_color.unwrap_or_default().to_linear(),
             bottom_color: material
                 .options
@@ -72,6 +77,7 @@ impl From<&InstancedWindAffectedMaterial> for InstancedWindAffectedMaterialUnifo
             translucency: material.options.translucency,
             specular_strength: material.options.specular_strength,
             specular_power: material.options.specular_power,
+            edge_correction_factor: material.options.edge_correction_factor,
         }
     }
 }

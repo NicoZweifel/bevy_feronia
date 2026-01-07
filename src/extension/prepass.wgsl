@@ -49,13 +49,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let material_uniforms = material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
 
-    let wind = material_uniforms.wind;
 
-    // --- CURRENT FRAME ---
+    // Current Frame
     {
+        let wind = material_uniforms.current;
         let world_from_local = get_world_from_local(vertex.instance_index);
 
-        // --- INSTANCE ---
+        // Instance
         var instance: InstanceInfo;
         let camera_world_pos = view.world_position.xyz;
         instance.world_from_local = world_from_local;
@@ -73,7 +73,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         #endif
         #endif
 
-        // --- DISPLACEMENT ---
+        // Displacement
        var displaced: DisplacedVertex;
         if static_shadows {
             displaced.world_position = (instance.world_from_local * vec4<f32>(vertex.position, 1.0));
@@ -145,12 +145,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 }
 
 #ifdef MOTION_VECTOR_PREPASS
-    // --- PREVIOUS FRAME ---
+    // Previous Frame
     {
-        // --- INSTANCE ---
+        let wind = material_uniforms.previous;
+
+        // Instance
         var instance_prev: InstanceInfo;
-
-
         instance_prev.world_from_local = get_previous_world_from_local(vertex.instance_index);
         instance_prev.instance_position = instance_prev.world_from_local[3];
         instance_prev.wrapped_time = globals.time - globals.delta_time;
@@ -159,7 +159,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         // TODO prev wind https://github.com/NicoZweifel/bevy_feronia/issues/34
         let noise_prev = sample_noise(instance_prev, wind, vertex.position);
 
-        /// --- DISPLACEMENT ---
+        /// Displacement
         let displaced_prev = displace_vertex_and_calc_normal(
             wind,
             noise_prev,

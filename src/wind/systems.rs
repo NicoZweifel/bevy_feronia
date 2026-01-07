@@ -9,7 +9,7 @@ use noise::{NoiseFn, Perlin};
 
 pub fn update_materials<T>(
     mut materials: ResMut<Assets<T>>,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     q_layer: Query<
         (WindOptionData, MaterialOptionData, &ScatterLayerOf),
@@ -19,6 +19,8 @@ pub fn update_materials<T>(
 ) where
     T: ScatterMaterial,
 {
+    let current_wind = global_wind.current;
+    let previous_wind = global_wind.previous;
     for (_, asset) in scatter_assets.iter_mut() {
         if asset.properties.options.controlled {
             continue;
@@ -37,7 +39,8 @@ pub fn update_materials<T>(
             continue;
         };
 
-        let wind = wind.with(root_wind_data).with(wind_data);
+        let wind = current_wind.with(root_wind_data).with(wind_data);
+        let prev_wind = previous_wind.with(root_wind_data).with(wind_data);
 
         asset.properties.wind = wind;
 
@@ -55,7 +58,7 @@ pub fn update_materials<T>(
                 .with_quality(*asset.properties.lod, asset.properties.wind_affected);
              */
 
-            T::update_material(material, wind, asset.properties.options);
+            T::update_material(material, wind, prev_wind, asset.properties.options);
         }
     }
 }
@@ -118,4 +121,15 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
     let handle = images.add(wind_image);
 
     commands.insert_resource(WindTexture(handle));
+}
+
+pub fn sync_wind_preset(mut wind: ResMut<GlobalWind>, mut last_preset: Local<WindPreset>) {
+    if wind.preset != *last_preset {
+        wind.current = wind.preset.into();
+        *last_preset = wind.preset;
+    }
+}
+
+pub fn cycle_wind_history(mut wind: ResMut<GlobalWind>) {
+    wind.previous = wind.current;
 }

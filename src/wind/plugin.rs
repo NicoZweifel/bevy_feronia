@@ -1,7 +1,7 @@
 use super::systems::*;
 use crate::prelude::*;
 
-use bevy_app::{App, Plugin, Startup, Update};
+use bevy_app::{App, Plugin, PreUpdate, Startup, Update};
 use bevy_asset::Assets;
 use bevy_ecs::prelude::*;
 use bevy_pbr::StandardMaterial;
@@ -23,10 +23,19 @@ impl Plugin for WindPlugin {
         load_shader_library!(app, "displace.wgsl");
         load_shader_library!(app, "forward_sss_io.wgsl");
 
-        app.init_resource::<Wind>()
+        app.register_type::<GlobalWind>()
             .register_type::<Wind>()
+            .init_resource::<GlobalWind>()
             .configure_sets(Startup, WindTextureSetup)
-            .add_systems(Startup, setup_wind_texture.in_set(WindTextureSetup));
+            .add_systems(Startup, setup_wind_texture.in_set(WindTextureSetup))
+            .add_systems(
+                PreUpdate,
+                (
+                    sync_wind_preset.run_if(resource_changed::<GlobalWind>),
+                    cycle_wind_history,
+                )
+                    .chain(),
+            );
     }
 }
 
@@ -64,8 +73,9 @@ where
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (update_materials::<T>
-                .run_if(resource_changed::<Wind>.and(resource_exists::<Assets<ScatterAsset<T>>>)),),
+            (update_materials::<T>.run_if(
+                resource_changed::<GlobalWind>.and(resource_exists::<Assets<ScatterAsset<T>>>),
+            ),),
         );
     }
 }

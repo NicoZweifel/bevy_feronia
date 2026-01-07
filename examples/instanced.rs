@@ -24,7 +24,6 @@ use std::sync::Arc;
 
 fn main() -> AppExit {
     App::new()
-        .init_resource::<Wind>()
         .add_plugins((
             ExamplePlugin,
             // Don't need any of the scatter plugins if we just want to have wind-affected materials,
@@ -45,9 +44,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     noise_texture: Res<WindTexture>,
 ) {
+    let wind = global_wind.current;
     let mesh_handle = meshes.add(create_triangle_with_foliage_uvs());
     let aabb = Aabb {
         center: Vec3A::new(0.25, 0.375, 0.0),
@@ -85,9 +85,10 @@ fn setup(
     };
 
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
-        // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
-        // we need an update system.
-        wind: *wind,
+        // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
+        // you need an update system.
+        current:wind,
+        previous: wind,
         aabb,
         options,
         noise_texture: (**noise_texture).clone(),

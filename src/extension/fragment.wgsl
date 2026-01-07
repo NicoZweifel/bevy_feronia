@@ -79,7 +79,7 @@ fn fragment(
     let material_uniforms =  material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
 
-    let wind = material_uniforms.wind;
+    let wind = material_uniforms.current;
 
     if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
         #ifdef SUBSURFACE_SCATTERING

@@ -829,9 +829,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_eidolon"
-version = "0.1.1-rc.10"
+version = "0.1.1-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "674227e31589ad0aae4d2e68f09c8ae7e55ec8f884f22263f67dad142d2aa5fc"
+checksum = "e2e45287b39d9315057e0c2f1612f16889fbdbf54954274ad11618071c0d250d"
 dependencies = [
  "bevy_app",
  "bevy_asset",

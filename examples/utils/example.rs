@@ -74,7 +74,7 @@ impl Plugin for ExamplePlugin {
                 EguiPlugin::default(),
                 WorldInspectorPlugin::default()
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_inspector),
-                ResourceInspectorPlugin::<Wind>::default()
+                ResourceInspectorPlugin::<GlobalWind>::default()
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_wind_settings),
                 ResourceInspectorPlugin::<QualitySettings>::default()
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_quality_settings),

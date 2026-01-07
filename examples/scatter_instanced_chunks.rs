@@ -11,7 +11,12 @@ use example::*;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
+        .insert_resource(GlobalWind {
+            current: Wind {
+                ..WindPreset::Mild.into()
+            },
+            ..WindPreset::Mild.into()
+        })
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             show_debug_options: true,

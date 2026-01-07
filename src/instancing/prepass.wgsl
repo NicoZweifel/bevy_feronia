@@ -8,6 +8,7 @@
 
 #import bevy_eidolon::render::bindings::instance_uniforms
 #import bevy_eidolon::render::utils
+#import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_eidolon::render::io_types::Vertex
 
 #import bevy_pbr::utils::rand_f
@@ -53,13 +54,27 @@ struct PrepassVertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     var out: PrepassVertexOutput;
-    let wind = material_uniforms.wind;
 
-    let final_matrix = utils::calc_instance_world_matrix(
+    var scale = vertex.i_pos_scale.w;
+    var translation = vertex.i_pos_scale.xyz;
+
+    var world_from_local_matrix: mat4x4<f32>;
+
+#ifdef BILLBOARDING
+    world_from_local_matrix = mat4x4<f32>(
+        vec4<f32>(scale, 0.0, 0.0, 0.0),
+        vec4<f32>(0.0, scale, 0.0, 0.0),
+        vec4<f32>(0.0, 0.0, scale, 0.0),
+        vec4<f32>(translation, 1.0)
+    );
+   var final_matrix = instance_uniforms.world_from_local * world_from_local_matrix;
+#else
+   let final_matrix = utils::calc_instance_world_matrix(
         vertex.i_pos_scale,
         vertex.i_rotation,
         instance_uniforms.world_from_local
     );
+#endif
 
 // TODO
 #ifdef STATIC_BEND
@@ -68,92 +83,101 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength;
 #endif
 
-    var instance: InstanceInfo;
-    instance.world_from_local = final_matrix;
-    instance.instance_position = final_matrix[3];
-    instance.wrapped_time = globals.time;
-    instance.instance_index = vertex.i_index;
+    // Current Frame
+    {
+        let wind = material_uniforms.current;
 
-    let noise = sample_noise(instance, wind, vertex.position);
+        var instance: InstanceInfo;
+        instance.world_from_local = final_matrix;
+        instance.instance_position = final_matrix[3];
+        instance.wrapped_time = globals.time;
+        instance.instance_index = vertex.i_index;
+        instance.edge_correction_factor = material_uniforms.edge_correction_factor;
 
-    let displaced = displace_vertex_and_calc_normal(
-        wind,
-        noise,
-        vertex.position,
-        instance,
-#ifdef STATIC_BEND
-        static_bend,
-#endif
-#ifdef VERTEX_NORMALS
-        vertex.normal,
-#endif
-#ifdef VERTEX_TANGENTS
-        vertex.tangent,
-#endif
-#ifdef VERTEX_UVS_A
-        vertex.uv
-#endif
-    );
+        let noise = sample_noise(instance, wind, vertex.position);
 
-    out.world_position = displaced.world_position;
-    out.clip_position = view.clip_from_world * out.world_position;
-
-#ifdef NORMAL_PREPASS
-    out.world_normal = displaced.world_normal;
-    #ifdef VERTEX_TANGENTS
-        out.world_tangent = displaced.world_tangent;
+        let displaced = displace_vertex_and_calc_normal(
+            wind,
+            noise,
+            vertex.position,
+            instance,
+    #ifdef STATIC_BEND
+            static_bend,
     #endif
-#endif
+    #ifdef VERTEX_NORMALS
+            vertex.normal,
+    #endif
+    #ifdef VERTEX_TANGENTS
+            vertex.tangent,
+    #endif
+    #ifdef VERTEX_UVS_A
+            vertex.uv
+    #endif
+        );
 
-    out.previous_world_position = displaced.world_position;
+        out.world_position = displaced.world_position;
+        out.clip_position = position_world_to_clip(out.world_position.xyz);
+
+    #ifdef NORMAL_PREPASS
+        out.world_normal = displaced.world_normal;
+        #ifdef VERTEX_TANGENTS
+            out.world_tangent = displaced.world_tangent;
+        #endif
+    #endif
+
+    #ifdef VERTEX_OUTPUT_INSTANCE_INDEX
+        out.instance_index = vertex.instance_index;
+    #endif
+
+    #ifdef VISIBILITY_RANGE_DITHER
+        out.visibility_range_dither = utils::get_visibility_range_dither_level(
+            instance_uniforms.visibility_range,
+            final_matrix[3]
+        );
+    #endif
+    }
 
 #ifdef MOTION_VECTOR_PREPASS
-    let prev_final_matrix = utils::calc_instance_world_matrix(
-        vertex.i_pos_scale,
-        vertex.i_rotation,
-        instance_uniforms.previous_world_from_local
-    );
+    // Previous Frame
+    {
+        let wind = material_uniforms.previous;
+        let prev_final_matrix = utils::calc_instance_world_matrix(
+            vertex.i_pos_scale,
+            vertex.i_rotation,
+            instance_uniforms.previous_world_from_local
+        );
 
-    var instance_prev: InstanceInfo;
-    instance_prev.world_from_local = prev_final_matrix;
-    instance_prev.instance_position = prev_final_matrix[3];
-    instance_prev.wrapped_time = globals.time - globals.delta_time;
-    instance_prev.instance_index = vertex.i_index;
+        var instance_prev: InstanceInfo;
+        instance_prev.world_from_local = prev_final_matrix;
+        instance_prev.instance_position = prev_final_matrix[3];
+        instance_prev.wrapped_time = globals.time - globals.delta_time;
+        instance_prev.instance_index = vertex.i_index;
+        instance_prev.edge_correction_factor = material_uniforms.edge_correction_factor;
 
-    let noise_prev = sample_noise(instance_prev, wind, vertex.position);
+        let noise_prev = sample_noise(instance_prev, wind, vertex.position);
 
-    let displaced_prev = displace_vertex_and_calc_normal(
-        wind,
-        noise_prev,
-        vertex.position,
-        instance_prev,
-#ifdef STATIC_BEND
-        static_bend,
-#endif
-#ifdef VERTEX_NORMALS
-        vertex.normal,
-#endif
-#ifdef VERTEX_TANGENTS
-        vertex.tangent,
-#endif
-#ifdef VERTEX_UVS_A
-        vertex.uv
-#endif
-    );
+        let displaced_prev = displace_vertex_and_calc_normal(
+            wind,
+            noise_prev,
+            vertex.position,
+            instance_prev,
+    #ifdef STATIC_BEND
+            static_bend,
+    #endif
+    #ifdef VERTEX_NORMALS
+            vertex.normal,
+    #endif
+    #ifdef VERTEX_TANGENTS
+            vertex.tangent,
+    #endif
+    #ifdef VERTEX_UVS_A
+            vertex.uv
+    #endif
+        );
 
-    out.previous_world_position = displaced_prev.world_position;
-#endif
-
-#ifdef VERTEX_OUTPUT_INSTANCE_INDEX
-        out.instance_index = vertex.instance_index;
-#endif
-
-#ifdef VISIBILITY_RANGE_DITHER
-    out.visibility_range_dither = utils::get_visibility_range_dither_level(
-        instance_uniforms.visibility_range,
-        final_matrix[3]
-    );
-#endif
+        out.previous_world_position = displaced_prev.world_position;
+    }
+    #endif // MOTION_VECTOR_PREPASS
 
     return out;
 }

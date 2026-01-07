@@ -10,13 +10,7 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            strength: 0.2,
-            micro_strength: 0.1,
-            s_curve_strength: 0.01,
-            bop_strength: 0.01,
-            ..default()
-        })
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             ..default()

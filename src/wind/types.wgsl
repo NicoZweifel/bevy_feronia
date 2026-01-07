@@ -17,6 +17,7 @@ struct InstanceInfo {
     instance_position: vec4<f32>,
     wrapped_time: f32,
     instance_index: u32,
+    edge_correction_factor: f32,
 #ifdef VERTEX_TANGENTS
     tangent: vec4<f32>
 #endif

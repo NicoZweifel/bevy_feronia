@@ -13,7 +13,6 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
         .add_plugins((
             ExamplePlugin,
             MeshMaterialAssetBackendPlugin,

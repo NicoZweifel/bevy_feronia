@@ -19,7 +19,8 @@ pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindA
 #[data(50, ExtendedWindAffectedMaterialUniform, binding_array(101))]
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
-    pub wind: Wind,
+    pub previous: Wind,
+    pub current: Wind,
 
     pub aabb: Aabb,
 
@@ -32,7 +33,8 @@ pub struct WindAffectedExtension {
 
 #[derive(Clone, ShaderType, Debug)]
 struct ExtendedWindAffectedMaterialUniform {
-    pub wind: WindUniform,
+    pub previous: WindUniform,
+    pub current: WindUniform,
     sss_scale: f32,
     sss_intensity: f32,
 }
@@ -40,7 +42,8 @@ struct ExtendedWindAffectedMaterialUniform {
 impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform {
     fn from(extension: &'a WindAffectedExtension) -> Self {
         Self {
-            wind: WindUniform::from(extension),
+            previous: WindUniform::from(&extension.previous),
+            current: WindUniform::from(&extension.current),
             sss_intensity: extension.options.subsurface_scattering_intensity,
             sss_scale: extension.options.subsurface_scattering_scale,
         }
@@ -50,19 +53,12 @@ impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform
 impl WindAffectedExtension {
     pub fn new(properties: &ScatterAssetProperties, noise_texture: Handle<Image>) -> Self {
         Self {
-            wind: properties.wind,
+            previous: properties.wind,
+            current: properties.wind,
             aabb: properties.aabb,
             options: properties.options,
             noise_texture,
         }
-    }
-}
-
-impl<'a> From<&'a WindAffectedExtension> for WindUniform {
-    fn from(material_extension: &'a WindAffectedExtension) -> Self {
-        WindUniform::from(&material_extension.wind)
-            .with_edge_correction_factor(material_extension.options.edge_correction_factor)
-            .with_aabb(&material_extension.aabb)
     }
 }
 

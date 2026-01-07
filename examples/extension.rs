@@ -11,7 +11,6 @@ use example::*;
 
 fn main() -> AppExit {
     App::new()
-        .init_resource::<Wind>()
         .add_plugins((
             ExamplePlugin,
             // Don't need any of the scatter plugins if we just want to have wind-affected materials,
@@ -32,9 +31,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut extended_materials: ResMut<Assets<ExtendedWindAffectedMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     noise_texture: Res<WindTexture>,
 ) {
+    let wind = global_wind.current;
     let mesh_handle = meshes.add(Cuboid::new(0.5, 3.0, 0.5));
 
     let material_handle = extended_materials.add(ExtendedMaterial {
@@ -43,7 +43,10 @@ fn setup(
             ..default()
         },
         extension: WindAffectedExtension {
-            wind: *wind,
+            // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
+            // you need an update system.
+            current:wind,
+            previous: wind,
             aabb: Aabb {
                 half_extents: Vec3A::new(0.5, 3., 0.5),
                 center: Vec3A::new(0.0, 0.0, 0.0),

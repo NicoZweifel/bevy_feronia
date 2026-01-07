@@ -3,7 +3,8 @@
 #import bevy_feronia::wind::Wind
 
 struct ExtendedMaterial {
-    wind: Wind,
+    current: Wind,
+    previous: Wind, 
     sss_scale: f32,
     sss_intensity: f32,
 };

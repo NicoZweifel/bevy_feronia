@@ -31,10 +31,10 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let material_uniforms = material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
 
-    let wind = material_uniforms.wind;
+    let wind = material_uniforms.current;
     let world_from_local = get_world_from_local(vertex.instance_index);
 
-    // --- INSTANCE ---
+    // Instance
     var instance: InstanceInfo;
     let camera_world_pos = view.world_position.xyz;
     instance.world_from_local = world_from_local;
@@ -44,7 +44,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 
     let noise = sample_noise(instance, wind, vertex.position);
 
-    // --- DISPLACEMENT ---
+    // Displacement
     let displaced = displace_vertex_and_calc_normal(
         wind,
         noise,

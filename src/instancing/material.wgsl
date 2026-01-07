@@ -3,7 +3,8 @@
 #import bevy_feronia::wind::Wind
 
 struct InstancedMaterial {
-    wind: Wind,
+    current: Wind,
+    previous: Wind,
     top_color: vec4<f32>,
     bottom_color: vec4<f32>,
     tint_factor: f32,
@@ -14,5 +15,6 @@ struct InstancedMaterial {
     translucency: f32,
     specular_strength: f32,
     specular_power: f32,
+    edge_correction_factor: f32
 };
 

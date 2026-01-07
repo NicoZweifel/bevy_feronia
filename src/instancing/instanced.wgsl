@@ -69,6 +69,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.instance_position = final_matrix[3];
     instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
+    instance.edge_correction_factor = material_uniforms.edge_correction_factor;
 
 // TODO
 #ifdef STATIC_BEND
@@ -77,7 +78,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength;
 #endif
 
-    let wind = material_uniforms.wind;
+    let wind = material_uniforms.current;
     let noise = sample_noise(instance, wind, vertex.position);
 
     // --- DISPLACEMENT ---

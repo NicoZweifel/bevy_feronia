@@ -32,7 +32,13 @@ pub trait ScatterMaterial: ScatterMaterialAsset {
         properties: &ScatterAssetProperties,
     ) -> Self;
 
-    fn update_material(_material: &mut Self, _wind: Wind, _options: ScatterMaterialOptions) {}
+    fn update_material(
+        _material: &mut Self,
+        _current_wind: Wind,
+        _previous_wind: Wind,
+        _options: ScatterMaterialOptions,
+    ) {
+    }
 
     fn component(material: Handle<Self>) -> impl Component;
 
@@ -191,7 +197,6 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-    pub edge_correction_factor: f32,
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
 }
@@ -210,7 +215,6 @@ impl From<&Wind> for WindUniform {
             bop_speed: wind.bop_speed,
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
-            edge_correction_factor: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
         }
@@ -218,11 +222,6 @@ impl From<&Wind> for WindUniform {
 }
 
 impl WindUniform {
-    pub fn with_edge_correction_factor(mut self, edge_correction_factor: f32) -> Self {
-        self.edge_correction_factor = edge_correction_factor;
-        self
-    }
-
     pub fn with_aabb(mut self, aabb: &Aabb) -> Self {
         self.aabb_min = aabb.min().into();
         self.aabb_max = aabb.max().into();

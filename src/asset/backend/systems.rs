@@ -54,9 +54,10 @@ pub fn insert_parts<T: ScatterMaterial>(
         (Entity, MaterialOptionData, WindOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     meshes: ResMut<Assets<Mesh>>,
 ) {
+    let wind = global_wind.current;
     for ScatterAssetPartEntity { entity, part } in
         q_items.into_iter().map(AssetPart::from).filter_map(
             |AssetPart {
@@ -127,7 +128,7 @@ pub fn insert_parts<T: ScatterMaterial>(
                 ScatterAssetPartEntity::try_from_data(
                     entity,
                     item_of,
-                    *wind,
+                    wind,
                     layer_wind_data,
                     scene_root_data,
                     item_root_data,
@@ -154,8 +155,9 @@ pub fn insert_requests<T: ScatterMaterial>(
         (Entity, MaterialOptionData, WindOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
 ) {
+    let wind = global_wind.current;
     let processed_scene_roots = q_parts
         .iter()
         .fold(
@@ -205,9 +207,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                 })
                 .ok()?;
 
-            let wind = (*wind)
-                .with(layer_wind_data)
-                .with(scene_root_data.wind_data);
+            let wind = wind.with(layer_wind_data).with(scene_root_data.wind_data);
 
             let options = ScatterMaterialOptions::from(layer_material_option_data)
                 .with(scene_root_data.material_options);

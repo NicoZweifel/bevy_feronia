@@ -12,7 +12,6 @@ struct Wind {
     bop_speed: f32,
     bop_strength: f32,
     twist_strength: f32,
-    edge_correction_factor: f32,
     aabb_min: vec3<f32>,
     aabb_max: vec3<f32>,
 };
