@@ -40,16 +40,6 @@ struct PrepassVertexOutput {
 
 // TODO specialize prepass pipeline correctly
 
-#define STATIC_BEND
-#define EDGE_CORRECTION
-#define WIND_AFFECTED
-#define VISIBILITY_RANGE_DITHER
-#define STATIC_BEND
-#ifdef NORMAL_PREPASS
-#define VERTEX_NORMALS
-#endif
-#define ANALYTICAL_NORMALS
-
 
 @vertex
 fn vertex(vertex: Vertex) -> PrepassVertexOutput {
