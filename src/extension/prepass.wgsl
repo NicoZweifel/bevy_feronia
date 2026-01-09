@@ -35,7 +35,7 @@
 #import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
 #endif
 
-#import bevy_feronia::displace::{displace_vertex_and_calc_normal}
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal, displace_vertex_position}
 #import bevy_feronia::noise::sample_noise
 
 @group(0) @binding(1) var<uniform> globals: Globals;
@@ -149,34 +149,23 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     {
         let wind = material_uniforms.previous;
 
-        // Instance
         var instance_prev: InstanceInfo;
         instance_prev.world_from_local = get_previous_world_from_local(vertex.instance_index);
         instance_prev.instance_position = instance_prev.world_from_local[3];
         instance_prev.wrapped_time = globals.time - globals.delta_time;
         instance_prev.instance_index = vertex.instance_index;
 
-        // TODO prev wind https://github.com/NicoZweifel/bevy_feronia/issues/34
         let noise_prev = sample_noise(instance_prev, wind, vertex.position);
 
         /// Displacement
-        let displaced_prev = displace_vertex_and_calc_normal(
+        let world_pos_prev = displace_vertex_position(
             wind,
             noise_prev,
             vertex.position,
             instance_prev,
-#ifdef VERTEX_NORMALS
-            vertex.normal,
-#endif
-#ifdef VERTEX_TANGENTS
-            vertex.tangent,
-#endif
-#ifdef VERTEX_UVS_A
-            vertex.uv
-#endif
         );
 
-        out.previous_world_position = displaced_prev.world_position;
+        out.previous_world_position = vec4<f32>(world_pos_prev, 1.0);
     }
 #endif // MOTION_VECTOR_PREPASS
 

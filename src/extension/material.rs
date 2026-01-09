@@ -19,8 +19,8 @@ pub type ExtendedWindAffectedMaterial = ExtendedMaterial<StandardMaterial, WindA
 #[data(50, ExtendedWindAffectedMaterialUniform, binding_array(101))]
 #[bindless(index_table(range(50..53), binding(100)))]
 pub struct WindAffectedExtension {
-    pub previous: Wind,
     pub current: Wind,
+    pub previous: Wind,
 
     pub aabb: Aabb,
 
@@ -33,8 +33,8 @@ pub struct WindAffectedExtension {
 
 #[derive(Clone, ShaderType, Debug)]
 struct ExtendedWindAffectedMaterialUniform {
-    pub previous: WindUniform,
-    pub current: WindUniform,
+    previous: WindUniform,
+    current: WindUniform,
     sss_scale: f32,
     sss_intensity: f32,
 }
@@ -42,8 +42,8 @@ struct ExtendedWindAffectedMaterialUniform {
 impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform {
     fn from(extension: &'a WindAffectedExtension) -> Self {
         Self {
-            previous: WindUniform::from(&extension.previous),
             current: WindUniform::from(&extension.current),
+            previous: WindUniform::from(&extension.previous),
             sss_intensity: extension.options.subsurface_scattering_intensity,
             sss_scale: extension.options.subsurface_scattering_scale,
         }

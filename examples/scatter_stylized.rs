@@ -1,3 +1,5 @@
+/// Mostly a testing ground at the moment, but will eventually turn into an example for foliage assembly assets (instanced parts).
+
 #[path = "utils/example.rs"]
 mod example;
 

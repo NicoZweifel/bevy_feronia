@@ -16,7 +16,7 @@
 #import bevy_feronia::wind::Wind
 #import bevy_feronia::instancing::bindings::material_uniforms
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
-#import bevy_feronia::displace::displace_vertex_and_calc_normal
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal,displace_vertex_position}
 #import bevy_feronia::noise::sample_noise
 
 @group(0) @binding(1) var<uniform> globals: Globals;
@@ -66,11 +66,9 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
     );
 #endif
 
-// TODO
 #ifdef STATIC_BEND
-    const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
-
-    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength;
+    let static_bend = material_uniforms.static_bend_direction
+                    * material_uniforms.static_bend_strength;
 #endif
 
     // Current Frame
@@ -83,9 +81,11 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
         instance.wrapped_time = globals.time;
         instance.instance_index = vertex.i_index;
         instance.edge_correction_factor = material_uniforms.edge_correction_factor;
+        instance.seed = vertex.i_seed;
 
         let noise = sample_noise(instance, wind, vertex.position);
 
+#ifdef NORMAL_PREPASS
         let displaced = displace_vertex_and_calc_normal(
             wind,
             noise,
@@ -93,6 +93,8 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
             instance,
     #ifdef STATIC_BEND
             static_bend,
+            material_uniforms.static_bend_control_point,
+            material_uniforms.static_bend_min_max,
     #endif
     #ifdef VERTEX_NORMALS
             vertex.normal,
@@ -107,6 +109,15 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
 
         out.world_position = displaced.world_position;
         out.clip_position = position_world_to_clip(out.world_position.xyz);
+#else
+        let world_pos = displace_vertex_position(
+            wind, noise, vertex.position, instance,
+            #ifdef STATIC_BEND
+            static_bend,
+            #endif
+        );
+        out.world_position = vec4<f32>(world_pos, 1.0);
+#endif
 
     #ifdef NORMAL_PREPASS
         out.world_normal = displaced.world_normal;
@@ -143,29 +154,19 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
         instance_prev.wrapped_time = globals.time - globals.delta_time;
         instance_prev.instance_index = vertex.i_index;
         instance_prev.edge_correction_factor = material_uniforms.edge_correction_factor;
+        instance_prev.seed = vertex.i_seed;
 
         let noise_prev = sample_noise(instance_prev, wind, vertex.position);
-
-        let displaced_prev = displace_vertex_and_calc_normal(
-            wind,
-            noise_prev,
-            vertex.position,
-            instance_prev,
-    #ifdef STATIC_BEND
+        let world_pos_prev = displace_vertex_position(
+            wind, noise_prev, vertex.position, instance_prev,
+            #ifdef STATIC_BEND
             static_bend,
-    #endif
-    #ifdef VERTEX_NORMALS
-            vertex.normal,
-    #endif
-    #ifdef VERTEX_TANGENTS
-            vertex.tangent,
-    #endif
-    #ifdef VERTEX_UVS_A
-            vertex.uv
-    #endif
+            material_uniforms.static_bend_control_point,
+            material_uniforms.static_bend_min_max,
+            #endif
         );
 
-        out.previous_world_position = displaced_prev.world_position;
+        out.previous_world_position = vec4<f32>(world_pos_prev, 1.0);
     }
     #endif // MOTION_VECTOR_PREPASS
 
@@ -179,13 +180,6 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
 @fragment
 fn fragment(in: PrepassVertexOutput) -> FragmentOutput {
     var out: FragmentOutput;
-
-#ifdef VISIBILITY_RANGE_DITHER
-    bevy_pbr::pbr_functions::visibility_range_dither(
-        in.clip_position,
-        in.visibility_range_dither
-    );
-#endif
 
 #ifdef NORMAL_PREPASS
     out.normal = vec4(in.world_normal * 0.5 + vec3(0.5), 1.0);

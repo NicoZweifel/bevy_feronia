@@ -17,7 +17,7 @@ use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
-use bevy_eidolon::prelude::{GpuComputeCullPlugin, GpuCullCompute};
+use bevy_eidolon::prelude::*;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
 use bevy_image::*;
@@ -43,8 +43,8 @@ fn main() -> AppExit {
             SceneAssetBackendPlugin,
             StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
-            GpuComputeCullPlugin,
             ExtendedWindAffectedScatterPlugin,
+            GpuComputeCullPlugin,
         ))
         .init_state::<AppState>()
         .add_systems(OnEnter(AppState::Setup), setup_loading_screen)
@@ -84,6 +84,43 @@ enum AppState {
     Setup,
     Loading,
     InGame,
+}
+
+fn spawn_scene(
+    mut cmd: Commands,
+    landscape: Single<Entity, With<Landscape>>,
+    mut images: ResMut<Assets<Image>>,
+    settings: Res<QualitySettings>,
+) {
+    info!("Spawning scene with quality: {:?}", settings.quality);
+
+    let fog_texture = create_spherical_fog_texture(64);
+    let fog_texture_handle = images.add(fog_texture);
+
+    if let Some(image) = images.get_mut(&fog_texture_handle) {
+        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
+    }
+
+    /* too expensive and seems bugged TODO
+    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
+        cmd.spawn((
+            FogVolume {
+                density_texture: Some(fog_texture_handle),
+                density_factor: 0.05,
+                fog_color: Color::WHITE,
+                scattering_asymmetry: 0.6,
+                ..default()
+            },
+            Transform::from_scale(Vec3::splat(300.).with_y(100.))
+                .with_translation(Vec3::new(0., 15., 0.)),
+        ));
+    }
+     */
+
+    cmd.spawn((RockLayer, ChildOf(*landscape)));
+    cmd.spawn((TreeLayer, ChildOf(*landscape)));
+    cmd.spawn((FoliageLayer, ChildOf(*landscape)));
+    cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
 
 #[derive(Resource, Clone)]
@@ -681,17 +718,17 @@ impl FoliageLayer {
 
     GpuCullCompute,
     EdgeCorrectionFactor,
-    CurveFactor,
+    CurveNormals,
     Strength(1.2),
-    MicroStrength(1.2),
     SCurveStrength(1.2),
     BopStrength(1.2),
     AnalyticalNormals,
     InstanceRotationYaw,
     InstanceColor(Color::hsla(84., 0.49, 0.35, 1.)),
     InstanceColorGradient::new(Color::hsla(84.2, 0.48, 0.5, 1.),Color::hsla(84., 0.49, 0.14, 1.)),
-    StaticBendStrength,
-    SpecularStrength(0.2)
+    StaticBend,
+    SpecularStrength(0.2),
+    AmbientOcclusion,
 )]
 struct GrassLayer;
 
@@ -777,43 +814,6 @@ impl GrassLayer {
             }
         }
     }
-}
-
-fn spawn_scene(
-    mut cmd: Commands,
-    landscape: Single<Entity, With<Landscape>>,
-    mut images: ResMut<Assets<Image>>,
-    settings: Res<QualitySettings>,
-) {
-    info!("Spawning scene with quality: {:?}", settings.quality);
-
-    let fog_texture = create_spherical_fog_texture(64);
-    let fog_texture_handle = images.add(fog_texture);
-
-    if let Some(image) = images.get_mut(&fog_texture_handle) {
-        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
-    }
-
-    /* too expensive and seems bugged TODO
-    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
-        cmd.spawn((
-            FogVolume {
-                density_texture: Some(fog_texture_handle),
-                density_factor: 0.05,
-                fog_color: Color::WHITE,
-                scattering_asymmetry: 0.6,
-                ..default()
-            },
-            Transform::from_scale(Vec3::splat(300.).with_y(100.))
-                .with_translation(Vec3::new(0., 15., 0.)),
-        ));
-    }
-     */
-
-    cmd.spawn((RockLayer, ChildOf(*landscape)));
-    cmd.spawn((TreeLayer, ChildOf(*landscape)));
-    cmd.spawn((FoliageLayer, ChildOf(*landscape)));
-    cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
 
 fn scatter_on_keypress(

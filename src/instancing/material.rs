@@ -6,6 +6,7 @@ use bevy_camera::primitives::Aabb;
 use bevy_color::LinearRgba;
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
+use bevy_math::Vec2;
 use bevy_mesh::MeshVertexBufferLayoutRef;
 use bevy_reflect::TypePath;
 use bevy_render::render_resource::{
@@ -27,6 +28,7 @@ pub struct InstancedWindAffectedMaterial {
     #[texture(51)]
     #[sampler(52)]
     pub noise_texture: Handle<Image>,
+    pub disable_prepass: bool,
 }
 
 impl InstancedWindAffectedMaterial {
@@ -37,6 +39,7 @@ impl InstancedWindAffectedMaterial {
             aabb: properties.aabb,
             options: properties.options,
             noise_texture,
+            disable_prepass: false,
         }
     }
 }
@@ -50,12 +53,15 @@ struct InstancedWindAffectedMaterialUniform {
     pub tint_factor: f32,
     pub gradient_start: f32,
     pub gradient_end: f32,
-    pub static_bend_strength: f32,
     pub curve_factor: f32,
     pub translucency: f32,
     pub specular_strength: f32,
     pub specular_power: f32,
     pub edge_correction_factor: f32,
+    pub static_bend_strength: f32,
+    pub static_bend_direction: Vec2,
+    pub static_bend_control_point: Vec2,
+    pub static_bend_min_max: Vec2,
 }
 
 impl From<&InstancedWindAffectedMaterial> for InstancedWindAffectedMaterialUniform {
@@ -72,12 +78,15 @@ impl From<&InstancedWindAffectedMaterial> for InstancedWindAffectedMaterialUnifo
             tint_factor: material.options.tint_factor,
             gradient_end: material.options.gradient_end,
             gradient_start: material.options.gradient_start,
-            static_bend_strength: material.options.static_bend_strength,
             curve_factor: material.options.curve_factor,
             translucency: material.options.translucency,
             specular_strength: material.options.specular_strength,
             specular_power: material.options.specular_power,
             edge_correction_factor: material.options.edge_correction_factor,
+            static_bend_strength: material.options.static_bend_strength,
+            static_bend_direction: material.options.static_bend_direction,
+            static_bend_control_point: material.options.static_bend_control_point,
+            static_bend_min_max: material.options.static_bend_min_max,
         }
     }
 }
@@ -99,6 +108,10 @@ impl InstancedMaterial for InstancedWindAffectedMaterial {
         ShaderRef::Path(
             AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
         )
+    }
+
+    fn disable_prepass(&self) -> bool {
+        self.disable_prepass
     }
 
     fn specialize(

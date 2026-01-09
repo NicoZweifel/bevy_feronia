@@ -8,13 +8,13 @@ pub use utils::*;
 use crate::prelude::*;
 
 use bevy_asset::{Asset, Handle};
-use bevy_eidolon::prelude::GpuCullCompute;
+use bevy_eidolon::prelude::{GpuCullCompute, InstanceColor};
 
 use bevy_camera::primitives::Aabb;
 use bevy_color::Color;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::QueryData;
-use bevy_math::Vec3;
+use bevy_math::{Vec2, Vec3};
 use bevy_mesh::Mesh;
 use bevy_reflect::Reflect;
 use bevy_utils::default;
@@ -99,8 +99,6 @@ pub struct ScatterMaterialOptions {
     pub subsurface_scattering_scale: f32,
     /// See [`SubsurfaceScatteringIntensity`].
     pub subsurface_scattering_intensity: f32,
-    /// See [`StaticBendStrength`].
-    pub static_bend_strength: f32,
     /// See [`StaticShadow`].
     pub static_shadows: bool,
     /// See [`Unlit`].
@@ -116,6 +114,18 @@ pub struct ScatterMaterialOptions {
 
     /// See [`AmbientOcclusion`].
     pub ambient_occlusion: bool,
+
+    /// See [`StaticBendStrength`].
+    pub static_bend_strength: f32,
+
+    /// See [`StaticBendDirection`].
+    pub static_bend_direction: Vec2,
+
+    /// See [`StaticBendControlPoint`].
+    pub static_bend_control_point: Vec2,
+
+    /// See [`StaticBendMinMax`].
+    pub static_bend_min_max: Vec2,
 }
 
 /// Collection of optional material components, usable as `QueryData`.
@@ -134,7 +144,6 @@ pub struct MaterialOptionData {
     pub base_color: Option<&'static InstanceColor>,
     pub color_gradient: Option<&'static InstanceColorGradient>,
     pub fast_normals: Option<&'static FastNormals>,
-    pub static_bend_strength: Option<&'static StaticBendStrength>,
     pub analytical_normals: Option<&'static AnalyticalNormals>,
     pub directional_lights: Option<&'static DirectionalLights>,
     pub point_lights: Option<&'static PointLights>,
@@ -145,7 +154,52 @@ pub struct MaterialOptionData {
     pub specular_strength: Option<&'static SpecularStrength>,
     pub specular_power: Option<&'static SpecularPower>,
     pub ambient_occlusion: Option<&'static AmbientOcclusion>,
+    pub static_bend: Option<&'static StaticBend>,
+    pub static_bend_strength: Option<&'static StaticBendStrength>,
+    pub static_bend_direction: Option<&'static StaticBendDirection>,
+    pub static_bend_control_point: Option<&'static StaticBendControlPoint>,
+    pub static_bend_min_max: Option<&'static StaticBendMinMax>,
 }
+
+pub type MaterialChangedFilter = Or<(
+    Or<(
+        Changed<EnableDebug>,
+        Changed<EnableBillboarding>,
+        Changed<EdgeCorrectionFactor>,
+        Changed<CurveFactor>,
+        Changed<WindAffected>,
+        Changed<LowQuality>,
+    )>,
+    Or<(
+        Changed<SubsurfaceScattering>,
+        Changed<SubsurfaceScatteringScale>,
+        Changed<SubsurfaceScatteringIntensity>,
+        Changed<InstanceColor>,
+        Changed<InstanceColorGradient>,
+        Changed<FastNormals>,
+    )>,
+   Or<(
+        Changed<AnalyticalNormals>,
+        Changed<DirectionalLights>,
+        Changed<PointLights>,
+        Changed<StaticShadow>,
+        Changed<Unlit>,
+    )>,
+    Or<(
+        Changed<GpuCullCompute>,
+        Changed<Translucency>,
+        Changed<SpecularStrength>,
+        Changed<SpecularPower>,
+        Changed<AmbientOcclusion>,
+    )>,
+   Or<(
+        Changed<StaticBend>,
+        Changed<StaticBendStrength>,
+        Changed<StaticBendDirection>,
+        Changed<StaticBendControlPoint>,
+        Changed<StaticBendMinMax>,
+    )>,
+)>;
 
 impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
     fn from(data: MaterialOptionDataItem<'_, '_>) -> Self {
@@ -166,7 +220,6 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             gradient_end: data.color_gradient.map(|g| g.end).unwrap_or(0.),
             gradient_start: data.color_gradient.map(|g| g.start).unwrap_or(0.),
             fast_normals: data.fast_normals.is_some(),
-            static_bend_strength: data.static_bend_strength.map(|s| **s).unwrap_or(0.),
             analytical_normals: data.analytical_normals.is_some(),
             point_lights: data.point_lights.is_some(),
             directional_lights: data.directional_lights.is_some(),
@@ -177,6 +230,19 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             specular_strength: data.specular_strength.map(|s| **s).unwrap_or(0.),
             specular_power: data.specular_power.map(|s| **s).unwrap_or(0.),
             ambient_occlusion: data.ambient_occlusion.is_some(),
+            static_bend_strength: data.static_bend_strength.map(|s| **s).unwrap_or(0.),
+            static_bend_direction: data
+                .static_bend_direction
+                .map(|b| **b)
+                .unwrap_or(Vec2::ZERO),
+            static_bend_control_point: data
+                .static_bend_control_point
+                .map(|b| **b)
+                .unwrap_or(Vec2::ZERO),
+            static_bend_min_max: data
+                .static_bend_min_max
+                .map(|b| (*b).into())
+                .unwrap_or(Vec2::ZERO),
             ..default()
         }
     }
@@ -220,10 +286,6 @@ impl ScatterMaterialOptions {
                 .map(|c| c.end)
                 .unwrap_or(self.gradient_end),
             fast_normals: data.fast_normals.is_some() || self.fast_normals,
-            static_bend_strength: data
-                .static_bend_strength
-                .map(|s| **s)
-                .unwrap_or(self.static_bend_strength),
             analytical_normals: data.analytical_normals.is_some() || self.analytical_normals,
             point_lights: data.point_lights.is_some() || self.point_lights,
             directional_lights: data.directional_lights.is_some() || self.directional_lights,
@@ -239,7 +301,23 @@ impl ScatterMaterialOptions {
                 .specular_power
                 .map(|s| **s)
                 .unwrap_or(self.specular_power),
+            static_bend_strength: data
+                .static_bend_strength
+                .map(|s| **s)
+                .unwrap_or(self.static_bend_strength),
             ambient_occlusion: data.ambient_occlusion.is_some() || self.ambient_occlusion,
+            static_bend_direction: data
+                .static_bend_direction
+                .map(|b| **b)
+                .unwrap_or(self.static_bend_direction),
+            static_bend_control_point: data
+                .static_bend_control_point
+                .map(|b| **b)
+                .unwrap_or(self.static_bend_control_point),
+            static_bend_min_max: data
+                .static_bend_min_max
+                .map(|b| (*b).into())
+                .unwrap_or(self.static_bend_min_max),
             ..*self
         }
     }
@@ -280,11 +358,6 @@ impl ScatterMaterialOptions {
             self.gradient_end
         };
         self.fast_normals = other.fast_normals || self.fast_normals;
-        self.static_bend_strength = if other.static_bend_strength > 0. {
-            other.static_bend_strength
-        } else {
-            self.static_bend_strength
-        };
         self.analytical_normals = other.analytical_normals || self.analytical_normals;
         self.point_lights = other.point_lights || self.point_lights;
         self.directional_lights = other.directional_lights || self.directional_lights;
@@ -307,6 +380,26 @@ impl ScatterMaterialOptions {
             self.specular_power
         };
         self.ambient_occlusion = other.ambient_occlusion || self.ambient_occlusion;
+        self.static_bend_strength = if other.static_bend_strength > 0. {
+            other.static_bend_strength
+        } else {
+            self.static_bend_strength
+        };
+        self.static_bend_direction = if other.static_bend_direction != Vec2::ZERO {
+            other.static_bend_direction
+        } else {
+            self.static_bend_direction
+        };
+        self.static_bend_control_point = if other.static_bend_control_point != Vec2::ZERO {
+            other.static_bend_control_point
+        } else {
+            self.static_bend_control_point
+        };
+        self.static_bend_min_max = if other.static_bend_min_max != Vec2::ZERO {
+            other.static_bend_min_max
+        } else {
+            self.static_bend_min_max
+        };
         self
     }
 
@@ -371,7 +464,6 @@ mod tests {
             gradient_start: 10.0,
             gradient_end: 10.0,
             fast_normals: false,
-            static_bend_strength: 10.0,
             analytical_normals: false,
             directional_lights: false,
             point_lights: false,
@@ -382,6 +474,10 @@ mod tests {
             specular_strength: 10.0,
             specular_power: 10.0,
             ambient_occlusion: false,
+            static_bend_strength: 10.0,
+            static_bend_direction: Vec2::new(2., 4.),
+            static_bend_control_point: Vec2::new(2., 4.),
+            static_bend_min_max: Vec2::new(2., 4.),
         }
     }
 
@@ -405,7 +501,6 @@ mod tests {
             end: 0.9,
         };
         let fast_normals = FastNormals;
-        let bend = StaticBendStrength(3.3);
         let analytical_normals = AnalyticalNormals;
         let directional_lights = DirectionalLights;
         let point_lights = PointLights;
@@ -415,7 +510,12 @@ mod tests {
         let translucency = Translucency(0.3);
         let specular_strength = SpecularStrength(0.5);
         let specular_power = SpecularPower(0.5);
-        let ambient_occlusion = AmbientOcclusion;
+        let ao = AmbientOcclusion;
+        let bend = StaticBend;
+        let bend_str = StaticBendStrength(3.3);
+        let bend_dir = StaticBendDirection::new(1., 2.);
+        let bend_cp = StaticBendControlPoint::new(1., 2.);
+        let bend_min_max = StaticBendMinMax::new(1., 2.);
 
         let data = MaterialOptionDataItem {
             enable_debug: Some(&debug),
@@ -430,7 +530,6 @@ mod tests {
             base_color: Some(&base_color),
             color_gradient: Some(&color_gradient),
             fast_normals: Some(&fast_normals),
-            static_bend_strength: Some(&bend),
             analytical_normals: Some(&analytical_normals),
             directional_lights: Some(&directional_lights),
             point_lights: Some(&point_lights),
@@ -440,7 +539,12 @@ mod tests {
             translucency: Some(&translucency),
             specular_strength: Some(&specular_strength),
             specular_power: Some(&specular_power),
-            ambient_occlusion: Some(&ambient_occlusion),
+            ambient_occlusion: Some(&ao),
+            static_bend: Some(&bend),
+            static_bend_strength: Some(&bend_str),
+            static_bend_direction: Some(&bend_dir),
+            static_bend_control_point: Some(&bend_cp),
+            static_bend_min_max: Some(&bend_min_max),
         };
 
         // Act
@@ -468,7 +572,6 @@ mod tests {
             gradient_start: 0.1,
             gradient_end: 0.9,
             fast_normals: true,
-            static_bend_strength: 3.3,
             analytical_normals: true,
             directional_lights: true,
             point_lights: true,
@@ -479,6 +582,10 @@ mod tests {
             specular_strength: 0.5,
             specular_power: 0.5,
             ambient_occlusion: true,
+            static_bend_strength: 3.3,
+            static_bend_direction: Vec2::new(1., 2.),
+            static_bend_control_point: Vec2::new(1., 2.),
+            static_bend_min_max: Vec2::new(1., 2.),
         };
 
         assert_eq!(result, expected);
@@ -500,7 +607,6 @@ mod tests {
             base_color: None,
             color_gradient: None,
             fast_normals: None,
-            static_bend_strength: None,
             analytical_normals: None,
             directional_lights: None,
             point_lights: None,
@@ -511,6 +617,11 @@ mod tests {
             specular_strength: None,
             specular_power: None,
             ambient_occlusion: None,
+            static_bend: None,
+            static_bend_strength: None,
+            static_bend_direction: None,
+            static_bend_control_point: None,
+            static_bend_min_max: None,
         };
 
         // Act
@@ -543,7 +654,6 @@ mod tests {
             end: 0.9,
         };
         let fnorm = FastNormals;
-        let bend = StaticBendStrength(1.0);
         let anorm = AnalyticalNormals;
         let dl = DirectionalLights;
         let pl = PointLights;
@@ -554,6 +664,11 @@ mod tests {
         let spec_s = SpecularStrength(1.0);
         let spec_p = SpecularPower(1.0);
         let ao = AmbientOcclusion;
+        let bend = StaticBend;
+        let bend_str = StaticBendStrength(1.0);
+        let bend_dir = StaticBendDirection::new(1., 2.);
+        let bend_cp = StaticBendControlPoint::new(1., 2.);
+        let bend_min_max = StaticBendMinMax::new(1., 2.);
 
         let data = MaterialOptionDataItem {
             enable_debug: Some(&debug),
@@ -568,7 +683,6 @@ mod tests {
             base_color: Some(&col),
             color_gradient: Some(&grad),
             fast_normals: Some(&fnorm),
-            static_bend_strength: Some(&bend),
             analytical_normals: Some(&anorm),
             directional_lights: Some(&dl),
             point_lights: Some(&pl),
@@ -579,6 +693,11 @@ mod tests {
             specular_strength: Some(&spec_s),
             specular_power: Some(&spec_p),
             ambient_occlusion: Some(&ao),
+            static_bend: Some(&bend),
+            static_bend_strength: Some(&bend_str),
+            static_bend_direction: Some(&bend_dir),
+            static_bend_control_point: Some(&bend_cp),
+            static_bend_min_max: Some(&bend_min_max),
         };
 
         // Act
@@ -607,7 +726,6 @@ mod tests {
             gradient_start: 0.1,
             gradient_end: 0.9,
             fast_normals: true,
-            static_bend_strength: 1.0,
             analytical_normals: true,
             directional_lights: true,
             point_lights: true,
@@ -618,6 +736,10 @@ mod tests {
             specular_strength: 1.0,
             specular_power: 1.0,
             ambient_occlusion: true,
+            static_bend_strength: 1.0,
+            static_bend_direction: Vec2::new(1., 2.),
+            static_bend_control_point: Vec2::new(1., 2.),
+            static_bend_min_max: Vec2::new(1., 2.),
         };
 
         assert_eq!(result, expected);
@@ -640,7 +762,6 @@ mod tests {
             base_color: None,
             color_gradient: None,
             fast_normals: None,
-            static_bend_strength: None,
             analytical_normals: None,
             directional_lights: None,
             point_lights: None,
@@ -651,6 +772,11 @@ mod tests {
             specular_strength: None,
             specular_power: None,
             ambient_occlusion: None,
+            static_bend: None,
+            static_bend_strength: None,
+            static_bend_direction: None,
+            static_bend_control_point: None,
+            static_bend_min_max: None,
         };
 
         // Act
@@ -683,7 +809,6 @@ mod tests {
 
             // Preserve
             debug: false,
-            static_bend_strength: 10.0,
             curve_factor: 10.0,
             translucency: 10.0,
             base_color: Some(BLACK.into()),
@@ -692,7 +817,7 @@ mod tests {
             edge_correction_factor: 0.5,
             top_color: Some(WHITE.into()),
 
-            // Defaults
+            // Base
             controlled: true,
             debug_color: RED.into(),
             wind_affected: false,
@@ -714,6 +839,10 @@ mod tests {
             specular_strength: 10.0,
             specular_power: 10.0,
             ambient_occlusion: false,
+            static_bend_strength: 10.0,
+            static_bend_direction: Vec2::new(2., 4.),
+            static_bend_control_point: Vec2::new(2., 4.),
+            static_bend_min_max: Vec2::new(2., 4.),
         };
 
         assert_eq!(result, expected);

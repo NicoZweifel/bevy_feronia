@@ -79,7 +79,7 @@ fn setup(
         gradient_end: 0.9,
         tint_factor: 0.5,
         specular_power: 32.,
-        specular_strength: 0.6,
+        specular_strength: 0.5,
         translucency: 0.6,
         ..default()
     };
@@ -87,11 +87,12 @@ fn setup(
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
         // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
         // you need an update system.
-        current:wind,
+        current: wind,
         previous: wind,
         aabb,
         options,
         noise_texture: (**noise_texture).clone(),
+        disable_prepass: false,
     });
 
     const SIZE: i32 = 10;

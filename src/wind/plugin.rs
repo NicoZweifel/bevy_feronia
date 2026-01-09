@@ -74,8 +74,23 @@ where
         app.add_systems(
             Update,
             (update_materials::<T>.run_if(
-                resource_changed::<GlobalWind>.and(resource_exists::<Assets<ScatterAsset<T>>>),
+                (resource_changed::<GlobalWind>.or(material_options_changed))
+                    .and(resource_exists::<Assets<ScatterAsset<T>>>),
             ),),
         );
     }
+}
+
+// TODO granular updates && updating base color / properties (unlit)
+fn material_options_changed(
+    q_layer_changed: Query<(), (Or<(MaterialChangedFilter, WindChangedFilter)>,)>,
+    q_root_changed: Query<
+        (),
+        (
+            With<ScatterRoot>,
+            Or<(MaterialChangedFilter, WindChangedFilter)>,
+        ),
+    >,
+) -> bool {
+    !q_layer_changed.is_empty() || !q_root_changed.is_empty()
 }

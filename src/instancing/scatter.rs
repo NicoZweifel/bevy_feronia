@@ -13,8 +13,8 @@ use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
 
-use rand::SeedableRng;
 use rand::prelude::IndexedRandom;
+use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -42,7 +42,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
     ) -> InstancedWindAffectedMaterial {
-        InstancedWindAffectedMaterial::new(properties, noise_texture)
+        InstancedWindAffectedMaterial {
+            disable_prepass: !properties.lod.is_highest_detail(),
+            ..InstancedWindAffectedMaterial::new(properties, noise_texture)
+        }
     }
 
     fn update_material(
@@ -51,9 +54,14 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         previous_wind: Wind,
         options: ScatterMaterialOptions,
     ) {
-        material.current= current_wind;
-        material.previous = previous_wind;
-        material.options = options;
+        if material.current != current_wind
+            || material.previous != previous_wind
+            || material.options != options
+        {
+            material.current = current_wind;
+            material.previous = previous_wind;
+            material.options = options;
+        }
     }
 
     fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
@@ -98,19 +106,29 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                 let name = names.choose(&mut rng)?;
 
-                name_set.contains(name).then_some((name, res))
+                name_set.contains(name).then_some((name, res, rng))
             })
             .enumerate()
-            .fold(HashMap::new(), |mut acc, (i, (name, res))| {
+            .fold(HashMap::new(), |mut acc, (i, (name, res, mut rng))| {
                 let position = res.transform.translation;
                 let (rotation, ..) = res.transform.rotation.to_euler(EulerRot::YXZ);
                 let scale = res.transform.scale.x;
+
+                // pack two random floats (0.0-1.0) into the single u32 seed to
+                // avoid calling rand_f in the vertex shader.
+                let rnd_height = rng.next_u32() & 0xFFFF;
+                let rnd_bend = rng.next_u32() & 0xFFFF;
+
+                // 0-15: height
+                // 16-31: bend
+                let packed_seed = (rnd_bend << 16) | rnd_height;
 
                 let instance = InstanceData {
                     position,
                     scale,
                     rotation,
                     index: i as u32,
+                    seed: packed_seed,
                     ..default()
                 };
 
@@ -187,7 +205,12 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                                     visibility_range.end_margin.end,
                                 ),
                                 instances,
-                                color: default(),
+                                color: asset
+                                    .properties
+                                    .options
+                                    .base_color
+                                    .unwrap_or_default()
+                                    .to_linear(),
                             },
                             NoAutomaticBatching,
                             ScatteredInstance(request.event.trigger.layer),

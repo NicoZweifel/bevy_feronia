@@ -49,7 +49,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 AnalyticalNormals,
                 PointLights,
                 DirectionalLights,
-                InstanceColorGradient::new(RED_400.into(), BLUE_400.into()),
+                InstanceColorGradient::new(RED_400, BLUE_400),
                 InstanceRotationYaw::default()
             ),
             children![

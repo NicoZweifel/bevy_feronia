@@ -21,7 +21,7 @@ pub enum WindPreset {
     Storm,
 }
 
-#[derive(Debug, Clone, Copy, Reflect)]
+#[derive(Debug, Clone, Copy, Reflect, PartialEq)]
 pub struct Wind {
     pub direction: Vec2,
     pub strength: f32,
@@ -36,7 +36,7 @@ pub struct Wind {
     pub twist_strength: f32,
 }
 
-#[derive(Resource, Debug, Reflect)]
+#[derive(Resource, Debug, Reflect, PartialEq)]
 #[reflect(Resource)]
 pub struct GlobalWind {
     pub preset: WindPreset,
@@ -60,16 +60,16 @@ impl Default for Wind {
         let direction = Vec2::new(1.0, 0.5).normalize();
         Self {
             direction,
-            strength: 0.2,
+            strength: 0.4,
             noise_scale: 0.01,
-            scroll_speed: 0.1,
+            scroll_speed: 0.05,
             micro_strength: 0.1,
             twist_strength: 0.02,
             s_curve_speed: 6.,
-            s_curve_strength: 0.02,
+            s_curve_strength: 0.01,
             s_curve_frequency: PI,
             bop_speed: 3.5,
-            bop_strength: 0.02,
+            bop_strength: 0.01,
         }
     }
 }
@@ -98,36 +98,36 @@ impl From<WindPreset> for Wind {
                 ..default()
             },
             WindPreset::Mild => Wind {
-                strength: 0.1,
-                scroll_speed: 0.05,
+                strength: 0.2,
+                scroll_speed: 0.025,
                 micro_strength: 0.05,
                 twist_strength: 0.01,
                 s_curve_speed: 4.,
-                s_curve_strength: 0.01,
+                s_curve_strength: 0.005,
                 bop_speed: 2.5,
-                bop_strength: 0.01,
+                bop_strength: 0.005,
                 ..default()
             },
             WindPreset::Strong => Wind {
-                strength: 0.4,
-                scroll_speed: 0.15,
+                strength: 0.6,
+                scroll_speed: 0.1,
                 micro_strength: 0.2,
-                twist_strength: 0.04,
-                s_curve_speed: 8.,
-                s_curve_strength: 0.04,
-                bop_speed: 5.,
-                bop_strength: 0.04,
+                twist_strength: 0.03,
+                s_curve_speed: 7.,
+                s_curve_strength: 0.02,
+                bop_speed: 4.5,
+                bop_strength: 0.02,
                 ..default()
             },
             WindPreset::Storm => Wind {
-                strength: 1.0,
-                scroll_speed: 0.3,
-                micro_strength: 0.5,
-                twist_strength: 0.1,
-                s_curve_speed: 12.,
-                s_curve_strength: 0.1,
-                bop_speed: 8.0,
-                bop_strength: 0.1,
+                strength: 0.8,
+                scroll_speed: 0.15,
+                micro_strength: 0.3,
+                twist_strength: 0.04,
+                s_curve_speed: 8.,
+                s_curve_strength: 0.03,
+                bop_speed: 5.0,
+                bop_strength: 0.03,
                 ..default()
             },
         }
@@ -145,8 +145,20 @@ pub type WindOptionData<'w> = (
     Option<&'w TwistStrength>,
 );
 
+pub type WindChangedFilter = Or<(
+    Changed<Strength>,
+    Changed<MicroStrength>,
+    Changed<SCurveStrength>,
+    Changed<SCurveSpeed>,
+    Changed<SCurveFrequency>,
+    Changed<BopStrength>,
+    Changed<BopSpeed>,
+    Changed<TwistStrength>,
+)>;
+
 impl Wind {
-    pub fn with(
+    /// Multiplies this [`Wind`] with another.
+    pub fn multiply(
         &self,
         (
             strength,

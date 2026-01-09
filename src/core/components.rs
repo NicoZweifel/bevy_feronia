@@ -31,6 +31,12 @@ pub struct Center;
 #[reflect(Component, Clone, Debug, PartialEq, Hash)]
 pub struct LevelOfDetail(pub u32);
 
+impl LevelOfDetail {
+    pub fn is_highest_detail(&self) -> bool {
+        self.0 == 0
+    }
+}
+
 /// Marker component for debug visualization.
 ///
 /// Makes shaders return `debug_color` in the fragment shader.
@@ -92,11 +98,21 @@ pub struct FastNormals;
 #[reflect(Component, Clone, Debug)]
 pub struct AnalyticalNormals;
 
+/// Adds Edge Correction.
+///
+/// See [`EdgeCorrectionFactor`].
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
+#[require(EdgeCorrectionFactor)]
+pub struct EdgeCorrection;
+
 /// Controls the edge correction effect (makes vegetation look fuller).
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
 ///
 /// Defaults to `0.02`.
+///
+/// Enables `#ifdef EDGE_CORRECTION` in shaders if larger than 0.
 ///
 /// Not supported in combination with [`EnableBillboarding`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]

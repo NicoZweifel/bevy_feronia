@@ -13,24 +13,23 @@ exclude = ["assets/", ".github/"]
 bevy_scene = { version = "0.17.3" ,default-features = false}
 bevy_state= { version = "0.17.3" ,default-features = false, features = ["bevy_app"]}
 bevy_gizmos= { version = "0.17.3" ,default-features = false}
-bevy_pbr= { version = "0.17.2" ,default-features = false}
-bevy_mesh= { version = "0.17.2" ,default-features = false}
+bevy_pbr= { version = "0.17.3" ,default-features = false}
+bevy_mesh= { version = "0.17.3" ,default-features = false}
 bevy_color= { version = "0.17.3" ,default-features = false}
 bevy_app = { version = "0.17.3" ,default-features = false}
-bevy_ecs = { version = "0.17.2" ,default-features = false}
+bevy_ecs = { version = "0.17.3" ,default-features = false}
 bevy_asset= { version = "0.17.3" ,default-features = false}
 bevy_camera= { version = "0.17.3" ,default-features = false}
-bevy_derive = { version = "0.17.2" ,default-features = false}
-bevy_reflect= { version = "0.17.2" ,default-features = false}
-bevy_transform= { version = "0.17.2" ,default-features = false}
-bevy_tasks= { version = "0.17.2" ,default-features = false}
-bevy_math= { version = "0.17.2" ,default-features = false}
-bevy_image= { version = "0.17.2" ,default-features = false}
-bevy_platform= { version = "0.17.2" ,default-features = false}
+bevy_derive = { version = "0.17.3" ,default-features = false}
+bevy_reflect= { version = "0.17.3" ,default-features = false}
+bevy_transform= { version = "0.17.3" ,default-features = false}
+bevy_tasks= { version = "0.17.3" ,default-features = false}
+bevy_math= { version = "0.17.3" ,default-features = false}
+bevy_image= { version = "0.17.3" ,default-features = false}
+bevy_platform= { version = "0.17.3" ,default-features = false}
 bevy_render= { version = "0.17.3" ,default-features = false}
-bevy_shader= { version = "0.17.2" ,default-features = false}
-bevy_utils= { version = "0.17.2" ,default-features = false}
-bevy_core_pipeline= { version = "0.17.3" ,default-features = false}
+bevy_shader= { version = "0.17.3" ,default-features = false}
+bevy_utils= { version = "0.17.3" ,default-features = false}
 bevy_light= { version = "0.17.3" ,default-features = false}
 bevy_eidolon = {path = "../bevy_instanced_material"}
 
@@ -38,7 +37,6 @@ bytemuck = "1.23.1"
 noise = "0.9.0"
 bitflags = "2.10.0"
 rand = "0.9.1"
-serde = { version = "1.0.219", features = ["derive"] }
 xxh3 = "0.1.1"
 rand_pcg = "0.9.0"
 derive_more = "2.1.1"
@@ -49,7 +47,7 @@ avian3d = { version = "0.4", optional = true }
 
 [dev-dependencies]
 bevy-inspector-egui = "0.35.0"
-bevy = { version = "0.17", features = [
+bevy = { version = "0.17.3", features = [
     "file_watcher",
     "jpeg",
     "embedded_watcher",

@@ -120,10 +120,10 @@ impl From<Quality> for GrassDensityQuality {
 impl From<GrassDensityQuality> for DistributionDensity {
     fn from(value: GrassDensityQuality) -> Self {
         match value {
-            GrassDensityQuality::Low => 150.into(),
-            GrassDensityQuality::Medium => 160.into(),
-            GrassDensityQuality::High => 180.into(),
-            GrassDensityQuality::Ultra => 200.into(),
+            GrassDensityQuality::Low => 80.into(),
+            GrassDensityQuality::Medium => 100.into(),
+            GrassDensityQuality::High => 140.into(),
+            GrassDensityQuality::Ultra => 180.into(),
         }
     }
 }
@@ -189,7 +189,7 @@ impl From<VisibilityRangeQuality> for LodConfig {
                 density: vec![1.0.into(), 0.3.into()],
             },
             VisibilityRangeQuality::Medium => Self {
-                distance: vec![20.0.into(), 60.0.into(), default()],
+                distance: vec![20.0.into(), 50.0.into(), default()],
                 density: vec![1.0.into(), 0.3.into(), 0.1.into()],
             },
             VisibilityRangeQuality::High => default(),

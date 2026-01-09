@@ -33,9 +33,11 @@ impl ScatterMaterial for ExtendedWindAffectedMaterial {
         options: ScatterMaterialOptions,
     ) {
         let ext = &mut material.extension;
-        ext.current= current_wind;
-        ext.previous = previous_wind;
-        ext.options = options;
+        if ext.current != current_wind || ext.previous != previous_wind || ext.options != options {
+            ext.current = current_wind;
+            ext.previous = previous_wind;
+            ext.options = options;
+        }
     }
 
     fn component(material: Handle<ExtendedWindAffectedMaterial>) -> impl Component {

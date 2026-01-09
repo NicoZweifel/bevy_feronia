@@ -45,7 +45,7 @@ fn setup(
         extension: WindAffectedExtension {
             // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
             // you need an update system.
-            current:wind,
+            current: wind,
             previous: wind,
             aabb: Aabb {
                 half_extents: Vec3A::new(0.5, 3., 0.5),

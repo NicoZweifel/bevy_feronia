@@ -122,9 +122,9 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
         let wind = wind
-            .with(layer_wind_data)
-            .with(scene_root_data.wind_data)
-            .with(child_data.wind_data);
+            .multiply(layer_wind_data)
+            .multiply(scene_root_data.wind_data)
+            .multiply(child_data.wind_data);
 
         let options = ScatterMaterialOptions::from(layer_material_option_data)
             .with(scene_root_data.material_options)

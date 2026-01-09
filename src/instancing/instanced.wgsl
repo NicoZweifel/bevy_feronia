@@ -70,12 +70,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     instance.wrapped_time = globals.time;
     instance.instance_index = vertex.i_index;
     instance.edge_correction_factor = material_uniforms.edge_correction_factor;
+    instance.seed = vertex.i_seed;
 
 // TODO
 #ifdef STATIC_BEND
-    const STATIC_BEND_DIR = vec2<f32>(0.309017, -0.951056);
-
-    let static_bend = STATIC_BEND_DIR * material_uniforms.static_bend_strength;
+    let static_bend = material_uniforms.static_bend_direction
+                    * material_uniforms.static_bend_strength;
 #endif
 
     let wind = material_uniforms.current;
@@ -89,6 +89,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance,
 #ifdef STATIC_BEND
         static_bend,
+        material_uniforms.static_bend_control_point,
+        material_uniforms.static_bend_min_max,
 #endif
 #ifdef VERTEX_NORMALS
         vertex.normal,
@@ -118,10 +120,12 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.ao = normalized_height;
 #endif
 
+#ifdef VISIBILITY_RANGE_DITHER
     out.visibility_range_dither = utils::get_visibility_range_dither_level(
         instance_uniforms.visibility_range,
         final_matrix[3]
     );
+#endif
 
 #ifdef CURVE_NORMALS
     out.curve_factor = material_uniforms.curve_factor;
@@ -142,31 +146,29 @@ fn fragment(
     #endif
 #endif
 
-    // UV Requirements:
-    // - uv.y = 0.0 corresponds to the tip (Top).
-    // - uv.y = 1.0 corresponds to the root (Bottom).
-    let height_factor = saturate(1.0 - in.uv.y);
-    let gradient_mix = smoothstep(
-        material_uniforms.gradient_start,
-        material_uniforms.gradient_end,
-        height_factor
-    );
-    
-    let raw_gradient_color = mix(
+    let h = saturate(1.0 - in.uv.y);
+    var albedo= instance_uniforms.color.rgb;
+
+    // Bottom Gradient
+    let bottom_height = material_uniforms.gradient_start;
+    let bottom_strength = saturate(1.0 - (h / max(bottom_height, 0.0001)));
+
+    albedo = mix(
+        albedo,
         material_uniforms.bottom_color.rgb,
-        material_uniforms.top_color.rgb,
-        gradient_mix
+        bottom_strength * material_uniforms.tint_factor
     );
 
-    let gradient_lum = dot(raw_gradient_color, vec3<f32>(0.299, 0.587, 0.114));
-    let instance_shaded_color = instance_uniforms.color.rgb * gradient_lum;
+    // Top Gradient
+    let top_start_height = material_uniforms.gradient_end;
+    let top_range = max(1.0 - top_start_height, 0.0001);
+    let top_strength = saturate((h - top_start_height) / top_range);
 
-    // TODO: allow texture usage here
-    var albedo = mix(
-        instance_shaded_color,
-        raw_gradient_color,
-        material_uniforms.tint_factor
-    );;
+    albedo = mix(
+        albedo,
+        material_uniforms.top_color.rgb,
+        top_strength * material_uniforms.tint_factor
+    );
 
 #ifdef AMBIENT_OCCLUSION
     // fake ao TODO
@@ -219,8 +221,8 @@ fn fragment(
     const DIFFUSE_SCALING: f32 = 1.0;
 
     // Scale down light rgb
-    const LIGHT_INTENSITY_SCALE: f32 = 0.00005;
-    const AMBIENT_INTENSITY_SCALE: f32 = 0.001;
+    const LIGHT_INTENSITY_SCALE: f32 = 0.00001;
+    const AMBIENT_INTENSITY_SCALE: f32 = 0.00001;
 
     var final_color_rgb = pbr_color.rgb * lights.ambient_color.rgb * AMBIENT_INTENSITY_SCALE;
     var final_specular = vec3<f32>(0.);

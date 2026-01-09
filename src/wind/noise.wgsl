@@ -42,14 +42,7 @@ fn sample_noise(instance: InstanceInfo, wind: Wind, local_vertex_pos: vec3<f32>)
 
     noise.macro_noise = packed_noise.r;
     noise.micro_noise = packed_noise.g;
-
-    let seed_x = bitcast<u32>(instance.instance_position.x);
-    let seed_y = bitcast<u32>(instance.instance_position.y);
-    let seed_z = bitcast<u32>(instance.instance_position.z);
-    var seed = seed_x ^ seed_y ^ seed_z;
-
-    noise.phase_noise.x = rand_f(&seed);
-    noise.phase_noise.y = rand_f(&seed);
+    noise.phase_noise = unpack2x16unorm(instance.seed);
 #endif // WIND_LOW_QUALITY
 
 #else // NOT WIND_AFFECTED

@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_color::palettes::tailwind::*;
 use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
@@ -9,8 +10,16 @@ use bevy_feronia::{
 };
 use example::*;
 
+#[derive(Resource, Reflect, Clone)]
+#[reflect(Resource, Clone)]
+struct InstancedMaterialExampleConfig {
+    wind: Wind,
+    options: ScatterMaterialOptions,
+}
+
 fn main() -> AppExit {
     App::new()
+        .register_type::<InstancedMaterialExampleConfig>()
         .insert_resource(GlobalWind {
             current: Wind {
                 ..WindPreset::Mild.into()
@@ -68,13 +77,20 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Material options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
+                InstanceColor::new(YELLOW_950),
+                InstanceColorGradient {
+                    end: 0.6,
+                    start: 0.0,
+                    ..InstanceColorGradient::new(YELLOW_200, PURPLE_950)
+                },
+                EdgeCorrection,
                 AnalyticalNormals,
-                StaticBendStrength::default(),
-                CurveFactor::default(),
+                StaticBend,
+                CurveNormals,
                 DirectionalLights,
                 PointLights,
-                GpuCullCompute
+                GpuCullCompute,
+                AmbientOcclusion,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

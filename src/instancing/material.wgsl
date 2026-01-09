@@ -10,11 +10,14 @@ struct InstancedMaterial {
     tint_factor: f32,
     gradient_start: f32,
     gradient_end: f32,
-    static_bend_strength: f32,
     curve_factor: f32,
     translucency: f32,
     specular_strength: f32,
     specular_power: f32,
-    edge_correction_factor: f32
+    edge_correction_factor: f32,
+    static_bend_strength: f32,
+    static_bend_direction: vec2<f32>,
+    static_bend_control_point: vec2<f32>,
+    static_bend_min_max: vec2<f32>
 };
 

@@ -1,6 +1,7 @@
 use bevy_color::Color;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
+use bevy_math::Vec2;
 use bevy_reflect::Reflect;
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
@@ -29,7 +30,7 @@ impl Default for SpecularPower {
 /// Enables `#ifdef AMBIENT_OCCLUSION` in shaders.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
-#[derive(Component, Clone, Debug, Reflect)]
+#[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
 pub struct AmbientOcclusion;
 
@@ -41,7 +42,7 @@ pub struct AmbientOcclusion;
 ///
 /// Maps to `specular_strength` in the shader.
 ///
-/// Defaults to `0.6`.
+/// Defaults to `0.5`.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
@@ -50,7 +51,7 @@ pub struct SpecularStrength(pub f32);
 
 impl Default for SpecularStrength {
     fn default() -> Self {
-        Self(0.6)
+        Self(0.5)
     }
 }
 
@@ -96,7 +97,15 @@ pub struct DirectionalLights;
 #[require(Translucency, SpecularPower, SpecularStrength)]
 pub struct PointLights;
 
-/// Controls the normal curving effect (simulates curved blades).
+/// Adds a normal curving effect (simulates curved blades).
+///
+/// See [`CurveFactor`].
+#[derive(Component, Clone, Copy, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+#[require(CurveFactor)]
+pub struct CurveNormals;
+
+/// Controls the normal curving effect.
 ///
 /// This is a multiplier that determines how strongly the blade curves from its
 /// center (0.0) to its edges (1.0), using the **`uv.x`** coordinate of the mesh.
@@ -133,6 +142,8 @@ pub struct PointLights;
 ///
 /// Defaults to `0.3`.
 ///
+/// Enables `#ifdef CURVE_NORMALS` in shaders if larger than 0.
+///
 /// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
@@ -144,6 +155,14 @@ impl Default for CurveFactor {
     }
 }
 
+/// Enables Bézier curve bending.
+///
+/// See [`StaticBendStrength`], [`StaticBendMinMax`], [`StaticBendDirection`] and [`StaticBendControlPoint`].
+#[derive(Component, Clone, Copy, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+#[require(StaticBendStrength)]
+pub struct StaticBend;
+
 /// Controls a persistent, non-wind bend.
 ///
 /// A higher value will apply a stronger Bézier curve and will affect the instances more uniformly,
@@ -153,9 +172,12 @@ impl Default for CurveFactor {
 ///
 /// Defaults to `0.5`.
 ///
-/// Currently only supported with [`InstancedWindAffectedMaterial`] but should be easy to add.
+/// Enables `#ifdef STATIC_BEND` in shaders if larger than 0.
+///
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
+#[require(StaticBendDirection, StaticBendControlPoint, StaticBendMinMax)]
 pub struct StaticBendStrength(pub f32);
 
 impl Default for StaticBendStrength {
@@ -164,10 +186,89 @@ impl Default for StaticBendStrength {
     }
 }
 
-/// Sets the material base color.
-#[derive(Component, Clone, Copy, Debug, Reflect, Default, Deref, DerefMut)]
+/// Controls the minimum and maximum values for the static bend.
+///
+/// Corresponds to `material_uniforms.static_bend_min_max` in shaders.
+///
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
-pub struct InstanceColor(pub Color);
+pub struct StaticBendMinMax {
+    min: f32,
+    max: f32,
+}
+
+impl StaticBendMinMax {
+    pub fn new(min: f32, max: f32) -> Self {
+        Self { min, max }
+    }
+}
+
+impl Into<Vec2> for StaticBendMinMax {
+    fn into(self) -> Vec2 {
+        Vec2::new(self.min, self.max)
+    }
+}
+
+impl From<Vec2> for StaticBendMinMax {
+    fn from(vec: Vec2) -> Self {
+        Self {
+            min: vec.x,
+            max: vec.y,
+        }
+    }
+}
+
+impl Default for StaticBendMinMax {
+    fn default() -> Self {
+        Self { min: 0.6, max: 1.0 }
+    }
+}
+
+/// Controls the direction of the static bend.
+///
+/// Corresponds to `material_uniforms.bend_direction` in the shader.
+///
+/// Defaults to: `(0.309017, -0.951056)`.
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct StaticBendDirection(pub Vec2);
+
+impl Default for StaticBendDirection {
+    fn default() -> Self {
+        Self(Vec2::new(0.309017, -0.951056))
+    }
+}
+
+impl StaticBendDirection {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self(Vec2::new(x, y))
+    }
+}
+
+/// Controls the Bézier control points.
+///
+/// * **X (Stiffness)**: Controls how far out the control point is. Lower values make the curve "tighter" at the base. Defaults to `0.33`.
+/// * **Y (Height)**: Controls the vertical height of the control point relative to the mesh height. Defaults to `0.55`.
+///
+/// Defaults to `1.0`.
+///
+/// Corresponds to `material_uniforms.bend_control_point` in the shader.
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct StaticBendControlPoint(pub Vec2);
+
+impl Default for StaticBendControlPoint {
+    fn default() -> Self {
+        Self(Vec2::new(0.33, 0.55))
+    }
+}
+
+impl StaticBendControlPoint {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self(Vec2::new(x, y))
+    }
+}
 
 /// Sets a material color gradient.
 ///
@@ -203,24 +304,33 @@ pub struct InstanceColorGradient {
     /// The bottom color of the gradient.
     pub bottom: Color,
     /// The tint factor of the gradient.
-    /// - 0.0 = no tint
-    /// - 1.0 = full tint
+    ///
+    /// Controls how much the gradient overrides the base instance color.
+    /// - `0.0`: The gradient is invisible.
+    /// - `1.0`: The gradient is fully opaque.
+    /// - `0.5`: A 50/50 blend.
+    ///
+    /// Defaults to `0.5`.
     pub tint: f32,
     /// The height (0.0 to 1.0) where the bottom color stops being solid
     /// and the gradient begins transitioning to be top-colored.
+    ///
+    /// Defaults to `0.2`.
     pub start: f32,
     /// The height (0.0 to 1.0) where the gradient finishes, becoming fully top-colored.
+    ///
+    /// Defaults to `0.8`.
     pub end: f32,
 }
 
 impl InstanceColorGradient {
-    pub fn new(top: Color, bottom: Color) -> Self {
+    pub fn new(top: impl Into<Color>, bottom: impl Into<Color>) -> Self {
         Self {
-            top,
-            bottom,
-            tint: 1.0,
-            start: 0.0,
-            end: 1.0,
+            top: top.into(),
+            bottom: bottom.into(),
+            tint: 0.5,
+            start: 0.2,
+            end: 0.8,
         }
     }
 }
