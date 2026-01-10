@@ -13,35 +13,44 @@ pub fn update_materials<T>(
     global_wind: Res<GlobalWind>,
     mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     q_layer: Query<
-        (WindOptionData, MaterialOptionData, &ScatterLayerOf),
+        (&ScatterLayerOf, WindOptionData, MaterialOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
     q_root: Query<(WindOptionData, MaterialOptionData), With<ScatterRoot>>,
+    scatter_asset_manager: Res<ScatterAssetManager<T>>,
 ) where
     T: ScatterMaterial,
 {
-    let current_wind = global_wind.current;
-    let previous_wind = global_wind.previous;
-    for (_, asset) in scatter_assets.iter_mut() {
-        if asset.properties.options.controlled {
-            continue;
-        };
+    for (asset, (wind_data, material_options), (root_wind_data, root_material_options)) in
+        scatter_assets
+            .iter_mut()
+            .filter(|(_, asset)| !asset.properties.options.controlled)
+            .filter_map(|(id, asset)| {
+                let layer = scatter_asset_manager.asset_to_layer.get(&id)?;
 
-        #[allow(deprecated)]
-        let Some((wind_data, material_options, root)) =
-            asset.properties.layer.and_then(|x| q_layer.get(x).ok())
-        else {
-            dbg!("ScatterLayer not found!");
-            continue;
-        };
+                let (root, wind_data, material_options) = q_layer
+                    .get(*layer)
+                    .map_err(|_| dbg!("ScatterLayer not found!"))
+                    .ok()?;
 
-        let Ok((root_wind_data, root_material_options)) = q_root.get(**root) else {
-            dbg!("ScatterRoot not found!");
-            continue;
-        };
+                let root_data = q_root
+                    .get(**root)
+                    .map_err(|_| {
+                        dbg!("ScatterRoot not found!");
+                    })
+                    .ok()?;
 
-        let wind = current_wind.multiply(root_wind_data).multiply(wind_data);
-        let prev_wind = previous_wind.multiply(root_wind_data).multiply(wind_data);
+                return Some((asset, (wind_data, material_options), root_data));
+            })
+    {
+        let wind = global_wind
+            .current
+            .multiply(root_wind_data)
+            .multiply(wind_data);
+        let prev_wind = global_wind
+            .previous
+            .multiply(root_wind_data)
+            .multiply(wind_data);
 
         let options = ScatterMaterialOptions::from(root_material_options).with(material_options);
 

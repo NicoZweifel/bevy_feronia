@@ -48,14 +48,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             (
                 DistributionDensity(100.),
                 DistributionPattern(density_map.images[0].clone()),
-                InstanceRotationYaw::default(),
-                InstanceScale::default(),
+                InstanceRotationYaw,
+                InstanceScale,
                 ScaleDensity,
             ),
             // Material options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
+                EdgeCorrection,
                 AnalyticalNormals,
                 DirectionalLights,
                 PointLights,

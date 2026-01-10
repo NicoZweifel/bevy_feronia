@@ -28,17 +28,6 @@ pub struct ScatterAssetProperties {
     pub name: Option<Name>,
     /// The inherited [`LevelOfDetail`].
     pub lod: LevelOfDetail,
-    ///
-    /// The [`Entity`] of the layer this asset belongs to.
-    ///
-    /// Deprecated.
-    ///
-    /// TODO move out of here, find way to update materials without it, e.g. a HashNap resource
-    /// https://github.com/NicoZweifel/bevy_feronia/issues/57
-    #[deprecated]
-    // TODO we shouldn't track the layer in the asset properties but have a mapping of assets and it's parts and the layers they are part of.
-    #[allow(deprecated)]
-    pub layer: Option<Entity>,
     /// Whether wind affects this asset/part.
     pub wind_affected: bool,
 }
@@ -116,8 +105,6 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
-        let AssetPartOf { layer, .. } = item_of;
-
         let hue = (entity.index() * 30) as f32 % 360.0;
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
@@ -149,7 +136,6 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             aabb,
             name: item_of.name.clone(),
             #[allow(deprecated)]
-            layer: Some(layer),
             lod,
             wind_affected: options.wind_affected
                 || layer_material_option_data.wind_affected.is_some(),

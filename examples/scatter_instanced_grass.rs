@@ -37,20 +37,20 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Scatter Options
             (
                 DistributionDensity(100.),
-                InstanceScale { min: 1., max: 1.8 },
-                InstanceJitter::default()
+                InstanceScaleRange { min: 1., max: 1.8 },
+                InstanceJitter
             ),
             // Material Options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
-                CurveFactor::default(),
-                StaticBendStrength::default(),
+                EdgeCorrection,
+                CurveNormals,
+                StaticBend,
                 AnalyticalNormals,
                 PointLights,
                 DirectionalLights,
                 InstanceColorGradient::new(RED_400, BLUE_400),
-                InstanceRotationYaw::default()
+                InstanceRotationYaw
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),

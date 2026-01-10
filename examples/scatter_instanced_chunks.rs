@@ -68,11 +68,11 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Scatter options
             (
                 DistributionDensity(200.0),
-                InstanceScale::default(),
-                InstanceJitter(1.),
+                InstanceScale,
+                InstanceJitter,
                 ScatterChunked,
                 ScaleDensity,
-                InstanceRotationYaw::default(),
+                InstanceRotationYaw,
             ),
             // Material options
             (

@@ -45,9 +45,9 @@ fn setup(
             extension::scatter_layer("Wind Affected Layer"),
             // Scatter Options
             DistributionDensity(50.),
-            InstanceJitter::default(),
-            InstanceScale::default(),
-            InstanceRotationYaw::default(),
+            InstanceJitterStrength::default(),
+            InstanceScaleRange::default(),
+            InstanceRotationYawRange::default(),
             // You can define material options on the full layer here.
             WindAffected,
             children![

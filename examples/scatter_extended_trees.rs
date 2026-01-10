@@ -101,11 +101,8 @@ fn spawn_scene(
         children![(
             extension::scatter_layer("Tree Layer"),
             DistributionDensity(10.),
-            InstanceRotationYaw {
-                min: 0.,
-                max: std::f32::consts::PI * 2.
-            },
-            InstanceScale { min: 1., max: 4. },
+            InstanceRotationYaw,
+            InstanceScaleRange { min: 1., max: 4. },
             WindAffected,
             Avoidance(3.),
             children![

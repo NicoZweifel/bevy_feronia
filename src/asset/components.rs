@@ -2,11 +2,12 @@ use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
 
 use bevy_ecs::prelude::*;
+use bevy_pbr::StandardMaterial;
+
 use std::marker::PhantomData;
 
 #[cfg(feature = "avian")]
 use avian3d::prelude::RigidBody;
-use bevy_pbr::StandardMaterial;
 
 /// A [Component] acting as a request to create a [`ScatterAsset`]. These are created by the backend.
 ///
@@ -33,7 +34,7 @@ where
     /// The [`ScatterLayer`] this request was created for.
     pub layer: Entity,
 
-    pub _phantom_data: PhantomData<T>,
+    pub _marker: PhantomData<T>,
 }
 
 impl<T> ScatterAssetCreationRequest<T>
@@ -52,7 +53,7 @@ where
             layer,
             #[cfg(feature = "avian")]
             o_rigid_body: rigid_body,
-            _phantom_data: Default::default(),
+            _marker: Default::default(),
         }
     }
 
@@ -86,7 +87,6 @@ where
                     .min()
                     .unwrap_or_default(),
                 #[allow(deprecated)]
-                layer: Some(item_of.layer),
                 wind_affected,
             },
             parts,

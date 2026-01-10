@@ -7,14 +7,14 @@ use bevy_pbr::prelude::*;
 use bevy_state::prelude::*;
 use std::marker::PhantomData;
 
-pub struct ScatterAssetsPlugin<T = StandardMaterial>
+pub struct ScatterAssetRequestPlugin<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
     _marker: PhantomData<T>,
 }
 
-impl<T> ScatterAssetsPlugin<T>
+impl<T> ScatterAssetRequestPlugin<T>
 where
     T: ScatterMaterial,
 {
@@ -25,7 +25,7 @@ where
     }
 }
 
-impl<T> Default for ScatterAssetsPlugin<T>
+impl<T> Default for ScatterAssetRequestPlugin<T>
 where
     T: ScatterMaterial,
 {
@@ -34,7 +34,7 @@ where
     }
 }
 
-impl<T> Plugin for ScatterAssetsPlugin<T>
+impl<T> Plugin for ScatterAssetRequestPlugin<T>
 where
     T: ScatterMaterial,
 {

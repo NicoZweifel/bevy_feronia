@@ -180,6 +180,13 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
 @fragment
 fn fragment(in: PrepassVertexOutput) -> FragmentOutput {
     var out: FragmentOutput;
+        
+#ifdef VISIBILITY_RANGE_DITHER
+    bevy_pbr::pbr_functions::visibility_range_dither(
+        in.clip_position,
+        in.visibility_range_dither
+    );
+#endif
 
 #ifdef NORMAL_PREPASS
     out.normal = vec4(in.world_normal * 0.5 + vec3(0.5), 1.0);

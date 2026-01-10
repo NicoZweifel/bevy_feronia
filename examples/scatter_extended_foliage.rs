@@ -103,9 +103,9 @@ fn spawn_scene(
             // Scatter options
             (
                 DistributionDensity(10.),
-                InstanceRotationYaw { min: 0., max: TAU },
-                InstanceJitter::default(),
-                InstanceScale { min: 2., max: 5. }
+                InstanceRotationYawRange { min: 0., max: TAU },
+                InstanceJitterStrength::default(),
+                InstanceScaleRange { min: 2., max: 5. }
             ),
             // Material options
             (SubsurfaceScattering, WindAffected),

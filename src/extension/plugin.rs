@@ -28,7 +28,7 @@ impl Plugin for ExtendedWindAffectedScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ExtendedWindAffectedPlugin,
-            ScatterAssetsPlugin::<ExtendedWindAffectedMaterial>::new(),
+            ScatterAssetRequestPlugin::<ExtendedWindAffectedMaterial>::new(),
             ScatterAssetPlugin::<ExtendedWindAffectedMaterial>::new(),
         ));
     }

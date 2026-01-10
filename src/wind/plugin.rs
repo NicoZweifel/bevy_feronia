@@ -74,8 +74,10 @@ where
         app.add_systems(
             Update,
             (update_materials::<T>.run_if(
-                (resource_changed::<GlobalWind>.or(material_options_changed))
-                    .and(resource_exists::<Assets<ScatterAsset<T>>>),
+                resource_changed::<GlobalWind>
+                    .or(material_options_changed)
+                    .and(resource_exists::<Assets<ScatterAsset<T>>>)
+                    .and(resource_exists::<ScatterAssetManager<T>>),
             ),),
         );
     }

@@ -118,7 +118,8 @@ fn spawn_scene(
      */
 
     cmd.spawn((RockLayer, ChildOf(*landscape)));
-    cmd.spawn((TreeLayer, ChildOf(*landscape)));
+    // TODO the current state is just too expensive and has artifacts.
+    // cmd.spawn((TreeLayer, ChildOf(*landscape)));
     cmd.spawn((FoliageLayer, ChildOf(*landscape)));
     cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
@@ -453,10 +454,10 @@ fn spawn_landscape(
 #[require(
     Name::new("Rock Layer"),
     ScatterLayerType::<StandardMaterial>,
-    DistributionDensity(15.),
     InstanceRotationYaw,
-    InstanceScale { min: 1., max: 2. },
+    InstanceScale,
     InstanceJitter,
+    DistributionDensity(15.),
     Avoidance(2.),
 )]
 struct RockLayer;
@@ -512,10 +513,10 @@ impl RockLayer {
 #[require(
     Name::new("Tree Layer"),
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
-    DistributionDensity(20.),
-    InstanceRotationYaw,
-    InstanceScale { min: 1., max: 2. },
     InstanceJitter,
+    InstanceRotationYaw,
+    DistributionDensity(10.),
+    InstanceScaleRange { min: 2., max: 4. },
     Avoidance(1.),
 )]
 struct TreeLayer;
@@ -616,10 +617,10 @@ impl TreeLayer {
 #[require(
     Name::new("Foliage Layer"),
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
-    DistributionDensity(20.),
+    DistributionDensity(30.),
     InstanceRotationYaw,
-    InstanceScale { min: 4., max: 8. },
     InstanceJitter,
+    InstanceScaleRange { min: 4., max: 8. },
     Avoidance(0.2),
 )]
 struct FoliageLayer;

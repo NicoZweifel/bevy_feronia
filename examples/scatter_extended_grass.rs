@@ -36,7 +36,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         children![(
             scatter_layer("Foliage Layer"),
             // Scatter options
-            (DistributionDensity(100.), InstanceJitter::default(),),
+            (DistributionDensity(100.), InstanceJitterStrength::default(),),
             // Material options
             (
                 WindAffected,
@@ -45,7 +45,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 // This example is mainly for testing lighting and bill boarding.
                 // AnalyticalNormals, // or
                 // FastNormals,
-                InstanceRotationYaw { min: 0., max: TAU },
+                InstanceRotationYaw,
                 // or
                 // EnableBillboarding,
             ),

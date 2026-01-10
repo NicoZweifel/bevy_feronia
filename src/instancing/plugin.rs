@@ -30,7 +30,7 @@ impl Plugin for InstancedWindAffectedScatterPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             InstancedWindAffectedPlugin,
-            ScatterAssetsPlugin::<InstancedWindAffectedMaterial>::new(),
+            ScatterAssetRequestPlugin::<InstancedWindAffectedMaterial>::new(),
             ScatterAssetPlugin::<InstancedWindAffectedMaterial>::new(),
         ));
     }

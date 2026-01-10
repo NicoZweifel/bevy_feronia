@@ -33,9 +33,9 @@ impl Default for LodConfig {
                 // Level 0: High
                 20.0.into(),
                 // Level 1: Medium
-                50.0.into(),
+                60.0.into(),
                 // Level 2: Low
-                150.into(),
+                180.into(),
                 default(), // f32::MAX
             ],
             density: vec![

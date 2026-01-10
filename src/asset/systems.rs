@@ -1,6 +1,7 @@
 use crate::prelude::*;
 
-use bevy_asset::Assets;
+use crate::asset::resources::ScatterAssetManager;
+use bevy_asset::{AssetEvent, Assets};
 use bevy_ecs::prelude::*;
 use bevy_pbr::StandardMaterial;
 
@@ -14,6 +15,7 @@ pub fn process_requests<T>(
     mut materials_out: ResMut<Assets<T>>,
     mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     wind_noise_texture: Res<WindTexture>,
+    mut asset_manager: ResMut<ScatterAssetManager<T>>,
 ) where
     T: ScatterMaterial,
 {
@@ -48,6 +50,10 @@ pub fn process_requests<T>(
         );
         let h_scatter_asset = scatter_assets.add(asset);
 
+        asset_manager
+            .asset_to_layer
+            .insert(h_scatter_asset.id(), *layer);
+
         cmd.entity(entity)
             .remove::<ScatterAssetCreationRequest<T>>();
 
@@ -67,6 +73,7 @@ pub fn process_standard_requests(
     mut cmd: Commands,
     requests: Query<(Entity, &ScatterAssetCreationRequest)>,
     mut scatter_assets: ResMut<Assets<ScatterAsset>>,
+    mut asset_manager: ResMut<ScatterAssetManager<StandardMaterial>>,
 ) {
     for (
         entity,
@@ -89,10 +96,27 @@ pub fn process_standard_requests(
 
         let h_scatter_asset = scatter_assets.add(asset);
 
+        asset_manager
+            .asset_to_layer
+            .insert(h_scatter_asset.id(), *layer);
+
         cmd.entity(entity).remove::<ScatterAssetCreationRequest>();
 
         for part in parts {
             part.insert_bundle(&mut cmd, entity, h_scatter_asset.clone(), *layer);
+        }
+    }
+}
+
+pub fn manage_asset_lifecycle<T>(
+    mut asset_events: MessageReader<AssetEvent<ScatterAsset<T>>>,
+    mut asset_manager: ResMut<ScatterAssetManager<T>>,
+) where
+    T: ScatterMaterialAsset,
+{
+    for event in asset_events.read() {
+        if let AssetEvent::Removed { id } = event {
+            asset_manager.asset_to_layer.remove(id);
         }
     }
 }

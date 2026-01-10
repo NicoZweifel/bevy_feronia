@@ -178,7 +178,7 @@ pub type MaterialChangedFilter = Or<(
         Changed<InstanceColorGradient>,
         Changed<FastNormals>,
     )>,
-   Or<(
+    Or<(
         Changed<AnalyticalNormals>,
         Changed<DirectionalLights>,
         Changed<PointLights>,
@@ -192,7 +192,7 @@ pub type MaterialChangedFilter = Or<(
         Changed<SpecularPower>,
         Changed<AmbientOcclusion>,
     )>,
-   Or<(
+    Or<(
         Changed<StaticBend>,
         Changed<StaticBendStrength>,
         Changed<StaticBendDirection>,
