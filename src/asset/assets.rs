@@ -207,7 +207,6 @@ where
             ScatterItem,
             ScatterItemAsset::<T>(asset_handle.clone()),
             self.properties.lod,
-            ChildOf(layer),
             ScatterItemOf(layer),
             ScatterLayerChildProcessed,
         )
@@ -239,8 +238,26 @@ where
     }
 }
 
+impl ScatterAssetPartEntity<StandardMaterial> {
+    pub fn into_scatter_material_part<T: ScatterMaterial>(
+        self,
+        materials_in: &Assets<StandardMaterial>,
+        materials_out: &mut Assets<T>,
+        wind_noise_texture: &WindTexture,
+    ) -> ScatterAssetPartEntity<T> {
+        ScatterAssetPartEntity {
+            entity: self.entity,
+            part: self.part.into_scatter_material_part(
+                materials_in,
+                materials_out,
+                wind_noise_texture,
+            ),
+        }
+    }
+}
+
 impl ScatterAssetPart<StandardMaterial> {
-    pub fn into_scatter_material_part<T: ScatterMaterial + Debug>(
+    pub fn into_scatter_material_part<T: ScatterMaterial>(
         self,
         materials_in: &Assets<StandardMaterial>,
         materials_out: &mut Assets<T>,

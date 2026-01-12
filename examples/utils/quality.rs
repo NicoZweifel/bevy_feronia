@@ -119,7 +119,7 @@ impl From<Quality> for GrassDensityQuality {
 
 impl From<GrassDensityQuality> for DistributionDensity {
     fn from(value: GrassDensityQuality) -> Self {
-       match value {
+        match value {
             GrassDensityQuality::Low => 150.into(),
             GrassDensityQuality::Medium => 160.into(),
             GrassDensityQuality::High => 180.into(),

@@ -119,7 +119,7 @@ fn spawn_scene(
 
     cmd.spawn((RockLayer, ChildOf(*landscape)));
     // TODO the current state is just too expensive and has artifacts.
-    // cmd.spawn((TreeLayer, ChildOf(*landscape)));
+    cmd.spawn((TreeLayer, ChildOf(*landscape)));
     cmd.spawn((FoliageLayer, ChildOf(*landscape)));
     cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
@@ -515,8 +515,8 @@ impl RockLayer {
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
     InstanceJitter,
     InstanceRotationYaw,
-    DistributionDensity(10.),
-    InstanceScaleRange { min: 2., max: 4. },
+    DistributionDensity(8.),
+    InstanceScaleRange { min: 1., max: 3. },
     Avoidance(1.),
 )]
 struct TreeLayer;

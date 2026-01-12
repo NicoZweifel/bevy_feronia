@@ -264,7 +264,7 @@ pub struct DistributionPattern(pub Handle<Image>);
 
 #[derive(Component, Reflect, Clone, Debug, Default)]
 #[reflect(Component, Debug, Clone)]
-#[require(InstanceRotationYaw)]
+#[require(InstanceRotationYawRange)]
 pub struct InstanceRotationYaw;
 
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
@@ -347,15 +347,15 @@ impl Default for InstanceScaleRange {
 
 /// Adds a default random positional offset (jitter) to the scattered instances.
 ///
-/// See [`InstanceJitterStrength`]
+/// See [`InstanceJitterStrength`].
 #[derive(Component, Reflect, Clone, Debug, Default)]
 #[reflect(Component, Debug, Clone)]
-#[require(InstanceJitter)]
+#[require(InstanceJitterStrength)]
 pub struct InstanceJitter;
 
 /// Specifies the strength of a random positional offset (jitter) applied to scattered instances.
 #[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
-#[reflect(Component, Debug,Clone)]
+#[reflect(Component, Debug, Clone)]
 pub struct InstanceJitterStrength(pub f32);
 
 impl Default for InstanceJitterStrength {
@@ -368,6 +368,14 @@ impl Default for InstanceJitterStrength {
 #[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
 #[reflect(Component, Debug)]
 pub struct InstanceDensity(pub f32);
+
+/// Adds a default random avoidance area to the scattered instances.
+///
+/// See [`Avoidance`].
+#[derive(Component, Reflect, Clone, Debug, Default)]
+#[reflect(Component, Debug, Clone)]
+#[require(Avoidance)]
+pub struct Avoid;
 
 /// Specifies the minimum distance between the centers of scattered objects.
 ///

@@ -29,6 +29,7 @@ fn main() -> AppExit {
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             show_debug_options: true,
+            show_inspector: true,
             ..default()
         })
         .add_plugins((

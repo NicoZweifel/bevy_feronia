@@ -16,6 +16,8 @@ use std::marker::PhantomData;
 pub struct ScatterAssetManager<T: ScatterMaterialAsset> {
     /// Maps the [`AssetId`] of a [`ScatterAsset`] to the [`Entity`] of the layer it belongs to.
     pub asset_to_layer: HashMap<AssetId<ScatterAsset<T>>, Entity>,
+    /// Maps the [`AssetId`] of a [`ScatterAsset`] and the parts to the entities they belong to.
+    pub asset_to_entity: HashMap<AssetId<ScatterAsset<T>>, (Entity, Vec<Entity>)>,
     #[reflect(ignore)]
     _marker: PhantomData<T>,
 }
@@ -24,6 +26,7 @@ impl<T: ScatterMaterialAsset> Default for ScatterAssetManager<T> {
     fn default() -> Self {
         Self {
             asset_to_layer: HashMap::new(),
+            asset_to_entity: HashMap::new(),
             _marker: PhantomData,
         }
     }

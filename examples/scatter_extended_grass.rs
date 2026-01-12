@@ -41,7 +41,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             (
                 WindAffected,
                 SubsurfaceScattering,
-                CurveFactor::default(),
+                CurveNormals,
                 // This example is mainly for testing lighting and bill boarding.
                 // AnalyticalNormals, // or
                 // FastNormals,

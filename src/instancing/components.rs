@@ -221,7 +221,7 @@ impl From<Vec2> for StaticBendMinMax {
 
 impl Default for StaticBendMinMax {
     fn default() -> Self {
-        Self { min: 0.6, max: 1.0 }
+        Self { min: 0.3, max: 0.9 }
     }
 }
 

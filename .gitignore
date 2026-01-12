@@ -7,3 +7,5 @@
 
 **/*.blend
 **/*.blend1
+**/*.arm
+blend/

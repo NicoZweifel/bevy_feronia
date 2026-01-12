@@ -26,7 +26,7 @@ where
     /// Global properties for the asset, collected from the root entity.
     pub properties: ScatterAssetProperties,
     /// The list of all parts found, using the *original* material.
-    pub parts: Vec<ScatterAssetPart<StandardMaterial>>,
+    pub parts: Vec<ScatterAssetPartEntity<StandardMaterial>>,
     #[cfg(feature = "avian")]
     /// The physics body found at the asset root, if any.
     pub o_rigid_body: Option<RigidBody>,
@@ -43,7 +43,7 @@ where
 {
     pub fn new(
         properties: ScatterAssetProperties,
-        parts: Vec<ScatterAssetPart<StandardMaterial>>,
+        parts: Vec<ScatterAssetPartEntity<StandardMaterial>>,
         layer: Entity,
         #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> Self {
@@ -64,16 +64,18 @@ where
         options: ScatterMaterialOptions,
         #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> ScatterAssetCreationRequest<T> {
-        let parts: Vec<ScatterAssetPart> =
-            entity_parts.into_iter().map(|p| p.part.clone()).collect();
+        let parts: Vec<ScatterAssetPartEntity> =
+            entity_parts.into_iter().map(|p| p.clone()).collect();
 
-        let mut union_aabb = parts[0].properties.aabb;
-        for part in &parts[1..] {
+        let mut union_aabb = parts[0].part.properties.aabb;
+        for ScatterAssetPartEntity { part, .. } in &parts[1..] {
             // TODO transforms
             union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
         }
 
-        let wind_affected = parts.iter().any(|part| part.properties.wind_affected);
+        let wind_affected = parts
+            .iter()
+            .any(|ScatterAssetPartEntity { part, .. }| part.properties.wind_affected);
 
         ScatterAssetCreationRequest::<T>::new(
             ScatterAssetProperties {
@@ -83,7 +85,7 @@ where
                 name: item_of.name.clone(),
                 lod: parts
                     .iter()
-                    .map(|part| part.properties.lod)
+                    .map(|ScatterAssetPartEntity { part, .. }| part.properties.lod)
                     .min()
                     .unwrap_or_default(),
                 #[allow(deprecated)]

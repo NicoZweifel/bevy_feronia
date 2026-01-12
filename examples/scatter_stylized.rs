@@ -50,7 +50,7 @@ struct Scenes {
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Scenes {
         landscape: asset_server.load("landscape_flat_large.glb#Scene0"),
-        lod_low: asset_server.load("trees_stylized.glb#Scene0"),
+        lod_low: asset_server.load("tree.glb#Scene0"),
     });
 }
 
@@ -83,12 +83,12 @@ fn spawn_scene(
         LodConfig::none(),
         children![(
             extension::scatter_layer("Tree Layer"),
+            Avoid,
             DistributionDensity(10.),
             InstanceRotationYaw,
             InstanceScaleRange { min: 1., max: 4. },
             WindAffected,
             InstanceJitter,
-            Avoidance(1.),
             children![SceneRoot(handles.lod_low.clone()),]
         )],
     ));
