@@ -189,6 +189,11 @@ Feel free to copy the grass assets. All the other assets used in the examples ar
 - [Blinn–Phong reflection model](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model)
 - [All the other assets](/assets/LICENSE)
 
+## Alternatives
+
+- If you want a lower level scattering API, just for scattering and sampling there is also [`bevy_map_scatter`](https://github.com/morgenthum/map_scatter),
+  which I might use eventually as well but for now I want this crate to achieve a vision.
+
 ## Roadmap
 
 A bunch of issues are already open, but some of the larger milestones could be:
