@@ -237,11 +237,13 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
                 .unwrap_or(Vec2::ZERO),
             static_bend_control_point: data
                 .static_bend_control_point
-                .map(|b| **b)
+                .cloned()
+                .map(|b| b.into())
                 .unwrap_or(Vec2::ZERO),
             static_bend_min_max: data
                 .static_bend_min_max
-                .map(|b| (*b).into())
+                .cloned()
+                .map(|b| b.into())
                 .unwrap_or(Vec2::ZERO),
             ..default()
         }
@@ -312,11 +314,13 @@ impl ScatterMaterialOptions {
                 .unwrap_or(self.static_bend_direction),
             static_bend_control_point: data
                 .static_bend_control_point
-                .map(|b| **b)
+                .cloned()
+                .map(|b| b.into())
                 .unwrap_or(self.static_bend_control_point),
             static_bend_min_max: data
                 .static_bend_min_max
-                .map(|b| (*b).into())
+                .cloned()
+                .map(|b| b.into())
                 .unwrap_or(self.static_bend_min_max),
             ..*self
         }

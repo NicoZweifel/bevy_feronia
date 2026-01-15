@@ -55,7 +55,7 @@ impl Default for SpecularStrength {
     }
 }
 
-/// Controls the amount of light that simulates passing through the object.
+/// Controls the amount of light that is simulated passing through the object.
 ///
 /// Used to simulate thin geometry like grass blades or leaves being lit from behind.
 /// It scales the lighting contribution when the light direction is opposite the surface normal.
@@ -248,25 +248,38 @@ impl StaticBendDirection {
 
 /// Controls the Bézier control points.
 ///
-/// * **X (Stiffness)**: Controls how far out the control point is. Lower values make the curve "tighter" at the base. Defaults to `0.33`.
-/// * **Y (Height)**: Controls the vertical height of the control point relative to the mesh height. Defaults to `0.55`.
-///
-/// Defaults to `1.0`.
+/// * **Stiffness**: Controls how far out the control point is. Lower values make the curve "tighter" at the base. Defaults to `0.33`.
+/// * **Height**: Controls the vertical height of the control point relative to the mesh height. Defaults to `0.55`.
 ///
 /// Corresponds to `material_uniforms.bend_control_point` in the shader.
-#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[derive(Component, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
-pub struct StaticBendControlPoint(pub Vec2);
+pub struct StaticBendControlPoint {
+    pub stiffness: f32,
+    pub height: f32,
+}
 
 impl Default for StaticBendControlPoint {
     fn default() -> Self {
-        Self(Vec2::new(0.33, 0.55))
+        Self::new(0.33, 0.55)
     }
 }
 
 impl StaticBendControlPoint {
-    pub fn new(x: f32, y: f32) -> Self {
-        Self(Vec2::new(x, y))
+    pub fn new(stiffness: f32, height: f32) -> Self {
+        Self { stiffness, height }
+    }
+}
+
+impl From<Vec2> for StaticBendControlPoint {
+    fn from(value: Vec2) -> Self {
+        Self::new(value.x, value.y)
+    }
+}
+
+impl Into<Vec2> for StaticBendControlPoint {
+    fn into(self) -> Vec2 {
+        Vec2::new(self.stiffness, self.height)
     }
 }
 

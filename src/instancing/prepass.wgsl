@@ -38,8 +38,6 @@ struct PrepassVertexOutput {
 #endif
 };
 
-// TODO specialize prepass pipeline correctly
-
 
 @vertex
 fn vertex(vertex: Vertex) -> PrepassVertexOutput {

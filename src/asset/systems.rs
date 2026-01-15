@@ -204,7 +204,7 @@ mod tests {
         let manager = app
             .world()
             .resource::<ScatterAssetManager<StandardMaterial>>();
-        
+
         assert!(
             !manager.asset_to_layer.contains_key(&asset_id),
             "The asset ID should be removed from the manager after the AssetEvent::Removed"
