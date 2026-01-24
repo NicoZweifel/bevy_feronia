@@ -59,7 +59,7 @@ These show how to use the wind-affected materials directly without any scatterin
 
 `cargo run --example instanced`
 
-- Demonstrates applying wind effects to a set of instanced cuboids.
+- Demonstrates applying wind effects to a set of instanced triangles.
 
 ### Grass
 
