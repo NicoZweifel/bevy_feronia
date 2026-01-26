@@ -111,7 +111,7 @@ pub struct AmbientOcclusion;
 ///
 /// Maps to `specular_strength` in the shader.
 ///
-/// Defaults to `0.5`.
+/// Defaults to `0.1`.
 ///
 /// **Note:** Ignored if [`StandardPbr`] is enabled.
 ///
@@ -122,7 +122,7 @@ pub struct SpecularStrength(pub f32);
 
 impl Default for SpecularStrength {
     fn default() -> Self {
-        Self(0.5)
+        Self(0.1)
     }
 }
 

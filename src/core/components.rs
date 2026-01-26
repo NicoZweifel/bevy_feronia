@@ -206,9 +206,13 @@ impl Default for SubsurfaceScatteringScale {
 
 /// Controls the light intensity scale.
 ///
+/// Can be used with Blinn-Phing shading/lighting and [`StandardPBR`],
+/// but should be set to a low value when used with Blinn-Phong, e.g., `0.0001`.
+///
 /// Defaults to `1.0`.
 ///
 /// **NOTE:** this might be removed in the future.
+///
 /// TODO
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
 #[reflect(Component, Clone, Debug)]
