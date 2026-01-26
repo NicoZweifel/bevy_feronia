@@ -10,28 +10,28 @@ repository = "https://github.com/NicoZweifel/bevy_feronia"
 exclude = ["assets/", ".github/"]
 
 [dependencies]
-bevy_scene = { version = "0.17.3" ,default-features = false}
-bevy_state= { version = "0.17.3" ,default-features = false, features = ["bevy_app"]}
-bevy_gizmos= { version = "0.17.3" ,default-features = false}
-bevy_pbr= { version = "0.17.3" ,default-features = false}
-bevy_mesh= { version = "0.17.3" ,default-features = false}
-bevy_color= { version = "0.17.3" ,default-features = false}
-bevy_app = { version = "0.17.3" ,default-features = false}
-bevy_ecs = { version = "0.17.3" ,default-features = false}
-bevy_asset= { version = "0.17.3" ,default-features = false}
-bevy_camera= { version = "0.17.3" ,default-features = false}
-bevy_derive = { version = "0.17.3" ,default-features = false}
-bevy_reflect= { version = "0.17.3" ,default-features = false}
-bevy_transform= { version = "0.17.3" ,default-features = false}
-bevy_tasks= { version = "0.17.3" ,default-features = false}
-bevy_math= { version = "0.17.3" ,default-features = false}
-bevy_image= { version = "0.17.3" ,default-features = false}
-bevy_platform= { version = "0.17.3" ,default-features = false}
-bevy_render= { version = "0.17.3" ,default-features = false}
-bevy_shader= { version = "0.17.3" ,default-features = false}
-bevy_utils= { version = "0.17.3" ,default-features = false}
-bevy_light= { version = "0.17.3" ,default-features = false}
-bevy_eidolon ={version = "0.2.0-rc.1"}
+bevy_scene = { version = "0.17.3", default-features = false }
+bevy_state = { version = "0.17.3", default-features = false, features = ["bevy_app"] }
+bevy_gizmos = { version = "0.17.3", default-features = false }
+bevy_pbr = { version = "0.17.3", default-features = false }
+bevy_mesh = { version = "0.17.3", default-features = false }
+bevy_color = { version = "0.17.3", default-features = false }
+bevy_app = { version = "0.17.3", default-features = false }
+bevy_ecs = { version = "0.17.3", default-features = false }
+bevy_asset = { version = "0.17.3", default-features = false }
+bevy_camera = { version = "0.17.3", default-features = false }
+bevy_derive = { version = "0.17.3", default-features = false }
+bevy_reflect = { version = "0.17.3", default-features = false }
+bevy_transform = { version = "0.17.3", default-features = false }
+bevy_tasks = { version = "0.17.3", default-features = false }
+bevy_math = { version = "0.17.3", default-features = false }
+bevy_image = { version = "0.17.3", default-features = false }
+bevy_platform = { version = "0.17.3", default-features = false }
+bevy_render = { version = "0.17.3", default-features = false }
+bevy_shader = { version = "0.17.3", default-features = false }
+bevy_utils = { version = "0.17.3", default-features = false }
+bevy_light = { version = "0.17.3", default-features = false }
+bevy_eidolon = { version = "0.2.0-rc.1" }
 
 bytemuck = "1.23.1"
 noise = "0.9.0"
@@ -46,7 +46,7 @@ tracing = { version = "0.1.44", default-features = false, optional = true }
 avian3d = { version = "0.4", optional = true }
 
 [dev-dependencies]
-bevy-inspector-egui = { version =   "0.35.0"}
+bevy-inspector-egui = { version = "0.35.0" }
 bevy = { version = "0.17.3", features = [
     "file_watcher",
     "jpeg",
