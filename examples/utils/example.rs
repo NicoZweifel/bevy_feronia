@@ -27,6 +27,9 @@ use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use bevy_light::{CascadeShadowConfig, DirectionalLightShadowMap};
+use bevy_render::RenderPlugin;
+use bevy_render::render_resource::WgpuLimits;
+use bevy_render::settings::{RenderCreation, WgpuSettings};
 use bevy_render::view::Hdr;
 use bevy_show_prepass::{ShowPrepass, ShowPrepassPlugin};
 use camera_controller::*;
@@ -62,7 +65,20 @@ impl Plugin for ExamplePlugin {
 
         app.init_resource::<ExamplePluginOptions>()
             .insert_resource(DirectionalLightShadowMap { size: 4096 })
-            .add_plugins(DefaultPlugins.set(AssetPlugin { ..default() }))
+            .add_plugins(DefaultPlugins
+                .set(AssetPlugin { ..default() })
+                .set(RenderPlugin {
+                    render_creation: RenderCreation::Automatic(WgpuSettings {
+                        limits: WgpuLimits {
+                            max_storage_buffer_binding_size: 1024 << 20,
+                            max_buffer_size: 1024 << 20,
+                            ..default()
+                        },
+                        ..default()
+                    }),
+                    ..default()
+                })
+            )
             .add_plugins((
                 FrameTimeDiagnosticsPlugin::default(),
                 EntityCountDiagnosticsPlugin::default(),
@@ -163,7 +179,7 @@ fn update_extended_materials(
     res: Res<ExampleDebugOptions>,
 ) {
     for (_, asset) in assets.iter_mut() {
-        asset.extension.options.debug = res.debug_scattered_entities;
+        asset.extension.options.general.debug = res.debug_scattered_entities;
     }
 }
 
@@ -172,7 +188,7 @@ fn update_instanced_materials(
     res: Res<ExampleDebugOptions>,
 ) {
     for (_, asset) in assets.iter_mut() {
-        asset.options.debug = res.debug_scattered_entities;
+        asset.options.general.debug = res.debug_scattered_entities;
     }
 }
 
@@ -314,6 +330,12 @@ fn rotate_sun(
     mut sky_query: Query<&mut Skybox>,
 ) {
     let mut rotation_direction = 0.0;
+    let alt = if keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight) {
+        true
+    } else {
+        false
+    };
+
     if keys.pressed(KeyCode::KeyQ) {
         rotation_direction += 1.0;
     }
@@ -323,8 +345,11 @@ fn rotate_sun(
 
     if rotation_direction != 0.0 {
         let rotation_amount = rotation_direction * SUN_ROTATION_SPEED * time.delta_secs();
-        let rotation = Quat::from_rotation_y(rotation_amount);
-
+        let rotation = if alt {
+            Quat::from_rotation_x(rotation_amount)
+        } else {
+            Quat::from_rotation_y(rotation_amount)
+        };
         for mut transform in &mut sun_query {
             transform.rotate_around(Vec3::ZERO, rotation);
         }

@@ -41,11 +41,16 @@ struct ExtendedWindAffectedMaterialUniform {
 
 impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform {
     fn from(extension: &'a WindAffectedExtension) -> Self {
+        let CommonLightingOptions {
+            subsurface_scattering_intensity,
+            subsurface_scattering_scale,
+            ..
+        } = extension.options.lighting.common;
         Self {
             current: WindUniform::from(&extension.current),
             previous: WindUniform::from(&extension.previous),
-            sss_intensity: extension.options.subsurface_scattering_intensity,
-            sss_scale: extension.options.subsurface_scattering_scale,
+            sss_intensity: subsurface_scattering_intensity,
+            sss_scale: subsurface_scattering_scale,
         }
     }
 }
@@ -239,12 +244,19 @@ impl From<ScatterMaterialOptions> for ExtendedMaterialKey {
     fn from(options: ScatterMaterialOptions) -> Self {
         let mut key = ExtendedMaterialKey::empty();
 
-        key.set(ExtendedMaterialKey::DEBUG, options.debug);
+        let GeneralOptions { debug, .. } = options.general;
+        let CommonLightingOptions {
+            subsurface_scattering,
+            static_shadows,
+            ..
+        } = options.lighting.common;
+
+        key.set(ExtendedMaterialKey::DEBUG, debug);
         key.set(
             ExtendedMaterialKey::SUBSURFACE_SCATTERING,
-            options.subsurface_scattering,
+            subsurface_scattering,
         );
-        key.set(ExtendedMaterialKey::STATIC_SHADOW, options.static_shadows);
+        key.set(ExtendedMaterialKey::STATIC_SHADOW, static_shadows);
 
         key
     }

@@ -829,9 +829,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_eidolon"
-version = "0.1.1-rc.12"
+version = "0.2.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "636bdc4babfbb2a684edea14150063ac68f290053dbd5b9b6a974147655ed1fd"
+checksum = "88a04249e98d3b9cbc688c0b3c9b555903b5c6f7a158f4e83aedc773f7d76a3a"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -852,6 +852,7 @@ dependencies = [
  "bitflags 2.10.0",
  "bytemuck",
  "derive_more",
+ "offset-allocator",
  "tracing",
 ]
 
@@ -867,7 +868,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.6.0"
+version = "0.7.0-rc.1"
 dependencies = [
  "avian3d",
  "bevy",

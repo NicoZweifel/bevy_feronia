@@ -80,7 +80,6 @@ fn fragment(
 #endif
 
     let wind = material_uniforms.current;
-
     if (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_UNLIT_BIT) == 0u {
         #ifdef SUBSURFACE_SCATTERING
             let sss_glow = calc_sss_lighting(material_uniforms.sss_scale, material_uniforms.sss_intensity, pbr_input, in.thinness_factor);
@@ -101,15 +100,17 @@ fn fragment(
         out.color = pbr_input.material.base_color;
     }
 
-    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
-
 #ifdef MATERIAL_DEBUG
-    out.color = wind.debug_color;
+    out.color = pbr_input.material.base_color;
+#else
+    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 #endif
 
    return out;
 }
 
+// TODO make reusable/expose/tweakable, see instanced.wgsl
+#ifdef SUBSURFACE_SCATTERING
 // GDC 2011 "Approximating Translucency" Implementation
 // Source: Barré-Brisebois, C., & Bouchard, M. (2011). Approximating Translucency for a
 // Fast, Cheap and Convincing Subsurface Scattering Look. Game Developers Conference.
@@ -120,12 +121,10 @@ fn fragment(
 // A value of 1.0 makes light appear to be heavily scattered by the surface.
 const SSS_DISTORTION: f32 = 0.5;
 
-
 const SSS_WRAP: f32 = 0.2;
 const SSS_WRAP_INV: f32 = 1.0 / (1.0 + SSS_WRAP);
 
-
-// Scale down light rgb
+// Scale down light rgb TODO
 const LIGHT_INTENSITY_SCALE = 0.00005;
 
 fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_factor: f32) -> vec3<f32> {
@@ -136,7 +135,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     let cluster_index = fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
     let ranges = unpack_clusterable_object_index_ranges(cluster_index);
 
-    // --- POINT LIGHTS ---
+       // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
         let light = clusterable_objects.data[light_id];
@@ -169,7 +168,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
         let attenuation = att_factor * att_factor;
         let light_contribution = scaled_light_color * attenuation;
 
-        // --- GDC 2011 SSS MODEL ---
+        // GDC 2011 SSS model
         let H = normalize(L + pbr_input.world_normal * SSS_DISTORTION);
 
         let back_scatter_dot = saturate(dot(pbr_input.V, -H));
@@ -186,7 +185,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
         sss_light += sss_factor * light_contribution * shadow;
     }
 
-    // --- DIRECTIONAL LIGHTS ---
+    // Directional lights
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         // Skip if covered by shadow
         let shadow = fetch_directional_shadow(i, pbr_input.world_position, pbr_input.world_normal, view_z);
@@ -195,7 +194,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
         let sun = lights.directional_lights[i];
         let L = sun.direction_to_light;
 
-        // --- GDC 2011 SSS MODEL ---
+        // GDC 2011 SSS model
         let H = normalize(L + pbr_input.world_normal * SSS_DISTORTION);
         let back_scatter_dot = saturate(dot(pbr_input.V, -H));
 
@@ -214,3 +213,4 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
 
     return sss_light * intensity * thinness_factor;
 }
+#endif SUBSURFACE_SCATTERING

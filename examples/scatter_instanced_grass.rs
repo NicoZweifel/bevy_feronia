@@ -43,7 +43,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Material Options
             (
                 WindAffected,
-                EdgeCorrection,
+                // EdgeCorrection,
                 CurveNormals,
                 StaticBend,
                 AnalyticalNormals,

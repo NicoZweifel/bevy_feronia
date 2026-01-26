@@ -44,7 +44,8 @@ fn main() -> AppExit {
             StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
             ExtendedWindAffectedScatterPlugin,
-            GpuComputeCullPlugin,
+            GpuComputeCullCorePlugin,
+            GpuCullComputePlugin::<InstancedWindAffectedMaterial>::default(),
         ))
         .init_state::<AppState>()
         .add_systems(OnEnter(AppState::Setup), setup_loading_screen)
@@ -515,8 +516,8 @@ impl RockLayer {
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
     InstanceJitter,
     InstanceRotationYaw,
-    DistributionDensity(8.),
-    InstanceScaleRange { min: 1., max: 3. },
+    DistributionDensity(5.),
+    InstanceScaleRange { min: 2., max: 4. },
     Avoidance(1.),
 )]
 struct TreeLayer;
@@ -718,15 +719,24 @@ impl FoliageLayer {
     // Material options
 
     GpuCullCompute,
-    EdgeCorrectionFactor,
+    // EdgeCorrectionFactor,
     CurveNormals,
     Strength(1.2),
     SCurveStrength(1.2),
     BopStrength(1.2),
     AnalyticalNormals,
     InstanceRotationYaw,
-    InstanceColor(Color::hsla(84., 0.49, 0.35, 1.)),
-    InstanceColorGradient::new(Color::hsla(84.2, 0.48, 0.5, 1.),Color::hsla(84., 0.49, 0.14, 1.)),
+    StandardPbr,
+    SubsurfaceScattering,
+    InstanceColor::new(Srgba::hex("#1f3114").unwrap()),
+    InstanceColorGradient {
+        end: 0.7,
+        start: 0.2,
+        ..InstanceColorGradient::new(
+            Srgba::hex("#3e6328").unwrap(),
+            Srgba::hex("#0f190a").unwrap()
+        )
+    },
     StaticBend,
     SpecularStrength(0.2),
     AmbientOcclusion,
@@ -886,7 +896,6 @@ fn update_density_map(
     let size = cfg.size;
     let mut data_buffer = vec![0; (size * size) as usize];
     let mut rng = Pcg64::seed_from_u64(**seed);
-
     let perlin = Perlin::new(**seed as u32);
     let sample_scale = 8.0;
 
@@ -897,15 +906,15 @@ fn update_density_map(
                 y as f64 / size as f64 * sample_scale,
             ];
 
-            let noise_value = perlin.get(point);
-            let byte_value = ((noise_value * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
+            let noise = perlin.get(point);
+            let byte = ((noise * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
 
-            data_buffer[(y * size + x) as usize] = byte_value;
+            data_buffer[(y * size + x) as usize] = byte;
         }
     }
 
-    let num_spots = 100;
-    let max_spot_radius = (size / 8) as f32;
+    let num_spots = 20;
+    let max_spot_radius = (size / 16) as f32;
     let min_spot_radius = (size / 32) as f32;
 
     // Empty spots
@@ -933,10 +942,10 @@ fn update_density_map(
                     let t = dist_sq / radius_sq;
                     let intensity = (1.0 - t).clamp(0.0, 1.0);
 
-                    let byte_value = ((1.0 - intensity) * 255.0) as u8;
-
+                    let byte = ((1.0 - intensity) * 255.0) as u8;
                     let index = (y * size + x) as usize;
-                    data_buffer[index] = data_buffer[index].min(byte_value);
+
+                    data_buffer[index] = data_buffer[index].min(byte);
                 }
             }
         }

@@ -137,7 +137,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             name: item_of.name.clone(),
             #[allow(deprecated)]
             lod,
-            wind_affected: options.wind_affected
+            wind_affected: options.wind.affected
                 || layer_material_option_data.wind_affected.is_some(),
         };
 
@@ -275,7 +275,7 @@ impl ScatterAssetPart<StandardMaterial> {
 
         let mut source_material = materials_in.get(&h_material).cloned();
 
-        if properties.options.unlit {
+        if properties.options.lighting.common.unlit {
             source_material = source_material.map(|mut m| {
                 m.unlit = true;
                 m

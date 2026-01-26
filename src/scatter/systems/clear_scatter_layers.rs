@@ -3,7 +3,7 @@ use crate::scatter::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
 
-use crate::core::utils::despawn;
+use crate::utils::despawn;
 
 #[cfg(feature = "trace")]
 use tracing::debug;

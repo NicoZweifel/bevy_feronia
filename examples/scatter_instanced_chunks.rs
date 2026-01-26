@@ -2,7 +2,6 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_color::palettes::tailwind::*;
 use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
@@ -20,12 +19,7 @@ struct InstancedMaterialExampleConfig {
 fn main() -> AppExit {
     App::new()
         .register_type::<InstancedMaterialExampleConfig>()
-        .insert_resource(GlobalWind {
-            current: Wind {
-                ..WindPreset::Mild.into()
-            },
-            ..WindPreset::Mild.into()
-        })
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             show_debug_options: true,
@@ -36,7 +30,8 @@ fn main() -> AppExit {
             ExamplePlugin,
             SceneAssetBackendPlugin,
             InstancedWindAffectedScatterPlugin,
-            GpuComputeCullPlugin,
+            GpuComputeCullCorePlugin,
+            GpuCullComputePlugin::<InstancedWindAffectedMaterial>::default(),
         ))
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
@@ -68,7 +63,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(200.0),
+                DistributionDensity(250.0),
                 InstanceScale,
                 InstanceJitter,
                 ScatterChunked,
@@ -78,13 +73,18 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Material options
             (
                 WindAffected,
-                InstanceColor::new(YELLOW_950),
+                InstanceColor::new(Srgba::hex("#1f3114").unwrap()),
                 InstanceColorGradient {
-                    end: 0.6,
-                    start: 0.0,
-                    ..InstanceColorGradient::new(YELLOW_200, PURPLE_950)
+                    end: 0.7,
+                    start: 0.2,
+                    ..InstanceColorGradient::new(
+                        Srgba::hex("#3e6328").unwrap(),
+                        Srgba::hex("#0f190a").unwrap()
+                    )
                 },
-                EdgeCorrection,
+                StandardPbr,
+                SubsurfaceScattering,
+                // EdgeCorrection,
                 AnalyticalNormals,
                 StaticBend,
                 CurveNormals,

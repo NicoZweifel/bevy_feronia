@@ -64,8 +64,7 @@ where
         options: ScatterMaterialOptions,
         #[cfg(feature = "avian")] rigid_body: Option<RigidBody>,
     ) -> ScatterAssetCreationRequest<T> {
-        let parts: Vec<ScatterAssetPartEntity> =
-            entity_parts.into_iter().map(|p| p.clone()).collect();
+        let parts: Vec<ScatterAssetPartEntity> = entity_parts.into_iter().collect();
 
         let mut union_aabb = parts[0].part.properties.aabb;
         for ScatterAssetPartEntity { part, .. } in &parts[1..] {

@@ -247,22 +247,35 @@ impl From<ScatterMaterialOptions> for WindAffectedKey {
     fn from(options: ScatterMaterialOptions) -> Self {
         let mut key = WindAffectedKey::empty();
 
-        key.set(WindAffectedKey::BILLBOARDING, options.enable_billboarding);
+        let NormalOptions {
+            analytical_normals,
+            fast_normals,
+            ..
+        } = options.lighting.normals;
+        let WindOptions {
+            affected,
+            low_quality,
+        } = options.wind;
+        let GeometryOptions {
+            enable_billboarding,
+            edge_correction_factor,
+            ..
+        } = options.geometry;
+        let StaticBendOptions {
+            strength: static_bend_strength,
+            ..
+        } = options.bend;
+
+        key.set(WindAffectedKey::BILLBOARDING, enable_billboarding);
         key.set(
             WindAffectedKey::EDGE_CORRECTION,
-            options.edge_correction_factor > 0.,
+            edge_correction_factor > 0.,
         );
-        key.set(WindAffectedKey::WIND_LOW_QUALITY, options.low_quality);
-        key.set(WindAffectedKey::FAST_NORMALS, options.fast_normals);
-        key.set(WindAffectedKey::WIND_AFFECTED, options.wind_affected);
-        key.set(
-            WindAffectedKey::STATIC_BEND,
-            options.static_bend_strength > 0.,
-        );
-        key.set(
-            WindAffectedKey::ANALYTICAL_NORMALS,
-            options.analytical_normals,
-        );
+        key.set(WindAffectedKey::WIND_LOW_QUALITY, low_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, fast_normals);
+        key.set(WindAffectedKey::WIND_AFFECTED, affected);
+        key.set(WindAffectedKey::STATIC_BEND, static_bend_strength > 0.);
+        key.set(WindAffectedKey::ANALYTICAL_NORMALS, analytical_normals);
 
         key
     }

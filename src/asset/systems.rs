@@ -125,7 +125,7 @@ fn create_asset<T: ScatterMaterial>(
             asset_entity,
             parts
                 .iter()
-                .map(|ScatterAssetPartEntity { entity, .. }| entity.clone())
+                .map(|ScatterAssetPartEntity { entity, .. }| *entity)
                 .collect(),
         ),
     );

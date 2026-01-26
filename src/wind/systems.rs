@@ -1,4 +1,6 @@
 use crate::prelude::*;
+
+use noise::{NoiseFn, Perlin};
 use std::f64::consts::PI;
 
 use bevy_asset::Assets;
@@ -6,7 +8,6 @@ use bevy_ecs::prelude::*;
 use bevy_image::*;
 use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_utils::default;
-use noise::{NoiseFn, Perlin};
 
 pub fn update_materials<T>(
     mut materials: ResMut<Assets<T>>,
@@ -24,29 +25,34 @@ pub fn update_materials<T>(
     for (asset, (wind_data, material_options), (root_wind_data, root_material_options)) in
         scatter_assets
             .iter_mut()
-            .filter(|(_, asset)| !asset.properties.options.controlled)
+            .filter(|(_, asset)| !asset.properties.options.general.controlled)
             .filter_map(|(id, asset)| {
                 let layer = scatter_asset_manager.asset_to_layer.get(&id)?;
 
                 let (root, wind_data, material_options) = q_layer
                     .get(*layer)
-                    .map_err(|_| dbg!("ScatterLayer not found!"))
+                    .map_err(|e| {
+                        #[cfg(feature = "trace")]
+                        tracing::error!("ScatterLayer not found! {e}")
+                    })
                     .ok()?;
 
                 let root_data = q_root
                     .get(**root)
-                    .map_err(|_| {
-                        dbg!("ScatterRoot not found!");
+                    .map_err(|e| {
+                        #[cfg(feature = "trace")]
+                        tracing::error!("ScatterRoot not found! {e}");
                     })
                     .ok()?;
 
-                return Some((asset, (wind_data, material_options), root_data));
+                Some((asset, (wind_data, material_options), root_data))
             })
     {
         let wind = global_wind
             .current
             .multiply(root_wind_data)
             .multiply(wind_data);
+
         let prev_wind = global_wind
             .previous
             .multiply(root_wind_data)
@@ -59,7 +65,8 @@ pub fn update_materials<T>(
 
         for part in &asset.parts {
             let Some(material) = materials.get_mut(&part.h_material) else {
-                dbg!("Material not found!");
+                #[cfg(feature = "trace")]
+                tracing::warn!("Material not found!");
                 continue;
             };
 

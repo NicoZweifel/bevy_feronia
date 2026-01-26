@@ -211,8 +211,6 @@ impl Wind {
             micro_strength: self.micro_strength.lerp(target.micro_strength, t),
             s_curve_speed: self.s_curve_speed.lerp(target.s_curve_speed, t),
             s_curve_strength: self.s_curve_strength.lerp(target.s_curve_strength, t),
-            // We usually don't want to lerp frequency if it causes phase issues,
-            // but for simple wind it's fine.
             s_curve_frequency: self.s_curve_frequency.lerp(target.s_curve_frequency, t),
             bop_speed: self.bop_speed.lerp(target.bop_speed, t),
             bop_strength: self.bop_strength.lerp(target.bop_strength, t),

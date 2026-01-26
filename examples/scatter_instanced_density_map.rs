@@ -55,7 +55,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             // Material options
             (
                 WindAffected,
-                EdgeCorrection,
+                // EdgeCorrection,
                 AnalyticalNormals,
                 DirectionalLights,
                 PointLights,

@@ -5,7 +5,7 @@ use bevy_ecs::relationship::Relationship;
 use bevy_platform::collections::HashMap;
 use bevy_transform::prelude::GlobalTransform;
 
-use crate::core::utils::despawn;
+use crate::utils::despawn;
 #[cfg(feature = "trace")]
 use tracing::{debug, error, warn};
 

@@ -12,7 +12,7 @@ use bevy_camera::primitives::Aabb;
 use bevy_camera::visibility::Visibility;
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
-use bevy_eidolon::prelude::InstancedMeshMaterial;
+use bevy_eidolon::prelude::*;
 use bevy_math::{Vec3, Vec3A};
 use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
@@ -64,23 +64,44 @@ fn setup(
 
     let options = ScatterMaterialOptions {
         // make it affected by wind
-        wind_affected: true,
-        // can also tweak other settings here
-        directional_lights: true,
-        point_lights: true,
-        static_bend_strength: 0.5,
-        // or test individual settings
-        edge_correction_factor: 1.0,
-
-        top_color: Some(RED_400.into()),
-        bottom_color: Some(BLUE_400.into()),
-        base_color: Some(GREEN_400.into()),
-        gradient_start: 0.1,
-        gradient_end: 0.9,
-        tint_factor: 0.5,
-        specular_power: 32.,
-        specular_strength: 0.5,
-        translucency: 0.6,
+        wind: WindOptions {
+            affected: true,
+            ..default()
+        },
+        // can also tweak or test other individual settings here
+        geometry: GeometryOptions {
+            edge_correction_factor: 1.0,
+            ..default()
+        },
+        lighting: LightingOptions {
+            common: CommonLightingOptions {
+                directional_lights: true,
+                point_lights: true,
+                ambient_occlusion: true,
+                ..default()
+            },
+            blinn_phong: BlinnPhongOptions {
+                specular_power: 32.,
+                specular_strength: 0.5,
+                translucency: 0.6,
+                light_intensity: 0.0001,
+                ambient_light_intensity: 0.0001,
+                diffuse_scaling: 1.,
+            },
+            ..default()
+        },
+        color: ColorOptions {
+            top_color: Some(RED_400.into()),
+            bottom_color: Some(BLUE_400.into()),
+            base_color: Some(GREEN_400.into()),
+            gradient_start: 0.3,
+            gradient_end: 0.6,
+            tint_factor: 0.5,
+        },
+        bend: StaticBendOptions {
+            strength: 0.5,
+            ..default()
+        },
         ..default()
     };
 
@@ -100,7 +121,7 @@ fn setup(
     let instances = (-SIZE..SIZE)
         .enumerate()
         .map(|(i, x)| {
-            bevy_eidolon::components::InstanceData {
+            InstanceData {
                 position: Vec3::new(x as f32, 0.25 * 4., x as f32),
                 scale: 4.0,
                 // NOTE:
@@ -111,8 +132,8 @@ fn setup(
         })
         .collect();
 
-    let instance_material_data = bevy_eidolon::components::InstanceMaterialData {
-        color: GREEN_400.into(),
+    let instance_material_data = InstanceMaterialData {
+        color: options.color.base_color.unwrap_or_default().to_linear(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
     };

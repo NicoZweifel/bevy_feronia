@@ -21,7 +21,7 @@ pub trait ScatterApp {
 
     fn configure_scatter_set<M: ScheduleLabel + Default>(&mut self) -> &mut App;
 
-    fn configure_scatter_sets<'a>(&mut self) -> &mut App;
+    fn configure_scatter_sets(&mut self) -> &mut App;
 }
 
 impl ScatterApp for App {
@@ -48,7 +48,7 @@ impl ScatterApp for App {
         )
     }
 
-    fn configure_scatter_sets<'a>(&mut self) -> &mut App {
+    fn configure_scatter_sets(&mut self) -> &mut App {
         self.configure_scatter_set::<PreUpdate>()
             .configure_scatter_set::<Update>()
             .configure_scatter_set::<PostUpdate>()

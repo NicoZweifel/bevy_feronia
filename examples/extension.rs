@@ -53,7 +53,10 @@ fn setup(
             },
             options: ScatterMaterialOptions {
                 // make it affected by wind
-                wind_affected: true,
+                wind: WindOptions {
+                    affected: true,
+                    ..default()
+                },
                 // can also tweak other settings here
                 ..default()
             },
