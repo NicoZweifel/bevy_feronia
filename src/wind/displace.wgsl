@@ -225,8 +225,9 @@ fn displace_vertex_and_calc_normal(
 
     let local_bitangent = normalize(cross(local_normal, local_tangent) * tangent_sign);
 
-    // Too small, e.g. 0.01, causes flicker on simple geometry
-    let sample_offset = 0.05;
+    // TODO expose/calc
+    // Too small, e.g. 0.01 causes flicker on simple wider geometry, too large causes flicker/wrap around on thin geometry
+    let sample_offset = 0.01;
     let base_displaced_pos = final_local_pos;
 
     // Sample Neighbor along Tangent
@@ -257,7 +258,9 @@ fn displace_vertex_and_calc_normal(
     let delta_tangent = neighbor_tangent_displaced - base_displaced_pos;
     let delta_bitangent = neighbor_bitangent_displaced - base_displaced_pos;
 
-    let computed_local_normal = normalize(cross(delta_tangent, delta_bitangent) * tangent_sign);
+    let raw_normal = cross(delta_tangent, delta_bitangent) * tangent_sign;
+    let len_sq = dot(raw_normal, raw_normal);
+    let computed_local_normal = select(local_normal, normalize(raw_normal), len_sq > 1.0e-6);
 
     // Prevent back-facing normals if displacement is extreme
     let dot_alignment = dot(computed_local_normal, local_normal);
@@ -423,7 +426,6 @@ fn calc_macro_curve(
     #ifdef WIND_AFFECTED
         let forward_dir = result.local_wind_dir;
 
-        // Simplified Noise
         let macro_noise = noise.macro_noise * 2.0 - 1.0;
         let wind_strength = macro_noise * wind.strength;
         let h = result.height_factor;

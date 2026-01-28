@@ -29,15 +29,15 @@ struct VertexOutput {
     @location(0) @interpolate(flat) visibility_range_dither: i32,
 #endif
 
-    @location(1) world_position: vec4<f32>,
-    @location(2) world_normal: vec3<f32>,
-    @location(3) uv: vec2<f32>,
-    @location(4) world_tangent: vec4<f32>,
-    @location(5) local_pos: vec3<f32>,
+    @location(1) @interpolate(linear, centroid) world_position: vec4<f32>,
+    @location(2) @interpolate(linear, centroid) world_normal: vec3<f32>,
+    @location(3) @interpolate(linear, centroid) uv: vec2<f32>,
+    @location(4) @interpolate(linear, centroid) world_tangent: vec4<f32>,
+    @location(5) @interpolate(linear, centroid) local_pos: vec3<f32>,
 
-    @location(6) curve_factor: f32,
+    @location(6) @interpolate(linear, centroid) curve_factor: f32,
 #ifdef AMBIENT_OCCLUSION
-    @location(7) ao: f32,
+    @location(7) @interpolate(linear, centroid) ao: f32,
 #endif
 
     @location(8) i_batch_id: u32,
@@ -501,6 +501,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
 
         // GDC 2011 SSS model
         let H = normalize(L + pbr_input.world_normal * SSS_DISTORTION);
+
         let back_scatter_dot = saturate(dot(pbr_input.V, -H));
 
         // pow(dot, 8) * SSS_SCALE

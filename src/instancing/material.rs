@@ -175,6 +175,10 @@ impl InstancedMaterial for InstancedWindAffectedMaterial {
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive.cull_mode = None;
 
+        if descriptor.multisample.count > 1 {
+            descriptor.multisample.alpha_to_coverage_enabled = true;
+        }
+
         let shader_defs = &mut descriptor.vertex.shader_defs;
         if key.wind_key.contains(WindAffectedKey::BILLBOARDING) {
             shader_defs.push("BILLBOARDING".into());

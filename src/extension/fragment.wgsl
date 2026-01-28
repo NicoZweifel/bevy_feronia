@@ -135,7 +135,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     let cluster_index = fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
     let ranges = unpack_clusterable_object_index_ranges(cluster_index);
 
-       // Point lights
+    // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
         let light = clusterable_objects.data[light_id];
