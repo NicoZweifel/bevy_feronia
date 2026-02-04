@@ -518,6 +518,7 @@ impl RockLayer {
     InstanceRotationYaw,
     DistributionDensity(5.),
     InstanceScaleRange { min: 2., max: 4. },
+    InstanceScaleRange { min: 1., max: 2. },
     Avoidance(1.),
 )]
 struct TreeLayer;
