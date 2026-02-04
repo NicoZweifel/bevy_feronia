@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
 use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
@@ -54,7 +55,10 @@ fn grass_count(query: Query<&InstanceMaterialData>, keys: Res<ButtonInput<KeyCod
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
+        Aabb {
+            half_extents: Vec3A::new(100., 0., 100.),
+            center: Vec3A::new(0., 0., 0.),
+        },
         ChunkRoot::default(),
         ScatterRoot::default(),
         Transform::from_xyz(20., 0., 0.)
@@ -83,13 +87,26 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                     )
                 },
                 StandardPbr,
-                SubsurfaceScattering,
+                // These are default values, but they are included here for clarity:
+                Roughness(0.5),
+                Metallic(0.0),
+                Reflectance(0.1),
+                // or when not using `StandardPbr`:`
+                /*
+                (
+                    DirectionalLights,
+                    PointLights,
+                    SpecularPower(32.0),
+                    SpecularStrength(0.2),
+                    DiffuseScaling(1.0),
+                    SubsurfaceScattering
+                ),
+                */
+                // Broken currently with temporal fx
                 // EdgeCorrection,
                 AnalyticalNormals,
                 StaticBend,
                 CurveNormals,
-                DirectionalLights,
-                PointLights,
                 GpuCullCompute,
                 AmbientOcclusion,
             ),

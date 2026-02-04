@@ -1,6 +1,6 @@
 [package]
 name = "bevy_feronia"
-version = "0.7.0-rc.3"
+version = "0.7.0"
 
 edition = "2024"
 description = "Foliage/grass scattering tools and wind simulation shaders/materials that prioritize visual fidelity/artistic freedom, a declarative api and modularity."
@@ -31,7 +31,7 @@ bevy_render = { version = "0.17.3", default-features = false }
 bevy_shader = { version = "0.17.3", default-features = false }
 bevy_utils = { version = "0.17.3", default-features = false }
 bevy_light = { version = "0.17.3", default-features = false }
-bevy_eidolon = { version = "0.2.0-rc.2" }
+bevy_eidolon = { version = "0.2.0" }
 
 bytemuck = "1.23.1"
 noise = "0.9.0"
@@ -48,11 +48,8 @@ avian3d = { version = "0.4", optional = true }
 [dev-dependencies]
 bevy-inspector-egui = { version = "0.35.0" }
 bevy = { version = "0.17.3", features = [
-    "file_watcher",
     "jpeg",
-    "embedded_watcher",
     "asset_processor",
-    "basis-universal",
     "mp3",
 ] }
 

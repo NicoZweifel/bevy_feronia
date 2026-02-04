@@ -190,6 +190,8 @@ impl Default for Translucency {
 ///
 /// Enables `#ifdef DIRECTIONAL_LIGHTS` in shaders.
 ///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
@@ -198,8 +200,8 @@ impl Default for Translucency {
     SpecularPower,
     SpecularStrength,
     DiffuseScaling,
-    LightIntensity,
-    AmbientLightIntensity
+    LightIntensity(0.0001),
+    AmbientLightIntensity(0.0001)
 )]
 pub struct DirectionalLights;
 
@@ -207,6 +209,8 @@ pub struct DirectionalLights;
 ///
 /// Enables `#ifdef POINT_LIGHTS` in shaders.
 ///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
@@ -215,8 +219,8 @@ pub struct DirectionalLights;
     SpecularPower,
     SpecularStrength,
     DiffuseScaling,
-    LightIntensity,
-    AmbientLightIntensity
+    LightIntensity(0.0001),
+    AmbientLightIntensity(0.0001)
 )]
 pub struct PointLights;
 
@@ -348,7 +352,7 @@ impl From<Vec2> for StaticBendMinMax {
 
 impl Default for StaticBendMinMax {
     fn default() -> Self {
-        Self { min: 0.3, max: 0.9 }
+        Self { min: 0.2, max: 0.7 }
     }
 }
 
