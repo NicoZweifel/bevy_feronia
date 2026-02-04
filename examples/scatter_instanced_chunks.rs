@@ -87,6 +87,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                     )
                 },
                 StandardPbr,
+                SubsurfaceScattering,
                 // These are default values, but they are included here for clarity:
                 Roughness(0.5),
                 Metallic(0.0),
@@ -99,7 +100,6 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                     SpecularPower(32.0),
                     SpecularStrength(0.2),
                     DiffuseScaling(1.0),
-                    SubsurfaceScattering
                 ),
                 */
                 // Broken currently with temporal fx
