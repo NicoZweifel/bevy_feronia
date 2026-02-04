@@ -407,7 +407,7 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_state",
@@ -472,7 +472,7 @@ dependencies = [
  "bevy_ecs",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_time",
  "bevy_transform",
@@ -534,9 +534,9 @@ checksum = "8e4fc5dfe9d1d9b8233e1878353b5e66a3f5910c2131d3abf68f9a4116b2d433"
 dependencies = [
  "bevy_derive",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_utils",
  "cfg-if",
  "console_error_panic_hook",
@@ -563,9 +563,9 @@ dependencies = [
  "bevy_app",
  "bevy_asset_macros",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_utils",
  "bitflags 2.10.0",
  "blake3",
@@ -675,7 +675,7 @@ dependencies = [
  "bevy_ecs",
  "bevy_image",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -710,8 +710,8 @@ dependencies = [
  "atomic-waker",
  "bevy_app",
  "bevy_ecs",
- "bevy_platform",
- "bevy_tasks",
+ "bevy_platform 0.17.3",
+ "bevy_tasks 0.17.3",
  "bevy_time",
  "const-fnv1a-hash",
  "log",
@@ -727,10 +727,10 @@ checksum = "a7dd5229dd00d00e70ac6b2fc0a139961252f6ce07d3d268cfcac0da86d5bde4"
 dependencies = [
  "arrayvec",
  "bevy_ecs_macros",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_ptr",
  "bevy_reflect",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_utils",
  "bitflags 2.10.0",
  "bumpalo",
@@ -779,7 +779,7 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_picking",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -822,7 +822,7 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -865,14 +865,14 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_scene",
  "bevy_shader",
  "bevy_show_prepass",
  "bevy_state",
- "bevy_tasks",
+ "bevy_tasks 0.18.0",
  "bevy_transform",
  "bevy_utils",
  "bitflags 2.10.0",
@@ -897,7 +897,7 @@ dependencies = [
  "bevy_app",
  "bevy_ecs",
  "bevy_input",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_time",
  "gilrs",
  "thiserror 2.0.17",
@@ -962,11 +962,11 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_scene",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_transform",
  "fixedbitset",
  "gltf",
@@ -1001,7 +1001,7 @@ dependencies = [
  "bevy_color",
  "bevy_ecs",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_utils",
  "bitflags 2.10.0",
@@ -1028,7 +1028,7 @@ dependencies = [
  "bevy_app",
  "bevy_ecs",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "derive_more",
  "log",
@@ -1084,7 +1084,7 @@ dependencies = [
  "bevy_mesh",
  "bevy_pbr",
  "bevy_picking",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_post_process",
  "bevy_ptr",
  "bevy_reflect",
@@ -1095,7 +1095,7 @@ dependencies = [
  "bevy_sprite",
  "bevy_sprite_render",
  "bevy_state",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_text",
  "bevy_time",
  "bevy_transform",
@@ -1120,7 +1120,7 @@ dependencies = [
  "bevy_image",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_transform",
  "bevy_utils",
@@ -1136,7 +1136,7 @@ dependencies = [
  "android_log-sys",
  "bevy_app",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_utils",
  "tracing",
  "tracing-log",
@@ -1191,7 +1191,7 @@ dependencies = [
  "bevy_image",
  "bevy_math",
  "bevy_mikktspace",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_transform",
  "bitflags 2.10.0",
@@ -1227,7 +1227,7 @@ dependencies = [
  "bevy_light",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -1259,7 +1259,7 @@ dependencies = [
  "bevy_input",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_time",
  "bevy_transform",
@@ -1291,6 +1291,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_platform"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b29ea749a8e85f98186ab662f607b885b97c804bb14cdb0cdf838164496d474"
+dependencies = [
+ "foldhash 0.2.0",
+ "futures-channel",
+ "hashbrown 0.16.1",
+ "portable-atomic",
+ "portable-atomic-util",
+ "serde",
+ "spin",
+]
+
+[[package]]
 name = "bevy_post_process"
 version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1305,7 +1320,7 @@ dependencies = [
  "bevy_ecs",
  "bevy_image",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -1333,7 +1348,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5472b91928c0f3e4e3988c0d036b00719f19520f53a0c3f8c2af72f00e693c5"
 dependencies = [
  "assert_type_match",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_ptr",
  "bevy_reflect_derive",
  "bevy_utils",
@@ -1386,11 +1401,11 @@ dependencies = [
  "bevy_image",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render_macros",
  "bevy_shader",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_time",
  "bevy_transform",
  "bevy_utils",
@@ -1440,7 +1455,7 @@ dependencies = [
  "bevy_camera",
  "bevy_derive",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_transform",
  "bevy_utils",
@@ -1457,7 +1472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a655de9f64e113a6e37be76401fb0d6cb84ed7cc4f891e70af4e39d26e9080c3"
 dependencies = [
  "bevy_asset",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "naga",
  "naga_oil",
@@ -1495,7 +1510,7 @@ dependencies = [
  "bevy_math",
  "bevy_mesh",
  "bevy_pbr",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -1547,7 +1562,7 @@ dependencies = [
  "bevy_image",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -1571,7 +1586,7 @@ checksum = "05e8556a55d548844fc067fac6657b62f8073c94bd7e13c86aa7573f4c2a67b3"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_state_macros",
  "bevy_utils",
@@ -1600,12 +1615,29 @@ dependencies = [
  "async-executor",
  "async-task",
  "atomic-waker",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "concurrent-queue",
  "crossbeam-queue",
  "derive_more",
  "futures-lite",
- "heapless",
+ "heapless 0.8.0",
+ "pin-project",
+]
+
+[[package]]
+name = "bevy_tasks"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "990ffedd374dd2c4fe8f0fd4bcefd5617d1ee59164b6c3fcc356a69b48e26e8e"
+dependencies = [
+ "async-channel",
+ "async-task",
+ "atomic-waker",
+ "bevy_platform 0.18.0",
+ "crossbeam-queue",
+ "derive_more",
+ "futures-lite",
+ "heapless 0.9.2",
  "pin-project",
 ]
 
@@ -1623,7 +1655,7 @@ dependencies = [
  "bevy_image",
  "bevy_log",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_utils",
  "cosmic-text",
@@ -1643,7 +1675,7 @@ checksum = "32835c3dbe082fbbe7d4f2f37f655073421f2882d4320ac2d59f922474260de4"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "crossbeam-channel",
  "log",
@@ -1661,7 +1693,7 @@ dependencies = [
  "bevy_log",
  "bevy_math",
  "bevy_reflect",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_utils",
  "derive_more",
  "serde",
@@ -1695,7 +1727,7 @@ dependencies = [
  "bevy_input",
  "bevy_math",
  "bevy_picking",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_sprite",
  "bevy_text",
@@ -1726,7 +1758,7 @@ dependencies = [
  "bevy_image",
  "bevy_math",
  "bevy_mesh",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "bevy_render",
  "bevy_shader",
@@ -1747,7 +1779,7 @@ version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "789d04f88c764877a4552e07745b402dbc45f5d0545e6d102558f2f1752a1d89"
 dependencies = [
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "disqualified",
  "thread_local",
 ]
@@ -1764,7 +1796,7 @@ dependencies = [
  "bevy_image",
  "bevy_input",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
  "log",
  "raw-window-handle",
@@ -1791,9 +1823,9 @@ dependencies = [
  "bevy_input_focus",
  "bevy_log",
  "bevy_math",
- "bevy_platform",
+ "bevy_platform 0.17.3",
  "bevy_reflect",
- "bevy_tasks",
+ "bevy_tasks 0.17.3",
  "bevy_window",
  "bytemuck",
  "cfg-if",
@@ -3199,6 +3231,17 @@ name = "heapless"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
+dependencies = [
+ "hash32",
+ "portable-atomic",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2af2455f757db2b292a9b1768c4b70186d443bcb3b316252d6b540aec1cd89ed"
 dependencies = [
  "hash32",
  "portable-atomic",
@@ -4966,7 +5009,7 @@ version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "421400d13ccfd26dfa5858199c30a5d76f9c54e0dba7575273025b43c5175dbb"
 dependencies = [
- "heapless",
+ "heapless 0.8.0",
  "num-traits",
  "smallvec",
 ]
