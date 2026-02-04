@@ -21,7 +21,7 @@ bevy_ecs = { version = "0.17.3", default-features = false }
 bevy_asset = { version = "0.17.3", default-features = false }
 bevy_camera = { version = "0.17.3", default-features = false }
 bevy_derive = { version = "0.17.3", default-features = false }
-bevy_reflect = { version = "0.17.3", default-features = false }
+bevy_reflect = { version = "0.18.0", default-features = false }
 bevy_transform = { version = "0.17.3", default-features = false }
 bevy_tasks = { version = "0.17.3", default-features = false }
 bevy_math = { version = "0.17.3", default-features = false }
