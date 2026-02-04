@@ -11,7 +11,7 @@ exclude = ["assets/", ".github/"]
 
 [dependencies]
 bevy_scene = { version = "0.17.3", default-features = false }
-bevy_state = { version = "0.17.3", default-features = false, features = ["bevy_app"] }
+bevy_state = { version = "0.18.0", default-features = false, features = ["bevy_app"] }
 bevy_gizmos = { version = "0.17.3", default-features = false }
 bevy_pbr = { version = "0.17.3", default-features = false }
 bevy_mesh = { version = "0.17.3", default-features = false }
