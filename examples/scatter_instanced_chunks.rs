@@ -55,10 +55,7 @@ fn grass_count(query: Query<&InstanceMaterialData>, keys: Res<ButtonInput<KeyCod
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        Aabb {
-            half_extents: Vec3A::new(100., 0., 100.),
-            center: Vec3A::new(0., 0., 0.),
-        },
+        SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ScatterRoot::default(),
         Transform::from_xyz(20., 0., 0.)
