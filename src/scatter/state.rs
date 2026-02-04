@@ -7,6 +7,7 @@ pub enum ScatterSet {
     Setup,
     Collecting,
     Ready,
+    Clean,
 }
 
 #[derive(States, Debug, Default, Clone, PartialEq, Eq, Hash)]

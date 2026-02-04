@@ -2,24 +2,37 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_camera::primitives::Aabb;
+use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,
     prelude::*,
 };
 use example::*;
 
+#[derive(Resource, Reflect, Clone)]
+#[reflect(Resource, Clone)]
+struct InstancedMaterialExampleConfig {
+    wind: Wind,
+    options: ScatterMaterialOptions,
+}
+
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
+        .register_type::<InstancedMaterialExampleConfig>()
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             show_debug_options: true,
+            show_inspector: true,
             ..default()
         })
         .add_plugins((
             ExamplePlugin,
             SceneAssetBackendPlugin,
             InstancedWindAffectedScatterPlugin,
+            GpuComputeCullCorePlugin,
+            GpuCullComputePlugin::<InstancedWindAffectedMaterial>::default(),
         ))
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
@@ -51,22 +64,48 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(200.0),
-                InstanceScale::default(),
-                InstanceJitter(1.),
+                DistributionDensity(250.0),
+                InstanceScale,
+                InstanceJitter,
                 ScatterChunked,
                 ScaleDensity,
+                InstanceRotationYaw,
             ),
             // Material options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
+                InstanceColor::new(Srgba::hex("#1f3114").unwrap()),
+                InstanceColorGradient {
+                    end: 0.7,
+                    start: 0.2,
+                    ..InstanceColorGradient::new(
+                        Srgba::hex("#3e6328").unwrap(),
+                        Srgba::hex("#0f190a").unwrap()
+                    )
+                },
+                StandardPbr,
+                SubsurfaceScattering,
+                // These are default values, but they are included here for clarity:
+                Roughness(0.5),
+                Metallic(0.0),
+                Reflectance(0.1),
+                // or when not using `StandardPbr`:`
+                /*
+                (
+                    DirectionalLights,
+                    PointLights,
+                    SpecularPower(32.0),
+                    SpecularStrength(0.2),
+                    DiffuseScaling(1.0),
+                ),
+                */
+                // Broken currently with temporal fx
+                // EdgeCorrection,
                 AnalyticalNormals,
-                StaticBendStrength::default(),
-                CurveFactor::default(),
-                DirectionalLights,
-                PointLights,
-                GpuCull
+                StaticBend,
+                CurveNormals,
+                GpuCullCompute,
+                AmbientOcclusion,
             ),
             children![
                 SceneRoot(assets.load("grass.glb#Scene0")),

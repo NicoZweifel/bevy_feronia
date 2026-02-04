@@ -11,11 +11,14 @@ use std::f32::consts::{FRAC_PI_8, TAU};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            strength: 0.2,
-            micro_strength: 0.1,
-            s_curve_strength: 0.01,
-            bop_strength: 0.01,
+        .insert_resource(GlobalWind {
+            current: Wind {
+                strength: 0.2,
+                micro_strength: 0.1,
+                s_curve_strength: 0.01,
+                bop_strength: 0.01,
+                ..default()
+            },
             ..default()
         })
         .insert_resource(ExamplePluginOptions {
@@ -100,9 +103,9 @@ fn spawn_scene(
             // Scatter options
             (
                 DistributionDensity(10.),
-                InstanceRotationYaw { min: 0., max: TAU },
-                InstanceJitter::default(),
-                InstanceScale { min: 2., max: 5. }
+                InstanceRotationYawRange { min: 0., max: TAU },
+                InstanceJitterStrength::default(),
+                InstanceScaleRange { min: 2., max: 5. }
             ),
             // Material options
             (SubsurfaceScattering, WindAffected),

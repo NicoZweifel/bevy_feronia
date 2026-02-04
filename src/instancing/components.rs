@@ -1,16 +1,75 @@
-use bevy_color::{Color, LinearRgba};
+use crate::prelude::LightIntensity;
+
+use bevy_color::Color;
 use bevy_derive::{Deref, DerefMut};
-use bevy_ecs::{prelude::*, query::QueryItem};
-use bevy_math::{Mat4, Vec3, Vec4};
+use bevy_ecs::prelude::*;
+use bevy_math::Vec2;
 use bevy_reflect::Reflect;
-use bevy_render::{
-    extract_component::ExtractComponent, render_resource::BindGroup, render_resource::Buffer,
-};
-use bevy_transform::prelude::GlobalTransform;
-use bevy_utils::default;
-use bytemuck::{Pod, Zeroable};
-use std::fmt;
-use std::sync::Arc;
+
+/// Marker component to use Standard PBR shading instead of the simplified Blinn-Phong model.
+///
+/// Enables `#ifdef USE_STANDARD_PBR` in shaders.
+///
+/// Use [`Roughness`] and [`Metallic`] to control material properties.
+/// [`SpecularPower`], [`SpecularStrength`], [`DiffuseScaling`] etc. might be ignored or behave differently.
+///
+/// TODO: might wanna make this default
+#[derive(Component, Clone, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+#[require(Roughness, Metallic, Reflectance)]
+pub struct StandardPbr;
+
+/// Controls the perceptual roughness of the material.
+///
+/// Only used if [`StandardPbr`] is enabled.
+///
+/// * `0.0`: Smooth (shiny).
+/// * `1.0`: Rough (matte).
+///
+/// Defaults to `0.5`.
+///
+/// TODO: move to core/components and use in standard plugin.
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct Roughness(pub f32);
+
+impl Default for Roughness {
+    fn default() -> Self {
+        Self(0.5)
+    }
+}
+
+/// Controls the metallic factor of the material.
+///
+/// Only used if [`StandardPbr`] is enabled.
+///
+/// * `0.0`: Plastic, wood
+/// * `1.0`: Metal.
+///
+///
+/// Defaults to `0`.
+///
+/// TODO: move to core/components and use in standard plugin.
+#[derive(Component, Clone, Default, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct Metallic(pub f32);
+
+/// Controls the reflectance of the material.
+///
+/// Only used if [`StandardPbr`] is enabled.
+///
+/// Defaults to `0.1`.
+///
+/// TODO: move to core/components and use in standard plugin.
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct Reflectance(pub f32);
+
+impl Default for Reflectance {
+    fn default() -> Self {
+        Self(0.1)
+    }
+}
 
 /// Controls the exponent in the Blinn-Phong specular highlight model.
 ///
@@ -18,9 +77,11 @@ use std::sync::Arc;
 /// * **Higher values** (e.g., 32.0, 64.0) result in smaller, tighter, sharper highlights (wet/glossy look).
 /// * **Lower values** (e.g., 4.0, 8.0) result in broader, duller highlights (rough surface).
 ///
-/// Maps to `specular_power` in the shader.
+/// Maps to `material_uniforms.specular_power` in the shader.
 ///
 /// Defaults to `32.0`.
+///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
@@ -33,6 +94,15 @@ impl Default for SpecularPower {
     }
 }
 
+/// Enabled a fake Ambient Occlusion effect.
+///
+/// Enables `#ifdef AMBIENT_OCCLUSION` in shaders.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+pub struct AmbientOcclusion;
+
 /// Controls the intensity of the specular highlight.
 ///
 /// Acts as a multiplier for the specular light contribution.
@@ -41,7 +111,9 @@ impl Default for SpecularPower {
 ///
 /// Maps to `specular_strength` in the shader.
 ///
-/// Defaults to `0.6`.
+/// Defaults to `0.1`.
+///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
@@ -50,11 +122,49 @@ pub struct SpecularStrength(pub f32);
 
 impl Default for SpecularStrength {
     fn default() -> Self {
-        Self(0.6)
+        Self(0.1)
     }
 }
 
-/// Controls the amount of light that simulates passing through the object.
+/// Controls the diffuse scaling.
+///
+/// Maps to `diffuse_scaling` in the shader.
+///
+/// Defaults to `1.0`.
+///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct DiffuseScaling(pub f32);
+
+impl Default for DiffuseScaling {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
+/// Controls the ambient light intensity scale.
+///
+/// Defaults to `0.00001`.
+///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+///
+/// **NOTE:** this might be removed in the future.
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct AmbientLightIntensity(pub f32);
+
+impl Default for AmbientLightIntensity {
+    fn default() -> Self {
+        Self(0.0001)
+    }
+}
+
+/// Controls the amount of light that is simulated passing through the object.
 ///
 /// Used to simulate thin geometry like grass blades or leaves being lit from behind.
 /// It scales the lighting contribution when the light direction is opposite the surface normal.
@@ -62,7 +172,7 @@ impl Default for SpecularStrength {
 /// * `0.0`: Opaque (no light passes through).
 /// * Higher values increase the brightness of backlit surfaces.
 ///
-/// Maps to `translucency` in the shader.
+/// Corresponds to `material_uniforms.translucency` in the shader.
 /// Defaults to `0.6`.
 ///
 /// Only supported with [`InstancedWindAffectedMaterial`].
@@ -80,23 +190,49 @@ impl Default for Translucency {
 ///
 /// Enables `#ifdef DIRECTIONAL_LIGHTS` in shaders.
 ///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
-#[require(Translucency, SpecularPower, SpecularStrength)]
+#[require(
+    Translucency,
+    SpecularPower,
+    SpecularStrength,
+    DiffuseScaling,
+    LightIntensity(0.0001),
+    AmbientLightIntensity(0.0001)
+)]
 pub struct DirectionalLights;
 
 /// Marker component to enable point lights.
 ///
 /// Enables `#ifdef POINT_LIGHTS` in shaders.
 ///
+/// **Note:** Ignored if [`StandardPbr`] is enabled.
+///
 /// Only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
-#[require(Translucency, SpecularPower, SpecularStrength)]
+#[require(
+    Translucency,
+    SpecularPower,
+    SpecularStrength,
+    DiffuseScaling,
+    LightIntensity(0.0001),
+    AmbientLightIntensity(0.0001)
+)]
 pub struct PointLights;
 
-/// Controls the normal curving effect (simulates curved blades).
+/// Adds a normal curving effect (simulates curved blades).
+///
+/// See [`CurveFactor`].
+#[derive(Component, Clone, Copy, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+#[require(CurveFactor)]
+pub struct CurveNormals;
+
+// Controls the normal curving effect.
 ///
 /// This is a multiplier that determines how strongly the blade curves from its
 /// center (0.0) to its edges (1.0), using the **`uv.x`** coordinate of the mesh.
@@ -129,9 +265,11 @@ pub struct PointLights;
 ///
 /// ### Notes
 ///
-/// Corresponds to `wind.curve_factor` in shaders.
+/// Corresponds to `material_uniforms.curve_factor` in shaders.
 ///
-/// Defaults to `0.3`.
+/// Defaults to `0.2`.
+///
+/// Enables `#ifdef CURVE_NORMALS` in shaders if larger than 0.
 ///
 /// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
@@ -140,22 +278,33 @@ pub struct CurveFactor(pub f32);
 
 impl Default for CurveFactor {
     fn default() -> Self {
-        Self(0.3)
+        Self(0.2)
     }
 }
 
-/// Controls a persistent, non-wind bend.
+/// Enables Bézier curve bending.
 ///
-/// Corresponds to `instance_uniforms.static_bend_strength` in shaders.
+/// See [`StaticBendStrength`], [`StaticBendMinMax`], [`StaticBendDirection`] and [`StaticBendControlPoint`].
+#[derive(Component, Clone, Copy, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+#[require(StaticBendStrength)]
+pub struct StaticBend;
+
+/// Controls a persistent, non-wind bend.
 ///
 /// A higher value will apply a stronger Bézier curve and will affect the instances more uniformly,
 /// while a lower value will affect them more randomly and apply less curve.
 ///
+/// Corresponds to `material_uniforms.static_bend_strength` in shaders.
+///
 /// Defaults to `0.5`.
 ///
-/// Currently only supported with [`InstancedWindAffectedMaterial`] but should be easy to add.
+/// Enables `#ifdef STATIC_BEND` in shaders if larger than 0.
+///
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component, Clone, Debug)]
+#[require(StaticBendDirection, StaticBendControlPoint, StaticBendMinMax)]
 pub struct StaticBendStrength(pub f32);
 
 impl Default for StaticBendStrength {
@@ -164,9 +313,106 @@ impl Default for StaticBendStrength {
     }
 }
 
-/// Marker component to opt in to GPU-driven culling/preparation.
-#[derive(Component, Clone, Copy, Default, ExtractComponent)]
-pub struct GpuCull;
+/// Controls the minimum and maximum values for the static bend.
+///
+/// Corresponds to `material_uniforms.static_bend_min_max` in shaders.
+///
+/// Defaults to:
+///  - `min`:`0.3`
+///  - `max`:`0.9`
+///
+/// Currently only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct StaticBendMinMax {
+    min: f32,
+    max: f32,
+}
+
+impl StaticBendMinMax {
+    pub fn new(min: f32, max: f32) -> Self {
+        Self { min, max }
+    }
+}
+
+impl From<StaticBendMinMax> for Vec2 {
+    fn from(val: StaticBendMinMax) -> Self {
+        Vec2::new(val.min, val.max)
+    }
+}
+
+impl From<Vec2> for StaticBendMinMax {
+    fn from(vec: Vec2) -> Self {
+        Self {
+            min: vec.x,
+            max: vec.y,
+        }
+    }
+}
+
+impl Default for StaticBendMinMax {
+    fn default() -> Self {
+        Self { min: 0.2, max: 0.7 }
+    }
+}
+
+/// Controls the direction of the static bend.
+///
+/// Corresponds to `material_uniforms.bend_direction` in the shader.
+///
+/// Defaults to: `(0.309017, -0.951056)`.
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct StaticBendDirection(pub Vec2);
+
+impl Default for StaticBendDirection {
+    fn default() -> Self {
+        Self(Vec2::new(0.309017, -0.951056))
+    }
+}
+
+impl StaticBendDirection {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self(Vec2::new(x, y))
+    }
+}
+
+/// Controls the Bézier control points.
+///
+/// * **Stiffness**: Controls how far out the control point is. Lower values make the curve "tighter" at the base. Defaults to `0.33`.
+/// * **Height**: Controls the vertical height of the control point relative to the mesh height. Defaults to `0.55`.
+///
+/// Corresponds to `material_uniforms.bend_control_point` in the shader.
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct StaticBendControlPoint {
+    pub stiffness: f32,
+    pub height: f32,
+}
+
+impl Default for StaticBendControlPoint {
+    fn default() -> Self {
+        Self::new(0.33, 0.55)
+    }
+}
+
+impl StaticBendControlPoint {
+    pub fn new(stiffness: f32, height: f32) -> Self {
+        Self { stiffness, height }
+    }
+}
+
+impl From<Vec2> for StaticBendControlPoint {
+    fn from(value: Vec2) -> Self {
+        Self::new(value.x, value.y)
+    }
+}
+
+impl From<StaticBendControlPoint> for Vec2 {
+    fn from(val: StaticBendControlPoint) -> Self {
+        Vec2::new(val.stiffness, val.height)
+    }
+}
 
 /// Sets a material color gradient.
 ///
@@ -186,152 +432,49 @@ pub struct GpuCull;
 ///
 /// ### Notes
 ///
-/// Corresponds to `instance_uniforms.color` in shaders.
+/// Corresponds to the following uniforms in shaders.
+///   - `material.bottom_color`
+///   - `material.top_color`
+///   - `material.tint_factor`
+///   - `material.gradient_start`
+///   - `material.gradient_end`
 ///
 /// Currently only supported with [`InstancedWindAffectedMaterial`].
 #[derive(Component, Clone, Copy, Debug, Reflect, Default)]
 #[reflect(Component, Clone, Debug)]
-pub struct InstanceColor {
+pub struct InstanceColorGradient {
+    /// The top color if the gradient.
     pub top: Color,
+    /// The bottom color of the gradient.
     pub bottom: Color,
+    /// The tint factor of the gradient.
+    ///
+    /// Controls how much the gradient overrides the base instance color.
+    /// - `0.0`: The gradient is invisible.
+    /// - `1.0`: The gradient is fully opaque.
+    /// - `0.5`: A 50/50 blend.
+    ///
+    /// Defaults to `0.5`.
+    pub tint: f32,
+    /// The height (0.0 to 1.0) where the bottom color stops being solid
+    /// and the gradient begins transitioning to be top-colored.
+    ///
+    /// Defaults to `0.2`.
+    pub start: f32,
+    /// The height (0.0 to 1.0) where the gradient finishes, becoming fully top-colored.
+    ///
+    /// Defaults to `0.6`.
+    pub end: f32,
 }
 
-impl InstanceColor {
-    pub fn new(top: Color, bottom: Color) -> Self {
-        Self { top, bottom }
-    }
-}
-
-#[derive(Component, Clone, Copy, Deref, DerefMut)]
-pub(crate) struct InstancePipelineKey(pub u64);
-
-impl ExtractComponent for InstancePipelineKey {
-    type QueryData = &'static InstancePipelineKey;
-    type QueryFilter = ();
-    type Out = Self;
-
-    fn extract_component(item: QueryItem<'_, '_, Self::QueryData>) -> Option<Self> {
-        Some(*item)
-    }
-}
-
-#[derive(Clone, Copy, Pod, Zeroable, Default)]
-#[repr(C)]
-pub struct InstanceData {
-    pub position: Vec3,
-    pub scale: f32,
-
-    pub index: u32,
-    pub _padding: [u32; 3],
-}
-
-#[derive(Component, Clone, Reflect, Default)]
-#[reflect(Component, Clone, Debug)]
-pub struct InstanceMaterialData {
-    #[reflect(ignore)]
-    pub instances: Arc<Vec<InstanceData>>,
-    pub top_color: LinearRgba,
-    pub bottom_color: LinearRgba,
-    pub visibility_range: Vec4,
-    pub static_bend_strength: f32,
-    pub curve_factor: f32,
-    pub translucency: f32,
-    pub specular_strength: f32,
-    pub specular_power: f32,
-}
-
-impl fmt::Debug for InstanceMaterialData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("InstanceMaterialData")
-            .field("instances", &self.instances.len())
-            .field("top_color", &self.top_color)
-            .field("bottom_color", &self.bottom_color)
-            .field("visibility_range", &self.visibility_range)
-            .field("static_bend_strength", &self.static_bend_strength)
-            .field("curve_factor", &self.curve_factor)
-            .field("translucency", &self.translucency)
-            .field("specular_strength", &self.specular_strength)
-            .field("specular_power", &self.specular_power)
-            .finish()
-    }
-}
-
-impl ExtractComponent for InstanceMaterialData {
-    type QueryData = (&'static Self, &'static GlobalTransform);
-    type QueryFilter = ();
-    type Out = (Self, GlobalTransform);
-
-    fn extract_component(
-        (data, transform): QueryItem<'_, '_, Self::QueryData>,
-    ) -> Option<Self::Out> {
-        Some((data.clone(), *transform))
-    }
-}
-
-#[derive(Component)]
-pub struct InstanceBuffer {
-    pub buffer: Buffer,
-    pub length: usize,
-}
-
-#[derive(Component)]
-pub struct GpuDrawIndexedIndirect {
-    pub buffer: Buffer,
-    pub offset: u64,
-}
-
-#[derive(Component)]
-pub struct InstanceLodBuffer {
-    pub buffer: Buffer,
-}
-
-#[derive(Clone, Copy, Pod, Zeroable, Default)]
-#[repr(C)]
-pub struct InstanceUniforms {
-    pub world_from_local: Mat4,
-
-    pub top_color: LinearRgba,
-
-    pub bottom_color: LinearRgba,
-
-    pub visibility_range: Vec4,
-
-    pub static_bend_strength: f32,
-    pub curve_factor: f32,
-    pub translucency: f32,
-    pub specular_strength: f32,
-
-    pub specular_power: f32,
-    pub _padding: [f32; 3],
-}
-
-impl From<&InstanceMaterialData> for InstanceUniforms {
-    fn from(value: &InstanceMaterialData) -> Self {
-        InstanceUniforms {
-            top_color: value.top_color,
-            bottom_color: value.bottom_color,
-            visibility_range: value.visibility_range,
-            static_bend_strength: value.static_bend_strength,
-            curve_factor: value.curve_factor,
-            translucency: value.translucency,
-            specular_power: value.specular_power,
-            specular_strength: value.specular_strength,
-            ..default()
+impl InstanceColorGradient {
+    pub fn new(top: impl Into<Color>, bottom: impl Into<Color>) -> Self {
+        Self {
+            top: top.into(),
+            bottom: bottom.into(),
+            tint: 0.5,
+            start: 0.2,
+            end: 0.8,
         }
     }
 }
-
-#[derive(Component)]
-pub struct InstanceUniformBuffer {
-    pub buffer: Buffer,
-    pub bind_group: BindGroup,
-}
-
-#[derive(Component)]
-pub struct InstancedComputeSourceBuffer {
-    pub buffer: Buffer,
-    pub count: u32,
-}
-
-#[derive(Component)]
-pub struct InstancedComputeBindGroup(pub BindGroup);

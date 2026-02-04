@@ -17,6 +17,7 @@ use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
+use bevy_eidolon::prelude::*;
 use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::prelude::*;
 use bevy_image::*;
@@ -34,7 +35,7 @@ fn main() -> AppExit {
             show_inspector: true,
             show_debug_options: true,
         })
-        .insert_resource(Wind { ..default() })
+        .init_resource::<GlobalWind>()
         .insert_resource(DensityMapConfig { size: 128 })
         .add_plugins((
             QualityPlugin,
@@ -43,6 +44,8 @@ fn main() -> AppExit {
             StandardScatterPlugin,
             InstancedWindAffectedScatterPlugin,
             ExtendedWindAffectedScatterPlugin,
+            GpuComputeCullCorePlugin,
+            GpuCullComputePlugin::<InstancedWindAffectedMaterial>::default(),
         ))
         .init_state::<AppState>()
         .add_systems(OnEnter(AppState::Setup), setup_loading_screen)
@@ -82,6 +85,44 @@ enum AppState {
     Setup,
     Loading,
     InGame,
+}
+
+fn spawn_scene(
+    mut cmd: Commands,
+    landscape: Single<Entity, With<Landscape>>,
+    mut images: ResMut<Assets<Image>>,
+    settings: Res<QualitySettings>,
+) {
+    info!("Spawning scene with quality: {:?}", settings.quality);
+
+    let fog_texture = create_spherical_fog_texture(64);
+    let fog_texture_handle = images.add(fog_texture);
+
+    if let Some(image) = images.get_mut(&fog_texture_handle) {
+        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
+    }
+
+    /* too expensive and seems bugged TODO
+    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
+        cmd.spawn((
+            FogVolume {
+                density_texture: Some(fog_texture_handle),
+                density_factor: 0.05,
+                fog_color: Color::WHITE,
+                scattering_asymmetry: 0.6,
+                ..default()
+            },
+            Transform::from_scale(Vec3::splat(300.).with_y(100.))
+                .with_translation(Vec3::new(0., 15., 0.)),
+        ));
+    }
+     */
+
+    cmd.spawn((RockLayer, ChildOf(*landscape)));
+    // TODO the current state is just too expensive and has artifacts.
+    cmd.spawn((TreeLayer, ChildOf(*landscape)));
+    cmd.spawn((FoliageLayer, ChildOf(*landscape)));
+    cmd.spawn((GrassLayer, ChildOf(*landscape)));
 }
 
 #[derive(Resource, Clone)]
@@ -413,11 +454,11 @@ fn spawn_landscape(
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Rock Layer"),
-    ScatterLayerType::<StandardMaterial>::default(),
+    ScatterLayerType::<StandardMaterial>,
+    InstanceRotationYaw,
+    InstanceScale,
+    InstanceJitter,
     DistributionDensity(15.),
-    InstanceRotationYaw::default(),
-    InstanceScale { min: 1., max: 2. },
-    InstanceJitter::default(),
     Avoidance(2.),
 )]
 struct RockLayer;
@@ -472,11 +513,11 @@ impl RockLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Tree Layer"),
-    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
-    DistributionDensity(20.),
-    InstanceRotationYaw::default(),
-    InstanceScale { min: 1., max: 2. },
-    InstanceJitter::default(),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>,
+    InstanceJitter,
+    InstanceRotationYaw,
+    DistributionDensity(5.),
+    InstanceScaleRange { min: 1., max: 2. },
     Avoidance(1.),
 )]
 struct TreeLayer;
@@ -576,11 +617,11 @@ impl TreeLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Foliage Layer"),
-    ScatterLayerType::<ExtendedWindAffectedMaterial>::default(),
-    DistributionDensity(20.),
-    InstanceRotationYaw::default(),
-    InstanceScale { min: 4., max: 8. },
-    InstanceJitter::default(),
+    ScatterLayerType::<ExtendedWindAffectedMaterial>,
+    DistributionDensity(30.),
+    InstanceRotationYaw,
+    InstanceJitter,
+    InstanceScaleRange { min: 4., max: 8. },
     Avoidance(0.2),
 )]
 struct FoliageLayer;
@@ -666,28 +707,39 @@ impl FoliageLayer {
 #[component(on_add = Self::on_add)]
 #[require(
     Name::new("Grass Layer"),
-    ScatterLayerType::<InstancedWindAffectedMaterial>::default(),
+    ScatterLayerType::<InstancedWindAffectedMaterial>,
 
     // Scatter options
 
-    InstanceJitter::default(),
-    InstanceScale::default(),
+    InstanceJitter,
+    InstanceScale,
     ScatterChunked,
     ScaleDensity,
 
     // Material options
 
-    GpuCull,
-    EdgeCorrectionFactor::default(),
-    CurveFactor::default(),
+    GpuCullCompute,
+    // EdgeCorrectionFactor,
+    CurveNormals,
     Strength(1.2),
-    MicroStrength(1.2),
     SCurveStrength(1.2),
     BopStrength(1.2),
     AnalyticalNormals,
-    InstanceColor::new(Color::hsla(84., 0.49, 0.35, 1.), Color::BLACK),
-    StaticBendStrength::default(),
-    SpecularStrength(0.2)
+    InstanceRotationYaw,
+    StandardPbr,
+    SubsurfaceScattering,
+    InstanceColor::new(Srgba::hex("#1f3114").unwrap()),
+    InstanceColorGradient {
+        end: 0.7,
+        start: 0.2,
+        ..InstanceColorGradient::new(
+            Srgba::hex("#3e6328").unwrap(),
+            Srgba::hex("#0f190a").unwrap()
+        )
+    },
+    StaticBend,
+    SpecularStrength(0.2),
+    AmbientOcclusion,
 )]
 struct GrassLayer;
 
@@ -775,43 +827,6 @@ impl GrassLayer {
     }
 }
 
-fn spawn_scene(
-    mut cmd: Commands,
-    landscape: Single<Entity, With<Landscape>>,
-    mut images: ResMut<Assets<Image>>,
-    settings: Res<QualitySettings>,
-) {
-    info!("Spawning scene with quality: {:?}", settings.quality);
-
-    let fog_texture = create_spherical_fog_texture(64);
-    let fog_texture_handle = images.add(fog_texture);
-
-    if let Some(image) = images.get_mut(&fog_texture_handle) {
-        image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
-    }
-
-    /* too expensive and seems bugged TODO
-    if settings.quality == Quality::Ultra || settings.quality == Quality::High {
-        cmd.spawn((
-            FogVolume {
-                density_texture: Some(fog_texture_handle),
-                density_factor: 0.05,
-                fog_color: Color::WHITE,
-                scattering_asymmetry: 0.6,
-                ..default()
-            },
-            Transform::from_scale(Vec3::splat(300.).with_y(100.))
-                .with_translation(Vec3::new(0., 15., 0.)),
-        ));
-    }
-     */
-
-    cmd.spawn((RockLayer, ChildOf(*landscape)));
-    cmd.spawn((TreeLayer, ChildOf(*landscape)));
-    cmd.spawn((FoliageLayer, ChildOf(*landscape)));
-    cmd.spawn((GrassLayer, ChildOf(*landscape)));
-}
-
 fn scatter_on_keypress(
     mut cmd: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -881,7 +896,6 @@ fn update_density_map(
     let size = cfg.size;
     let mut data_buffer = vec![0; (size * size) as usize];
     let mut rng = Pcg64::seed_from_u64(**seed);
-
     let perlin = Perlin::new(**seed as u32);
     let sample_scale = 8.0;
 
@@ -892,15 +906,15 @@ fn update_density_map(
                 y as f64 / size as f64 * sample_scale,
             ];
 
-            let noise_value = perlin.get(point);
-            let byte_value = ((noise_value * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
+            let noise = perlin.get(point);
+            let byte = ((noise * 0.5 + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
 
-            data_buffer[(y * size + x) as usize] = byte_value;
+            data_buffer[(y * size + x) as usize] = byte;
         }
     }
 
-    let num_spots = 100;
-    let max_spot_radius = (size / 8) as f32;
+    let num_spots = 20;
+    let max_spot_radius = (size / 16) as f32;
     let min_spot_radius = (size / 32) as f32;
 
     // Empty spots
@@ -928,10 +942,10 @@ fn update_density_map(
                     let t = dist_sq / radius_sq;
                     let intensity = (1.0 - t).clamp(0.0, 1.0);
 
-                    let byte_value = ((1.0 - intensity) * 255.0) as u8;
-
+                    let byte = ((1.0 - intensity) * 255.0) as u8;
                     let index = (y * size + x) as usize;
-                    data_buffer[index] = data_buffer[index].min(byte_value);
+
+                    data_buffer[index] = data_buffer[index].min(byte);
                 }
             }
         }

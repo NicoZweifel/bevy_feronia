@@ -1,25 +1,29 @@
 #[path = "utils/example.rs"]
 mod example;
 
+use example::*;
+
+use bevy_feronia::instancing::prelude::*;
+use bevy_feronia::prelude::*;
+
 use bevy_app::{App, AppExit, Startup};
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
 use bevy_camera::visibility::Visibility;
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
-use bevy_feronia::prelude::*;
+use bevy_eidolon::prelude::*;
 use bevy_math::{Vec3, Vec3A};
 use bevy_mesh::{Indices, Mesh, Mesh3d, MeshBuilder, PlaneMeshBuilder, PrimitiveTopology};
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 use bevy_render::batching::NoAutomaticBatching;
 use bevy_transform::prelude::Transform;
 use bevy_utils::default;
-use example::*;
+
 use std::sync::Arc;
 
 fn main() -> AppExit {
     App::new()
-        .init_resource::<Wind>()
         .add_plugins((
             ExamplePlugin,
             // Don't need any of the scatter plugins if we just want to have wind-affected materials,
@@ -40,9 +44,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut instanced_materials: ResMut<Assets<InstancedWindAffectedMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     noise_texture: Res<WindTexture>,
 ) {
+    let wind = global_wind.current;
     let mesh_handle = meshes.add(create_triangle_with_foliage_uvs());
     let aabb = Aabb {
         center: Vec3A::new(0.25, 0.375, 0.0),
@@ -59,23 +64,56 @@ fn setup(
 
     let options = ScatterMaterialOptions {
         // make it affected by wind
-        wind_affected: true,
-        // can also tweak other settings here
-        directional_lights: true,
-        point_lights: true,
-        static_bend_strength: 0.5,
-        // or test individual settings
-        edge_correction_factor: 1.0,
+        wind: WindOptions {
+            affected: true,
+            ..default()
+        },
+        // can also tweak or test other individual settings here
+        geometry: GeometryOptions {
+            edge_correction_factor: 1.0,
+            ..default()
+        },
+        lighting: LightingOptions {
+            common: CommonLightingOptions {
+                directional_lights: true,
+                point_lights: true,
+                ambient_occlusion: true,
+                ..default()
+            },
+            blinn_phong: BlinnPhongOptions {
+                specular_power: 32.,
+                specular_strength: 0.5,
+                translucency: 0.6,
+                light_intensity: 0.0001,
+                ambient_light_intensity: 0.0001,
+                diffuse_scaling: 1.,
+            },
+            ..default()
+        },
+        color: ColorOptions {
+            top_color: Some(RED_400.into()),
+            bottom_color: Some(BLUE_400.into()),
+            base_color: Some(GREEN_400.into()),
+            gradient_start: 0.3,
+            gradient_end: 0.6,
+            tint_factor: 0.5,
+        },
+        bend: StaticBendOptions {
+            strength: 0.5,
+            ..default()
+        },
         ..default()
     };
 
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
-        // We only clone the wind here once in this example, if we want wind updates to be reflected in the materials,
-        // we need an update system.
-        wind: *wind,
+        // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
+        // you need an update system.
+        current: wind,
+        previous: wind,
         aabb,
         options,
         noise_texture: (**noise_texture).clone(),
+        disable_prepass: false,
     });
 
     const SIZE: i32 = 10;
@@ -95,19 +133,13 @@ fn setup(
         .collect();
 
     let instance_material_data = InstanceMaterialData {
-        specular_power: 32.,
-        specular_strength: 0.6,
-        translucency: 0.6,
-        top_color: RED_400.into(),
-        bottom_color: GREEN_400.into(),
+        color: options.color.base_color.unwrap_or_default().to_linear(),
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
-        static_bend_strength: options.static_bend_strength,
-        curve_factor: options.curve_factor,
     };
 
     cmd.spawn((
-        InstancedWindAffectedMeshMaterial(material_handle),
+        InstancedMeshMaterial(material_handle),
         Mesh3d(mesh_handle),
         instance_material_data,
         NoAutomaticBatching,

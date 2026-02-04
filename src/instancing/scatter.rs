@@ -1,18 +1,19 @@
 use crate::prelude::*;
+use bevy_eidolon::prelude::*;
+
 use bevy_asset::Handle;
 use bevy_camera::primitives::Aabb;
-use bevy_color::{Color, LinearRgba};
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
-use bevy_math::{Vec3, Vec4};
+use bevy_math::{EulerRot, Vec3};
 use bevy_mesh::Mesh3d;
 use bevy_pbr::StandardMaterial;
 use bevy_platform::collections::{HashMap, HashSet, hash_map::Entry};
 use bevy_render::batching::NoAutomaticBatching;
-use bevy_transform::prelude::Transform;
 use bevy_utils::default;
-use rand::SeedableRng;
+
 use rand::prelude::IndexedRandom;
+use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -39,34 +40,36 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         _base: Option<StandardMaterial>,
         noise_texture: Handle<Image>,
         properties: &ScatterAssetProperties,
-    ) -> InstancedWindAffectedMaterial {
-        InstancedWindAffectedMaterial::new(properties, noise_texture)
+    ) -> Self {
+        Self::new(properties, noise_texture)
     }
 
     fn update_material(
-        material: &mut InstancedWindAffectedMaterial,
-        wind: Wind,
+        material: &mut Self,
+        current_wind: Wind,
+        previous_wind: Wind,
         options: ScatterMaterialOptions,
     ) {
-        material.wind = wind;
-        material.options = options;
+        if material.current != current_wind
+            || material.previous != previous_wind
+            || material.options != options
+        {
+            material.current = current_wind;
+            material.previous = previous_wind;
+            material.options = options;
+        }
     }
 
-    fn component(material: Handle<InstancedWindAffectedMaterial>) -> impl Component {
-        InstancedWindAffectedMeshMaterial(material)
+    fn component(material: Handle<Self>) -> impl Component {
+        InstancedMeshMaterial(material)
     }
 
-    fn spawn(cmd: &mut Commands, request: SpawnRequest<InstancedWindAffectedMaterial>) {
-        let names = request
-            .get_sorted_names()
-            .into_iter()
-            .cloned()
-            .collect::<Vec<_>>();
-
-        let name_set: HashSet<Name> = names
+    fn spawn(cmd: &mut Commands, request: SpawnRequest<Self>) {
+        let names = request.get_sorted_names();
+        let name_set: HashSet<&Name> = names
             .iter()
-            .filter_map(|name| Some((name, request.name_map.get(name)?)))
-            .fold(HashSet::new(), |mut acc, (name, group)| {
+            .filter_map(|name| {
+                let group = request.name_map.get(*name)?;
                 let min_lod = group
                     .iter()
                     .map(|h| *h.asset.properties.lod)
@@ -74,129 +77,105 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .unwrap_or_default();
 
                 if group.iter().any(|h| h.is_lod(request.is_chunked, min_lod)) {
-                    acc.insert(name.clone());
+                    Some(*name)
+                } else {
+                    None
                 }
-
-                acc
-            });
-
-        let groups: HashMap<Name, GroupData> = request
-            .event
-            .trigger
-            .data
-            .iter()
-            .filter_map(|res| {
-                (name_set.len() == 1)
-                    .then(|| name_set.iter().next().map(|x| (x, res)))
-                    .flatten();
-
-                let mut rng = Pcg64::seed_from_u64(res.seed);
-
-                let name = names.choose(&mut rng)?;
-
-                name_set.contains(name).then_some((name, res))
             })
-            .enumerate()
-            .fold(HashMap::new(), |mut acc, (i, (name, res))| {
-                let position = res.transform.translation;
+            .collect();
 
-                let scale = res.transform.scale.element_sum() / 3.0;
+        if name_set.is_empty() {
+            return;
+        }
 
-                let instance = InstanceData {
-                    position,
-                    scale,
-                    index: i as u32,
-                    ..default()
-                };
+        let mut groups: HashMap<&Name, GroupData> = HashMap::with_capacity(names.len());
+        let count = request.event.trigger.data.len();
 
-                match acc.entry(name.clone()) {
-                    Entry::Occupied(mut e) => {
-                        let g = e.get_mut();
-                        g.instances.push(instance);
-                        g.min_pos = g.min_pos.min(position);
-                        g.max_pos = g.max_pos.max(position);
-                        g.max_scale = g.max_scale.max(scale);
-                    }
-                    Entry::Vacant(e) => {
-                        e.insert(GroupData {
-                            instances: vec![instance],
-                            min_pos: position,
-                            max_pos: position,
-                            max_scale: scale,
-                        });
-                    }
-                };
+        for (i, res) in request.event.trigger.data.iter().enumerate() {
+            let name = if name_set.len() == 1 {
+                *name_set.iter().next().unwrap()
+            } else {
+                let mut rng = Pcg64::seed_from_u64(res.seed);
+                match names.choose(&mut rng) {
+                    Some(n) if name_set.contains(n) => n,
+                    _ => continue,
+                }
+            };
 
-                acc
-            });
+            let mut rng = Pcg64::seed_from_u64(res.seed);
+
+            let position = res.transform.translation;
+            let (rotation, ..) = res.transform.rotation.to_euler(EulerRot::YXZ);
+            let scale = res.transform.scale.x;
+            let rnd_height = rng.next_u32() & 0xFFFF;
+            let rnd_bend = rng.next_u32() & 0xFFFF;
+            let packed_seed = (rnd_bend << 16) | rnd_height;
+            let instance = InstanceData {
+                position,
+                scale,
+                rotation,
+                index: i as u32,
+                seed: packed_seed,
+                ..default()
+            };
+
+            match groups.entry(name) {
+                Entry::Occupied(mut e) => {
+                    let g = e.get_mut();
+                    g.instances.push(instance);
+                    g.min_pos = g.min_pos.min(position);
+                    g.max_pos = g.max_pos.max(position);
+                    g.max_scale = g.max_scale.max(scale);
+                }
+                Entry::Vacant(e) => {
+                    let capacity = count / name_set.len();
+                    let mut instances = Vec::with_capacity(capacity.max(16));
+                    instances.push(instance);
+
+                    e.insert(GroupData {
+                        instances,
+                        min_pos: position,
+                        max_pos: position,
+                        max_scale: scale,
+                    });
+                }
+            };
+        }
 
         for (name, group_data) in groups {
             let base_instances = Arc::new(group_data.instances);
 
-            for handle_asset in request.prototypes_from_name_iter(&name) {
+            for handle_asset in request.prototypes_from_name_iter(name) {
                 let asset = &handle_asset.asset;
-
                 let half_extents =
                     Vec3::from(asset.properties.aabb.half_extents * group_data.max_scale);
-                let center_offset = Vec3::from(asset.properties.aabb.center * group_data.max_scale);
 
-                let local_min = group_data.min_pos + center_offset - half_extents;
-                let local_max = group_data.max_pos + center_offset + half_extents;
-
-                let local_aabb = Aabb::from_min_max(local_min, local_max);
-
+                let center = Vec3::from(asset.properties.aabb.center * group_data.max_scale);
+                let min = group_data.min_pos + center - half_extents;
+                let max = group_data.max_pos + center + half_extents;
+                let aabb = Aabb::from_min_max(min, max);
                 let visibility_range = request
                     .lod_config
-                    .get_visibility_range(asset.properties.lod);
+                    .get_visibility_range(asset.properties.lod)
+                    .as_vec4();
 
                 for part in asset.parts.iter() {
-                    let instances = if part.transform == Transform::default() {
-                        base_instances.clone()
-                    } else {
-                        Arc::new(
-                            base_instances
-                                .iter()
-                                .map(|original| {
-                                    let mut inst = *original;
-                                    inst.position += part.transform.translation * inst.scale;
-                                    inst.scale *= part.transform.scale.element_sum() / 3.0;
-                                    inst
-                                })
-                                .collect(),
-                        )
-                    };
+                    let instances = base_instances.clone();
 
                     let entity = cmd
                         .spawn((
-                            InstancedWindAffectedMeshMaterial(part.material().clone()),
+                            Self::component(part.material().clone()),
                             Mesh3d(part.mesh().clone()),
                             InstanceMaterialData {
-                                specular_power: asset.properties.options.specular_power,
-                                specular_strength: asset.properties.options.specular_strength,
-                                translucency: asset.properties.options.translucency,
-                                top_color: LinearRgba::from(
-                                    asset
-                                        .properties
-                                        .options
-                                        .top_color
-                                        .unwrap_or(Color::hsla(106., 0.37, 0.37, 1.0)),
-                                ),
-                                bottom_color: LinearRgba::from(
-                                    asset
-                                        .properties
-                                        .options
-                                        .bottom_color
-                                        .unwrap_or(Color::hsla(105., 0.54, 0.37, 1.0)),
-                                ),
-                                visibility_range: Vec4::new(
-                                    visibility_range.start_margin.start,
-                                    visibility_range.start_margin.end,
-                                    visibility_range.end_margin.start,
-                                    visibility_range.end_margin.end,
-                                ),
+                                visibility_range,
                                 instances,
-                                static_bend_strength: asset.properties.options.static_bend_strength,
-                                curve_factor: asset.properties.options.curve_factor,
+                                color: asset
+                                    .properties
+                                    .options
+                                    .color
+                                    .base_color
+                                    .unwrap_or_default()
+                                    .to_linear(),
                             },
                             NoAutomaticBatching,
                             ScatteredInstance(request.event.trigger.layer),
@@ -204,18 +183,15 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         ))
                         .id();
 
-                    cmd.entity(entity).insert((
-                        Transform::default(),
-                        local_aabb,
-                        ChildOf(request.parent),
-                    ));
+                    cmd.entity(entity)
+                        .insert((part.transform, aabb, ChildOf(request.parent)));
 
                     if asset.properties.wind_affected {
                         cmd.entity(entity).insert(WindAffected);
                     }
 
-                    if asset.properties.options.gpu_cull {
-                        cmd.entity(entity).insert(GpuCull);
+                    if asset.properties.options.general.gpu_cull {
+                        cmd.entity(entity).insert(GpuCullCompute);
                     }
                 }
             }

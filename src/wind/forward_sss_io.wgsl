@@ -21,7 +21,7 @@ struct VertexOutput {
 #ifdef VISIBILITY_RANGE_DITHER
     @location(7) @interpolate(flat) visibility_range_dither : i32,
 #endif
-
-    /// SSS fields
+#ifdef SUBSURFACE_SCATTERING
     @location(8) thinness_factor: f32,
+#endif
 };

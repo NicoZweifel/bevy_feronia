@@ -8,18 +8,18 @@ pub struct NeedsAssetCollection;
 #[derive(Clone, Debug)]
 pub struct AssetPart {
     pub entity: Entity,
-    pub item_of: AssetPartOf,
+    pub part_of: AssetPartOf,
 }
 
 impl AssetPart {
-    pub fn new(entity: Entity, item_of: AssetPartOf) -> Self {
-        Self { entity, item_of }
+    pub fn new(entity: Entity, part_of: AssetPartOf) -> Self {
+        Self { entity, part_of }
     }
 }
 
 impl From<(Entity, &AssetPartOf)> for AssetPart {
-    fn from((entity, item_of): (Entity, &AssetPartOf)) -> Self {
-        Self::new(entity, item_of.clone())
+    fn from((entity, part_of): (Entity, &AssetPartOf)) -> Self {
+        Self::new(entity, part_of.clone())
     }
 }
 

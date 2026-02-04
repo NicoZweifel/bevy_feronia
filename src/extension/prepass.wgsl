@@ -24,16 +24,18 @@
 #import bevy_feronia::types::{SampledNoise, DisplacedVertex, InstanceInfo}
 
 #ifdef BINDLESS
-#import bevy_render::bindless::{bindless_samplers_filtering, bindless_textures_2d}
+#import bevy_feronia::extension::bindings::material_uniforms_array
+#else
+#import bevy_feronia::extension::bindings::material_uniforms
 #endif
 
 #ifdef BINDLESS
-#import bevy_feronia::bindings::{wind_indices, wind_material}
+#import bevy_feronia::wind::bindings::wind_affected_material_indices
 #else
-#import bevy_feronia::bindings::{wind, noise_texture, noise_texture_sampler}
+#import bevy_feronia::bindings::{noise_texture, noise_texture_sampler}
 #endif
 
-#import bevy_feronia::displace::{displace_vertex_and_calc_normal}
+#import bevy_feronia::displace::{displace_vertex_and_calc_normal, displace_vertex_position}
 #import bevy_feronia::noise::sample_noise
 
 @group(0) @binding(1) var<uniform> globals: Globals;
@@ -43,15 +45,17 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 
 #ifdef BINDLESS
-        let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
-        let wind =  wind_material[wind_indices[slot].material];
+    let slot = mesh[vertex.instance_index].material_and_lightmap_bind_group_slot & 0xffffu;
+    let material_uniforms = material_uniforms_array[wind_affected_material_indices[slot].material];
 #endif
 
-    // --- CURRENT FRAME ---
+
+    // Current Frame
     {
+        let wind = material_uniforms.current;
         let world_from_local = get_world_from_local(vertex.instance_index);
 
-        // --- INSTANCE ---
+        // Instance
         var instance: InstanceInfo;
         let camera_world_pos = view.world_position.xyz;
         instance.world_from_local = world_from_local;
@@ -59,7 +63,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         instance.wrapped_time = globals.time;
         instance.instance_index = vertex.instance_index;
 
-        let noise = sample_noise(instance, vertex.position);
+        let noise = sample_noise(instance, wind, vertex.position);
 
         var static_shadows = false;
 
@@ -69,7 +73,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
         #endif
         #endif
 
-        // --- DISPLACEMENT ---
+        // Displacement
        var displaced: DisplacedVertex;
         if static_shadows {
             displaced.world_position = (instance.world_from_local * vec4<f32>(vertex.position, 1.0));
@@ -141,37 +145,27 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 }
 
 #ifdef MOTION_VECTOR_PREPASS
-    // --- PREVIOUS FRAME ---
+    // Previous Frame
     {
-        // --- INSTANCE ---
+        let wind = material_uniforms.previous;
+
         var instance_prev: InstanceInfo;
-
-
         instance_prev.world_from_local = get_previous_world_from_local(vertex.instance_index);
         instance_prev.instance_position = instance_prev.world_from_local[3];
-        instance_prev.wrapped_time = (globals.time - globals.delta_time);
+        instance_prev.wrapped_time = globals.time - globals.delta_time;
         instance_prev.instance_index = vertex.instance_index;
 
-        let noise_prev = sample_noise(instance_prev, vertex.position);
+        let noise_prev = sample_noise(instance_prev, wind, vertex.position);
 
-        /// --- DISPLACEMENT ---
-        let displaced_prev = displace_vertex_and_calc_normal(
+        /// Displacement
+        let world_pos_prev = displace_vertex_position(
             wind,
             noise_prev,
             vertex.position,
             instance_prev,
-#ifdef VERTEX_NORMALS
-            vertex.normal,
-#endif
-#ifdef VERTEX_TANGENTS
-            vertex.tangent,
-#endif
-#ifdef VERTEX_UVS_A
-            vertex.uv
-#endif
         );
 
-        out.previous_world_position = displaced_prev.world_position;
+        out.previous_world_position = vec4<f32>(world_pos_prev, 1.0);
     }
 #endif // MOTION_VECTOR_PREPASS
 

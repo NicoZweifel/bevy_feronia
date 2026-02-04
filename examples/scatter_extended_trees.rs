@@ -2,6 +2,7 @@
 mod example;
 
 use bevy::prelude::*;
+use bevy_feronia::asset::backend::scene_backend::SceneAssetBackendPlugin;
 use bevy_feronia::extension;
 use bevy_feronia::prelude::*;
 use example::*;
@@ -9,19 +10,27 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind {
-            strength: 0.2,
-            micro_strength: 0.1,
-            s_curve_strength: 0.01,
-            bop_strength: 0.01,
+        .insert_resource(GlobalWind {
+            current: Wind {
+                strength: 0.2,
+                micro_strength: 0.1,
+                s_curve_strength: 0.01,
+                bop_strength: 0.01,
+                ..default()
+            },
             ..default()
         })
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             ..default()
         })
-        .add_plugins((ExamplePlugin, ExtendedWindAffectedScatterPlugin))
+        .add_plugins((
+            ExamplePlugin,
+            SceneAssetBackendPlugin,
+            ExtendedWindAffectedScatterPlugin,
+        ))
         .init_state::<AppState>()
+        .insert_state(ScatterState::Setup)
         .insert_state(HeightMapState::Setup)
         .add_systems(Startup, load_assets)
         .add_systems(
@@ -92,11 +101,8 @@ fn spawn_scene(
         children![(
             extension::scatter_layer("Tree Layer"),
             DistributionDensity(10.),
-            InstanceRotationYaw {
-                min: 0.,
-                max: std::f32::consts::PI * 2.
-            },
-            InstanceScale { min: 1., max: 4. },
+            InstanceRotationYaw,
+            InstanceScaleRange { min: 1., max: 4. },
             WindAffected,
             Avoidance(3.),
             children![

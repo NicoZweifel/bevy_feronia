@@ -1,65 +1,81 @@
 use crate::prelude::*;
 
+use noise::{NoiseFn, Perlin};
+use std::f64::consts::PI;
+
 use bevy_asset::Assets;
 use bevy_ecs::prelude::*;
 use bevy_image::*;
 use bevy_render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy_utils::default;
-use noise::{NoiseFn, Perlin};
 
 pub fn update_materials<T>(
     mut materials: ResMut<Assets<T>>,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     mut scatter_assets: ResMut<Assets<ScatterAsset<T>>>,
     q_layer: Query<
-        (WindOptionData, MaterialOptionData, &ScatterLayerOf),
+        (&ScatterLayerOf, WindOptionData, MaterialOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    q_root: Query<WindOptionData, With<ScatterRoot>>,
+    q_root: Query<(WindOptionData, MaterialOptionData), With<ScatterRoot>>,
+    scatter_asset_manager: Res<ScatterAssetManager<T>>,
 ) where
     T: ScatterMaterial,
 {
-    for (_, asset) in scatter_assets.iter_mut() {
-        if asset.properties.options.controlled {
-            continue;
-        };
+    for (asset, (wind_data, material_options), (root_wind_data, root_material_options)) in
+        scatter_assets
+            .iter_mut()
+            .filter(|(_, asset)| !asset.properties.options.general.controlled)
+            .filter_map(|(id, asset)| {
+                let layer = scatter_asset_manager.asset_to_layer.get(&id)?;
 
-        #[allow(deprecated)]
-        let Some((wind_data, _material_options, root)) =
-            asset.properties.layer.and_then(|x| q_layer.get(x).ok())
-        else {
-            dbg!("ScatterLayer not found!");
-            continue;
-        };
+                let (root, wind_data, material_options) = q_layer
+                    .get(*layer)
+                    .map_err(|e| {
+                        #[cfg(feature = "trace")]
+                        tracing::error!("ScatterLayer not found! {e}")
+                    })
+                    .ok()?;
 
-        let Ok(root_wind_data) = q_root.get(**root) else {
-            dbg!("ScatterRoot not found!");
-            continue;
-        };
+                let root_data = q_root
+                    .get(**root)
+                    .map_err(|e| {
+                        #[cfg(feature = "trace")]
+                        tracing::error!("ScatterRoot not found! {e}");
+                    })
+                    .ok()?;
 
-        let wind = wind.with(root_wind_data).with(wind_data);
+                Some((asset, (wind_data, material_options), root_data))
+            })
+    {
+        let wind = global_wind
+            .current
+            .multiply(root_wind_data)
+            .multiply(wind_data);
+
+        let prev_wind = global_wind
+            .previous
+            .multiply(root_wind_data)
+            .multiply(wind_data);
+
+        let options = ScatterMaterialOptions::from(root_material_options).with(material_options);
 
         asset.properties.wind = wind;
+        asset.properties.options = options;
 
         for part in &asset.parts {
             let Some(material) = materials.get_mut(&part.h_material) else {
-                dbg!("Material not found!");
+                #[cfg(feature = "trace")]
+                tracing::warn!("Material not found!");
                 continue;
             };
 
-            // TODO update options
-            /*
-            let options = MaterialOptions::from(root_material_options)
-                .with(material_options)
-                .with_options(asset.properties.options)
-                .with_quality(*asset.properties.lod, asset.properties.wind_affected);
-             */
-
-            T::update_material(material, wind, asset.properties.options);
+            T::update_material(material, wind, prev_wind, asset.properties.options);
         }
     }
 }
 
+/// Sets up a Wind texture with Toroidal mapping for seamless 2D noise.
 pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let texture_size = 512;
     let mut image_buffer = Vec::with_capacity((texture_size * texture_size * 4 * 4) as usize);
@@ -67,27 +83,42 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
     let macro_perlin = Perlin::new(1);
     let micro_perlin = Perlin::new(2);
 
+    let macro_scale = 5.0 / (2.0 * PI);
+    let micro_scale = 20.0 / (2.0 * PI);
+
     for y in 0..texture_size {
         for x in 0..texture_size {
-            let macro_sample_scale = 5.0;
-            let micro_sample_scale = 20.0;
-            let point = [
-                x as f64 / texture_size as f64,
-                y as f64 / texture_size as f64,
-            ];
+            let u = x as f64 / texture_size as f64;
+            let v = y as f64 / texture_size as f64;
 
-            let macro_noise_value =
-                macro_perlin.get([point[0] * macro_sample_scale, point[1] * macro_sample_scale]);
-            let micro_noise_value =
-                micro_perlin.get([point[0] * micro_sample_scale, point[1] * micro_sample_scale]);
+            // map x/y to angles, then to 4D coordinates (nx, ny, nz, nw)
+            // macro
+            let nx = (u * 2.0 * PI).cos() * macro_scale;
+            let ny = (u * 2.0 * PI).sin() * macro_scale;
+            let nz = (v * 2.0 * PI).cos() * macro_scale;
+            let nw = (v * 2.0 * PI).sin() * macro_scale;
 
+            let macro_noise_value = macro_perlin.get([nx, ny, nz, nw]);
+
+            //  micro
+            let mx = (u * 2.0 * PI).cos() * micro_scale;
+            let my = (u * 2.0 * PI).sin() * micro_scale;
+            let mz = (v * 2.0 * PI).cos() * micro_scale;
+            let mw = (v * 2.0 * PI).sin() * micro_scale;
+
+            let micro_noise_value = micro_perlin.get([mx, my, mz, mw]);
+
+            // normalize
             let macro_val = (macro_noise_value * 0.5 + 0.5) as f32;
             let micro_val = (micro_noise_value * 0.5 + 0.5) as f32;
 
-            image_buffer.extend_from_slice(&macro_val.to_le_bytes()); // R - Macro
-            image_buffer.extend_from_slice(&micro_val.to_le_bytes()); // G - Micro
-            image_buffer.extend_from_slice(&0.0f32.to_le_bytes()); // B - Unused
-            image_buffer.extend_from_slice(&1.0f32.to_le_bytes()); // A - Unused
+            let sine_val = (u * 4.0 * PI).sin() * 0.5 + 0.5;
+            let cos_val = (u * 8.0 * PI).cos() * 0.5 + 0.5;
+
+            image_buffer.extend_from_slice(&macro_val.to_le_bytes());
+            image_buffer.extend_from_slice(&micro_val.to_le_bytes());
+            image_buffer.extend_from_slice(&(sine_val as f32).to_le_bytes());
+            image_buffer.extend_from_slice(&(cos_val as f32).to_le_bytes());
         }
     }
 
@@ -105,9 +136,9 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
 
     let sampler_descriptor = ImageSampler::Descriptor(ImageSamplerDescriptor {
         label: Some("Wind Noise Sampler".into()),
-        address_mode_u: ImageAddressMode::MirrorRepeat,
-        address_mode_v: ImageAddressMode::MirrorRepeat,
-        address_mode_w: ImageAddressMode::MirrorRepeat,
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::Repeat,
+        address_mode_w: ImageAddressMode::Repeat,
         mag_filter: ImageFilterMode::Linear,
         min_filter: ImageFilterMode::Linear,
         ..default()
@@ -116,6 +147,18 @@ pub(super) fn setup_wind_texture(mut commands: Commands, mut images: ResMut<Asse
     wind_image.sampler = sampler_descriptor;
 
     let handle = images.add(wind_image);
-
     commands.insert_resource(WindTexture(handle));
+}
+
+pub fn sync_wind_preset(mut wind: ResMut<GlobalWind>, mut last_preset: Local<WindPreset>) {
+    if wind.preset != *last_preset {
+        wind.current = wind.preset.into();
+        *last_preset = wind.preset;
+    }
+}
+
+pub fn cycle_wind_history(mut wind: ResMut<GlobalWind>) {
+    if wind.previous != wind.current {
+        wind.previous = wind.current;
+    }
 }

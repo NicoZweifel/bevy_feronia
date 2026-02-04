@@ -23,8 +23,8 @@ use bevy_state::state::NextState;
 use bevy_transform::prelude::{GlobalTransform, Transform};
 use bevy_utils::default;
 
-use crate::core::utils::despawn;
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
+use crate::utils::despawn;
 #[cfg(feature = "trace")]
 use tracing::{debug, info};
 

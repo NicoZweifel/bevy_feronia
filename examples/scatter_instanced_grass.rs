@@ -13,11 +13,6 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
-        .insert_resource(ExamplePluginOptions {
-            show_wind_settings: true,
-            ..default()
-        })
         .add_plugins((
             ExamplePlugin,
             // This example spawns everything in startup, so we can just use the MeshMaterialAssetBackendPlugin
@@ -42,19 +37,20 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             // Scatter Options
             (
                 DistributionDensity(100.),
-                InstanceScale { min: 1., max: 1.8 },
-                InstanceJitter::default()
+                InstanceScaleRange { min: 1., max: 1.8 },
+                InstanceJitter
             ),
             // Material Options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
-                CurveFactor::default(),
-                StaticBendStrength::default(),
+                // EdgeCorrection,
+                CurveNormals,
+                StaticBend,
                 AnalyticalNormals,
                 PointLights,
                 DirectionalLights,
-                InstanceColor::new(RED_400.into(), BLUE_400.into())
+                InstanceColorGradient::new(RED_400, BLUE_400),
+                InstanceRotationYaw
             ),
             children![
                 (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),

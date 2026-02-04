@@ -11,7 +11,7 @@ use std::f32::consts::TAU;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             ..default()
@@ -36,16 +36,16 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
         children![(
             scatter_layer("Foliage Layer"),
             // Scatter options
-            (DistributionDensity(100.), InstanceJitter::default(),),
+            (DistributionDensity(100.), InstanceJitterStrength::default(),),
             // Material options
             (
                 WindAffected,
                 SubsurfaceScattering,
-                CurveFactor::default(),
+                CurveNormals,
                 // This example is mainly for testing lighting and bill boarding.
                 // AnalyticalNormals, // or
                 // FastNormals,
-                InstanceRotationYaw { min: 0., max: TAU },
+                InstanceRotationYaw,
                 // or
                 // EnableBillboarding,
             ),

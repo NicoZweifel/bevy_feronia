@@ -21,12 +21,17 @@ pub fn backend(world: &mut World) {
         .into_iter()
         .flatten()
         .flatten()
-        .map(|AssetPart { entity, item_of }| {
-            let mut cmd: Commands = world.commands();
-            cmd.entity(entity).insert(item_of.clone());
+        .map(
+            |AssetPart {
+                 entity,
+                 part_of: item_of,
+             }| {
+                let mut cmd: Commands = world.commands();
+                cmd.entity(entity).insert(item_of.clone());
 
-            item_of
-        })
+                item_of
+            },
+        )
         .fold(HashSet::new(), |mut acc, item_of| {
             acc.insert(item_of.root);
             acc.insert(item_of.item);
@@ -49,87 +54,91 @@ pub fn insert_parts<T: ScatterMaterial>(
         (Entity, MaterialOptionData, WindOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
     meshes: ResMut<Assets<Mesh>>,
 ) {
-    for ScatterAssetPartEntity { entity, part } in q_items
-        .into_iter()
-        .map(AssetPart::from)
-        .filter_map(|AssetPart { entity, item_of }| {
-            let (child_of, scene_root_data) = q_data
-                .get(item_of.root)
-                .inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    error!(
-                        "Could not get AssetItem {} root {}, skipping.",
-                        item_of.root, entity
-                    );
-                })
-                .ok()?;
+    let wind = global_wind.current;
+    for ScatterAssetPartEntity { entity, part } in
+        q_items.into_iter().map(AssetPart::from).filter_map(
+            |AssetPart {
+                 entity,
+                 part_of: item_of,
+             }| {
+                let (child_of, scene_root_data) = q_data
+                    .get(item_of.root)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        error!(
+                            "Could not get AssetItem {} root {}, skipping.",
+                            item_of.root, entity
+                        );
+                    })
+                    .ok()?;
 
-            let layer = child_of.parent();
-            let (_, layer_material_option_data, layer_wind_data) = q_layers
-                .get(layer)
-                .inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    trace!(
-                        "Multiple ScatterLayerTypes in use, skipping Layer {}.",
-                        layer
-                    );
-                })
-                .ok()?;
+                let layer = child_of.parent();
+                let (_, layer_material_option_data, layer_wind_data) = q_layers
+                    .get(layer)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        trace!(
+                            "Multiple ScatterLayerTypes in use, skipping Layer {}.",
+                            layer
+                        );
+                    })
+                    .ok()?;
 
-            let (child_of, child_data) = q_data
-                .get(entity)
-                .inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    warn!(
-                        "Asset part {:?} is not a processable scatter asset part, skipping.",
-                        entity
-                    );
-                })
-                .ok()?;
+                let (child_of, child_data) = q_data
+                    .get(entity)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        warn!(
+                            "Asset part {:?} is not a processable scatter asset part, skipping.",
+                            entity
+                        );
+                    })
+                    .ok()?;
 
-            let (_, item_root_data) = q_data
-                .get(item_of.item)
-                .inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    warn!("Could not get AssetItem {}, skipping.", item_of.item);
-                })
-                .ok()?;
+                let (_, item_root_data) = q_data
+                    .get(item_of.item)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        warn!("Could not get AssetItem {}, skipping.", item_of.item);
+                    })
+                    .ok()?;
 
-            let (_, parent_data) = q_data
-                .get(child_of.parent())
-                .inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    warn!(
-                        "Could not get AssetItem parent {}, skipping.",
-                        child_of.parent()
-                    );
-                })
-                .ok()?;
+                let (_, parent_data) = q_data
+                    .get(child_of.parent())
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        warn!(
+                            "Could not get AssetItem parent {}, skipping.",
+                            child_of.parent()
+                        );
+                    })
+                    .ok()?;
 
-            let o_mesh = child_data.o_mesh?;
-            let aabb = child_data.o_aabb.cloned().unwrap_or_else(|| {
-                meshes
-                    .get(o_mesh)
-                    .and_then(|mesh| mesh.compute_aabb())
-                    .unwrap_or_default()
-            });
+                let o_mesh = child_data.o_mesh?;
+                let aabb = child_data.o_aabb.cloned().unwrap_or_else(|| {
+                    meshes
+                        .get(o_mesh)
+                        .and_then(|mesh| mesh.compute_aabb())
+                        .unwrap_or_default()
+                });
 
-            ScatterAssetPartEntity::try_from_data(
-                entity,
-                item_of,
-                *wind,
-                layer_wind_data,
-                scene_root_data,
-                item_root_data,
-                parent_data,
-                child_data,
-                layer_material_option_data,
-                aabb,
-            )
-        })
+                ScatterAssetPartEntity::try_from_data(
+                    entity,
+                    item_of,
+                    wind,
+                    layer_wind_data,
+                    scene_root_data,
+                    item_root_data,
+                    parent_data,
+                    child_data,
+                    layer_material_option_data,
+                    aabb,
+                )
+            },
+        )
     {
         cmd.entity(entity).insert(part);
     }
@@ -146,8 +155,9 @@ pub fn insert_requests<T: ScatterMaterial>(
         (Entity, MaterialOptionData, WindOptionData),
         (With<ScatterLayer>, With<ScatterLayerType<T>>),
     >,
-    wind: Res<Wind>,
+    global_wind: Res<GlobalWind>,
 ) {
+    let wind = global_wind.current;
     let processed_scene_roots = q_parts
         .iter()
         .fold(
@@ -197,9 +207,9 @@ pub fn insert_requests<T: ScatterMaterial>(
                 })
                 .ok()?;
 
-            let wind = (*wind)
-                .with(layer_wind_data)
-                .with(scene_root_data.wind_data);
+            let wind = wind
+                .multiply(layer_wind_data)
+                .multiply(scene_root_data.wind_data);
 
             let options = ScatterMaterialOptions::from(layer_material_option_data)
                 .with(scene_root_data.material_options);
@@ -216,6 +226,7 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             let mut union_aabb = parts[0].properties.aabb;
             for part in &parts[1..] {
+                // TODO transform
                 union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
             }
 

@@ -42,7 +42,7 @@ impl Default for LodConfig {
                 // Level 0: High
                 1.0.into(),
                 // Level 1: Medium
-                0.3.into(),
+                0.2.into(),
                 // Level 2: Low
                 0.1.into(),
                 // Root
@@ -439,7 +439,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_sources_standard_should_calculate_correctly() {
+    fn test_from_sources_standard_should_calc_correctly() {
         // Arrange
         // Use a simple 1D chunk for easy math: radius = scalar * 10
         let base_size = BaseChunkSize(Vec3::new(20.0, 0.0, 0.0));

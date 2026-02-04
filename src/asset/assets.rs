@@ -28,17 +28,6 @@ pub struct ScatterAssetProperties {
     pub name: Option<Name>,
     /// The inherited [`LevelOfDetail`].
     pub lod: LevelOfDetail,
-    ///
-    /// The [`Entity`] of the layer this asset belongs to.
-    ///
-    /// Deprecated.
-    ///
-    /// TODO move out of here, find way to update materials without it, e.g. a HashNap resource
-    /// https://github.com/NicoZweifel/bevy_feronia/issues/57
-    #[deprecated]
-    // TODO we shouldn't track the layer in the asset properties but have a mapping of assets and it's parts and the layers they are part of.
-    #[allow(deprecated)]
-    pub layer: Option<Entity>,
     /// Whether wind affects this asset/part.
     pub wind_affected: bool,
 }
@@ -116,15 +105,13 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
-        let AssetPartOf { layer, .. } = item_of;
-
         let hue = (entity.index() * 30) as f32 % 360.0;
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
         let wind = wind
-            .with(layer_wind_data)
-            .with(scene_root_data.wind_data)
-            .with(child_data.wind_data);
+            .multiply(layer_wind_data)
+            .multiply(scene_root_data.wind_data)
+            .multiply(child_data.wind_data);
 
         let options = ScatterMaterialOptions::from(layer_material_option_data)
             .with(scene_root_data.material_options)
@@ -149,9 +136,8 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             aabb,
             name: item_of.name.clone(),
             #[allow(deprecated)]
-            layer: Some(layer),
             lod,
-            wind_affected: options.wind_affected
+            wind_affected: options.wind.affected
                 || layer_material_option_data.wind_affected.is_some(),
         };
 
@@ -221,7 +207,6 @@ where
             ScatterItem,
             ScatterItemAsset::<T>(asset_handle.clone()),
             self.properties.lod,
-            ChildOf(layer),
             ScatterItemOf(layer),
             ScatterLayerChildProcessed,
         )
@@ -253,8 +238,26 @@ where
     }
 }
 
+impl ScatterAssetPartEntity<StandardMaterial> {
+    pub fn into_scatter_material_part<T: ScatterMaterial>(
+        self,
+        materials_in: &Assets<StandardMaterial>,
+        materials_out: &mut Assets<T>,
+        wind_noise_texture: &WindTexture,
+    ) -> ScatterAssetPartEntity<T> {
+        ScatterAssetPartEntity {
+            entity: self.entity,
+            part: self.part.into_scatter_material_part(
+                materials_in,
+                materials_out,
+                wind_noise_texture,
+            ),
+        }
+    }
+}
+
 impl ScatterAssetPart<StandardMaterial> {
-    pub fn into_scatter_material_part<T: ScatterMaterial + Debug>(
+    pub fn into_scatter_material_part<T: ScatterMaterial>(
         self,
         materials_in: &Assets<StandardMaterial>,
         materials_out: &mut Assets<T>,
@@ -272,7 +275,7 @@ impl ScatterAssetPart<StandardMaterial> {
 
         let mut source_material = materials_in.get(&h_material).cloned();
 
-        if properties.options.unlit {
+        if properties.options.lighting.common.unlit {
             source_material = source_material.map(|mut m| {
                 m.unlit = true;
                 m

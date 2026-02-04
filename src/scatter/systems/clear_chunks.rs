@@ -1,5 +1,5 @@
-use crate::core::utils::despawn;
 use crate::prelude::{Chunk, ClearScatterLayer, ScatteredInstance};
+use crate::utils::despawn;
 
 use bevy_ecs::prelude::*;
 use bevy_platform::collections::HashSet;

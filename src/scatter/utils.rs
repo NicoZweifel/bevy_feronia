@@ -54,9 +54,9 @@ pub struct InstanceModifiers<'a> {
     pub map_height: Option<&'a MapHeight>,
     pub height_sampler: &'a HeightMapSampler<'a>,
     pub density_sampler: Option<&'a DensityMapSampler<'a>>,
-    pub scale: Option<&'a InstanceScale>,
-    pub rotation: Option<&'a InstanceRotationYaw>,
-    pub jitter: Option<&'a InstanceJitter>,
+    pub scale: Option<&'a InstanceScaleRange>,
+    pub rotation: Option<&'a InstanceRotationYawRange>,
+    pub jitter: Option<&'a InstanceJitterStrength>,
     pub avoidance: Option<&'a Avoidance>,
     pub density: Option<&'a LodDensity>,
 }

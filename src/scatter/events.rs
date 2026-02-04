@@ -25,7 +25,8 @@ where
     T: ScatterMaterial,
 {
     pub entity: Entity,
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> Scatter<T>
@@ -35,7 +36,7 @@ where
     pub fn new(entity: Entity) -> Self {
         Self {
             entity,
-            _phantom: PhantomData,
+            _marker: PhantomData,
         }
     }
 }
@@ -56,7 +57,8 @@ where
 {
     pub entity: Entity,
     pub scatter_layer: Entity,
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> ScatterChunk<T>
@@ -67,12 +69,12 @@ where
         Self {
             entity,
             scatter_layer,
-            _phantom: PhantomData,
+            _marker: PhantomData,
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Reflect)]
 pub struct ScatterResult {
     pub transform: Transform,
     pub seed: u64,
@@ -177,7 +179,7 @@ impl Hash for ScatterResult {
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Debug)]
+#[derive(EntityEvent, Message, Clone, Debug, Reflect)]
 pub struct ScatterResults<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -189,7 +191,8 @@ where
     pub root: Entity,
     pub seed: u64,
     pub container_global_transform: GlobalTransform,
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> From<ScatterTaskData> for ScatterResults<T>
@@ -254,7 +257,7 @@ where
             data,
             seed,
             container_global_transform: container_gtf,
-            _phantom: PhantomData,
+            _marker: PhantomData,
         }
     }
 
@@ -313,13 +316,14 @@ where
     }
 }
 
-#[derive(EntityEvent, Message, Clone)]
+#[derive(EntityEvent, Message, Clone, Copy, Reflect, Debug)]
 pub struct ScatterFinished<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
     pub entity: Entity,
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> From<Entity> for ScatterFinished<T>
@@ -338,7 +342,7 @@ where
     pub fn new(entity: Entity) -> Self {
         Self {
             entity,
-            _phantom: PhantomData,
+            _marker: PhantomData,
         }
     }
 }

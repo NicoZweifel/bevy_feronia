@@ -1,13 +1,12 @@
-use crate::asset::backend::prelude::*;
-use crate::prelude::AssetPart;
-use crate::prelude::ScatterLayer;
+use crate::asset::backend::iter_self_and_descendants_with_component::*;
+use crate::prelude::*;
+
 use bevy_app::{App, Plugin, PostUpdate};
 use bevy_ecs::prelude::*;
 use bevy_mesh::Mesh3d;
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 use bevy_scene::{SceneInstanceReady, SceneRoot};
 
-use crate::asset::backend::iter_self_and_descendants_with_component;
 use crate::asset::backend::systems::backend;
 use crate::backend::ScatterApp;
 
@@ -79,41 +78,49 @@ pub fn scene_asset_backend(
 
             #[cfg(feature = "trace")]
             debug!(
-                    "Collecting assets in {} {layer}...",
-                    _name.cloned().unwrap_or_default()
-                );
+                "Collecting assets in {} {layer}...",
+                _name.cloned().unwrap_or_default()
+            );
 
             Some((scene_root, layer))
         })
         .filter_map(|(scene_root, layer)| {
-            Some(q_children
-                .get(scene_root).inspect_err(|_| {
-                #[cfg(feature = "trace")]
-                warn!("Could not get children of scene root!");
-            }).ok()?
-                .iter()
-                // We only want to collect assets that are children of the root collection if we use this backend
-                // since gltf scenes have a root collection.
-                .filter_map(|root_collection| Some(q_children.get(root_collection).inspect_err(|_| {
-                    #[cfg(feature = "trace")]
-                    warn!("Could not get children of root collection!");
-                }).ok()?.iter()))
-                .flatten()
-                .flat_map(|item_root| {
-                    iter_self_and_descendants_with_component::iter_self_and_descendants_with_component(
-                        item_root,
-                        &q_children,
-                        &q_search,
-                    )
-                        .map(move |item| (item_root, item))
-                })
-                .map(move |(root_item, child)| {
-                    AssetPart::new(
-                        child,
-                        AssetPartOf::new(root_item, scene_root, layer)
-                            .with_name_from_queries(child, &q_name, &q_parent),
-                    )
-                }))
+            Some(
+                q_children
+                    .get(scene_root)
+                    .inspect_err(|_| {
+                        #[cfg(feature = "trace")]
+                        warn!("Could not get children of scene root!");
+                    })
+                    .ok()?
+                    .iter()
+                    // We only want to collect assets that are children of the root collection if we use this backend
+                    // since gltf scenes have a root collection.
+                    .filter_map(|root_collection| {
+                        Some(
+                            q_children
+                                .get(root_collection)
+                                .inspect_err(|_| {
+                                    #[cfg(feature = "trace")]
+                                    warn!("Could not get children of root collection!");
+                                })
+                                .ok()?
+                                .iter(),
+                        )
+                    })
+                    .flatten()
+                    .flat_map(|item_root| {
+                        iter_self_and_descendants_with_component(item_root, &q_children, &q_search)
+                            .map(move |item| (item_root, item))
+                    })
+                    .map(move |(root_item, child)| {
+                        AssetPart::new(
+                            child,
+                            AssetPartOf::new(root_item, scene_root, layer)
+                                .with_name_from_queries(child, &q_name, &q_parent),
+                        )
+                    }),
+            )
         })
         .flatten()
         .collect())

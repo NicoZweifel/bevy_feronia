@@ -31,6 +31,12 @@ pub struct Center;
 #[reflect(Component, Clone, Debug, PartialEq, Hash)]
 pub struct LevelOfDetail(pub u32);
 
+impl LevelOfDetail {
+    pub fn is_highest_detail(&self) -> bool {
+        self.0 == 0
+    }
+}
+
 /// Marker component for debug visualization.
 ///
 /// Makes shaders return `debug_color` in the fragment shader.
@@ -92,13 +98,25 @@ pub struct FastNormals;
 #[reflect(Component, Clone, Debug)]
 pub struct AnalyticalNormals;
 
+/// Adds Edge Correction.
+///
+/// See [`EdgeCorrectionFactor`].
+#[derive(Component, Clone, Copy, Debug, Reflect)]
+#[reflect(Component)]
+#[require(EdgeCorrectionFactor)]
+pub struct EdgeCorrection;
+
 /// Controls the edge correction effect (makes vegetation look fuller).
 ///
 /// Corresponds to `wind.edge_correction_factor` in shaders.
 ///
 /// Defaults to `0.02`.
 ///
+/// Enables `#ifdef EDGE_CORRECTION` in shaders if larger than 0.
+///
 /// Not supported in combination with [`EnableBillboarding`].
+///
+/// TODO requires previous camera/view and normals so currently broken with temporal fx
 #[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
 pub struct EdgeCorrectionFactor(pub f32);
@@ -106,5 +124,102 @@ pub struct EdgeCorrectionFactor(pub f32);
 impl Default for EdgeCorrectionFactor {
     fn default() -> Self {
         Self(0.02)
+    }
+}
+
+#[derive(Bundle, Default, Debug, Clone)]
+pub struct SssBundle {
+    sss: SubsurfaceScattering,
+    intensity: SubsurfaceScatteringIntensity,
+    scale: SubsurfaceScatteringScale,
+}
+
+impl SssBundle {
+    pub fn new(intensity: f32, scale: f32) -> Self {
+        Self {
+            intensity: SubsurfaceScatteringIntensity(intensity),
+            scale: SubsurfaceScatteringScale(scale),
+            ..Default::default()
+        }
+    }
+}
+
+/// Marker component to enable simulated subsurface scattering.
+///
+/// Enables `#ifdef SUBSURFACE_SCATTERING` in shaders.
+///
+/// [`InstancedWindAffectedMaterial`] has support for subsurface scattering currently,
+/// if it is using the standard PBR lighting, which this effect requires (emissive material).
+#[derive(Component, Debug, Reflect, Default, Clone)]
+#[reflect(Component, Debug, Clone)]
+#[require(
+    SubsurfaceScatteringIntensity,
+    SubsurfaceScatteringScale,
+    LightIntensity
+)]
+pub struct SubsurfaceScattering;
+
+/// Controls the overall intensity of the subsurface scattering (SSS) effect.
+///
+/// This acts as a master multiplier for the entire SSS calculation,
+/// scaling both the back-scatter and front-scatter components.
+/// Higher values make the material more emissive, i.e., it starts to `glow`.
+///
+/// Corresponds to `sss_strength` in the shader uniforms.
+///
+/// Defaults to `0.5`.
+///
+/// **Note:** This component only has an effect if the
+/// [`SubsurfaceScattering`] marker component is also present.
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Debug, Clone)]
+pub struct SubsurfaceScatteringIntensity(pub f32);
+
+impl Default for SubsurfaceScatteringIntensity {
+    fn default() -> Self {
+        Self(0.5)
+    }
+}
+
+/// Controls the strength of the back-scattering (rim-lighting) SSS effect.
+///
+/// This value specifically scales the light that scatters *through* the
+/// object from behind (relative to the camera). Higher values create
+/// a brighter, more pronounced "glow" on the edges of the object
+/// when it is backlit.
+///
+/// Corresponds to `sss_scale` in the shader uniforms.
+///
+/// Defaults to `1.0`.
+///
+/// **Note:** This component only has an effect if the
+/// [`SubsurfaceScattering`] marker component is also present.
+#[derive(Component, Deref, DerefMut, Clone, Copy, Debug, Reflect)]
+#[reflect(Component, Clone, Debug)]
+pub struct SubsurfaceScatteringScale(pub f32);
+
+impl Default for SubsurfaceScatteringScale {
+    fn default() -> Self {
+        Self(1.)
+    }
+}
+
+/// Controls the light intensity scale.
+///
+/// Used for Blinn-Phing shading/lighting and [`StandardPBR`] + [`SubsurfaceScattering`],
+/// but should be set to a low value when used with Blinn-Phong, e.g., `0.0001`.
+///
+/// Defaults to `1.0`.
+///
+/// **NOTE:** this might be removed in the future.
+///
+/// TODO
+#[derive(Component, Clone, Debug, Reflect, Deref, DerefMut)]
+#[reflect(Component, Clone, Debug)]
+pub struct LightIntensity(pub f32);
+
+impl Default for LightIntensity {
+    fn default() -> Self {
+        Self(1.0)
     }
 }

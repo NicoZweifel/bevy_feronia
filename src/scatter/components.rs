@@ -16,7 +16,8 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 /// Component used to trigger a scatter operation for a specific target, layer and material type.
-#[derive(Component)]
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component, Debug, Clone)]
 pub struct ScatterRequest<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -28,7 +29,8 @@ where
     /// The [`Chunk`] entity this request is for, if any (for chunked scattering).
     pub chunk_entity: Option<Entity>,
 
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> ScatterRequest<T>
@@ -40,7 +42,7 @@ where
             target_entity,
             layer_entity,
             chunk_entity,
-            _phantom: Default::default(),
+            _marker: Default::default(),
         }
     }
 }
@@ -54,12 +56,12 @@ pub struct ScatterTaskData {
     pub container: Container,
     /// Optional [`MapHeight`] configuration.
     pub map_height: Option<MapHeight>,
-    /// Optional [`InstanceScale`] configuration.
-    pub scale: Option<InstanceScale>,
-    /// Optional [`InstanceRotationYaw`] configuration.
-    pub rotation: Option<InstanceRotationYaw>,
-    /// Optional [`InstanceJitter`] configuration.
-    pub jitter: Option<InstanceJitter>,
+    /// Optional [`InstanceScaleRange`] configuration.
+    pub scale: Option<InstanceScaleRange>,
+    /// Optional [`InstanceRotationYawRange`] configuration.
+    pub rotation: Option<InstanceRotationYawRange>,
+    /// Optional [`InstanceJitterStrength`] configuration.
+    pub jitter: Option<InstanceJitterStrength>,
     /// Optional [`Avoidance`] radius configuration.
     pub avoidance: Option<Avoidance>,
     /// Optional height map [`Image`] handle.
@@ -131,7 +133,8 @@ pub struct ChunkInitScatter<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> Default for ChunkInitScatter<T>
@@ -140,7 +143,7 @@ where
 {
     fn default() -> Self {
         Self {
-            _phantom: Default::default(),
+            _marker: Default::default(),
         }
     }
 }
@@ -156,7 +159,8 @@ pub struct ScatterLayerType<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
-    _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    _marker: PhantomData<T>,
 }
 
 impl<T> Default for ScatterLayerType<T>
@@ -165,7 +169,7 @@ where
 {
     fn default() -> Self {
         Self {
-            _phantom: Default::default(),
+            _marker: Default::default(),
         }
     }
 }
@@ -254,17 +258,26 @@ where
 #[reflect(Component, Debug)]
 pub struct DistributionPattern(pub Handle<Image>);
 
+/// Adds default random rotation yaw to the scattered instances.
+///
+/// See [`InstanceRotationYawRange`].
+
+#[derive(Component, Reflect, Clone, Debug, Default)]
+#[reflect(Component, Debug, Clone)]
+#[require(InstanceRotationYawRange)]
+pub struct InstanceRotationYaw;
+
 /// Specifies a random yaw (Y-axis) rotation range for scattered instances.
 #[derive(Component, Reflect, Clone, Copy, Debug)]
 #[reflect(Component, Debug)]
-pub struct InstanceRotationYaw {
+pub struct InstanceRotationYawRange {
     /// The minimum rotation angle (in radians).
     pub min: f32,
     /// The maximum rotation angle (in radians).
     pub max: f32,
 }
 
-impl InstanceRotationYaw {
+impl InstanceRotationYawRange {
     #[inline]
     pub fn is_fixed(&self) -> bool {
         self.min == self.max
@@ -279,7 +292,7 @@ impl InstanceRotationYaw {
     }
 }
 
-impl Default for InstanceRotationYaw {
+impl Default for InstanceRotationYawRange {
     fn default() -> Self {
         Self {
             min: 0.0,
@@ -288,17 +301,26 @@ impl Default for InstanceRotationYaw {
     }
 }
 
+/// Adds default random uniform scaling to the scattered instances.
+///
+/// See [`InstanceScaleRange`].
+
+#[derive(Component, Reflect, Clone, Debug, Default)]
+#[reflect(Component, Debug, Clone)]
+#[require(InstanceScaleRange)]
+pub struct InstanceScale;
+
 /// Specifies a random uniform scale range for scattered instances.
 #[derive(Component, Reflect, Clone, Debug)]
-#[reflect(Component, Debug)]
-pub struct InstanceScale {
+#[reflect(Component, Debug, Clone)]
+pub struct InstanceScaleRange {
     /// The minimum scale.
     pub min: f32,
     /// The maximum scale.
     pub max: f32,
 }
 
-impl InstanceScale {
+impl InstanceScaleRange {
     #[inline]
     pub fn is_fixed(&self) -> bool {
         self.min == self.max
@@ -317,18 +339,26 @@ impl InstanceScale {
     }
 }
 
-impl Default for InstanceScale {
+impl Default for InstanceScaleRange {
     fn default() -> Self {
         Self { min: 1., max: 2. }
     }
 }
 
-/// Specifies a random positional offset (jitter) applied to scattered instances.
-#[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
-#[reflect(Component, Debug)]
-pub struct InstanceJitter(pub f32);
+/// Adds a default random positional offset (jitter) to the scattered instances.
+///
+/// See [`InstanceJitterStrength`].
+#[derive(Component, Reflect, Clone, Debug, Default)]
+#[reflect(Component, Debug, Clone)]
+#[require(InstanceJitterStrength)]
+pub struct InstanceJitter;
 
-impl Default for InstanceJitter {
+/// Specifies the strength of a random positional offset (jitter) applied to scattered instances.
+#[derive(Component, Reflect, Deref, DerefMut, Clone, Debug)]
+#[reflect(Component, Debug, Clone)]
+pub struct InstanceJitterStrength(pub f32);
+
+impl Default for InstanceJitterStrength {
     fn default() -> Self {
         Self(1.)
     }
@@ -339,9 +369,17 @@ impl Default for InstanceJitter {
 #[reflect(Component, Debug)]
 pub struct InstanceDensity(pub f32);
 
+/// Adds a default random avoidance area to the scattered instances.
+///
+/// See [`Avoidance`].
+#[derive(Component, Reflect, Clone, Debug, Default)]
+#[reflect(Component, Debug, Clone)]
+#[require(Avoidance)]
+pub struct Avoid;
+
 /// Specifies the minimum distance between the centers of scattered objects.
 ///
-/// Gets scaled by the [`InstanceScale`].
+/// Gets scaled by the [`InstanceScaleRange`].
 #[derive(Component, Clone, Debug, Deref, DerefMut, Reflect)]
 #[reflect(Component, Debug)]
 pub struct Avoidance(pub f32);
@@ -369,5 +407,6 @@ where
     /// Index of the layer currently being processed.
     pub current_layer_index: usize,
     pub pending_tasks: usize,
-    pub _phantom: PhantomData<T>,
+    #[reflect(ignore)]
+    pub _marker: PhantomData<T>,
 }

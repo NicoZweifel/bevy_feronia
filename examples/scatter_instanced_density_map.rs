@@ -13,7 +13,7 @@ use rand::{RngCore, rng};
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(Wind { ..default() })
+        .insert_resource(GlobalWind::from(WindPreset::Mild))
         .insert_resource(ExamplePluginOptions {
             show_wind_settings: true,
             ..default()
@@ -48,14 +48,14 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
             (
                 DistributionDensity(100.),
                 DistributionPattern(density_map.images[0].clone()),
-                InstanceRotationYaw::default(),
-                InstanceScale::default(),
+                InstanceRotationYaw,
+                InstanceScale,
                 ScaleDensity,
             ),
             // Material options
             (
                 WindAffected,
-                EdgeCorrectionFactor::default(),
+                // EdgeCorrection,
                 AnalyticalNormals,
                 DirectionalLights,
                 PointLights,

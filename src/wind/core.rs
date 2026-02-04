@@ -32,7 +32,13 @@ pub trait ScatterMaterial: ScatterMaterialAsset {
         properties: &ScatterAssetProperties,
     ) -> Self;
 
-    fn update_material(_material: &mut Self, _wind: Wind, _options: ScatterMaterialOptions) {}
+    fn update_material(
+        _material: &mut Self,
+        _current_wind: Wind,
+        _previous_wind: Wind,
+        _options: ScatterMaterialOptions,
+    ) {
+    }
 
     fn component(material: Handle<Self>) -> impl Component;
 
@@ -178,7 +184,7 @@ impl ScatterMaterial for StandardMaterial {
 }
 
 #[repr(C)]
-#[derive(ShaderType, Clone, Zeroable, Copy)]
+#[derive(ShaderType, Clone, Zeroable, Copy, Debug)]
 pub struct WindUniform {
     pub direction: Vec2,
     pub strength: f32,
@@ -191,17 +197,8 @@ pub struct WindUniform {
     pub bop_speed: f32,
     pub bop_strength: f32,
     pub twist_strength: f32,
-    pub edge_correction_factor: f32,
-
-    /// TODO use in both materials or rename [`WindUniform`] to `ExtendedUniforms`
-    pub sss_strength: f32,
-    pub sss_scale: f32,
-
-    /// TODO use in both materials move to separate uniform e.g.
-    /// or move to [`InstanceUniforms`]
     pub aabb_min: Vec3,
     pub aabb_max: Vec3,
-    pub debug_color: Vec4,
 }
 
 impl From<&Wind> for WindUniform {
@@ -218,36 +215,16 @@ impl From<&Wind> for WindUniform {
             bop_speed: wind.bop_speed,
             bop_strength: wind.bop_strength,
             twist_strength: wind.twist_strength,
-            edge_correction_factor: 0.,
             aabb_max: Vec3::splat(1.),
             aabb_min: Vec3::splat(0.),
-            debug_color: Vec4::splat(1.),
-            sss_strength: 0.,
-            sss_scale: 0.,
         }
     }
 }
 
 impl WindUniform {
-    pub fn with_edge_correction_factor(mut self, edge_correction_factor: f32) -> Self {
-        self.edge_correction_factor = edge_correction_factor;
-        self
-    }
-
     pub fn with_aabb(mut self, aabb: &Aabb) -> Self {
         self.aabb_min = aabb.min().into();
         self.aabb_max = aabb.max().into();
-        self
-    }
-
-    pub fn with_debug_color(mut self, color: Vec4) -> Self {
-        self.debug_color = color;
-        self
-    }
-
-    pub fn with_sss(mut self, sss_strength: f32, sss_scale: f32) -> Self {
-        self.sss_strength = sss_strength;
-        self.sss_scale = sss_scale;
         self
     }
 }
@@ -260,16 +237,46 @@ bitflags! {
         const EDGE_CORRECTION = 1 << 1;
         const WIND_LOW_QUALITY = 1 << 2;
         const FAST_NORMALS = 1 << 3;
-        const DEBUG = 1 << 4;
-        const WIND_AFFECTED= 1 << 5;
-        const STATIC_SHADOW = 1<< 6;
-        const STATIC_BEND = 1 << 7;
-        const ANALYTICAL_NORMALS = 1 << 8;
-        const CURVE_NORMALS = 1 << 9;
-         /// TODO use in both materials create separate keys
-        const SUBSURFACE_SCATTERING = 1 << 10;
-        const POINT_LIGHTS = 1 << 11;
-        const DIRECTIONAL_LIGHTS = 1 << 12;
-        const GPU_CULL = 1 << 13;
+        const WIND_AFFECTED= 1 << 4;
+        const STATIC_BEND = 1 << 5;
+        const ANALYTICAL_NORMALS = 1 << 6;
+    }
+}
+
+impl From<ScatterMaterialOptions> for WindAffectedKey {
+    fn from(options: ScatterMaterialOptions) -> Self {
+        let mut key = WindAffectedKey::empty();
+
+        let NormalOptions {
+            analytical_normals,
+            fast_normals,
+            ..
+        } = options.lighting.normals;
+        let WindOptions {
+            affected,
+            low_quality,
+        } = options.wind;
+        let GeometryOptions {
+            enable_billboarding,
+            edge_correction_factor,
+            ..
+        } = options.geometry;
+        let StaticBendOptions {
+            strength: static_bend_strength,
+            ..
+        } = options.bend;
+
+        key.set(WindAffectedKey::BILLBOARDING, enable_billboarding);
+        key.set(
+            WindAffectedKey::EDGE_CORRECTION,
+            edge_correction_factor > 0.,
+        );
+        key.set(WindAffectedKey::WIND_LOW_QUALITY, low_quality);
+        key.set(WindAffectedKey::FAST_NORMALS, fast_normals);
+        key.set(WindAffectedKey::WIND_AFFECTED, affected);
+        key.set(WindAffectedKey::STATIC_BEND, static_bend_strength > 0.);
+        key.set(WindAffectedKey::ANALYTICAL_NORMALS, analytical_normals);
+
+        key
     }
 }
