@@ -18,7 +18,7 @@ updates:
     groups:
       dependencies:
         patterns:
-          - *
+          - "*"
 
 #  # rustc
 #  - package-ecosystem: "rust-toolchain"
