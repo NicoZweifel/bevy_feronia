@@ -112,7 +112,6 @@ trace = ["dep:tracing"]
 dlss = ["bevy/dlss"]
 
 [patch.crates-io]
-[patch.crates-io]
 iyes_perf_ui = { git = "https://github.com/blip-radar/iyes_perf_ui", branch = "bevy-0-18" }
 bevy_show_prepass = { git = "https://github.com/NicoZweifel/bevy_show_prepass", branch = "main" }
 
