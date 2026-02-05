@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1](https://github.com/NicoZweifel/bevy_feronia/compare/v0.7.0...v0.7.1) - 2026-02-05
+
+### Added
+
+- trigger 0.8.0 && docs ([#89](https://github.com/NicoZweifel/bevy_feronia/pull/89))
+
+### Other
+
+- *(deps)* bump the dependencies group with 25 updates ([#87](https://github.com/NicoZweifel/bevy_feronia/pull/87))
+
 ## [0.5.12](https://github.com/NicoZweifel/bevy_feronia/compare/v0.5.11...v0.5.12) - 2026-01-06
 
 ### Other
