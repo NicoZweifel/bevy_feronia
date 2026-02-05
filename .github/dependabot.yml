@@ -6,9 +6,16 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      actions:
+      bevy:
+        patterns:
+          - "bevy"
+          - "bevy_*"
+      dependencies:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # crates
   - package-ecosystem: "cargo"
@@ -19,9 +26,6 @@ updates:
       dependencies:
         patterns:
           - "*"
-        update-types:
-          - "minor"
-          - "patch"
 
 #  # rustc
 #  - package-ecosystem: "rust-toolchain"
