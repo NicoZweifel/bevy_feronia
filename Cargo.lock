@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "avian3d",
  "bevy",
