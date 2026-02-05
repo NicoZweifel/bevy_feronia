@@ -31,7 +31,7 @@ bevy_render = { version = "0.18.0", default-features = false }
 bevy_shader = { version = "0.18.0", default-features = false }
 bevy_utils = { version = "0.18.0", default-features = false }
 bevy_light = { version = "0.18.0", default-features = false }
-bevy_eidolon = { version = "0.2.0" }
+bevy_eidolon = { version = "0.3.0" }
 
 bytemuck = "1.25.0"
 noise = "0.9.0"
