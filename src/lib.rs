@@ -174,7 +174,7 @@
 //!
 //! | bevy | bevy_feronia |
 //! |------|--------------|
-//! | 0.17 | 0.8 |
+//! | 0.18 | 0.8 |
 //! | 0.17 | 0.7 |
 //!
 //! ## License/Credits/Inspirations/References
