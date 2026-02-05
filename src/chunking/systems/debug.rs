@@ -13,7 +13,7 @@ pub fn draw_aabbs(
     cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
-        gizmos.cuboid(
+        gizmos.cube(
             Transform::from_translation(tf.transform_point(aabb.center.into()))
                 .with_rotation(tf.rotation())
                 .with_scale((aabb.half_extents * 2.0).into()),
@@ -30,7 +30,7 @@ pub fn draw_chunks(
 ) {
     for (chunk_size, chunk_level, tf, root_chunk) in &q {
         let base_chunk_size = q_chunk_config.get(**root_chunk).unwrap();
-        gizmos.cuboid(
+        gizmos.cube(
             Transform::from_translation(tf.translation())
                 .with_rotation(tf.rotation())
                 .with_scale(**chunk_size as f32 * **base_chunk_size),
