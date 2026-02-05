@@ -173,18 +173,22 @@ pub fn setup_height_map_pipeline(
     let world_center = cfg.world_center;
     let map_resolution = 2048;
 
-    let mut image =
-        Image::new_target_texture(map_resolution, map_resolution, TextureFormat::R32Float);
+    let mut image = Image::new_target_texture(
+        map_resolution,
+        map_resolution,
+        TextureFormat::R32Float,
+        None,
+    );
     image.texture_descriptor.usage |= TextureUsages::COPY_SRC;
     let image_handle = images.add(image);
 
     cmd.spawn((
         HeightMapCamera,
         Camera {
-            target: RenderTarget::Image(ImageRenderTarget::from(image_handle.clone())),
             order: -1,
             ..default()
         },
+        RenderTarget::Image(ImageRenderTarget::from(image_handle.clone())),
         Camera3d::default(),
         Transform::from_xyz(
             world_center.x,

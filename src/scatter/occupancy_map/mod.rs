@@ -201,7 +201,7 @@ pub fn draw_scatter_occupancy_map(
                 })
                 .compute_transform();
 
-            gizmos.cuboid(tf.with_scale(tf.scale.with_y(0.)), RED);
+            gizmos.cube(tf.with_scale(tf.scale.with_y(0.)), RED);
         }
     }
 }
