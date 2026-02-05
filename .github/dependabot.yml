@@ -18,10 +18,7 @@ updates:
     groups:
       dependencies:
         patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
+          - *
 
 #  # rustc
 #  - package-ecosystem: "rust-toolchain"
