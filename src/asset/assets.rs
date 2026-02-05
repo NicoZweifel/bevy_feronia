@@ -105,7 +105,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
-        let hue = (entity.index() * 30) as f32 % 360.0;
+        let hue = (entity.index_u32() * 30) as f32 % 360.0;
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
         let wind = wind
