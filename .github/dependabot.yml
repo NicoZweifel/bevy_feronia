@@ -6,9 +6,16 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      actions:
+      bevy-updates:
+        patterns:
+          - "bevy"
+          - "bevy_*"
+      dependencies:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # crates
   - package-ecosystem: "cargo"
