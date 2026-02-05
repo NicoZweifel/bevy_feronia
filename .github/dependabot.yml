@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      bevy-updates:
+      bevy:
         patterns:
           - "bevy"
           - "bevy_*"
