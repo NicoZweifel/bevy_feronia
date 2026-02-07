@@ -12,6 +12,7 @@ use bevy_platform::collections::{HashMap, HashSet, hash_map::Entry};
 use bevy_render::batching::NoAutomaticBatching;
 use bevy_utils::default;
 
+use bevy_camera::visibility::NoAutoAabb;
 use rand::prelude::IndexedRandom;
 use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
@@ -183,8 +184,13 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         ))
                         .id();
 
-                    cmd.entity(entity)
-                        .insert((part.transform, aabb, ChildOf(request.parent)));
+                    cmd.entity(entity).insert((
+                        part.transform,
+                        aabb,
+                        // Required since bevy 0.18 if adding Aabb manually.
+                        NoAutoAabb,
+                        ChildOf(request.parent),
+                    ));
 
                     if asset.properties.wind_affected {
                         cmd.entity(entity).insert(WindAffected);

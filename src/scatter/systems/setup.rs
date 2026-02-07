@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy_camera::primitives::Aabb;
+use bevy_camera::visibility::NoAutoAabb;
 use bevy_ecs::prelude::*;
 use bevy_math::{Mat3A, Vec3A};
 use bevy_state::state::NextState;
@@ -72,6 +73,9 @@ pub fn setup_root_aabb(
         #[cfg(feature = "trace")]
         debug!("Calculated Root AABB: {:?}", final_aabb);
 
-        cmd.entity(root_entity).insert(final_aabb);
+        cmd.entity(root_entity).insert((
+            final_aabb, // Required since bevy 0.18 if adding aabb manually.
+            NoAutoAabb,
+        ));
     }
 }

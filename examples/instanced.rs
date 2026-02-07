@@ -9,7 +9,7 @@ use bevy_feronia::prelude::*;
 use bevy_app::{App, AppExit, Startup};
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
-use bevy_camera::visibility::Visibility;
+use bevy_camera::visibility::{NoAutoAabb, Visibility};
 use bevy_color::palettes::tailwind::*;
 use bevy_ecs::prelude::*;
 use bevy_eidolon::prelude::*;
@@ -151,6 +151,8 @@ fn setup(
             center: aabb.center,
             half_extents: aabb.half_extents * SIZE as f32 * 2.,
         },
+        // Required since bevy 0.18 if adding aabb manually.
+        NoAutoAabb,
     ));
 }
 

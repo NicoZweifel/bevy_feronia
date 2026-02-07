@@ -2,7 +2,6 @@
 mod example;
 
 use bevy::prelude::*;
-use bevy_camera::primitives::Aabb;
 use bevy_eidolon::prelude::*;
 use bevy_feronia::{
     asset::backend::scene_backend::SceneAssetBackendPlugin, instancing::scatter::scatter_layer,

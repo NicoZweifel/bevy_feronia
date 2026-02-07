@@ -7,7 +7,6 @@ use bevy_feronia::extension::scatter_layer;
 use bevy_feronia::prelude::*;
 use example::*;
 use rand::{RngCore, rng};
-use std::f32::consts::TAU;
 
 fn main() -> AppExit {
     App::new()

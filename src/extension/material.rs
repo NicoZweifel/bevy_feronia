@@ -22,6 +22,7 @@ pub struct WindAffectedExtension {
     pub current: Wind,
     pub previous: Wind,
 
+    // TODO use extracted AAbb instead and add to uniforms.
     pub aabb: Aabb,
 
     pub options: ScatterMaterialOptions,

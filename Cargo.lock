@@ -839,8 +839,6 @@ dependencies = [
 [[package]]
 name = "bevy_eidolon"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0dbb9af9c7999be4e532804bc553b4090f7e9bd5a31028353664bd8251df38c"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -877,7 +875,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_feronia"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "avian3d",
  "bevy",
