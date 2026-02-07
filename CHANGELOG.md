@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.0...v0.8.1) - 2026-02-07
+
+### Fixed
+
+- versions
+- aabb frustum culling (use noAutoAabb)
+
+### Other
+
+- Update Cargo.lock
+
 ## [0.5.12](https://github.com/NicoZweifel/bevy_feronia/compare/v0.5.11...v0.5.12) - 2026-01-06
 
 ### Other
