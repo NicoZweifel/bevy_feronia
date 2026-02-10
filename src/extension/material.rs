@@ -62,7 +62,7 @@ impl WindAffectedExtension {
             previous: properties.wind,
             current: properties.wind,
             aabb: properties.aabb,
-            options: properties.options,
+            options: properties.options.clone(),
             noise_texture,
         }
     }
@@ -231,8 +231,8 @@ impl MaterialExtension for WindAffectedExtension {
 
 impl From<&WindAffectedExtension> for ExtendedWindAffectedMaterialKey {
     fn from(material: &WindAffectedExtension) -> Self {
-        let wind_key: WindAffectedKey = material.options.into();
-        let material_key: ExtendedMaterialKey = material.options.into();
+        let wind_key: WindAffectedKey = (&material.options).into();
+        let material_key: ExtendedMaterialKey = (&material.options).into();
 
         Self {
             wind_key,
@@ -241,8 +241,8 @@ impl From<&WindAffectedExtension> for ExtendedWindAffectedMaterialKey {
     }
 }
 
-impl From<ScatterMaterialOptions> for ExtendedMaterialKey {
-    fn from(options: ScatterMaterialOptions) -> Self {
+impl From<&ScatterMaterialOptions> for ExtendedMaterialKey {
+    fn from(options: &ScatterMaterialOptions) -> Self {
         let mut key = ExtendedMaterialKey::empty();
 
         let GeneralOptions { debug, .. } = options.general;

@@ -1,4 +1,3 @@
-//
 #import bevy_pbr::mesh_view_bindings::{view, lights, globals, clusterable_objects}
 #import bevy_pbr::shadows::fetch_directional_shadow
 #import bevy_pbr::shadows::fetch_point_shadow

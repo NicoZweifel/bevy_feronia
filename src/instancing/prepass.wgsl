@@ -112,6 +112,8 @@ fn vertex(vertex: Vertex) -> PrepassVertexOutput {
             wind, noise, vertex.position, instance,
             #ifdef STATIC_BEND
             static_bend,
+            material_uniforms.static_bend_control_point,
+            material_uniforms.static_bend_min_max,
             #endif
         );
         out.world_position = vec4<f32>(world_pos, 1.0);

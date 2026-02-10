@@ -12,6 +12,8 @@ use derive_more::{From, Into};
 
 use std::ops::Range;
 
+pub const HEIGHT_MAP_GHOST_RENDER_LAYER: usize = 9;
+
 #[derive(Resource, Clone, Reflect, Debug)]
 #[reflect(Resource, Clone, Debug)]
 pub struct HeightMapConfig {
@@ -42,7 +44,7 @@ impl Default for HeightMapConfig {
         Self {
             world_height_range: -28. ..100.,
             world_size: 8.0 * 8.0 * 4.0,
-            render_layer: RenderLayers::layer(1),
+            render_layer: RenderLayers::layer(HEIGHT_MAP_GHOST_RENDER_LAYER),
             world_center: Vec2::ZERO,
         }
     }

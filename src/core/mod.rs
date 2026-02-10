@@ -15,6 +15,7 @@ use bevy_asset::{Asset, Handle};
 use bevy_eidolon::prelude::{GpuCullCompute, InstanceColor};
 
 use bevy_camera::primitives::Aabb;
+use bevy_camera::visibility::RenderLayers;
 use bevy_color::Color;
 use bevy_ecs::{prelude::*, query::QueryData};
 use bevy_math::Vec3;
@@ -49,7 +50,7 @@ where
 }
 
 /// Collection of material settings defining shader behavior.
-#[derive(Clone, Debug, Reflect, Copy, Default, PartialEq)]
+#[derive(Clone, Debug, Reflect, Default, PartialEq)]
 pub struct ScatterMaterialOptions {
     pub general: GeneralOptions,
     pub geometry: GeometryOptions,
@@ -57,6 +58,7 @@ pub struct ScatterMaterialOptions {
     pub bend: StaticBendOptions,
     pub color: ColorOptions,
     pub lighting: LightingOptions,
+    pub render_layers: RenderLayers,
 }
 
 /// Collection of optional material components, usable as `QueryData`.
@@ -110,6 +112,8 @@ pub struct MaterialOptionData {
     pub diffuse_scaling: Option<&'static DiffuseScaling>,
     pub light_intensity: Option<&'static LightIntensity>,
     pub ambient_light_intensity: Option<&'static AmbientLightIntensity>,
+
+    pub render_layers: Option<&'static RenderLayers>,
 }
 
 pub type MaterialChangedFilter = Or<(
@@ -169,12 +173,13 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             bend: StaticBendOptions::from_data(&data),
             color: ColorOptions::from_data(&data),
             lighting: LightingOptions::from_data(&data),
+            render_layers: data.render_layers.cloned().unwrap_or_default(),
         }
     }
 }
 
 impl ScatterMaterialOptions {
-    pub fn with(&self, data: MaterialOptionDataItem) -> Self {
+    pub fn with(self, data: MaterialOptionDataItem) -> Self {
         Self {
             general: self.general.with_data(&data),
             geometry: self.geometry.with_data(&data),
@@ -182,6 +187,7 @@ impl ScatterMaterialOptions {
             bend: self.bend.with_data(&data),
             color: self.color.with_data(&data),
             lighting: self.lighting.with_data(&data),
+            render_layers: data.render_layers.cloned().unwrap_or(self.render_layers),
         }
     }
 
@@ -192,6 +198,11 @@ impl ScatterMaterialOptions {
         self.bend = self.bend.with(other.bend);
         self.color = self.color.with(other.color);
         self.lighting = self.lighting.with(other.lighting);
+        self.render_layers = if other.render_layers != RenderLayers::default() {
+            other.render_layers
+        } else {
+            self.render_layers
+        };
         self
     }
 

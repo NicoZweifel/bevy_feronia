@@ -4,10 +4,12 @@ mod camera_controller;
 #[path = "quality.rs"]
 pub mod quality;
 
+use bevy_eidolon::prepass::CullComputeCamera;
 use quality::*;
 
 #[cfg(not(feature = "dlss"))]
 use bevy::anti_alias::taa::TemporalAntiAliasing;
+use bevy::core_pipeline::prepass::DeferredPrepass;
 use bevy::diagnostic::*;
 use bevy::light::ShadowFilteringMethod;
 use bevy::post_process::bloom::Bloom;
@@ -84,6 +86,7 @@ impl Plugin for ExamplePlugin {
                 EntityCountDiagnosticsPlugin::default(),
                 SystemInformationDiagnosticsPlugin,
                 PerfUiPlugin,
+                // TODO use native plugin (bevy_dev_tools/render_debug)
                 ShowPrepassPlugin,
             ))
             .add_plugins((
@@ -260,10 +263,9 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
     };
 
     cmd.spawn((
-        Camera::default(),
+        (Camera::default(), CullComputeCamera, Camera3d::default()),
         Hdr,
         Controller::default(),
-        Camera3d::default(),
         ColorGrading::default(),
         Bloom::NATURAL,
         Tonemapping::TonyMcMapface,

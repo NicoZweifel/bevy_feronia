@@ -60,7 +60,7 @@ pub fn handle_merge_check(
     let Ok(center) = q_center.single() else {
         #[cfg(feature = "trace")]
         warn!(
-            "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
+            "Couldn't get Center for merge! Did you forgot to add it to your Camera or Player entity?"
         );
         return;
     };

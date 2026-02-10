@@ -13,7 +13,7 @@ use bevy_transform::prelude::*;
 use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::{Collider, RigidBody};
+use avian3d::prelude::*;
 
 /// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug, Reflect, Default)]
@@ -76,7 +76,7 @@ where
 
     #[cfg(feature = "avian")]
     /// Optional collider for this part.
-    pub collider: Option<Collider>,
+    pub collider: Option<ColliderConstructor>,
 }
 
 #[derive(Clone, Debug, Reflect)]
@@ -131,8 +131,8 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .unwrap_or_default();
 
         let part_properties = ScatterAssetProperties {
-            wind,    // TODO: Inherit this?
-            options, // TODO: Inherit this?
+            wind,                     // TODO: Inherit this?
+            options: options.clone(), // TODO: Inherit this?
             aabb,
             name: item_of.name.clone(),
             #[allow(deprecated)]
@@ -188,7 +188,7 @@ where
         h_mesh: Handle<Mesh>,
         transform: Transform,
         properties: ScatterAssetProperties,
-        #[cfg(feature = "avian")] collider: Option<Collider>,
+        #[cfg(feature = "avian")] collider: Option<ColliderConstructor>,
     ) -> Self {
         Self {
             name,

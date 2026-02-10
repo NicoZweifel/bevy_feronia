@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
+use bevy_utils::default;
 
 #[cfg(feature = "trace")]
 use tracing::warn;
@@ -8,7 +9,7 @@ pub fn clear_scatter_roots(
     mut cmd: Commands,
     mut mr_clear_root: MessageReader<ClearScatterRoot>,
     mut mw_clear_layers: MessageWriter<ClearScatterLayer>,
-    q_root: Query<(Entity, &ScatterRoot)>,
+    q_root: Query<(Entity, &ScatterRoot, &ScatterOccupancyMap)>,
 ) {
     let layers = mr_clear_root
         .read()
@@ -22,8 +23,11 @@ pub fn clear_scatter_roots(
                         root
                     );
                 })
-                .map(|(root, layers)| {
-                    cmd.entity(root).insert(ScatterOccupancyMap::default());
+                .map(|(root, layers, occ_map)| {
+                    cmd.entity(root).insert(ScatterOccupancyMap {
+                        cell_size: occ_map.cell_size,
+                        ..default()
+                    });
                     layers.iter()
                 })
                 .ok()

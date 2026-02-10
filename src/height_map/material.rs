@@ -50,6 +50,10 @@ impl Material for HeightMapMaterial {
         )
     }
 
+    fn enable_prepass() -> bool {
+        false
+    }
+
     fn specialize(
         _pipeline: &MaterialPipeline,
         _descriptor: &mut RenderPipelineDescriptor,

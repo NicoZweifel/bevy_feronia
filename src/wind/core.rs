@@ -18,7 +18,9 @@ use rand_pcg::Pcg64;
 use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::Collider;
+use avian3d::prelude::*;
+
+use bevy_camera::visibility::RenderLayers;
 use bevy_transform::components::GlobalTransform;
 
 pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
@@ -123,6 +125,7 @@ type SpawnRequestItem<T> = (
     ChildOf,
     ScatteredInstance,
     ScatteredAsset<T>,
+    RenderLayers,
 );
 
 #[cfg(feature = "avian")]
@@ -134,7 +137,8 @@ type SpawnRequestItem<T> = (
     ChildOf,
     ScatteredInstance,
     ScatteredAsset<T>,
-    Collider,
+    RenderLayers,
+    ColliderConstructor,
 );
 
 impl<'w, T> SpawnRequest<'w, T>
@@ -154,6 +158,7 @@ where
                             ChildOf(self.parent),
                             ScatteredInstance(self.event.trigger.layer),
                             ScatteredAsset(handle.clone()),
+                            part.properties.options.render_layers.clone(),
                             // TODO find a method for conditionally adding colliders
                             #[cfg(feature = "avian")]
                             part.collider.clone().unwrap_or_default(),
@@ -243,8 +248,8 @@ bitflags! {
     }
 }
 
-impl From<ScatterMaterialOptions> for WindAffectedKey {
-    fn from(options: ScatterMaterialOptions) -> Self {
+impl From<&ScatterMaterialOptions> for WindAffectedKey {
+    fn from(options: &ScatterMaterialOptions) -> Self {
         let mut key = WindAffectedKey::empty();
 
         let NormalOptions {

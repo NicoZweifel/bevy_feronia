@@ -738,7 +738,6 @@ impl FoliageLayer {
         )
     },
     StaticBend,
-    SpecularStrength(0.2),
     AmbientOcclusion,
 )]
 struct GrassLayer;

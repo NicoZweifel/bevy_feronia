@@ -77,11 +77,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .min()
                     .unwrap_or_default();
 
-                if group.iter().any(|h| h.is_lod(request.is_chunked, min_lod)) {
-                    Some(*name)
-                } else {
-                    None
-                }
+                group
+                    .iter()
+                    .any(|h| h.is_lod(request.is_chunked, min_lod))
+                    .then_some(*name)
             })
             .collect();
 
@@ -162,7 +161,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                 for part in asset.parts.iter() {
                     let instances = base_instances.clone();
-
                     let entity = cmd
                         .spawn((
                             Self::component(part.material().clone()),
@@ -181,6 +179,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                             NoAutomaticBatching,
                             ScatteredInstance(request.event.trigger.layer),
                             ScatteredAsset(handle_asset.handle.clone()),
+                            part.properties.options.render_layers.clone(),
                         ))
                         .id();
 

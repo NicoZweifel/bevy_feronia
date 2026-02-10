@@ -28,7 +28,7 @@ pub struct CollectableQueryData<T: Material = StandardMaterial> {
     #[cfg(feature = "avian")]
     pub o_rigid_body: Option<&'static RigidBody>,
     #[cfg(feature = "avian")]
-    pub o_collider: Option<&'static Collider>,
+    pub o_collider: Option<&'static ColliderConstructor>,
 
     pub material_options: MaterialOptionData,
     pub wind_data: WindOptionData<'static>,
