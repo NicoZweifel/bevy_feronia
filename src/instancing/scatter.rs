@@ -18,6 +18,7 @@ use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
 use std::sync::Arc;
+use bevy_transform::prelude::Transform;
 
 pub fn scatter_layer(name: impl Into<Cow<'static, str>>) -> impl Bundle
 where
@@ -184,7 +185,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         .id();
 
                     cmd.entity(entity).insert((
-                        part.transform,
+                        Transform::default(),
                         aabb,
                         // Required since bevy 0.18 if adding Aabb manually.
                         NoAutoAabb,

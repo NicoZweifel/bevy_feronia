@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
-use bevy_asset::Handle;
+use bevy_asset::{Assets, Handle};
 use bevy_camera::prelude::Visibility;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
@@ -12,6 +12,8 @@ use bevy_tasks::Task;
 use bevy_transform::prelude::Transform;
 use rand::Rng;
 
+use bevy_ecs::lifecycle::HookContext;
+use bevy_ecs::world::DeferredWorld;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -252,6 +254,28 @@ pub struct ScatteredInstance(pub Entity);
 pub struct ScatteredAsset<T>(pub Handle<ScatterAsset<T>>)
 where
     T: ScatterMaterialAsset;
+
+#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[reflect(Component, Debug)]
+#[component(on_add = Self::on_add)]
+pub struct ScatteredPart<T>(pub (Handle<ScatterAsset<T>>, usize))
+where
+    T: ScatterMaterialAsset;
+
+impl<T: ScatterMaterialAsset> ScatteredPart<T> {
+    fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        #[cfg(feature = "avian")]
+        {
+            let x = world.get_resource::<Assets<ScatterAsset<T>>>().unwrap();
+            let ScatteredPart((handle, index)) = world.get::<Self>(ctx.entity).unwrap();
+            let asset = x.get(handle).unwrap();
+            let part = asset.parts.get(*index).unwrap();
+            if let Some(collider) = part.o_collider.clone() {
+                world.commands().entity(ctx.entity).insert(collider);
+            }
+        }
+    }
+}
 
 /// Defines a texture-based density map for scattering.
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]

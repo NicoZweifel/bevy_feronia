@@ -13,6 +13,9 @@ use crate::backend::ScatterApp;
 #[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
+#[cfg(feature = "avian")]
+use avian3d::prelude::*;
+
 pub struct SceneAssetBackendPlugin;
 
 impl Plugin for SceneAssetBackendPlugin {
@@ -48,6 +51,16 @@ pub fn scene_asset_ready_listener(
     );
 }
 
+#[cfg(not(feature = "avian"))]
+type SearchQueryFilter = (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>);
+
+#[cfg(feature = "avian")]
+type SearchQueryFilter = (
+    With<Mesh3d>,
+    With<MeshMaterial3d<StandardMaterial>>,
+    With<Collider>,
+);
+
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively in a Scene.
 ///
 /// The `SceneRoot` has a root collection which is always assumed to contain parents of all assets in the Tree, e.g.,
@@ -58,7 +71,7 @@ pub fn scene_asset_backend(
     q_layers: Query<(Entity, Option<&Name>), With<ScatterLayer>>,
     q_parent: Query<&ChildOf>,
     q_children: Query<&Children>,
-    q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
+    q_search: Query<Entity, SearchQueryFilter>,
     q_name: Query<&Name>,
 ) -> Result<Vec<AssetPart>> {
     Ok(q_collect

@@ -136,26 +136,30 @@ impl ScatterOccupancyMap {
         let max_grid = self.to_grid(max_local);
 
         let radius_sq = radius.powi(2);
-        let half_cell = self.cell_size / 2.0;
 
         for x in min_grid.x..=max_grid.x {
             for z in min_grid.y..=max_grid.y {
                 let grid_pos = IVec2::new(x, z);
 
-                let local_cell_x = (x as f32 * self.cell_size) + half_cell;
-                let local_cell_z = (z as f32 * self.cell_size) + half_cell;
+                let cell_min_x = x as f32 * self.cell_size;
+                let cell_min_z = z as f32 * self.cell_size;
+                let cell_max_x = cell_min_x + self.cell_size;
+                let cell_max_z = cell_min_z + self.cell_size;
 
-                let dist_x = local_cell_x - local_center.x;
-                let dist_z = local_cell_z - local_center.z;
+                let closest_x = local_center.x.clamp(cell_min_x, cell_max_x);
+                let closest_z = local_center.z.clamp(cell_min_z, cell_max_z);
+
+                let dist_x = local_center.x - closest_x;
+                let dist_z = local_center.z - closest_z;
                 let dist_sq = dist_x.powi(2) + dist_z.powi(2);
 
                 if dist_sq <= radius_sq {
-                    let sphere_height = local_center.y + (radius_sq - dist_sq).sqrt();
+                    let max_sphere_y_in_cell = local_center.y + (radius_sq - dist_sq).sqrt();
 
                     self.cells
                         .entry(grid_pos)
-                        .and_modify(|h| *h = h.max(sphere_height))
-                        .or_insert(sphere_height);
+                        .and_modify(|h| *h = h.max(max_sphere_y_in_cell))
+                        .or_insert(max_sphere_y_in_cell);
                 }
             }
         }

@@ -1,11 +1,12 @@
 use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
+use bevy_math::Vec3;
 use bevy_asset::Assets;
-use bevy_camera::primitives::MeshAabb;
+use bevy_camera::primitives::{Aabb, MeshAabb};
 use bevy_ecs::prelude::*;
 use bevy_mesh::{Mesh, Mesh3d};
 use bevy_platform::collections::{HashMap, HashSet};
-
+use bevy_transform::prelude::Transform;
 #[cfg(feature = "trace")]
 use tracing::{debug, error, trace, warn};
 
@@ -151,10 +152,7 @@ pub fn insert_requests<T: ScatterMaterial>(
         Without<ScatterAssetCreationRequest<T>>,
     >,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
-    q_layers: Query<
-        (Entity, MaterialOptionData, WindOptionData),
-        (With<ScatterLayer>, With<ScatterLayerType<T>>),
-    >,
+    q_layers: Query<CollectableQueryData, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
     global_wind: Res<GlobalWind>,
 ) {
     let wind = global_wind.current;
@@ -196,7 +194,7 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             let layer = child_of.parent();
 
-            let (_, layer_material_option_data, layer_wind_data) = q_layers
+            let layer_data = q_layers
                 .get(layer)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
@@ -208,10 +206,10 @@ pub fn insert_requests<T: ScatterMaterial>(
                 .ok()?;
 
             let wind = wind
-                .multiply(layer_wind_data)
+                .multiply(layer_data.wind_data)
                 .multiply(scene_root_data.wind_data);
 
-            let options = ScatterMaterialOptions::from(layer_material_option_data)
+            let options = ScatterMaterialOptions::from(layer_data.material_options)
                 .with(scene_root_data.material_options);
 
             let (part_entities, parts) = entity_parts.iter().fold(
@@ -224,10 +222,10 @@ pub fn insert_requests<T: ScatterMaterial>(
                 },
             );
 
-            let mut union_aabb = parts[0].properties.aabb;
-            for part in &parts[1..] {
-                // TODO transform
-                union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
+            let mut union_aabb = parts[0].properties.aabb.transform(&parts[0].transform);
+            for part in parts.iter().skip(1) {
+                let transformed = part.properties.aabb.transform(&part.transform);
+                union_aabb = combine_aabbs(&union_aabb, &transformed);
             }
 
             Some((
@@ -238,7 +236,10 @@ pub fn insert_requests<T: ScatterMaterial>(
                     wind,
                     options,
                     #[cfg(feature = "avian")]
-                    scene_root_data.o_rigid_body.cloned(),
+                    scene_root_data
+                        .o_rigid_body
+                        .or(layer_data.o_rigid_body)
+                        .cloned(),
                 ),
                 part_entities,
             ))

@@ -126,11 +126,6 @@ const WIND_SHADER_DEFS: &[WindShaderDefMap] = &[
         stage: ShaderStage::Vertex,
     },
     WindShaderDefMap {
-        flag: WindAffectedKey::STATIC_BEND,
-        def: "STATIC BEND",
-        stage: ShaderStage::Vertex,
-    },
-    WindShaderDefMap {
         flag: WindAffectedKey::ANALYTICAL_NORMALS,
         def: "ANALYTICAL_NORMALS",
         stage: ShaderStage::Vertex,

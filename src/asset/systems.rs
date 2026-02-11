@@ -6,7 +6,7 @@ use bevy_ecs::prelude::*;
 use bevy_pbr::StandardMaterial;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::*;
 
 /// System that processes [`ScatterAssetCreationRequest<T>`] where the out material uses a standard material as a base.
 ///

@@ -75,8 +75,7 @@ where
     pub name: Option<Name>,
 
     #[cfg(feature = "avian")]
-    /// Optional collider for this part.
-    pub collider: Option<ColliderConstructor>,
+    pub o_collider: Option<Collider>,
 }
 
 #[derive(Clone, Debug, Reflect)]
@@ -145,6 +144,13 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .global_transform
             .relative_to(item_root_data.global_transform);
 
+        #[cfg(feature = "avian")]
+        let collider = child_data
+            .o_collider
+            .or(parent_data.o_collider)
+            .or(scene_root_data.o_collider)
+            .cloned();
+
         Some(ScatterAssetPartEntity {
             entity,
             part: ScatterAssetPart::new(
@@ -154,7 +160,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
                 root_space_tf,
                 part_properties,
                 #[cfg(feature = "avian")]
-                child_data.o_collider.cloned(),
+                collider,
             ),
         })
     }
@@ -188,7 +194,7 @@ where
         h_mesh: Handle<Mesh>,
         transform: Transform,
         properties: ScatterAssetProperties,
-        #[cfg(feature = "avian")] collider: Option<ColliderConstructor>,
+        #[cfg(feature = "avian")] o_collider: Option<Collider>,
     ) -> Self {
         Self {
             name,
@@ -197,7 +203,7 @@ where
             h_material,
             properties,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         }
     }
 
@@ -270,7 +276,7 @@ impl ScatterAssetPart<StandardMaterial> {
             properties,
             name,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         } = self;
 
         let mut source_material = materials_in.get(&h_material).cloned();
@@ -294,7 +300,7 @@ impl ScatterAssetPart<StandardMaterial> {
             h_mesh,
             name,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         }
     }
 }

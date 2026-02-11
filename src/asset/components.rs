@@ -7,7 +7,7 @@ use bevy_pbr::StandardMaterial;
 use std::marker::PhantomData;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::*;
 
 /// A [Component] acting as a request to create a [`ScatterAsset`]. These are created by the backend.
 ///

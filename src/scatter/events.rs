@@ -74,7 +74,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Clone, Copy, Debug, Reflect)]
 pub struct ScatterResult {
     pub transform: Transform,
     pub seed: u64,
