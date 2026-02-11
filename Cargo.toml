@@ -31,7 +31,7 @@ bevy_render = { version = "0.18.0", default-features = false }
 bevy_shader = { version = "0.18.0", default-features = false }
 bevy_utils = { version = "0.18.0", default-features = false }
 bevy_light = { version = "0.18.0", default-features = false }
-bevy_eidolon = { path ="../bevy_instanced_material" }
+bevy_eidolon = {version = "0.3.0"}
 
 bytemuck = "1.25.0"
 noise = "0.9.0"
@@ -118,6 +118,7 @@ dlss = ["bevy/dlss"]
 [patch.crates-io]
 iyes_perf_ui = { git = "https://github.com/blip-radar/iyes_perf_ui", branch = "bevy-0-18" }
 bevy_show_prepass = { git = "https://github.com/NicoZweifel/bevy_show_prepass", branch = "main" }
+bevy_eidolon = { git= "https://github.com/NicoZweifel/bevy_eidolon", branch = "fix_deferred"}
 
 [[example]]
 name = "avian"
