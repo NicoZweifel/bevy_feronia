@@ -34,8 +34,8 @@ pub struct WindAffectedExtension {
 
 #[derive(Clone, ShaderType, Debug)]
 struct ExtendedWindAffectedMaterialUniform {
-    previous: WindUniform,
     current: WindUniform,
+    previous: WindUniform,
     sss_scale: f32,
     sss_intensity: f32,
 }
@@ -103,11 +103,6 @@ const WIND_SHADER_DEFS: &[WindShaderDefMap] = &[
     WindShaderDefMap {
         flag: WindAffectedKey::BILLBOARDING,
         def: "BILLBOARDING",
-        stage: ShaderStage::Vertex,
-    },
-    WindShaderDefMap {
-        flag: WindAffectedKey::EDGE_CORRECTION,
-        def: "EDGE_CORRECTION",
         stage: ShaderStage::Vertex,
     },
     WindShaderDefMap {
@@ -182,6 +177,10 @@ impl MaterialExtension for WindAffectedExtension {
         key: MaterialExtensionKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         let vertex_shader_defs = &mut descriptor.vertex.shader_defs;
+        if vertex_shader_defs.contains(&"VERTEX_UVS".into()) {
+            vertex_shader_defs.push("VERTEX_UVS_A".into());
+        }
+
         let mut fragment_shader_defs = descriptor.fragment.as_mut().map(|f| &mut f.shader_defs);
 
         for mapping in WIND_SHADER_DEFS {

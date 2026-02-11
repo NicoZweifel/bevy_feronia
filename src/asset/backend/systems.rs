@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
-use bevy_math::Vec3;
 use bevy_asset::Assets;
 use bevy_camera::primitives::{Aabb, MeshAabb};
 use bevy_ecs::prelude::*;
+use bevy_math::Vec3;
 use bevy_mesh::{Mesh, Mesh3d};
 use bevy_platform::collections::{HashMap, HashSet};
 use bevy_transform::prelude::Transform;

@@ -58,7 +58,7 @@ pub struct ScatterMaterialOptions {
     pub bend: StaticBendOptions,
     pub color: ColorOptions,
     pub lighting: LightingOptions,
-    pub render_layers: RenderLayers,
+    pub render_layers: Option<RenderLayers>,
 }
 
 /// Collection of optional material components, usable as `QueryData`.
@@ -173,7 +173,7 @@ impl From<MaterialOptionDataItem<'_, '_>> for ScatterMaterialOptions {
             bend: StaticBendOptions::from_data(&data),
             color: ColorOptions::from_data(&data),
             lighting: LightingOptions::from_data(&data),
-            render_layers: data.render_layers.cloned().unwrap_or_default(),
+            render_layers: data.render_layers.cloned(),
         }
     }
 }
@@ -187,7 +187,7 @@ impl ScatterMaterialOptions {
             bend: self.bend.with_data(&data),
             color: self.color.with_data(&data),
             lighting: self.lighting.with_data(&data),
-            render_layers: data.render_layers.cloned().unwrap_or(self.render_layers),
+            render_layers: data.render_layers.cloned().or(self.render_layers),
         }
     }
 
@@ -198,8 +198,12 @@ impl ScatterMaterialOptions {
         self.bend = self.bend.with(other.bend);
         self.color = self.color.with(other.color);
         self.lighting = self.lighting.with(other.lighting);
-        self.render_layers = if other.render_layers != RenderLayers::default() {
-            other.render_layers
+        self.render_layers = if other
+            .render_layers
+            .as_ref()
+            .is_some_and(|x| *x != RenderLayers::default())
+        {
+            other.render_layers.clone()
         } else {
             self.render_layers
         };

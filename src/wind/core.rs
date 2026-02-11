@@ -127,7 +127,7 @@ where
                     ChildOf(self.parent),
                     ScatteredInstance(self.event.trigger.layer),
                     ScatteredAsset(handle.clone()),
-                    Visibility::Inherited,
+                    Visibility::Visible,
                     res.transform,
                 ))
                 .id();
@@ -146,11 +146,11 @@ where
                     .map(|(i, part)| {
                         (
                             part.transform,
+                            Visibility::Visible,
                             self.lod_config.get_visibility_range(asset.properties.lod),
-                            Mesh3d(part.h_mesh),
-                            MeshMaterial3d::<T>(part.h_material),
+                            Mesh3d(part.mesh().clone()),
+                            MeshMaterial3d::<T>(part.material().clone()),
                             ChildOf(entity),
-                            part.properties.options.render_layers,
                             ScatteredPart((handle.clone(), i)),
                         )
                     })

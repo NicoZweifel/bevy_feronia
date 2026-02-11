@@ -37,19 +37,6 @@ fn main() -> AppExit {
         .insert_state(HeightMapState::Setup)
         .insert_state(ScatterState::Setup)
         .add_systems(Startup, setup)
-        .add_observer(
-            |trigger: On<Add, ScatteredAsset<ExtendedWindAffectedMaterial>>,
-             q_instance: Query<(Entity, &ScatteredAsset<ExtendedWindAffectedMaterial>)>,
-             assets: Res<Assets<ScatterAsset<ExtendedWindAffectedMaterial>>>,
-             mut cmd: Commands| {
-                let (entity, asset) = q_instance.get(trigger.entity).unwrap();
-                let asset = assets.get(&**asset).unwrap();
-
-                if let Some(rigid_body) = asset.rigid_body {
-                    cmd.entity(entity).insert(rigid_body);
-                }
-            },
-        )
         .add_systems(Update, scatter_on_keypress)
         .run()
 }

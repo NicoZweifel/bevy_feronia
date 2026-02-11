@@ -13,12 +13,12 @@ use bevy_render::batching::NoAutomaticBatching;
 use bevy_utils::default;
 
 use bevy_camera::visibility::NoAutoAabb;
+use bevy_transform::prelude::Transform;
 use rand::prelude::IndexedRandom;
 use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
 use std::borrow::Cow;
 use std::sync::Arc;
-use bevy_transform::prelude::Transform;
 
 pub fn scatter_layer(name: impl Into<Cow<'static, str>>) -> impl Bundle
 where
@@ -180,9 +180,12 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                             NoAutomaticBatching,
                             ScatteredInstance(request.event.trigger.layer),
                             ScatteredAsset(handle_asset.handle.clone()),
-                            part.properties.options.render_layers.clone(),
                         ))
                         .id();
+
+                    if let Some(render_layers) = &part.properties.options.render_layers {
+                        cmd.entity(entity).insert(render_layers.clone());
+                    }
 
                     cmd.entity(entity).insert((
                         Transform::default(),
