@@ -16,7 +16,7 @@ pub fn split(
 ) {
     let Ok(center) = q_center.single() else {
         #[cfg(feature = "trace")]
-        warn!(
+        debug!(
             "Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?"
         );
         return;
