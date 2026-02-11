@@ -48,6 +48,7 @@ avian3d = { version = "0.5", optional = true }
 [dev-dependencies]
 bevy-inspector-egui = { version = "0.36.0" }
 bevy = { version = "0.18.0", features = [
+    "bevy_gizmos_render",
     "dynamic_linking",
     "embedded_watcher",
     "file_watcher",
