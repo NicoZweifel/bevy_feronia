@@ -66,7 +66,7 @@ impl Plugin for ExamplePlugin {
         app.init_resource::<ExamplePluginOptions>()
             .insert_resource(DirectionalLightShadowMap { size: 4096 })
             .add_plugins(DefaultPlugins
-                .set(AssetPlugin { ..default() })
+                .set(AssetPlugin { use_asset_processor_override:Some(true),..default() })
                 .set(RenderPlugin {
                     render_creation: RenderCreation::Automatic(WgpuSettings {
                         limits: WgpuLimits {
