@@ -31,11 +31,11 @@ impl Default for LodConfig {
             // LODs are ordered from High (0) to Low (n).
             vec![
                 // Level 0: High
-                20.0.into(),
+                30.0.into(),
                 // Level 1: Medium
-                60.0.into(),
+                90.0.into(),
                 // Level 2: Low
-                180.into(),
+                270.into(),
                 default(), // f32::MAX
             ],
             density: vec![

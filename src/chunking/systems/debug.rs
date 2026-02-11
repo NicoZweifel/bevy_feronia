@@ -16,7 +16,7 @@ pub fn draw_aabbs(
         gizmos.cube(
             Transform::from_translation(tf.transform_point(aabb.center.into()))
                 .with_rotation(tf.rotation())
-                .with_scale((aabb.half_extents * 2.0).into()),
+                .with_scale((aabb.half_extents * 2.0 * tf.scale().to_vec3a()).into()),
             cfg.aabb_color,
         );
     }

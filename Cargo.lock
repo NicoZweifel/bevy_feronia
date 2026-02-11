@@ -868,6 +868,7 @@ dependencies = [
 [[package]]
 name = "bevy_eidolon"
 version = "0.3.0"
+source = "git+https://github.com/NicoZweifel/bevy_eidolon?branch=fix-deferred#8d471facdf1c9dff5b9f9252986490e77d16bd54"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -3155,6 +3156,9 @@ name = "glam"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74a4d85559e2637d3d839438b5b3d75c31e655276f9544d72475c36b92fabbed"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "glam_matrix_extras"
@@ -4428,7 +4432,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f317a1c29744b0e63bdf1733443fad6805a86ab6db403671f945456041cc84b3"
 dependencies = [
  "bytemuck",
- "glam 0.30.10",
+ "glam 0.31.0",
  "half",
  "log",
  "rdst",

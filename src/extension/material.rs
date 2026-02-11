@@ -22,7 +22,6 @@ pub struct WindAffectedExtension {
     pub current: Wind,
     pub previous: Wind,
 
-    // TODO use extracted AAbb instead and add to uniforms.
     pub aabb: Aabb,
 
     pub options: ScatterMaterialOptions,
@@ -47,9 +46,10 @@ impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform
             subsurface_scattering_scale,
             ..
         } = extension.options.lighting.common;
+
         Self {
-            current: WindUniform::from(&extension.current),
-            previous: WindUniform::from(&extension.previous),
+            current: WindUniform::from(&extension.current).with_aabb(&extension.aabb),
+            previous: WindUniform::from(&extension.previous).with_aabb(&extension.aabb),
             sss_intensity: subsurface_scattering_intensity,
             sss_scale: subsurface_scattering_scale,
         }
@@ -169,6 +169,13 @@ impl MaterialExtension for WindAffectedExtension {
             AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
         )
     }
+
+   fn deferred_vertex_shader() -> ShaderRef {
+    ShaderRef::Path(
+        AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
+    )
+}
+
 
     fn specialize(
         _pipeline: &MaterialExtensionPipeline,

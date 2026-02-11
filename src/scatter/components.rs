@@ -264,15 +264,22 @@ where
 
 impl<T: ScatterMaterialAsset> ScatteredPart<T> {
     fn on_add(mut world: DeferredWorld, ctx: HookContext) {
+        let scatter_assets = world.get_resource::<Assets<ScatterAsset<T>>>().unwrap();
+        let ScatteredPart((handle, index)) = world.get::<Self>(ctx.entity).unwrap();
+        let asset = scatter_assets.get(handle).unwrap();
+        let part = asset.parts.get(*index).cloned().unwrap();
+
+        let mut cmd = world.commands();
+        if part.properties.wind_affected {
+            cmd.entity(ctx.entity).insert(WindAffected);
+        }
+        if let Some(render_layers)= part.properties.options.render_layers{
+            cmd.entity(ctx.entity).insert(render_layers);
+        }
+
         #[cfg(feature = "avian")]
-        {
-            let x = world.get_resource::<Assets<ScatterAsset<T>>>().unwrap();
-            let ScatteredPart((handle, index)) = world.get::<Self>(ctx.entity).unwrap();
-            let asset = x.get(handle).unwrap();
-            let part = asset.parts.get(*index).unwrap();
-            if let Some(collider) = part.o_collider.clone() {
-                world.commands().entity(ctx.entity).insert(collider);
-            }
+        if let Some(collider) = part.o_collider.clone() {
+            cmd.entity(ctx.entity).insert(collider);
         }
     }
 }

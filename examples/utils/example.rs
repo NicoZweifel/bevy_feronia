@@ -287,6 +287,7 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
         ),
         #[cfg(not(feature = "dlss"))]
         (Msaa::Off, TemporalAntiAliasing::default()),
+        DeferredPrepass,
         bevy_pbr::ScreenSpaceAmbientOcclusion::default(),
         bevy::light::VolumetricFog {
             ambient_intensity: 0.1,

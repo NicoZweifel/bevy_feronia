@@ -217,31 +217,6 @@ where
             ScatterLayerChildProcessed,
         )
     }
-
-    /// Returns the wind-affected bundle for this asset part.
-    pub fn wind_affected_bundle(
-        &self,
-        asset_handle: Handle<ScatterAsset<T>>,
-        layer: Entity,
-    ) -> impl Bundle {
-        (WindAffected, self.bundle(asset_handle.clone(), layer))
-    }
-
-    /// Inserts the correct bundle (wind-affected or normal) onto the entity.
-    pub fn insert_bundle(
-        &self,
-        cmd: &mut Commands,
-        entity: Entity,
-        asset_handle: Handle<ScatterAsset<T>>,
-        layer: Entity,
-    ) {
-        if self.properties.wind_affected {
-            cmd.entity(entity)
-                .insert(self.wind_affected_bundle(asset_handle, layer));
-        } else {
-            cmd.entity(entity).insert(self.bundle(asset_handle, layer));
-        }
-    }
 }
 
 impl ScatterAssetPartEntity<StandardMaterial> {
