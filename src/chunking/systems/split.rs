@@ -52,7 +52,7 @@ pub fn handle_split(
             q_chunk.get(parent_entity)
         else {
             #[cfg(feature = "trace")]
-            warn!("Couldn't get Chunk for split: {parent_entity}");
+            debug!("Couldn't get Chunk for split: {parent_entity}");
             continue;
         };
 
