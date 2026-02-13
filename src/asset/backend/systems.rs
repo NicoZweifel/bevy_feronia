@@ -251,6 +251,9 @@ pub fn insert_requests<T: ScatterMaterial>(
                     .remove::<ScatterAssetPart>()
                     .remove::<AssetPartOf>()
                     .remove::<Mesh3d>();
+
+                #[cfg(feature = "avian")]
+                cmd.entity(part_entity).remove::<Collider>();
             }
 
             item_of
