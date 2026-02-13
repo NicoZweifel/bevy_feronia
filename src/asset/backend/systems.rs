@@ -5,6 +5,8 @@ use bevy_camera::primitives::MeshAabb;
 use bevy_ecs::prelude::*;
 use bevy_mesh::{Mesh, Mesh3d};
 use bevy_platform::collections::{HashMap, HashSet};
+#[cfg(feature = "avian")]
+use avian3d::prelude::*;
 
 #[cfg(feature = "trace")]
 use tracing::{debug, error, trace, warn};
