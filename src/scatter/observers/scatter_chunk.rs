@@ -9,7 +9,6 @@ pub fn scatter_chunk<T>(
     T: ScatterMaterial,
 {
     let chunk_entity = trigger.entity;
-
     if q_chunk.get(chunk_entity).is_err() {
         return;
     }

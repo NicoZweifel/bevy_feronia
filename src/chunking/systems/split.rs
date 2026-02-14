@@ -4,7 +4,7 @@ use bevy_math::{IVec2, Vec3};
 use bevy_transform::prelude::{GlobalTransform, Transform};
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn, trace};
+use tracing::{debug, trace, warn};
 
 pub fn split(
     q_center: Query<&GlobalTransform, With<Center>>,

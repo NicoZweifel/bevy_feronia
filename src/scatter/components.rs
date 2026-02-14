@@ -14,6 +14,7 @@ use rand::Rng;
 
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
+use derive_more::From;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -209,7 +210,7 @@ pub struct ScatterLayerOf(pub Entity);
 pub struct ScatterRoot(Vec<Entity>);
 
 /// Component to enable or disable scattering for a [`ScatterLayer`].
-#[derive(Component, Reflect, Deref, DerefMut, Debug)]
+#[derive(Component, Reflect, Deref, DerefMut, Debug, From, Clone)]
 #[reflect(Component, Debug)]
 pub struct ScatterLayerEnabled(pub bool);
 

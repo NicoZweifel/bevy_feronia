@@ -12,14 +12,11 @@ use xxh3::hash64_with_seed;
 use tracing::warn;
 
 pub fn scatter_layer_enabled(
-    cmd: &mut Commands,
     layer_entity: Entity,
     layer_name: Option<&Name>,
     enabled: Option<&ScatterLayerEnabled>,
 ) -> bool {
-    let scatter_layer_enabled = ScatterLayerEnabled(true);
-
-    if !**enabled.unwrap_or(&scatter_layer_enabled) {
+    if !*enabled.cloned().unwrap_or(true.into()) {
         let _name = layer_name
             .unwrap_or(&Name::new(layer_entity.to_string()))
             .to_string();
@@ -28,8 +25,6 @@ pub fn scatter_layer_enabled(
         warn!("ScatterLayer {_name} is disabled!");
         return false;
     }
-
-    cmd.entity(layer_entity).insert(scatter_layer_enabled);
 
     true
 }

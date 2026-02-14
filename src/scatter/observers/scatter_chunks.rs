@@ -30,7 +30,7 @@ pub fn scatter_chunks<T: ScatterMaterial>(
         return;
     };
 
-    if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
+    if !scatter_layer_enabled(layer_entity, layer_name, enabled) {
         return;
     };
 
