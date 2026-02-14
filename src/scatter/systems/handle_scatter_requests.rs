@@ -59,8 +59,8 @@ pub fn handle_scatter_requests<T>(
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
-    // NOTE: handle 2 per tick. TODO optimize / create compute pipeline for this.
-    for (entity, request) in q_requests.iter().take(2) {
+    // NOTE: handle 1 per tick. TODO optimize / create compute pipeline for this.
+    for (entity, request) in q_requests.iter().take(1) {
         let layer = request.layer_entity;
 
         let Ok(ScatterLayerQueryDataItem {
