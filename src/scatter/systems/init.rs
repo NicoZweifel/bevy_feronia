@@ -32,7 +32,7 @@ pub fn chunk_init_scatter<T>(
     for (chunk, root_chunk) in q_chunks.iter() {
         let Ok(layers) = q_root.get(**root_chunk) else {
             #[cfg(feature = "trace")]
-            warn!("Couldn't get ScatterRoot: {}", **root_chunk);
+            debug!("Couldn't get ScatterRoot: {}", **root_chunk);
             return;
         };
 
