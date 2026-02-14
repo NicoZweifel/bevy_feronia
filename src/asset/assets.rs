@@ -96,7 +96,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         entity: Entity,
         item_of: AssetPartOf,
         wind: Wind,
-        layer_wind_data: WindOptionData,
+        layer_data: CollectableQueryDataItem<T>,
         scene_root_data: CollectableQueryDataItem<T>,
         item_root_data: CollectableQueryDataItem<T>,
         parent_data: CollectableQueryDataItem<T>,
@@ -108,7 +108,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
         let wind = wind
-            .multiply(layer_wind_data)
+            .multiply(layer_data.wind_data)
             .multiply(scene_root_data.wind_data)
             .multiply(child_data.wind_data);
 
@@ -145,7 +145,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .relative_to(item_root_data.global_transform);
 
         #[cfg(feature = "avian")]
-        let collider = child_data
+        let collider = layer_data
             .o_scatter_bodies
             .or(parent_data.o_scatter_bodies)
             .or(scene_root_data.o_scatter_bodies)

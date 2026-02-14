@@ -17,7 +17,7 @@ pub fn spawn<T>(
     q_scatter_chunked: Query<(), With<ScatterChunked>>,
     q_transforms: Query<&GlobalTransform>,
     q_target: Query<Entity, Without<Merging>>,
-    q_layer:Query<&LodConfig, With<ScatterLayer>>,
+    q_layer: Query<&LodConfig, With<ScatterLayer>>,
 ) where
     T: ScatterMaterial,
 {
@@ -32,7 +32,6 @@ pub fn spawn<T>(
             debug!("Couldn't get ScatterRoot!");
             continue;
         };
-
 
         // TODO allow/move to scatter asset props
         let lod_config = q_layer.get(event.trigger.layer).unwrap_or(lod_config);

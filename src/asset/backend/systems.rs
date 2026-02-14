@@ -52,10 +52,7 @@ pub fn insert_parts<T: ScatterMaterial>(
     mut cmd: Commands,
     q_items: Query<(Entity, &AssetPartOf), Without<ScatterAssetPart>>,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
-    q_layers: Query<
-        (Entity, MaterialOptionData, WindOptionData),
-        (With<ScatterLayer>, With<ScatterLayerType<T>>),
-    >,
+    q_layers: Query<CollectableQueryData, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
     global_wind: Res<GlobalWind>,
     meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -78,7 +75,7 @@ pub fn insert_parts<T: ScatterMaterial>(
                     .ok()?;
 
                 let layer = child_of.parent();
-                let (_, layer_material_option_data, layer_wind_data) = q_layers
+                let (layer_data) = q_layers
                     .get(layer)
                     .inspect_err(|_| {
                         #[cfg(feature = "trace")]
@@ -131,12 +128,10 @@ pub fn insert_parts<T: ScatterMaterial>(
                     entity,
                     item_of,
                     wind,
-                    layer_wind_data,
                     scene_root_data,
                     item_root_data,
                     parent_data,
                     child_data,
-                    layer_material_option_data,
                     aabb,
                 )
             },
