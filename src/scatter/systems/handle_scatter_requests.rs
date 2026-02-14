@@ -110,13 +110,13 @@ pub fn handle_scatter_requests<T>(
                 q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
-                warn!("ChunkRoot {} not found!", scatter_root);
+                debug!("ChunkRoot {} not found!", scatter_root);
                 continue;
             };
 
             let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk) else {
                 #[cfg(feature = "trace")]
-                warn!("Chunk {chunk} not found!");
+                debug!("Chunk {chunk} not found!");
                 continue;
             };
 
