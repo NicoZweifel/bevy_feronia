@@ -35,7 +35,7 @@ pub fn spawn<T>(
         let name_map = &event.create_name_map(&prototype_assets);
         if name_map.is_empty() {
             #[cfg(feature = "trace")]
-            warn!("No assets found for spawn event!");
+            debug!("No assets found for spawn event!");
             continue;
         }
 
