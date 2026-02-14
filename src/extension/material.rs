@@ -170,12 +170,11 @@ impl MaterialExtension for WindAffectedExtension {
         )
     }
 
-   fn deferred_vertex_shader() -> ShaderRef {
-    ShaderRef::Path(
-        AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
-    )
-}
-
+    fn deferred_vertex_shader() -> ShaderRef {
+        ShaderRef::Path(
+            AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
+        )
+    }
 
     fn specialize(
         _pipeline: &MaterialExtensionPipeline,

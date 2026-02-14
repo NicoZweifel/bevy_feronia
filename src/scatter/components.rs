@@ -273,7 +273,7 @@ impl<T: ScatterMaterialAsset> ScatteredPart<T> {
         if part.properties.wind_affected {
             cmd.entity(ctx.entity).insert(WindAffected);
         }
-        if let Some(render_layers)= part.properties.options.render_layers{
+        if let Some(render_layers) = part.properties.options.render_layers {
             cmd.entity(ctx.entity).insert(render_layers);
         }
 
