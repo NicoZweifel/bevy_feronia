@@ -51,15 +51,7 @@ pub fn scene_asset_ready_listener(
     );
 }
 
-#[cfg(not(feature = "avian"))]
 type SearchQueryFilter = (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>);
-
-#[cfg(feature = "avian")]
-type SearchQueryFilter = (
-    With<Mesh3d>,
-    With<MeshMaterial3d<StandardMaterial>>,
-    With<Collider>,
-);
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively in a Scene.
 ///
