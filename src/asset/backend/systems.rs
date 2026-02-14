@@ -229,6 +229,18 @@ pub fn insert_requests<T: ScatterMaterial>(
                 union_aabb = combine_aabbs(&union_aabb, &transformed);
             }
 
+            let body = scene_root_data
+                .o_scatter_bodies
+                .or(layer_data.o_scatter_bodies)
+                .is_some_and(|x| **x)
+                .then(|| {
+                    scene_root_data
+                        .o_rigid_body
+                        .or(layer_data.o_rigid_body)
+                        .cloned()
+                })
+                .flatten();
+
             Some((
                 item_of.clone(),
                 ScatterAssetCreationRequest::<T>::from_data(
@@ -237,10 +249,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                     wind,
                     options,
                     #[cfg(feature = "avian")]
-                    scene_root_data
-                        .o_rigid_body
-                        .or(layer_data.o_rigid_body)
-                        .cloned(),
+                    body,
                 ),
                 part_entities,
             ))
