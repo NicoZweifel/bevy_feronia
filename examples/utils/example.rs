@@ -9,7 +9,6 @@ use quality::*;
 
 #[cfg(not(feature = "dlss"))]
 use bevy::anti_alias::taa::TemporalAntiAliasing;
-use bevy::core_pipeline::prepass::DeferredPrepass;
 use bevy::diagnostic::*;
 use bevy::light::ShadowFilteringMethod;
 use bevy::post_process::bloom::Bloom;
@@ -287,7 +286,6 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
         ),
         #[cfg(not(feature = "dlss"))]
         (Msaa::Off, TemporalAntiAliasing::default()),
-        DeferredPrepass,
         bevy_pbr::ScreenSpaceAmbientOcclusion::default(),
         bevy::light::VolumetricFog {
             ambient_intensity: 0.1,

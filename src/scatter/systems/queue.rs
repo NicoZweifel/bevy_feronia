@@ -8,14 +8,14 @@ use bevy_ecs::system::ResMut;
 /// In large worlds with lots of chunks, this prevents frame drops and stutter when multiple chunks with many instances are spawned at the same time.
 ///
 /// This is more or less a simple Band-Aid fix, and more tracing and optimization has to be done,
-/// e.g., a queue for buffers, optimizing CPU scatter tasks and adding a scatter compute pipeline.
+/// e.g., optimizing CPU scatter tasks and adding a scatter compute pipeline.
 pub fn process_scatter_queue<T>(
     mut queue: ResMut<SpawnScatterAssetsEventQueue<T>>,
     mut mw_spawn: MessageWriter<SpawnScatterAssets<T>>,
 ) where
     T: ScatterMaterial,
 {
-    let Some(event) = queue.0.pop_front() else {
+    let Some(event) = queue.pop_front() else {
         return;
     };
 

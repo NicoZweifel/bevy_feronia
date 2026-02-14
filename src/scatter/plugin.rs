@@ -63,7 +63,7 @@ where
             .add_observer(on_add_scatter_layer::<T>)
             .add_observer(on_chunk_add::<T>)
             .add_systems(
-                PreUpdate,
+                FixedPreUpdate,
                 process_scatter_queue::<T>.in_set(ScatterSet::Ready),
             )
             .add_systems(

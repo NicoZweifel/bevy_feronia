@@ -24,6 +24,7 @@ pub struct ScatterLayerQueryData {
     instance_jitter: Option<&'static InstanceJitterStrength>,
     avoidance: Option<&'static Avoidance>,
     scale_density: Option<&'static ScaleDensity>,
+    lod_config: Option<&'static LodConfig>,
     layer_gtf: &'static GlobalTransform,
 }
 
@@ -73,6 +74,7 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
+            lod_config,
         }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]
@@ -104,7 +106,7 @@ pub fn handle_scatter_requests<T>(
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
 
         let task_data = if let Some(chunk) = request.chunk_entity {
-            let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
+            let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config)) =
                 q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
@@ -147,6 +149,7 @@ pub fn handle_scatter_requests<T>(
                 external_avoidance_data: occupancy_map.clone(),
                 density: scale_density.map(|_| {
                     lod_config
+                        .unwrap_or(root_lod_config)
                         .density
                         .get(**chunk_level as usize)
                         .cloned()
