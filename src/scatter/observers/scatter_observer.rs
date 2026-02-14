@@ -17,7 +17,7 @@ pub fn scatter_observer<T>(
     let layer = trigger.layer;
     let Ok(scatter_items) = q_layer.get(layer) else {
         #[cfg(feature = "trace")]
-        warn!("ScatterLayer {layer} not found!");
+        debug!("ScatterLayer {layer} not found!");
         return;
     };
 
