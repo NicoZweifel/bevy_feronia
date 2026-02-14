@@ -79,7 +79,7 @@ where
                 ),
             )
             .add_systems(
-                PostUpdate,
+                FixedPostUpdate,
                 handle_scatter_requests::<T>
                     .after(TransformSystems::Propagate)
                     .in_set(ScatterSet::Ready),
