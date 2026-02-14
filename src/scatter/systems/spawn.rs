@@ -35,7 +35,7 @@ pub fn spawn<T>(
 
 
         // TODO allow/move to scatter asset props
-        let lod_config = q_layer.get(event.trigger.root).unwrap_or(lod_config);
+        let lod_config = q_layer.get(event.trigger.layer).unwrap_or(lod_config);
         let name_map = &event.create_name_map(&prototype_assets);
         if name_map.is_empty() {
             #[cfg(feature = "trace")]
