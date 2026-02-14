@@ -229,6 +229,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                 union_aabb = combine_aabbs(&union_aabb, &transformed);
             }
 
+            #[cfg(feature = "avian")]
             let body = scene_root_data
                 .o_scatter_bodies
                 .or(layer_data.o_scatter_bodies)
