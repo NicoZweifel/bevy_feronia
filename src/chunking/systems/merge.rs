@@ -7,7 +7,7 @@ use bevy_transform::prelude::GlobalTransform;
 
 use crate::utils::despawn;
 #[cfg(feature = "trace")]
-use tracing::{debug, error, warn};
+use tracing::*;
 
 pub fn merge_check(
     q_chunk: Query<
