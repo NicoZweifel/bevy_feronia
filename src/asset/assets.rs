@@ -146,10 +146,18 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
 
         #[cfg(feature = "avian")]
         let collider = child_data
-            .o_collider
-            .or(parent_data.o_collider)
-            .or(scene_root_data.o_collider)
-            .cloned();
+            .o_scatter_bodies
+            .or(parent_data.o_scatter_bodies)
+            .ot(scene_root_data.o_scatter_bodies)
+            .is_some_and(|x| **x)
+            .then(|| {
+                child_data
+                    .o_collider
+                    .or(parent_data.o_collider)
+                    .or(scene_root_data.o_collider)
+                    .cloned()
+            })
+            .flatten();
 
         Some(ScatterAssetPartEntity {
             entity,
