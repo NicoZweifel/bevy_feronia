@@ -78,7 +78,7 @@ pub fn handle_scatter_requests<T>(
         }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]
-            warn!("ScatterLayer {layer} not found!");
+            debug!("ScatterLayer {layer} not found!");
             continue;
         };
 
