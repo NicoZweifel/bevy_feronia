@@ -1,9 +1,8 @@
 use crate::prelude::*;
 use crate::scatter::observers::scatter_chunk;
 use bevy_ecs::prelude::*;
-
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::debug;
 
 pub fn on_chunk_add<T>(trigger: On<Add, ChunkInitialize>, mut cmd: Commands)
 where
