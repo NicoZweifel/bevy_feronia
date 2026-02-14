@@ -6,7 +6,7 @@ use bevy_ecs::prelude::*;
 use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub fn spawn<T>(
     mut cmd: Commands,

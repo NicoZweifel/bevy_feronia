@@ -347,7 +347,7 @@ where
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Deref, Debug)]
+#[derive(Message, Clone, Deref, Debug)]
 pub struct ClearScatterLayer(pub Entity);
 
 impl From<Entity> for ClearScatterLayer {
@@ -356,7 +356,7 @@ impl From<Entity> for ClearScatterLayer {
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Deref, Debug)]
+#[derive(Message, Clone, Deref, Debug)]
 pub struct ClearScatterRoot(pub Entity);
 
 impl From<Entity> for ClearScatterRoot {

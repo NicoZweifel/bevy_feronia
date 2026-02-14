@@ -4,7 +4,7 @@ use crate::scatter::events::ScatterResults;
 use bevy_ecs::prelude::*;
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::debug;
 
 pub fn scatter_observer<T>(
     trigger: On<ScatterResults<T>>,
