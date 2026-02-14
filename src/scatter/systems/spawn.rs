@@ -28,7 +28,7 @@ pub fn spawn<T>(
 
         let Ok(lod_config) = q_root.get(event.trigger.root) else {
             #[cfg(feature = "trace")]
-            warn!("Couldn't get ScatterRoot!");
+            debug!("Couldn't get ScatterRoot!");
             continue;
         };
 

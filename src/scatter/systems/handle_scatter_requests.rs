@@ -162,7 +162,7 @@ pub fn handle_scatter_requests<T>(
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(scatter_root) else {
                 #[cfg(feature = "trace")]
-                warn!("ScatterRoot {} not found!", scatter_root);
+                debug!("ScatterRoot {} not found!", scatter_root);
                 continue;
             };
 
