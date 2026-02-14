@@ -17,6 +17,7 @@ pub fn spawn<T>(
     q_scatter_chunked: Query<(), With<ScatterChunked>>,
     q_transforms: Query<&GlobalTransform>,
     q_target: Query<Entity, Without<Merging>>,
+    q_layer:Query<&LodConfig, With<ScatterLayer>>,
 ) where
     T: ScatterMaterial,
 {
@@ -32,6 +33,9 @@ pub fn spawn<T>(
             continue;
         };
 
+
+        // TODO allow/move to scatter asset props
+        let lod_config = q_layer.get(event.trigger.root).unwrap_or(lod_config);
         let name_map = &event.create_name_map(&prototype_assets);
         if name_map.is_empty() {
             #[cfg(feature = "trace")]

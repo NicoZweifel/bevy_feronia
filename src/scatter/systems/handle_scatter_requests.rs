@@ -148,8 +148,7 @@ pub fn handle_scatter_requests<T>(
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.clone(),
                 density: scale_density.map(|_| {
-                    lod_config
-                        .unwrap_or(root_lod_config)
+                 root_lod_config
                         .density
                         .get(**chunk_level as usize)
                         .cloned()
