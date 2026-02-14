@@ -4,7 +4,7 @@ use bevy_math::{IVec2, Vec3};
 use bevy_transform::prelude::{GlobalTransform, Transform};
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::{debug, warn, trace};
 
 pub fn split(
     q_center: Query<&GlobalTransform, With<Center>>,
@@ -16,8 +16,8 @@ pub fn split(
 ) {
     let Ok(center) = q_center.single() else {
         #[cfg(feature = "trace")]
-        debug!(
-            "Couldn't get ChunkCenter for split! Did you forgot to add it to your Camera or Player entity?"
+        trace!(
+            "Couldn't get Center for split! Did you forgot to add it to your Camera or Player entity?"
         );
         return;
     };
