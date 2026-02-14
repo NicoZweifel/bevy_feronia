@@ -106,7 +106,7 @@ pub struct ScatterChunked;
 
 #[cfg(feature = "avian")]
 #[derive(Component, Debug, Clone, Reflect, Deref)]
-pub struct ScatterPhysicsBody(bool);
+pub struct ScatterPhysicsBody(pub bool);
 
 /// Component on a [`ScatterLayer`]'s [`ScatterItem`] holding a handle to a [`ScatterAsset`], which defines the properties
 /// (mesh, material, LOD, etc.) of a scatterable object.
