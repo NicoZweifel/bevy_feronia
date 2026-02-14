@@ -148,7 +148,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         let collider = child_data
             .o_scatter_bodies
             .or(parent_data.o_scatter_bodies)
-            .ot(scene_root_data.o_scatter_bodies)
+            .or(scene_root_data.o_scatter_bodies)
             .is_some_and(|x| **x)
             .then(|| {
                 child_data
