@@ -111,7 +111,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .multiply(scene_root_data.wind_data)
             .multiply(child_data.wind_data);
 
-        let options = ScatterMaterialOptions::from(layer_material_option_data)
+        let options = ScatterMaterialOptions::from(layer_data.material_options)
             .with(scene_root_data.material_options)
             .with(child_data.material_options)
             .with_debug_color(debug_color);
@@ -136,7 +136,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             #[allow(deprecated)]
             lod,
             wind_affected: options.wind.affected
-                || layer_material_option_data.wind_affected.is_some(),
+                || layer_data.material_options.wind_affected.is_some(),
         };
 
         let root_space_tf = child_data
