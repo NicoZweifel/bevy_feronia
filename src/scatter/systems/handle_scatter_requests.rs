@@ -132,9 +132,7 @@ pub fn handle_scatter_requests<T>(
             };
 
             let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
-
             let seed = generate_seed(&world_seed, chunk_coord);
-
             let instances_dim = density * (**chunk_level as f32 * 2.).max(1.);
 
             ScatterTaskData {
