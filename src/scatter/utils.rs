@@ -26,7 +26,7 @@ pub fn scatter_layer_disabled(
         return true;
     }
 
-   false 
+    false
 }
 
 pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {
