@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::scatter::observers::scatter_chunk;
-use crate::scatter::utils::scatter_layer_enabled;
+use crate::scatter::utils::scatter_layer_disabled;
 use bevy_ecs::prelude::*;
 #[cfg(feature = "trace")]
 use tracing::debug;
@@ -14,11 +14,7 @@ where
     cmd.entity(chunk).insert(ChunkInitScatter::<T>::default());
 }
 
-type LayerQueryItem = (
-    Entity,
-    Option<&'static ScatterLayerEnabled>,
-    Option<&'static Name>,
-);
+type LayerQueryItem = (Entity, Has<ScatterLayerDisabled>, Option<&'static Name>);
 
 type LayerQueryFilter<T> = (
     With<ScatterLayer>,
@@ -46,7 +42,7 @@ pub fn chunk_init_scatter<T>(
         for scatter_layer in layers
             .iter()
             .filter_map(|e| q_layer.get(e).ok())
-            .filter_map(|(e, enabled, name)| scatter_layer_enabled(e, name, enabled).then_some(e))
+            .filter_map(|(e, enabled, name)| scatter_layer_disabled(e, name, enabled).then_some(e))
         {
             cmd.trigger(ScatterChunk::<T>::new(chunk, scatter_layer))
         }

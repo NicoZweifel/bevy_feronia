@@ -9,7 +9,7 @@ type LayerQueryItem = (
     Entity,
     &'static ScatterLayerOf,
     Option<&'static Name>,
-    Option<&'static ScatterLayerEnabled>,
+    Has<ScatterLayerDisabled>,
 );
 
 pub fn scatter_chunks<T: ScatterMaterial>(
@@ -18,7 +18,7 @@ pub fn scatter_chunks<T: ScatterMaterial>(
     q_root: Query<&ChunkRoot>,
     q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
 ) {
-    let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.entity) else {
+    let Ok((layer_entity, scatter_root, layer_name, disabled)) = q_layer.get(trigger.entity) else {
         #[cfg(feature = "trace")]
         debug!("ScatterLayer not found!");
         return;
@@ -30,7 +30,7 @@ pub fn scatter_chunks<T: ScatterMaterial>(
         return;
     };
 
-    if !scatter_layer_enabled(layer_entity, layer_name, enabled) {
+    if !scatter_layer_disabled(layer_entity, layer_name, disabled) {
         return;
     };
 

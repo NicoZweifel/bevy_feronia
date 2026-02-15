@@ -11,12 +11,12 @@ use xxh3::hash64_with_seed;
 #[cfg(feature = "trace")]
 use tracing::debug;
 
-pub fn scatter_layer_enabled(
+pub fn scatter_layer_disabled(
     layer_entity: Entity,
     layer_name: Option<&Name>,
-    enabled: Option<&ScatterLayerEnabled>,
+    disabled: bool,
 ) -> bool {
-    if !*enabled.cloned().unwrap_or(true.into()) {
+    if disabled {
         let _name = layer_name
             .unwrap_or(&Name::new(layer_entity.to_string()))
             .to_string();

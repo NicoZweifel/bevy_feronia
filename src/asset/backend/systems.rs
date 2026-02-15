@@ -75,7 +75,7 @@ pub fn insert_parts<T: ScatterMaterial>(
                     .ok()?;
 
                 let layer = child_of.parent();
-                let (layer_data) = q_layers
+                let layer_data = q_layers
                     .get(layer)
                     .inspect_err(|_| {
                         #[cfg(feature = "trace")]

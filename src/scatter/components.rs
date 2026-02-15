@@ -105,7 +105,7 @@ pub struct ScatterRootProcessed;
 pub struct ScatterChunked;
 
 #[cfg(feature = "avian")]
-#[derive(Component, Debug, Clone, Reflect, Deref)]
+#[derive(Component, Debug, Clone, Reflect)]
 pub struct ScatterPhysicsBody;
 
 /// Component on a [`ScatterLayer`]'s [`ScatterItem`] holding a handle to a [`ScatterAsset`], which defines the properties
@@ -209,10 +209,10 @@ pub struct ScatterLayerOf(pub Entity);
 #[relationship_target(relationship = ScatterLayerOf)]
 pub struct ScatterRoot(Vec<Entity>);
 
-/// Component to enable or disable scattering for a [`ScatterLayer`].
-#[derive(Component, Reflect, Deref, DerefMut, Debug, From, Clone)]
+/// Component for disabling scattering for a [`ScatterLayer`].
+#[derive(Component, Reflect, Debug, From, Clone)]
 #[reflect(Component, Debug)]
-pub struct ScatterLayerEnabled(pub bool);
+pub struct ScatterLayerDisabled;
 
 /// Controls the density for a specific [`ScatterLayer`].
 #[derive(Component, Reflect, Deref, DerefMut, Debug)]

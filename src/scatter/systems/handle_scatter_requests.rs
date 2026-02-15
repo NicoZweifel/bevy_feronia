@@ -11,7 +11,7 @@ use bevy_tasks::futures_lite::future;
 use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::debug;
 
 #[derive(QueryData)]
 #[query_data()]
