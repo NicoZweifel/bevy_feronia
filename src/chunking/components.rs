@@ -144,7 +144,7 @@ impl Default for ChunkRootSizeDim {
 }
 
 /// Component to enabled & disable [`ChunkRoot`] entities.
-#[derive(Component, Reflect, Debug)]
+#[derive(Component, Reflect, Debug, Default)]
 #[reflect(Component)]
 pub struct ChunkRootDisabled;
 /// Component storing the 2D grid coordinate of a chunk.
