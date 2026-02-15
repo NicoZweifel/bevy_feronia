@@ -22,7 +22,7 @@ pub fn scatter_layer_enabled(
             .to_string();
 
         #[cfg(feature = "trace")]
-        warn!("ScatterLayer {_name} is disabled!");
+        debug!("ScatterLayer {_name} is disabled!");
         return false;
     }
 
