@@ -25,6 +25,8 @@ pub struct ScatterLayerQueryData {
     avoidance: Option<&'static Avoidance>,
     scale_density: Option<&'static ScaleDensity>,
     layer_gtf: &'static GlobalTransform,
+    disabled: Has<ScatterLayerDisabled>,
+    name: Option<&'static Name>,
 }
 
 // TODO refactor/split this up
@@ -39,6 +41,7 @@ pub fn handle_scatter_requests<T>(
             Option<&MapHeight>,
             &Aabb,
             &LodConfig,
+            Has<ChunkRootDisabled>,
         ),
         With<ChunkRoot>,
     >,
@@ -73,12 +76,18 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
+            disabled,
+            name,
         }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]
             debug!("ScatterLayer {layer} not found!");
             continue;
         };
+
+        if scatter_layer_disabled(layer, name, disabled) {
+            continue;
+        }
 
         let scatter_root = **scatter_root;
         let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root) else {
@@ -104,13 +113,19 @@ pub fn handle_scatter_requests<T>(
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
 
         let task_data = if let Some(chunk) = request.chunk_entity {
-            let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config)) =
+            let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config, disabled)) =
                 q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
                 debug!("ChunkRoot {} not found!", scatter_root);
                 continue;
             };
+
+            if disabled {
+                #[cfg(feature = "trace")]
+                debug!("ChunkRoot {scatter_root} is disabled!");
+                continue;
+            }
 
             let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk) else {
                 #[cfg(feature = "trace")]
