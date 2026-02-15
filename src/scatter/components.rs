@@ -210,7 +210,7 @@ pub struct ScatterLayerOf(pub Entity);
 pub struct ScatterRoot(Vec<Entity>);
 
 /// Component for disabling scattering for a [`ScatterLayer`].
-#[derive(Component, Reflect, Debug, From, Clone)]
+#[derive(Component, Reflect, Debug, From, Clone, Default)]
 #[reflect(Component, Debug)]
 pub struct ScatterLayerDisabled;
 
