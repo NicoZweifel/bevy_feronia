@@ -24,6 +24,7 @@ pub fn clear_scatter_roots(
                     );
                 })
                 .map(|(root, layers, occ_map)| {
+                    cmd.entity(root).remove::<HierarchicalScatterState>();
                     cmd.entity(root).insert(ScatterOccupancyMap {
                         cell_size: occ_map.cell_size,
                         ..default()
