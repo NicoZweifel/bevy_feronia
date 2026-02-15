@@ -43,7 +43,6 @@ pub fn spawn<T>(
         }
 
         let parent = event.trigger.chunk.unwrap_or(event.trigger.layer);
-
         let is_chunked =
             event.trigger.chunk.is_some() && q_scatter_chunked.get(event.trigger.layer).is_ok();
 

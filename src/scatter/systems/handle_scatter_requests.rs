@@ -24,7 +24,6 @@ pub struct ScatterLayerQueryData {
     instance_jitter: Option<&'static InstanceJitterStrength>,
     avoidance: Option<&'static Avoidance>,
     scale_density: Option<&'static ScaleDensity>,
-    lod_config: Option<&'static LodConfig>,
     layer_gtf: &'static GlobalTransform,
 }
 
@@ -74,7 +73,6 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
-            lod_config,
         }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]

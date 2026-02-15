@@ -30,7 +30,7 @@ pub struct CollectableQueryData<T: Material = StandardMaterial> {
     #[cfg(feature = "avian")]
     pub o_collider: Option<&'static Collider>,
     #[cfg(feature = "avian")]
-    pub o_scatter_bodies: Option<&'static ScatterPhysicsBody>,
+    pub o_scatter_body: Option<&'static ScatterPhysicsBody>,
 
     pub material_options: MaterialOptionData,
     pub wind_data: WindOptionData<'static>,
