@@ -128,6 +128,7 @@ pub fn insert_parts<T: ScatterMaterial>(
                     entity,
                     item_of,
                     wind,
+                    layer_data,
                     scene_root_data,
                     item_root_data,
                     parent_data,
