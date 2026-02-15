@@ -86,6 +86,7 @@ pub fn handle_scatter_requests<T>(
         };
 
         if scatter_layer_disabled(layer, name, disabled) {
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
             continue;
         }
 
@@ -124,6 +125,7 @@ pub fn handle_scatter_requests<T>(
             if disabled {
                 #[cfg(feature = "trace")]
                 debug!("ChunkRoot {scatter_root} is disabled!");
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             }
 
