@@ -101,7 +101,6 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         item_root_data: CollectableQueryDataItem<T>,
         parent_data: CollectableQueryDataItem<T>,
         child_data: CollectableQueryDataItem<T>,
-        layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
         let hue = (entity.index_u32() * 30) as f32 % 360.0;
