@@ -19,7 +19,7 @@ use std::{
     slice::Iter,
 };
 
-#[derive(EntityEvent, Message, Component, Reflect)]
+#[derive(EntityEvent, Component, Reflect)]
 pub struct Scatter<T = StandardMaterial>
 where
     T: ScatterMaterial,
