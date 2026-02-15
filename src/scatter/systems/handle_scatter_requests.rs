@@ -209,7 +209,7 @@ pub fn handle_scatter_requests<T>(
 
         #[cfg(feature = "trace")]
         debug!(
-            "Scattering instances in ScatterLayer {} with {density}...",
+            "Scattering instances in ScatterLayer {} with density: {density}...",
             request.layer_entity
         );
 
