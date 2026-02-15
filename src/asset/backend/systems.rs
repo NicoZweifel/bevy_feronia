@@ -227,8 +227,8 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             #[cfg(feature = "avian")]
             let body = scene_root_data
-                .o_scatter_bodies
-                .or(layer_data.o_scatter_bodies)
+                .o_scatter_body
+                .or(layer_data.o_scatter_body)
                 .is_some_and(|x| **x)
                 .then(|| {
                     scene_root_data

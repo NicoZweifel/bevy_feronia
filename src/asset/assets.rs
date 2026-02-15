@@ -145,9 +145,9 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
 
         #[cfg(feature = "avian")]
         let collider = layer_data
-            .o_scatter_bodies
-            .or(parent_data.o_scatter_bodies)
-            .or(scene_root_data.o_scatter_bodies)
+            .o_scatter_body
+            .or(parent_data.o_scatter_body)
+            .or(scene_root_data.o_scatter_body)
             .is_some_and(|x| **x)
             .then(|| {
                 child_data
