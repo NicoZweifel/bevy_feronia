@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 use xxh3::hash64_with_seed;
 
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::debug;
 
 pub fn scatter_layer_enabled(
     layer_entity: Entity,
