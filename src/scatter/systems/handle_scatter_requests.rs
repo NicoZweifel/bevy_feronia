@@ -106,13 +106,6 @@ pub fn handle_scatter_requests<T>(
         };
 
         let density = density_dist.map_or(1.0, |d| **d);
-
-        #[cfg(feature = "trace")]
-        debug!(
-            "Scattering {density} instances in ScatterLayer {}",
-            request.layer_entity
-        );
-
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
         let scatter_task_data = if let Some(chunk) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config, disabled)) =
@@ -215,6 +208,12 @@ pub fn handle_scatter_requests<T>(
         };
 
         cmd.entity(entity).remove::<ScatterRequest<T>>();
+
+        #[cfg(feature = "trace")]
+        debug!(
+            "Scattering instances in ScatterLayer {} with {density}...",
+            request.layer_entity
+        );
 
         let task = AsyncComputeTaskPool::get()
             .spawn(async move { ScatterResults::<T>::from(scatter_task_data) });

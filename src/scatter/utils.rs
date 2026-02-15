@@ -23,10 +23,10 @@ pub fn scatter_layer_disabled(
 
         #[cfg(feature = "trace")]
         debug!("ScatterLayer {_name} is disabled!");
-        return false;
+        return true;
     }
 
-    true
+   false 
 }
 
 pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {

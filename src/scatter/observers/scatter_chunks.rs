@@ -30,7 +30,7 @@ pub fn scatter_chunks<T: ScatterMaterial>(
         return;
     };
 
-    if !scatter_layer_disabled(layer_entity, layer_name, disabled) {
+    if scatter_layer_disabled(layer_entity, layer_name, disabled) {
         return;
     };
 
