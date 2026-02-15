@@ -94,12 +94,14 @@ pub fn handle_scatter_requests<T>(
         let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root) else {
             #[cfg(feature = "trace")]
             debug!("ScatterRoot {scatter_root} state not found!");
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
             continue;
         };
 
         let Ok(occupancy_map) = q_occupancy_map.get(scatter_root) else {
             #[cfg(feature = "trace")]
             debug!("ScatterRoot {scatter_root} occupancy not found!");
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
             continue;
         };
 
@@ -112,13 +114,13 @@ pub fn handle_scatter_requests<T>(
         );
 
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
-
-        let task_data = if let Some(chunk) = request.chunk_entity {
+        let scatter_task_data = if let Some(chunk) = request.chunk_entity {
             let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config, disabled)) =
                 q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
                 debug!("ChunkRoot {} not found!", scatter_root);
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
@@ -132,6 +134,7 @@ pub fn handle_scatter_requests<T>(
             let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk) else {
                 #[cfg(feature = "trace")]
                 debug!("Chunk {chunk} not found!");
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
@@ -141,7 +144,7 @@ pub fn handle_scatter_requests<T>(
 
             let instances_dim = density * (**chunk_level as f32 * 2.).max(1.);
 
-            Some(ScatterTaskData {
+            ScatterTaskData {
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
@@ -172,17 +175,18 @@ pub fn handle_scatter_requests<T>(
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
-            })
+            }
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(scatter_root) else {
                 #[cfg(feature = "trace")]
                 debug!("ScatterRoot {} not found!", scatter_root);
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
             let size = Vec3::from(aabb.half_extents * 2.0);
 
-            Some(ScatterTaskData {
+            ScatterTaskData {
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
@@ -207,17 +211,13 @@ pub fn handle_scatter_requests<T>(
                 height_map_config: height_map_config.cloned(),
                 density: None,
                 density_map_image,
-            })
-        };
-
-        let Some(data) = task_data else {
-            continue;
+            }
         };
 
         cmd.entity(entity).remove::<ScatterRequest<T>>();
 
-        let task =
-            AsyncComputeTaskPool::get().spawn(async move { ScatterResults::<T>::from(data) });
+        let task = AsyncComputeTaskPool::get()
+            .spawn(async move { ScatterResults::<T>::from(scatter_task_data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
