@@ -105,7 +105,7 @@ pub struct ScatterRootProcessed;
 pub struct ScatterChunked;
 
 #[cfg(feature = "avian")]
-#[derive(Component, Debug, Clone, Reflect)]
+#[derive(Component, Debug, Clone, Reflect, Default)]
 pub struct ScatterPhysicsBody;
 
 /// Component on a [`ScatterLayer`]'s [`ScatterItem`] holding a handle to a [`ScatterAsset`], which defines the properties
