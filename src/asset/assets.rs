@@ -148,7 +148,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .o_scatter_body
             .or(parent_data.o_scatter_body)
             .or(scene_root_data.o_scatter_body)
-            .is_some_and(|x| **x)
+            .is_some()
             .then(|| {
                 child_data
                     .o_collider

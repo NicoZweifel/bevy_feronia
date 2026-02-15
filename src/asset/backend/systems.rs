@@ -229,7 +229,7 @@ pub fn insert_requests<T: ScatterMaterial>(
             let body = scene_root_data
                 .o_scatter_body
                 .or(layer_data.o_scatter_body)
-                .is_some_and(|x| **x)
+                .is_some()
                 .then(|| {
                     scene_root_data
                         .o_rigid_body

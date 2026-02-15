@@ -9,9 +9,10 @@ use tracing::{debug, trace, warn};
 pub fn split(
     q_center: Query<&GlobalTransform, With<Center>>,
     q_chunk: Query<
-        (Entity, &GlobalTransform, &SplitDistance),
+        (Entity, &GlobalTransform, &SplitDistance, &ChunkOf),
         (With<CanSplit>, With<Chunk>, Without<Merging>),
     >,
+    q_root: Query<Has<ChunkRootDisabled>, With<ChunkRoot>>,
     mut mw_split: MessageWriter<SplitChunk>,
 ) {
     let Ok(center) = q_center.single() else {
@@ -24,14 +25,20 @@ pub fn split(
 
     let center = center.translation();
 
-    for entity in q_chunk
-        .iter()
-        .filter_map(|(entity, chunk_transform, split_distance)| {
-            let distance = center.distance(chunk_transform.translation());
-            let check = distance < **split_distance;
+    for entity in
+        q_chunk
+            .iter()
+            .filter_map(|(entity, chunk_transform, split_distance, chunk_of)| {
+                let disabled = q_root.get(**chunk_of).ok()?;
+                if disabled {
+                    return None;
+                }
 
-            check.then_some(entity)
-        })
+                let distance = center.distance(chunk_transform.translation());
+                let check = distance < **split_distance;
+
+                check.then_some(entity)
+            })
     {
         mw_split.write(SplitChunk(entity));
     }
