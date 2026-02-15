@@ -42,7 +42,7 @@ pub fn chunk_init_scatter<T>(
         for scatter_layer in layers
             .iter()
             .filter_map(|e| q_layer.get(e).ok())
-            .filter_map(|(e, enabled, name)| scatter_layer_disabled(e, name, enabled).then_some(e))
+            .filter_map(|(e, enabled, name)| !scatter_layer_disabled(e, name, enabled).then_some(e))
         {
             cmd.trigger(ScatterChunk::<T>::new(chunk, scatter_layer))
         }
