@@ -38,8 +38,7 @@ impl ChunkApp for App {
 
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .configure_scatter_set::<PreUpdate>()
+        app.configure_scatter_set::<PreUpdate>()
             .configure_scatter_set::<Update>()
             .configure_scatter_set::<PostUpdate>()
             .register_type::<Chunk>()
