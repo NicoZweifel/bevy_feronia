@@ -18,7 +18,7 @@ pub fn show_aabb_gizmos(
     }
 }
 
-pub fn hide_aabb_gizmos(mut cmd: Commands, q: Query<Entity, Without<ShowAabbGizmo>>) {
+pub fn hide_aabb_gizmos(mut cmd: Commands, q: Query<Entity, With<ShowAabbGizmo>>) {
     for e in &q {
         cmd.entity(e).remove::<ShowAabbGizmo>();
     }
