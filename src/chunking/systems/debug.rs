@@ -13,14 +13,13 @@ pub fn draw_aabbs(
     cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
-        let (scale, rotation, _) = tf.to_scale_rotation_translation();
-        let center = tf.transform_point(Vec3::from(aabb.center));
-        let size = Vec3::from(aabb.half_extents) * 2.0 * scale;
+        let affine = tf.affine();
+        let center = affine.transform_point3a(aabb.center);
+        let half_extents = affine.matrix3.abs() * aabb.half_extents.abs();
 
         gizmos.cube(
-            Transform::from_translation(center)
-                .with_rotation(rotation)
-                .with_scale(size),
+            Transform::from_translation(center.into())
+                .with_scale((half_extents * 2.0).into()),
             cfg.aabb_color,
         );
     }
