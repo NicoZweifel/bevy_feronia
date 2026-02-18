@@ -38,7 +38,8 @@ impl ChunkApp for App {
 
 impl Plugin for ChunkPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_scatter_set::<PreUpdate>()
+        app
+            .configure_scatter_set::<PreUpdate>()
             .configure_scatter_set::<Update>()
             .configure_scatter_set::<PostUpdate>()
             .register_type::<Chunk>()
@@ -58,8 +59,11 @@ impl Plugin for ChunkPlugin {
                     (split, handle_split).chain(),
                     (merge_check, handle_merge_check).chain(),
                     (merge, handle_merge).chain(),
-                    draw_aabbs.run_if(|res: Option<Res<ChunkDebugConfig>>| {
+                    show_aabb_gizmos.run_if(|res: Option<Res<ChunkDebugConfig>>| {
                         res.is_some_and(|x| x.show_aabbs)
+                    }),
+                    hide_aabb_gizmos.run_if(|res: Option<Res<ChunkDebugConfig>>| {
+                        res.is_none() || res.is_some_and(|x| !x.show_aabbs)
                     }),
                     draw_lod_ranges.run_if(|res: Option<Res<ChunkDebugConfig>>| {
                         res.is_some_and(|x| x.show_lod_ranges)

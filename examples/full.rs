@@ -458,7 +458,7 @@ fn spawn_landscape(
     InstanceRotationYaw,
     InstanceScale,
     InstanceJitter,
-    DistributionDensity(15.),
+    DistributionDensity(10.),
     Avoidance(2.),
 )]
 struct RockLayer;
@@ -618,7 +618,7 @@ impl TreeLayer {
 #[require(
     Name::new("Foliage Layer"),
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
-    DistributionDensity(30.),
+    DistributionDensity(15.),
     InstanceRotationYaw,
     InstanceJitter,
     InstanceScaleRange { min: 4., max: 8. },

@@ -1,27 +1,26 @@
 use crate::prelude::*;
-use bevy_camera::primitives::Aabb;
 use bevy_color::palettes::css::{PURPLE, RED};
 use bevy_ecs::prelude::*;
-use bevy_gizmos::prelude::Gizmos;
+use bevy_gizmos::prelude::*;
 use bevy_math::*;
 use bevy_transform::prelude::*;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_8};
 
-pub fn draw_aabbs(
-    mut gizmos: Gizmos,
-    q: Query<(&Aabb, &GlobalTransform)>,
+pub fn show_aabb_gizmos(
+    mut cmd: Commands,
+    q: Query<Entity, Without<ShowAabbGizmo>>,
     cfg: Res<ChunkDebugConfig>,
 ) {
-    for (aabb, tf) in &q {
-        let affine = tf.affine();
-        let center = affine.transform_point3a(aabb.center);
-        let half_extents = affine.matrix3.abs() * aabb.half_extents.abs();
+    for e in &q {
+        cmd.entity(e).insert(ShowAabbGizmo {
+            color: cfg.aabb_color.into(),
+        });
+    }
+}
 
-        gizmos.cube(
-            Transform::from_translation(center.into())
-                .with_scale((half_extents * 2.0).into()),
-            cfg.aabb_color,
-        );
+pub fn hide_aabb_gizmos(mut cmd: Commands, q: Query<Entity, Without<ShowAabbGizmo>>) {
+    for e in &q {
+        cmd.entity(e).remove::<ShowAabbGizmo>();
     }
 }
 
