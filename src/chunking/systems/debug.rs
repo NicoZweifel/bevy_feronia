@@ -10,14 +10,17 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_8};
 pub fn draw_aabbs(
     mut gizmos: Gizmos,
     q: Query<(&Aabb, &GlobalTransform)>,
-    cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
+        let (scale, rotation, _) = tf.to_scale_rotation_translation();
+        let center = tf.transform_point(Vec3::from(aabb.center));
+        let size = Vec3::from(aabb.half_extents) * 2.0 * scale;
+
         gizmos.cube(
-            Transform::from_translation(tf.transform_point(aabb.center.into()))
-                .with_rotation(tf.rotation())
-                .with_scale((aabb.half_extents * 2.0 * tf.scale().to_vec3a()).into()),
-            cfg.aabb_color,
+            Transform::from_translation(center)
+                .with_rotation(rotation)
+                .with_scale(size),
+            bevy_color::palettes::tailwind::GREEN_400,
         );
     }
 }
