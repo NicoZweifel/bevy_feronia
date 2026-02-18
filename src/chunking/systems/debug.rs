@@ -10,6 +10,7 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_8};
 pub fn draw_aabbs(
     mut gizmos: Gizmos,
     q: Query<(&Aabb, &GlobalTransform)>,
+    cfg: Res<ChunkDebugConfig>,
 ) {
     for (aabb, tf) in &q {
         let (scale, rotation, _) = tf.to_scale_rotation_translation();
@@ -20,7 +21,7 @@ pub fn draw_aabbs(
             Transform::from_translation(center)
                 .with_rotation(rotation)
                 .with_scale(size),
-            bevy_color::palettes::tailwind::GREEN_400,
+            cfg.aabb_color,
         );
     }
 }
