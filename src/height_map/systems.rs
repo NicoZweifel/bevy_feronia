@@ -65,7 +65,7 @@ pub fn setup_config(
         world_size,
         world_center,
         world_height_range: min_pt.y..max_pt.y,
-        render_layer: RenderLayers::layer(HEIGHT_MAP_GHOST_RENDER_LAYER),
+        ..default()
     };
 
     cmd.insert_resource(config);
