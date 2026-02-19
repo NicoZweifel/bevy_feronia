@@ -7,7 +7,7 @@ use bevy_camera::{
     Camera, Camera3d, ImageRenderTarget, OrthographicProjection, Projection, RenderTarget,
     ScalingMode,
     primitives::Aabb,
-    visibility::{NoFrustumCulling, RenderLayers},
+    visibility::NoFrustumCulling,
 };
 use bevy_ecs::prelude::*;
 use bevy_gizmos::gizmos::Gizmos;

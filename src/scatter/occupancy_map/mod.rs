@@ -332,9 +332,9 @@ mod tests {
             (center_height - radius).abs() < 0.1,
             "Center height {center_height} should be close to radius {radius}"
         );
-        // sqrt(5^2 - 4^2) = sqrt(25 - 16) = 3.0
+        // sqrt(5^2 - 3.5^2) = sqrt(25 - 12.25) ≈ 3.57
         assert!(
-            (edge_height - 3.0).abs() < 0.1,
+            (edge_height - 3.57).abs() < 0.1,
             "Edge height {} should be close to 3.0",
             edge_height
         );

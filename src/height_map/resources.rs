@@ -12,7 +12,6 @@ use derive_more::{From, Into};
 
 use std::ops::Range;
 
-
 #[derive(Resource, Clone, Reflect, Debug)]
 #[reflect(Resource, Clone, Debug)]
 pub struct HeightMapConfig {
