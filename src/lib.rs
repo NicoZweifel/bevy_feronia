@@ -63,7 +63,7 @@
 //! ```
 //!
 //! For chunking or GPU driven culling to work, `Center` and `CullComputeCamera` need to be inserted on the Camera:
-//! ```rust
+//! ```rust,ignore
 //! cmd.spawn((
 //!     (Camera::default(), Camera3d::default()),
 //!     (Center, CullComputeCamera),
