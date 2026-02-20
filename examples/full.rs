@@ -30,7 +30,7 @@ use rand_pcg::Pcg64;
 
 fn main() -> AppExit {
     App::new()
-        .insert_resource(HeightMapConfig{
+        .insert_resource(HeightMapConfig {
             render_layers: RenderLayers::layer(1),
             ..default()
         })

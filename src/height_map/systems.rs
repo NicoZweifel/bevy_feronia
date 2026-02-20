@@ -5,9 +5,7 @@ use crate::prelude::*;
 use bevy_asset::Assets;
 use bevy_camera::{
     Camera, Camera3d, ImageRenderTarget, OrthographicProjection, Projection, RenderTarget,
-    ScalingMode,
-    primitives::Aabb,
-    visibility::NoFrustumCulling,
+    ScalingMode, primitives::Aabb, visibility::NoFrustumCulling,
 };
 use bevy_ecs::prelude::*;
 use bevy_gizmos::gizmos::Gizmos;
@@ -37,7 +35,7 @@ pub fn setup_config(
     mut next_state: ResMut<NextState<HeightMapState>>,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
     q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
-    cfg: Option<Res<HeightMapConfig>>
+    cfg: Option<Res<HeightMapConfig>>,
 ) {
     if !q_pending_landscapes.is_empty() {
         return;
@@ -67,7 +65,7 @@ pub fn setup_config(
         world_size,
         world_center,
         world_height_range: min_pt.y..max_pt.y,
-        render_layers: cfg.map(|x|x.render_layers.clone()).unwrap_or_default(),
+        render_layers: cfg.map(|x| x.render_layers.clone()).unwrap_or_default(),
     };
 
     cmd.insert_resource(config);
@@ -77,7 +75,6 @@ pub fn setup_config(
         "HeightMapConfig: Center {:?}, Size {}",
         world_center, world_size
     );
-
 
     next_state.set(HeightMapState::Pipeline);
 }
@@ -104,7 +101,7 @@ pub fn skip_setup(
 }
 
 pub fn finish_pipeline(mut next_state: ResMut<NextState<HeightMapState>>) {
-   next_state.set(HeightMapState::Ghost);
+    next_state.set(HeightMapState::Ghost);
 }
 
 pub fn create_height_map_ghost(

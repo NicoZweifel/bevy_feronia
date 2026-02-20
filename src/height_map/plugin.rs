@@ -19,7 +19,7 @@ impl Plugin for HeightMapPlugin {
             .add_plugins(MaterialPlugin::<HeightMapMaterial>::default())
             .add_systems(
                 PostUpdate,
-                    setup_config
+                setup_config
                     .chain()
                     .after(TransformSystems::Propagate)
                     .run_if(in_state(HeightMapState::Setup)),
