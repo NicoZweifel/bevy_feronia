@@ -19,9 +19,10 @@ impl Plugin for HeightMapPlugin {
             .add_plugins(MaterialPlugin::<HeightMapMaterial>::default())
             .add_systems(
                 PostUpdate,
-                setup_config.after(TransformSystems::Propagate).run_if(
-                    not(resource_exists::<HeightMapConfig>).and(in_state(HeightMapState::Setup)),
-                ),
+                    setup_config
+                    .chain()
+                    .after(TransformSystems::Propagate)
+                    .run_if(in_state(HeightMapState::Setup)),
             )
             .add_systems(
                 Update,
@@ -35,10 +36,14 @@ impl Plugin for HeightMapPlugin {
                         not(resource_exists::<HeightMapConfig>)
                             .and(in_state(HeightMapState::Setup)),
                     ),
-                    ((setup_materials, setup_height_map_pipeline), finish_setup)
+                    (
+                        (setup_materials, setup_height_map_pipeline),
+                        finish_pipeline,
+                    )
                         .chain()
                         .run_if(
-                            resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Setup)),
+                            resource_exists::<HeightMapConfig>
+                                .and(in_state(HeightMapState::Pipeline)),
                         ),
                     create_height_map_ghost.run_if(
                         resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Ghost)),

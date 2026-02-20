@@ -5,6 +5,7 @@ pub enum HeightMapState {
     #[default]
     Loading,
     Setup,
+    Pipeline,
     Ghost,
     Baking,
     Saving,

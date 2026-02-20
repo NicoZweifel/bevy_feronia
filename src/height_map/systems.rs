@@ -34,8 +34,10 @@ use tracing::{debug, info};
 
 pub fn setup_config(
     mut cmd: Commands,
+    mut next_state: ResMut<NextState<HeightMapState>>,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
     q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
+    cfg: Option<Res<HeightMapConfig>>
 ) {
     if !q_pending_landscapes.is_empty() {
         return;
@@ -65,7 +67,7 @@ pub fn setup_config(
         world_size,
         world_center,
         world_height_range: min_pt.y..max_pt.y,
-        ..default()
+        render_layers: cfg.map(|x|x.render_layers.clone()).unwrap_or_default(),
     };
 
     cmd.insert_resource(config);
@@ -75,6 +77,9 @@ pub fn setup_config(
         "HeightMapConfig: Center {:?}, Size {}",
         world_center, world_size
     );
+
+
+    next_state.set(HeightMapState::Pipeline);
 }
 
 pub fn setup_materials(
@@ -98,8 +103,8 @@ pub fn skip_setup(
     next_state.set(HeightMapState::Ready);
 }
 
-pub fn finish_setup(mut next_state: ResMut<NextState<HeightMapState>>) {
-    next_state.set(HeightMapState::Ghost);
+pub fn finish_pipeline(mut next_state: ResMut<NextState<HeightMapState>>) {
+   next_state.set(HeightMapState::Ghost);
 }
 
 pub fn create_height_map_ghost(
@@ -122,7 +127,7 @@ pub fn create_height_map_ghost(
                 Mesh3d(mesh_handle.0.clone()),
                 MeshMaterial3d(material.0.clone()),
                 Transform::from_matrix(child_transform.to_matrix()),
-                cfg.render_layer.clone(),
+                cfg.render_layers.clone(),
                 NoFrustumCulling,
                 HeightMapGhost,
                 NotShadowCaster,
@@ -223,7 +228,7 @@ pub fn setup_height_map_pipeline(
                 height: world_size,
             },
         }),
-        cfg.render_layer.clone(),
+        cfg.render_layers.clone(),
         ChildOf(*q_root),
     ));
 

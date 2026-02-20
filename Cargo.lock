@@ -867,8 +867,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_eidolon"
-version = "0.3.0"
-source = "git+https://github.com/NicoZweifel/bevy_eidolon?branch=fix-deferred#8d471facdf1c9dff5b9f9252986490e77d16bd54"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3bb9f5a81326477569443272aee312893c431a7a95a83b38cf46125b5d69b17"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -7075,3 +7076,8 @@ checksum = "e35aee689668bf9bd6f6f3a6c60bb29ba1244b3b43adfd50edd554a371da37d5"
 dependencies = [
  "zune-core 0.5.0",
 ]
+
+[[patch.unused]]
+name = "bevy_eidolon"
+version = "0.3.0"
+source = "git+https://github.com/NicoZweifel/bevy_eidolon?branch=fix-deferred#8d471facdf1c9dff5b9f9252986490e77d16bd54"
