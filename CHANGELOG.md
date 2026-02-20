@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.1...v0.8.2) - 2026-02-20
+
+### Added
+
+- lots of fixes / improvements / learnings ([#93](https://github.com/NicoZweifel/bevy_feronia/pull/93))
+
+### Other
+
+- Update example.rs
+- Update Cargo.lock
+- cleanup cargo toml
+
 ## [0.8.1](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.0...v0.8.1) - 2026-02-07
 
 ### Fixed
