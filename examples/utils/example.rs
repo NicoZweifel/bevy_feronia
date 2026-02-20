@@ -263,7 +263,7 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
 
     cmd.spawn((
         (Camera::default(), Camera3d::default()),
-        (Center,CullComputeCamera),
+        (Center, CullComputeCamera),
         Hdr,
         Controller::default(),
         ColorGrading::default(),
