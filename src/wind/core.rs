@@ -2,7 +2,8 @@ use crate::core::events::SpawnScatterAssets;
 use crate::prelude::*;
 
 use bevy_asset::{Asset, Handle};
-use bevy_camera::{primitives::Aabb, visibility::VisibilityRange};
+use bevy_camera::prelude::Visibility;
+use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
 use bevy_image::Image;
 use bevy_math::*;
@@ -10,16 +11,12 @@ use bevy_mesh::Mesh3d;
 use bevy_pbr::{Material, MeshMaterial3d, StandardMaterial};
 use bevy_platform::collections::HashMap;
 use bevy_render::render_resource::ShaderType;
-use bevy_transform::prelude::Transform;
+use bevy_transform::components::GlobalTransform;
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 use std::fmt::Debug;
-
-#[cfg(feature = "avian")]
-use avian3d::prelude::Collider;
-use bevy_transform::components::GlobalTransform;
 
 pub trait ScatterMaterialAsset: Asset + Clone + Default + Debug {}
 
@@ -114,54 +111,52 @@ where
     }
 }
 
-#[cfg(not(feature = "avian"))]
-type SpawnRequestItem<T> = (
-    Transform,
-    VisibilityRange,
-    Mesh3d,
-    MeshMaterial3d<T>,
-    ChildOf,
-    ScatteredInstance,
-    ScatteredAsset<T>,
-);
-
-#[cfg(feature = "avian")]
-type SpawnRequestItem<T> = (
-    Transform,
-    VisibilityRange,
-    Mesh3d,
-    MeshMaterial3d<T>,
-    ChildOf,
-    ScatteredInstance,
-    ScatteredAsset<T>,
-    Collider,
-);
-
 impl<'w, T> SpawnRequest<'w, T>
 where
     T: Material + Default + Debug,
 {
-    pub fn spawn_batch_iter(&self) -> impl Iterator<Item = SpawnRequestItem<T>> {
-        self.event.trigger.data.iter().flat_map(|res| {
-            self.prototypes_from_seed_iter(res.seed).flat_map(
-                |ScatterHandleAsset { handle, asset }| {
-                    asset.parts.iter().map(|part| {
+    pub(crate) fn spawn(&'w self, cmd: &mut Commands) {
+        for (res, ScatterHandleAsset { handle, asset }) in
+            self.event.trigger.data.iter().flat_map(move |res| {
+                self.prototypes_from_seed_iter(res.seed)
+                    .map(move |handle_asset| (res, handle_asset))
+            })
+        {
+            let entity = cmd
+                .spawn((
+                    ChildOf(self.parent),
+                    ScatteredInstance(self.event.trigger.layer),
+                    ScatteredAsset(handle.clone()),
+                    Visibility::Visible,
+                    res.transform,
+                ))
+                .id();
+
+            #[cfg(feature = "avian")]
+            if let Some(body) = asset.rigid_body {
+                cmd.entity(entity).insert(body);
+            }
+
+            cmd.spawn_batch(
+                asset
+                    .parts
+                    .clone()
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, part)| {
                         (
-                            res.transform.mul_transform(part.transform),
+                            part.transform,
+                            Visibility::Visible,
                             self.lod_config.get_visibility_range(asset.properties.lod),
-                            Mesh3d(part.h_mesh.clone()),
-                            MeshMaterial3d::<T>(part.h_material.clone()),
-                            ChildOf(self.parent),
-                            ScatteredInstance(self.event.trigger.layer),
-                            ScatteredAsset(handle.clone()),
-                            // TODO find a method for conditionally adding colliders
-                            #[cfg(feature = "avian")]
-                            part.collider.clone().unwrap_or_default(),
+                            Mesh3d(part.mesh().clone()),
+                            MeshMaterial3d::<T>(part.material().clone()),
+                            ChildOf(entity),
+                            ScatteredPart((handle.clone(), i)),
                         )
                     })
-                },
-            )
-        })
+                    .collect::<Vec<_>>(),
+            );
+        }
     }
 }
 
@@ -179,7 +174,7 @@ impl ScatterMaterial for StandardMaterial {
     }
 
     fn spawn(cmd: &mut Commands, request: SpawnRequest<StandardMaterial>) {
-        cmd.spawn_batch(request.spawn_batch_iter().collect::<Vec<_>>());
+        request.spawn(cmd);
     }
 }
 
@@ -243,8 +238,8 @@ bitflags! {
     }
 }
 
-impl From<ScatterMaterialOptions> for WindAffectedKey {
-    fn from(options: ScatterMaterialOptions) -> Self {
+impl From<&ScatterMaterialOptions> for WindAffectedKey {
+    fn from(options: &ScatterMaterialOptions) -> Self {
         let mut key = WindAffectedKey::empty();
 
         let NormalOptions {

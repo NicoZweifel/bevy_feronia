@@ -13,7 +13,7 @@ use bevy_transform::prelude::*;
 use std::fmt::Debug;
 
 #[cfg(feature = "avian")]
-use avian3d::prelude::{Collider, RigidBody};
+use avian3d::prelude::*;
 
 /// Shared properties for a [`ScatterAsset`] and its [`ScatterAssetPart`]s.
 #[derive(Clone, Debug, Reflect, Default)]
@@ -75,8 +75,7 @@ where
     pub name: Option<Name>,
 
     #[cfg(feature = "avian")]
-    /// Optional collider for this part.
-    pub collider: Option<Collider>,
+    pub o_collider: Option<Collider>,
 }
 
 #[derive(Clone, Debug, Reflect)]
@@ -97,23 +96,22 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
         entity: Entity,
         item_of: AssetPartOf,
         wind: Wind,
-        layer_wind_data: WindOptionData,
+        layer_data: CollectableQueryDataItem<T>,
         scene_root_data: CollectableQueryDataItem<T>,
         item_root_data: CollectableQueryDataItem<T>,
         parent_data: CollectableQueryDataItem<T>,
         child_data: CollectableQueryDataItem<T>,
-        layer_material_option_data: MaterialOptionDataItem,
         aabb: Aabb,
     ) -> Option<Self> {
         let hue = (entity.index_u32() * 30) as f32 % 360.0;
         let debug_color = Color::hsl(hue, 1.0, 0.5);
 
         let wind = wind
-            .multiply(layer_wind_data)
+            .multiply(layer_data.wind_data)
             .multiply(scene_root_data.wind_data)
             .multiply(child_data.wind_data);
 
-        let options = ScatterMaterialOptions::from(layer_material_option_data)
+        let options = ScatterMaterialOptions::from(layer_data.material_options)
             .with(scene_root_data.material_options)
             .with(child_data.material_options)
             .with_debug_color(debug_color);
@@ -131,19 +129,34 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
             .unwrap_or_default();
 
         let part_properties = ScatterAssetProperties {
-            wind,    // TODO: Inherit this?
-            options, // TODO: Inherit this?
+            wind,                     // TODO: Inherit this?
+            options: options.clone(), // TODO: Inherit this?
             aabb,
             name: item_of.name.clone(),
             #[allow(deprecated)]
             lod,
             wind_affected: options.wind.affected
-                || layer_material_option_data.wind_affected.is_some(),
+                || layer_data.material_options.wind_affected.is_some(),
         };
 
         let root_space_tf = child_data
             .global_transform
             .relative_to(item_root_data.global_transform);
+
+        #[cfg(feature = "avian")]
+        let collider = layer_data
+            .o_scatter_body
+            .or(parent_data.o_scatter_body)
+            .or(scene_root_data.o_scatter_body)
+            .is_some()
+            .then(|| {
+                child_data
+                    .o_collider
+                    .or(parent_data.o_collider)
+                    .or(scene_root_data.o_collider)
+                    .cloned()
+            })
+            .flatten();
 
         Some(ScatterAssetPartEntity {
             entity,
@@ -154,7 +167,7 @@ impl<T: ScatterMaterialAsset + Material> ScatterAssetPartEntity<T> {
                 root_space_tf,
                 part_properties,
                 #[cfg(feature = "avian")]
-                child_data.o_collider.cloned(),
+                collider,
             ),
         })
     }
@@ -188,7 +201,7 @@ where
         h_mesh: Handle<Mesh>,
         transform: Transform,
         properties: ScatterAssetProperties,
-        #[cfg(feature = "avian")] collider: Option<Collider>,
+        #[cfg(feature = "avian")] o_collider: Option<Collider>,
     ) -> Self {
         Self {
             name,
@@ -197,7 +210,7 @@ where
             h_material,
             properties,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         }
     }
 
@@ -210,31 +223,6 @@ where
             ScatterItemOf(layer),
             ScatterLayerChildProcessed,
         )
-    }
-
-    /// Returns the wind-affected bundle for this asset part.
-    pub fn wind_affected_bundle(
-        &self,
-        asset_handle: Handle<ScatterAsset<T>>,
-        layer: Entity,
-    ) -> impl Bundle {
-        (WindAffected, self.bundle(asset_handle.clone(), layer))
-    }
-
-    /// Inserts the correct bundle (wind-affected or normal) onto the entity.
-    pub fn insert_bundle(
-        &self,
-        cmd: &mut Commands,
-        entity: Entity,
-        asset_handle: Handle<ScatterAsset<T>>,
-        layer: Entity,
-    ) {
-        if self.properties.wind_affected {
-            cmd.entity(entity)
-                .insert(self.wind_affected_bundle(asset_handle, layer));
-        } else {
-            cmd.entity(entity).insert(self.bundle(asset_handle, layer));
-        }
     }
 }
 
@@ -270,7 +258,7 @@ impl ScatterAssetPart<StandardMaterial> {
             properties,
             name,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         } = self;
 
         let mut source_material = materials_in.get(&h_material).cloned();
@@ -294,7 +282,7 @@ impl ScatterAssetPart<StandardMaterial> {
             h_mesh,
             name,
             #[cfg(feature = "avian")]
-            collider,
+            o_collider,
         }
     }
 }

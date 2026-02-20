@@ -1,6 +1,9 @@
 
 ## Examples
 
+> [!CAUTION]
+> Some of the examples hit the current limits, you might want to turn some stuff down for actual use in a project. 
+
 - Press `SPACE` to scatter.
 - The `Wind` Resource is configurable in the Inspector Window.
 - Press `M` to rotate/move the `ScatterRoot`.

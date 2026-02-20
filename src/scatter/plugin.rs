@@ -55,7 +55,6 @@ where
         app.init_resource::<SpawnScatterAssetsEventQueue<T>>()
             .init_resource::<ScatterAssetManager<T>>()
             .init_asset::<ScatterAsset<T>>()
-            .add_message::<Scatter<T>>()
             .add_message::<ScatterChunk<T>>()
             .add_message::<ScatterResults<T>>()
             .add_message::<ScatterFinished<T>>()

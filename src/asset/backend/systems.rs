@@ -1,5 +1,7 @@
 use crate::prelude::*;
 use crate::scatter::utils::combine_aabbs;
+#[cfg(feature = "avian")]
+use avian3d::prelude::*;
 use bevy_asset::Assets;
 use bevy_camera::primitives::MeshAabb;
 use bevy_ecs::prelude::*;
@@ -50,10 +52,7 @@ pub fn insert_parts<T: ScatterMaterial>(
     mut cmd: Commands,
     q_items: Query<(Entity, &AssetPartOf), Without<ScatterAssetPart>>,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
-    q_layers: Query<
-        (Entity, MaterialOptionData, WindOptionData),
-        (With<ScatterLayer>, With<ScatterLayerType<T>>),
-    >,
+    q_layers: Query<CollectableQueryData, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
     global_wind: Res<GlobalWind>,
     meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -76,7 +75,7 @@ pub fn insert_parts<T: ScatterMaterial>(
                     .ok()?;
 
                 let layer = child_of.parent();
-                let (_, layer_material_option_data, layer_wind_data) = q_layers
+                let layer_data = q_layers
                     .get(layer)
                     .inspect_err(|_| {
                         #[cfg(feature = "trace")]
@@ -129,12 +128,11 @@ pub fn insert_parts<T: ScatterMaterial>(
                     entity,
                     item_of,
                     wind,
-                    layer_wind_data,
+                    layer_data,
                     scene_root_data,
                     item_root_data,
                     parent_data,
                     child_data,
-                    layer_material_option_data,
                     aabb,
                 )
             },
@@ -151,10 +149,7 @@ pub fn insert_requests<T: ScatterMaterial>(
         Without<ScatterAssetCreationRequest<T>>,
     >,
     q_data: Query<(&ChildOf, CollectableQueryData), (Without<ScatterLayerChildProcessed>,)>,
-    q_layers: Query<
-        (Entity, MaterialOptionData, WindOptionData),
-        (With<ScatterLayer>, With<ScatterLayerType<T>>),
-    >,
+    q_layers: Query<CollectableQueryData, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
     global_wind: Res<GlobalWind>,
 ) {
     let wind = global_wind.current;
@@ -196,7 +191,7 @@ pub fn insert_requests<T: ScatterMaterial>(
 
             let layer = child_of.parent();
 
-            let (_, layer_material_option_data, layer_wind_data) = q_layers
+            let layer_data = q_layers
                 .get(layer)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
@@ -208,10 +203,10 @@ pub fn insert_requests<T: ScatterMaterial>(
                 .ok()?;
 
             let wind = wind
-                .multiply(layer_wind_data)
+                .multiply(layer_data.wind_data)
                 .multiply(scene_root_data.wind_data);
 
-            let options = ScatterMaterialOptions::from(layer_material_option_data)
+            let options = ScatterMaterialOptions::from(layer_data.material_options)
                 .with(scene_root_data.material_options);
 
             let (part_entities, parts) = entity_parts.iter().fold(
@@ -224,11 +219,24 @@ pub fn insert_requests<T: ScatterMaterial>(
                 },
             );
 
-            let mut union_aabb = parts[0].properties.aabb;
-            for part in &parts[1..] {
-                // TODO transform
-                union_aabb = combine_aabbs(&union_aabb, &part.properties.aabb);
+            let mut union_aabb = parts[0].properties.aabb.transform(&parts[0].transform);
+            for part in parts.iter().skip(1) {
+                let transformed = part.properties.aabb.transform(&part.transform);
+                union_aabb = combine_aabbs(&union_aabb, &transformed);
             }
+
+            #[cfg(feature = "avian")]
+            let body = scene_root_data
+                .o_scatter_body
+                .or(layer_data.o_scatter_body)
+                .is_some()
+                .then(|| {
+                    scene_root_data
+                        .o_rigid_body
+                        .or(layer_data.o_rigid_body)
+                        .cloned()
+                })
+                .flatten();
 
             Some((
                 item_of.clone(),
@@ -238,7 +246,7 @@ pub fn insert_requests<T: ScatterMaterial>(
                     wind,
                     options,
                     #[cfg(feature = "avian")]
-                    scene_root_data.o_rigid_body.cloned(),
+                    body,
                 ),
                 part_entities,
             ))
@@ -251,6 +259,9 @@ pub fn insert_requests<T: ScatterMaterial>(
                     .remove::<ScatterAssetPart>()
                     .remove::<AssetPartOf>()
                     .remove::<Mesh3d>();
+
+                #[cfg(feature = "avian")]
+                cmd.entity(part_entity).remove::<Collider>();
             }
 
             item_of

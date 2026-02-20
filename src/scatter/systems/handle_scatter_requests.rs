@@ -11,7 +11,7 @@ use bevy_tasks::futures_lite::future;
 use bevy_transform::prelude::GlobalTransform;
 
 #[cfg(feature = "trace")]
-use tracing::{debug, warn};
+use tracing::debug;
 
 #[derive(QueryData)]
 #[query_data()]
@@ -25,6 +25,8 @@ pub struct ScatterLayerQueryData {
     avoidance: Option<&'static Avoidance>,
     scale_density: Option<&'static ScaleDensity>,
     layer_gtf: &'static GlobalTransform,
+    disabled: Has<ScatterLayerDisabled>,
+    name: Option<&'static Name>,
 }
 
 // TODO refactor/split this up
@@ -39,6 +41,7 @@ pub fn handle_scatter_requests<T>(
             Option<&MapHeight>,
             &Aabb,
             &LodConfig,
+            Has<ChunkRootDisabled>,
         ),
         With<ChunkRoot>,
     >,
@@ -59,8 +62,8 @@ pub fn handle_scatter_requests<T>(
     let height_map_image = height_map.as_ref().and_then(|h| images.get(&h.0));
     let height_map_config = height_map_cfg.map(|cfg| cfg.into_inner());
 
-    // NOTE: handle 2 per tick. TODO optimize / create compute pipeline for this.
-    for (entity, request) in q_requests.iter().take(2) {
+    // NOTE: handle 1 per tick/frame. TODO optimize / create compute pipeline for this.
+    for (entity, request) in q_requests.iter().take(1) {
         let layer = request.layer_entity;
 
         let Ok(ScatterLayerQueryDataItem {
@@ -73,58 +76,66 @@ pub fn handle_scatter_requests<T>(
             avoidance,
             scale_density,
             layer_gtf,
+            disabled,
+            name,
         }) = q_layer.get(layer)
         else {
             #[cfg(feature = "trace")]
-            warn!("ScatterLayer {layer} not found!");
+            debug!("ScatterLayer {layer} not found!");
             continue;
         };
+
+        if scatter_layer_disabled(layer, name, disabled) {
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
+            continue;
+        }
 
         let scatter_root = **scatter_root;
         let Ok(mut scatter_state) = q_scatter_state.get_mut(scatter_root) else {
             #[cfg(feature = "trace")]
             debug!("ScatterRoot {scatter_root} state not found!");
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
             continue;
         };
 
         let Ok(occupancy_map) = q_occupancy_map.get(scatter_root) else {
             #[cfg(feature = "trace")]
             debug!("ScatterRoot {scatter_root} occupancy not found!");
+            cmd.entity(entity).remove::<ScatterRequest<T>>();
             continue;
         };
 
         let density = density_dist.map_or(1.0, |d| **d);
-
-        #[cfg(feature = "trace")]
-        debug!(
-            "Scattering {density} instances in ScatterLayer {}",
-            request.layer_entity
-        );
-
         let density_map_image = pattern_dist.and_then(|p| images.get(&**p)).cloned();
-
-        let task_data = if let Some(chunk) = request.chunk_entity {
-            let Ok((root_entity, base_chunk_size, map_height, aabb, lod_config)) =
+        let scatter_task_data = if let Some(chunk) = request.chunk_entity {
+            let Ok((root_entity, base_chunk_size, map_height, aabb, root_lod_config, disabled)) =
                 q_chunk_root.get(scatter_root)
             else {
                 #[cfg(feature = "trace")]
-                warn!("ChunkRoot {} not found!", scatter_root);
+                debug!("ChunkRoot {} not found!", scatter_root);
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
+            if disabled {
+                #[cfg(feature = "trace")]
+                debug!("ChunkRoot {scatter_root} is disabled!");
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
+                continue;
+            }
+
             let Ok((chunk_size, chunk_gtf, chunk_level, chunk_coord)) = q_chunk.get(chunk) else {
                 #[cfg(feature = "trace")]
-                warn!("Chunk {chunk} not found!");
+                debug!("Chunk {chunk} not found!");
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
             let size = **base_chunk_size * Vec3::splat(**chunk_size as f32);
-
             let seed = generate_seed(&world_seed, chunk_coord);
-
             let instances_dim = density * (**chunk_level as f32 * 2.).max(1.);
 
-            Some(ScatterTaskData {
+            ScatterTaskData {
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
@@ -146,7 +157,7 @@ pub fn handle_scatter_requests<T>(
                 avoidance: avoidance.cloned(),
                 external_avoidance_data: occupancy_map.clone(),
                 density: scale_density.map(|_| {
-                    lod_config
+                    root_lod_config
                         .density
                         .get(**chunk_level as usize)
                         .cloned()
@@ -155,17 +166,18 @@ pub fn handle_scatter_requests<T>(
                 height_map_image: height_map_image.cloned(),
                 height_map_config: height_map_config.cloned(),
                 density_map_image,
-            })
+            }
         } else {
             let Ok((root_entity, map_height, aabb)) = q_scatter_root.get(scatter_root) else {
                 #[cfg(feature = "trace")]
-                warn!("ScatterRoot {} not found!", scatter_root);
+                debug!("ScatterRoot {} not found!", scatter_root);
+                cmd.entity(entity).remove::<ScatterRequest<T>>();
                 continue;
             };
 
             let size = Vec3::from(aabb.half_extents * 2.0);
 
-            Some(ScatterTaskData {
+            ScatterTaskData {
                 container: Container {
                     entity: request.target_entity,
                     layer_entity: request.layer_entity,
@@ -190,17 +202,19 @@ pub fn handle_scatter_requests<T>(
                 height_map_config: height_map_config.cloned(),
                 density: None,
                 density_map_image,
-            })
-        };
-
-        let Some(data) = task_data else {
-            continue;
+            }
         };
 
         cmd.entity(entity).remove::<ScatterRequest<T>>();
 
-        let task =
-            AsyncComputeTaskPool::get().spawn(async move { ScatterResults::<T>::from(data) });
+        #[cfg(feature = "trace")]
+        debug!(
+            "Scattering instances in ScatterLayer {} with density: {density}...",
+            request.layer_entity
+        );
+
+        let task = AsyncComputeTaskPool::get()
+            .spawn(async move { ScatterResults::<T>::from(scatter_task_data) });
 
         cmd.entity(request.target_entity)
             .insert(CpuScatterTask(task));
@@ -217,7 +231,7 @@ pub fn handle_finished_scatter_tasks<T>(
 ) where
     T: ScatterMaterial,
 {
-    for (entity, mut task) in &mut tasks {
+    for (entity, mut task) in tasks.iter_mut().take(1) {
         let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {
             continue;
         };

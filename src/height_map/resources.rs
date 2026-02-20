@@ -17,7 +17,7 @@ use std::ops::Range;
 pub struct HeightMapConfig {
     pub world_size: f32,
     pub world_center: Vec2,
-    pub render_layer: RenderLayers,
+    pub render_layers: RenderLayers,
     pub world_height_range: Range<f32>,
 }
 
@@ -42,7 +42,7 @@ impl Default for HeightMapConfig {
         Self {
             world_height_range: -28. ..100.,
             world_size: 8.0 * 8.0 * 4.0,
-            render_layer: RenderLayers::layer(1),
+            render_layers: RenderLayers::default(),
             world_center: Vec2::ZERO,
         }
     }

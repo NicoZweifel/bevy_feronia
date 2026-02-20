@@ -13,6 +13,7 @@ use bevy_render::batching::NoAutomaticBatching;
 use bevy_utils::default;
 
 use bevy_camera::visibility::NoAutoAabb;
+use bevy_transform::prelude::Transform;
 use rand::prelude::IndexedRandom;
 use rand::{RngCore, SeedableRng};
 use rand_pcg::Pcg64;
@@ -77,11 +78,10 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                     .min()
                     .unwrap_or_default();
 
-                if group.iter().any(|h| h.is_lod(request.is_chunked, min_lod)) {
-                    Some(*name)
-                } else {
-                    None
-                }
+                group
+                    .iter()
+                    .any(|h| h.is_lod(request.is_chunked, min_lod))
+                    .then_some(*name)
             })
             .collect();
 
@@ -162,7 +162,6 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
 
                 for part in asset.parts.iter() {
                     let instances = base_instances.clone();
-
                     let entity = cmd
                         .spawn((
                             Self::component(part.material().clone()),
@@ -184,8 +183,12 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
                         ))
                         .id();
 
+                    if let Some(render_layers) = &part.properties.options.render_layers {
+                        cmd.entity(entity).insert(render_layers.clone());
+                    }
+
                     cmd.entity(entity).insert((
-                        part.transform,
+                        Transform::default(),
                         aabb,
                         // Required since bevy 0.18 if adding Aabb manually.
                         NoAutoAabb,

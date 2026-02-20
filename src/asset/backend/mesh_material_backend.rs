@@ -12,6 +12,9 @@ use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 #[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
+#[cfg(feature = "avian")]
+use avian3d::prelude::*;
+
 pub struct MeshMaterialAssetBackendPlugin;
 
 impl Plugin for MeshMaterialAssetBackendPlugin {
@@ -28,6 +31,15 @@ pub fn on_add_layer(trigger: On<Add, ScatterLayer>, mut cmd: Commands) {
 
     cmd.entity(layer).insert(NeedsAssetCollection);
 }
+#[cfg(not(feature = "avian"))]
+type SearchQueryFilter = (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>);
+
+#[cfg(feature = "avian")]
+type SearchQueryFilter = (
+    With<Mesh3d>,
+    With<MeshMaterial3d<StandardMaterial>>,
+    With<Collider>,
+);
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively.
 pub fn mesh_material_backend(
@@ -36,7 +48,7 @@ pub fn mesh_material_backend(
     q_layers: Query<(Entity, Option<&Name>), With<ScatterLayer>>,
     q_parent: Query<&ChildOf>,
     q_children: Query<&Children>,
-    q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
+    q_search: Query<Entity, SearchQueryFilter>,
     q_name: Query<&Name>,
 ) -> Result<Vec<AssetPart>> {
     Ok(q_collect

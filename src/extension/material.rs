@@ -22,7 +22,6 @@ pub struct WindAffectedExtension {
     pub current: Wind,
     pub previous: Wind,
 
-    // TODO use extracted AAbb instead and add to uniforms.
     pub aabb: Aabb,
 
     pub options: ScatterMaterialOptions,
@@ -34,8 +33,8 @@ pub struct WindAffectedExtension {
 
 #[derive(Clone, ShaderType, Debug)]
 struct ExtendedWindAffectedMaterialUniform {
-    previous: WindUniform,
     current: WindUniform,
+    previous: WindUniform,
     sss_scale: f32,
     sss_intensity: f32,
 }
@@ -47,9 +46,10 @@ impl<'a> From<&'a WindAffectedExtension> for ExtendedWindAffectedMaterialUniform
             subsurface_scattering_scale,
             ..
         } = extension.options.lighting.common;
+
         Self {
-            current: WindUniform::from(&extension.current),
-            previous: WindUniform::from(&extension.previous),
+            current: WindUniform::from(&extension.current).with_aabb(&extension.aabb),
+            previous: WindUniform::from(&extension.previous).with_aabb(&extension.aabb),
             sss_intensity: subsurface_scattering_intensity,
             sss_scale: subsurface_scattering_scale,
         }
@@ -62,7 +62,7 @@ impl WindAffectedExtension {
             previous: properties.wind,
             current: properties.wind,
             aabb: properties.aabb,
-            options: properties.options,
+            options: properties.options.clone(),
             noise_texture,
         }
     }
@@ -106,11 +106,6 @@ const WIND_SHADER_DEFS: &[WindShaderDefMap] = &[
         stage: ShaderStage::Vertex,
     },
     WindShaderDefMap {
-        flag: WindAffectedKey::EDGE_CORRECTION,
-        def: "EDGE_CORRECTION",
-        stage: ShaderStage::Vertex,
-    },
-    WindShaderDefMap {
         flag: WindAffectedKey::WIND_LOW_QUALITY,
         def: "WIND_LOW_QUALITY",
         stage: ShaderStage::Vertex,
@@ -123,11 +118,6 @@ const WIND_SHADER_DEFS: &[WindShaderDefMap] = &[
     WindShaderDefMap {
         flag: WindAffectedKey::WIND_AFFECTED,
         def: "WIND_AFFECTED",
-        stage: ShaderStage::Vertex,
-    },
-    WindShaderDefMap {
-        flag: WindAffectedKey::STATIC_BEND,
-        def: "STATIC BEND",
         stage: ShaderStage::Vertex,
     },
     WindShaderDefMap {
@@ -180,6 +170,12 @@ impl MaterialExtension for WindAffectedExtension {
         )
     }
 
+    fn deferred_vertex_shader() -> ShaderRef {
+        ShaderRef::Path(
+            AssetPath::from_path_buf(embedded_path!("prepass.wgsl")).with_source("embedded"),
+        )
+    }
+
     fn specialize(
         _pipeline: &MaterialExtensionPipeline,
         descriptor: &mut RenderPipelineDescriptor,
@@ -187,6 +183,10 @@ impl MaterialExtension for WindAffectedExtension {
         key: MaterialExtensionKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         let vertex_shader_defs = &mut descriptor.vertex.shader_defs;
+        if vertex_shader_defs.contains(&"VERTEX_UVS".into()) {
+            vertex_shader_defs.push("VERTEX_UVS_A".into());
+        }
+
         let mut fragment_shader_defs = descriptor.fragment.as_mut().map(|f| &mut f.shader_defs);
 
         for mapping in WIND_SHADER_DEFS {
@@ -231,8 +231,8 @@ impl MaterialExtension for WindAffectedExtension {
 
 impl From<&WindAffectedExtension> for ExtendedWindAffectedMaterialKey {
     fn from(material: &WindAffectedExtension) -> Self {
-        let wind_key: WindAffectedKey = material.options.into();
-        let material_key: ExtendedMaterialKey = material.options.into();
+        let wind_key: WindAffectedKey = (&material.options).into();
+        let material_key: ExtendedMaterialKey = (&material.options).into();
 
         Self {
             wind_key,
@@ -241,8 +241,8 @@ impl From<&WindAffectedExtension> for ExtendedWindAffectedMaterialKey {
     }
 }
 
-impl From<ScatterMaterialOptions> for ExtendedMaterialKey {
-    fn from(options: ScatterMaterialOptions) -> Self {
+impl From<&ScatterMaterialOptions> for ExtendedMaterialKey {
+    fn from(options: &ScatterMaterialOptions) -> Self {
         let mut key = ExtendedMaterialKey::empty();
 
         let GeneralOptions { debug, .. } = options.general;

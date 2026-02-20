@@ -4,6 +4,7 @@ mod camera_controller;
 #[path = "quality.rs"]
 pub mod quality;
 
+use bevy_eidolon::prepass::CullComputeCamera;
 use quality::*;
 
 #[cfg(not(feature = "dlss"))]
@@ -66,7 +67,7 @@ impl Plugin for ExamplePlugin {
         app.init_resource::<ExamplePluginOptions>()
             .insert_resource(DirectionalLightShadowMap { size: 4096 })
             .add_plugins(DefaultPlugins
-                .set(AssetPlugin { ..default() })
+                .set(AssetPlugin { use_asset_processor_override:Some(true),..default() })
                 .set(RenderPlugin {
                     render_creation: RenderCreation::Automatic(WgpuSettings {
                         limits: WgpuLimits {
@@ -84,6 +85,7 @@ impl Plugin for ExamplePlugin {
                 EntityCountDiagnosticsPlugin::default(),
                 SystemInformationDiagnosticsPlugin,
                 PerfUiPlugin,
+                // TODO use native plugin (bevy_dev_tools/render_debug)
                 ShowPrepassPlugin,
             ))
             .add_plugins((
@@ -260,10 +262,10 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
     };
 
     cmd.spawn((
-        Camera::default(),
+        (Camera::default(), Camera3d::default()),
+        (Center, CullComputeCamera),
         Hdr,
         Controller::default(),
-        Camera3d::default(),
         ColorGrading::default(),
         Bloom::NATURAL,
         Tonemapping::TonyMcMapface,

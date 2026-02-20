@@ -15,6 +15,7 @@ use example::{quality::*, *};
 
 use bevy::prelude::*;
 use bevy_asset::RenderAssetUsages;
+use bevy_camera::visibility::RenderLayers;
 use bevy_ecs::lifecycle::HookContext;
 use bevy_ecs::world::DeferredWorld;
 use bevy_eidolon::prelude::*;
@@ -29,6 +30,10 @@ use rand_pcg::Pcg64;
 
 fn main() -> AppExit {
     App::new()
+        .insert_resource(HeightMapConfig {
+            render_layers: RenderLayers::layer(1),
+            ..default()
+        })
         .insert_resource(ExamplePluginOptions {
             show_quality_settings: true,
             show_wind_settings: true,
@@ -379,6 +384,7 @@ fn respawn_scene(
     ScatterRoot::default(),
     MapHeight,
     ChunkRoot::default(),
+    ChunkRootSizeDim(2),
     PlaybackSettings {
         mode: bevy::audio::PlaybackMode::Loop,
         ..default()
@@ -458,7 +464,7 @@ fn spawn_landscape(
     InstanceRotationYaw,
     InstanceScale,
     InstanceJitter,
-    DistributionDensity(15.),
+    DistributionDensity(10.),
     Avoidance(2.),
 )]
 struct RockLayer;
@@ -618,7 +624,7 @@ impl TreeLayer {
 #[require(
     Name::new("Foliage Layer"),
     ScatterLayerType::<ExtendedWindAffectedMaterial>,
-    DistributionDensity(30.),
+    DistributionDensity(15.),
     InstanceRotationYaw,
     InstanceJitter,
     InstanceScaleRange { min: 4., max: 8. },
@@ -738,7 +744,6 @@ impl FoliageLayer {
         )
     },
     StaticBend,
-    SpecularStrength(0.2),
     AmbientOcclusion,
 )]
 struct GrassLayer;

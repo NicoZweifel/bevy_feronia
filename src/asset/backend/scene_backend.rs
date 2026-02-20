@@ -13,6 +13,9 @@ use crate::backend::ScatterApp;
 #[cfg(feature = "trace")]
 use tracing::{debug, warn};
 
+#[cfg(feature = "avian")]
+use avian3d::prelude::*;
+
 pub struct SceneAssetBackendPlugin;
 
 impl Plugin for SceneAssetBackendPlugin {
@@ -28,21 +31,35 @@ impl Plugin for SceneAssetBackendPlugin {
 pub fn scene_asset_ready_listener(
     trigger: On<SceneInstanceReady>,
     mut cmd: Commands,
-    q_data: Query<(), (With<Children>, With<ChildOf>)>,
+    q_data: Query<&ChildOf, With<Children>>,
+    q_layer: Query<&ScatterLayer>,
 ) {
     let scene_entity = trigger.entity;
 
-    if q_data.get(scene_entity).is_err() {
-        #[cfg(feature = "trace")]
-        debug!(
-            "Scene asset {:?} is not a processable scatter asset, skipping.",
-            scene_entity
-        );
+    if q_data
+        .get(scene_entity)
+        .is_ok_and(|child_of| q_layer.get(child_of.parent()).is_ok())
+    {
+        cmd.entity(scene_entity).insert(NeedsAssetCollection);
         return;
     };
 
-    cmd.entity(scene_entity).insert(NeedsAssetCollection);
+    #[cfg(feature = "trace")]
+    debug!(
+        "Scene asset {:?} is not a processable scatter asset, skipping.",
+        scene_entity
+    );
 }
+
+#[cfg(not(feature = "avian"))]
+type SearchQueryFilter = (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>);
+
+#[cfg(feature = "avian")]
+type SearchQueryFilter = (
+    With<Mesh3d>,
+    With<MeshMaterial3d<StandardMaterial>>,
+    With<Collider>,
+);
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively in a Scene.
 ///
@@ -54,7 +71,7 @@ pub fn scene_asset_backend(
     q_layers: Query<(Entity, Option<&Name>), With<ScatterLayer>>,
     q_parent: Query<&ChildOf>,
     q_children: Query<&Children>,
-    q_search: Query<Entity, (With<Mesh3d>, With<MeshMaterial3d<StandardMaterial>>)>,
+    q_search: Query<Entity, SearchQueryFilter>,
     q_name: Query<&Name>,
 ) -> Result<Vec<AssetPart>> {
     Ok(q_collect

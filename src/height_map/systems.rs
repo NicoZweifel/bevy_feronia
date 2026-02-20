@@ -5,16 +5,17 @@ use crate::prelude::*;
 use bevy_asset::Assets;
 use bevy_camera::{
     Camera, Camera3d, ImageRenderTarget, OrthographicProjection, Projection, RenderTarget,
-    ScalingMode,
-    primitives::Aabb,
-    visibility::{NoFrustumCulling, RenderLayers},
+    ScalingMode, primitives::Aabb, visibility::NoFrustumCulling,
 };
 use bevy_ecs::prelude::*;
 use bevy_gizmos::gizmos::Gizmos;
 use bevy_image::Image;
+use bevy_light::{NotShadowCaster, NotShadowReceiver};
 use bevy_math::*;
 use bevy_mesh::Mesh3d;
+use bevy_mesh::skinning::SkinnedMesh;
 use bevy_pbr::MeshMaterial3d;
+use bevy_render::batching::NoAutomaticBatching;
 use bevy_render::{
     render_resource::*,
     view::screenshot::{Screenshot, ScreenshotCaptured},
@@ -25,13 +26,16 @@ use bevy_utils::default;
 
 use crate::height_map::cpu_sampler::HeightMapCpuSampler;
 use crate::utils::despawn;
+
 #[cfg(feature = "trace")]
 use tracing::{debug, info};
 
 pub fn setup_config(
     mut cmd: Commands,
+    mut next_state: ResMut<NextState<HeightMapState>>,
     q_pending_landscapes: Query<Entity, (With<MapHeight>, Without<Aabb>)>,
     q_processed_landscapes: Query<&Aabb, With<MapHeight>>,
+    cfg: Option<Res<HeightMapConfig>>,
 ) {
     if !q_pending_landscapes.is_empty() {
         return;
@@ -61,7 +65,7 @@ pub fn setup_config(
         world_size,
         world_center,
         world_height_range: min_pt.y..max_pt.y,
-        render_layer: RenderLayers::layer(1),
+        render_layers: cfg.map(|x| x.render_layers.clone()).unwrap_or_default(),
     };
 
     cmd.insert_resource(config);
@@ -71,6 +75,8 @@ pub fn setup_config(
         "HeightMapConfig: Center {:?}, Size {}",
         world_center, world_size
     );
+
+    next_state.set(HeightMapState::Pipeline);
 }
 
 pub fn setup_materials(
@@ -94,7 +100,7 @@ pub fn skip_setup(
     next_state.set(HeightMapState::Ready);
 }
 
-pub fn finish_setup(mut next_state: ResMut<NextState<HeightMapState>>) {
+pub fn finish_pipeline(mut next_state: ResMut<NextState<HeightMapState>>) {
     next_state.set(HeightMapState::Ghost);
 }
 
@@ -102,26 +108,33 @@ pub fn create_height_map_ghost(
     mut cmd: Commands,
     q_landscape: Query<Entity, (With<MapHeight>, Without<HeightMapped>)>,
     q_children: Query<&Children, Without<ScatterLayer>>,
-    q_mesh: Query<(&Mesh3d, &GlobalTransform), Without<ScatterLayer>>,
+    q_mesh: Query<(&Mesh3d, &GlobalTransform, Option<&SkinnedMesh>), Without<ScatterLayer>>,
     material: Res<HeightMapMaterialHandle>,
     cfg: Res<HeightMapConfig>,
     mut next_state: ResMut<NextState<HeightMapState>>,
 ) {
     let mut spawned_any = false;
-    for landscape_root in &q_landscape {
-        for child in q_children.iter_descendants(landscape_root) {
-            let Ok((mesh, child_transform)) = q_mesh.get(child) else {
-                continue;
-            };
 
-            cmd.spawn((
-                Mesh3d(mesh.0.clone()),
+    for landscape_root in &q_landscape {
+        for (mesh_handle, child_transform, skinned_mesh) in q_children
+            .iter_descendants(landscape_root)
+            .filter_map(|child| q_mesh.get(child).ok())
+        {
+            let mut ghost = cmd.spawn((
+                Mesh3d(mesh_handle.0.clone()),
                 MeshMaterial3d(material.0.clone()),
                 Transform::from_matrix(child_transform.to_matrix()),
-                cfg.render_layer.clone(),
+                cfg.render_layers.clone(),
                 NoFrustumCulling,
                 HeightMapGhost,
+                NotShadowCaster,
+                NotShadowReceiver,
+                NoAutomaticBatching,
             ));
+
+            if let Some(skinned) = skinned_mesh {
+                ghost.insert(skinned.clone());
+            }
             spawned_any = true;
         }
 
@@ -212,7 +225,7 @@ pub fn setup_height_map_pipeline(
                 height: world_size,
             },
         }),
-        cfg.render_layer.clone(),
+        cfg.render_layers.clone(),
         ChildOf(*q_root),
     ));
 

@@ -105,6 +105,12 @@ fn setup(
         ..default()
     };
 
+    let color = options
+        .color
+        .base_color
+        .unwrap_or_default()
+        .clone()
+        .to_linear();
     let material_handle = instanced_materials.add(InstancedWindAffectedMaterial {
         // Only clone the wind here in this example, if you want wind updates to be synced to the materials,
         // you need an update system.
@@ -133,7 +139,7 @@ fn setup(
         .collect();
 
     let instance_material_data = InstanceMaterialData {
-        color: options.color.base_color.unwrap_or_default().to_linear(),
+        color,
         visibility_range: [0.0, 0.0, 1000.0, 1000.0].into(),
         instances: Arc::new(instances),
     };

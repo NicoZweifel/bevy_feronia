@@ -7,7 +7,7 @@ use bevy_transform::prelude::GlobalTransform;
 
 use crate::utils::despawn;
 #[cfg(feature = "trace")]
-use tracing::{debug, error, warn};
+use tracing::*;
 
 pub fn merge_check(
     q_chunk: Query<
@@ -20,7 +20,7 @@ pub fn merge_check(
             Without<ChunkInitialize>,
         ),
     >,
-    q_root: Query<&ChunkRootSizeDim, With<ChunkRoot>>,
+    q_root: Query<(&ChunkRootSizeDim, Has<ChunkRootDisabled>), With<ChunkRoot>>,
     q_parent: Query<&ChunkOf, With<Chunk>>,
     mut mw_merge_check: MessageWriter<MergeCheck>,
 ) {
@@ -35,13 +35,17 @@ pub fn merge_check(
                 })
                 .ok()?;
 
-            let root_size_dim = q_root
+            let (root_size_dim, disabled) = q_root
                 .get(**root)
                 .inspect_err(|_| {
                     #[cfg(feature = "trace")]
                     error!("Couldn't get ChunkRoot {} for merge check!", **root);
                 })
                 .ok()?;
+
+            if disabled {
+                return None;
+            }
 
             let check = children.len() >= root_size_dim.pow(2) as usize;
             check.then(|| MergeCheck::new(parent, children))
@@ -59,8 +63,8 @@ pub fn handle_merge_check(
 ) {
     let Ok(center) = q_center.single() else {
         #[cfg(feature = "trace")]
-        warn!(
-            "Couldn't get ChunkCenter for merge! Did you forgot to add it to your Camera or Player entity?"
+        trace!(
+            "Couldn't get Center for merge! Did you forgot to add it to your Camera or Player entity?"
         );
         return;
     };

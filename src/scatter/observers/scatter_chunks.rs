@@ -3,13 +3,13 @@ use crate::scatter::utils::*;
 use bevy_ecs::prelude::*;
 
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::debug;
 
 type LayerQueryItem = (
     Entity,
     &'static ScatterLayerOf,
     Option<&'static Name>,
-    Option<&'static ScatterLayerEnabled>,
+    Has<ScatterLayerDisabled>,
 );
 
 pub fn scatter_chunks<T: ScatterMaterial>(
@@ -18,19 +18,19 @@ pub fn scatter_chunks<T: ScatterMaterial>(
     q_root: Query<&ChunkRoot>,
     q_layer: Query<LayerQueryItem, (With<ScatterLayer>, With<ScatterLayerType<T>>)>,
 ) {
-    let Ok((layer_entity, scatter_root, layer_name, enabled)) = q_layer.get(trigger.entity) else {
+    let Ok((layer_entity, scatter_root, layer_name, disabled)) = q_layer.get(trigger.entity) else {
         #[cfg(feature = "trace")]
-        warn!("ScatterLayer not found!");
+        debug!("ScatterLayer not found!");
         return;
     };
 
     let Ok(child_chunks) = q_root.get(**scatter_root) else {
         #[cfg(feature = "trace")]
-        warn!("ScatterRoot not found!");
+        debug!("ScatterRoot not found!");
         return;
     };
 
-    if !scatter_layer_enabled(&mut cmd, layer_entity, layer_name, enabled) {
+    if scatter_layer_disabled(layer_entity, layer_name, disabled) {
         return;
     };
 

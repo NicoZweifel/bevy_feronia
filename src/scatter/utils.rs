@@ -9,29 +9,24 @@ use std::hash::{Hash, Hasher};
 use xxh3::hash64_with_seed;
 
 #[cfg(feature = "trace")]
-use tracing::warn;
+use tracing::debug;
 
-pub fn scatter_layer_enabled(
-    cmd: &mut Commands,
+pub fn scatter_layer_disabled(
     layer_entity: Entity,
     layer_name: Option<&Name>,
-    enabled: Option<&ScatterLayerEnabled>,
+    disabled: bool,
 ) -> bool {
-    let scatter_layer_enabled = ScatterLayerEnabled(true);
-
-    if !**enabled.unwrap_or(&scatter_layer_enabled) {
+    if disabled {
         let _name = layer_name
             .unwrap_or(&Name::new(layer_entity.to_string()))
             .to_string();
 
         #[cfg(feature = "trace")]
-        warn!("ScatterLayer {_name} is disabled!");
-        return false;
+        debug!("ScatterLayer {_name} is disabled!");
+        return true;
     }
 
-    cmd.entity(layer_entity).insert(scatter_layer_enabled);
-
-    true
+    false
 }
 
 pub fn combine_aabbs(aabb1: &Aabb, aabb2: &Aabb) -> Aabb {

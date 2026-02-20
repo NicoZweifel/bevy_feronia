@@ -37,7 +37,7 @@ impl InstancedWindAffectedMaterial {
             previous: properties.wind,
             current: properties.wind,
             aabb: properties.aabb,
-            options: properties.options,
+            options: properties.options.clone(),
             noise_texture,
             disable_prepass: false,
         }
@@ -307,8 +307,8 @@ pub struct InstancedWindAffectedMaterialKey {
 
 impl From<&InstancedWindAffectedMaterial> for InstancedWindAffectedMaterialKey {
     fn from(material: &InstancedWindAffectedMaterial) -> Self {
-        let wind_key: WindAffectedKey = material.options.into();
-        let material_key: InstancedMaterialKey = material.options.into();
+        let wind_key: WindAffectedKey = (&material.options).into();
+        let material_key: InstancedMaterialKey = (&material.options).into();
 
         Self {
             wind_key,
@@ -331,8 +331,8 @@ bitflags! {
     }
 }
 
-impl From<ScatterMaterialOptions> for InstancedMaterialKey {
-    fn from(options: ScatterMaterialOptions) -> InstancedMaterialKey {
+impl From<&ScatterMaterialOptions> for InstancedMaterialKey {
+    fn from(options: &ScatterMaterialOptions) -> InstancedMaterialKey {
         let mut key = InstancedMaterialKey::empty();
 
         let GeneralOptions { gpu_cull, .. } = options.general;

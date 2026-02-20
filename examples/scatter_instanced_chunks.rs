@@ -56,6 +56,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
         SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
+        ChunkRootSizeDim(4),
         ScatterRoot::default(),
         Transform::from_xyz(20., 0., 0.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
@@ -63,7 +64,7 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
             scatter_layer("Grass Layer"),
             // Scatter options
             (
-                DistributionDensity(250.0),
+                DistributionDensity(125.0),
                 InstanceScale,
                 InstanceJitter,
                 ScatterChunked,

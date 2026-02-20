@@ -19,7 +19,7 @@ use std::{
     slice::Iter,
 };
 
-#[derive(EntityEvent, Message, Component, Reflect)]
+#[derive(EntityEvent, Component, Reflect)]
 pub struct Scatter<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -74,7 +74,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Reflect)]
+#[derive(Clone, Copy, Debug, Reflect)]
 pub struct ScatterResult {
     pub transform: Transform,
     pub seed: u64,
@@ -347,7 +347,7 @@ where
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Deref, Debug)]
+#[derive(Message, Clone, Deref, Debug)]
 pub struct ClearScatterLayer(pub Entity);
 
 impl From<Entity> for ClearScatterLayer {
@@ -356,7 +356,7 @@ impl From<Entity> for ClearScatterLayer {
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Deref, Debug)]
+#[derive(Message, Clone, Deref, Debug)]
 pub struct ClearScatterRoot(pub Entity);
 
 impl From<Entity> for ClearScatterRoot {
