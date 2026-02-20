@@ -62,6 +62,14 @@
 //! ns_scatter.set(ScatterState::Setup);
 //! ```
 //!
+//! For chunking or GPU driven culling to work, `Center` and `CullComputeCamera` need to be inserted on the Camera:
+//! ```rust
+//! cmd.spawn((
+//!     (Camera::default(), Camera3d::default()),
+//!     (Center, CullComputeCamera),
+//! // etc...
+//! ```
+//!
 //! ### Defining layers
 //!
 //! A `ScatterItem`'s `LOD`s are grouped by `Name`. If the names end in `LOD_1` or `lod1` etc.,
