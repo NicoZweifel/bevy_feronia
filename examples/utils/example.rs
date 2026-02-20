@@ -270,7 +270,6 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
         Bloom::NATURAL,
         Tonemapping::TonyMcMapface,
         Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
-        Center,
         Skybox {
             image: asset_server.load("skybox.ktx2"),
             brightness: 10000.,
