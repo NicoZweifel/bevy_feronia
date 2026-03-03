@@ -231,11 +231,13 @@ pub fn handle_finished_scatter_tasks<T>(
 ) where
     T: ScatterMaterial,
 {
-    for (entity, mut task) in tasks.iter_mut().take(1) {
-        let Some(results) = future::block_on(future::poll_once(&mut task.0)) else {
-            continue;
-        };
-
+    for (entity, results) in tasks
+        .iter_mut()
+        .filter_map(|(entity, mut task)| {
+            Some((entity, future::block_on(future::poll_once(&mut task.0))?))
+        })
+        .take(1)
+    {
         if q_target.get(entity).is_err() {
             continue;
         }
