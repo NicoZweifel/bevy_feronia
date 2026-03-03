@@ -9,8 +9,8 @@ use std::fmt::Debug;
 #[cfg(feature = "trace")]
 use tracing::warn;
 
-/// Event used to trigger the spawning of a batch of `[ScatterAssets]`.
-#[derive(Event, Message, Debug, Clone)]
+/// Message used to trigger the spawning of a batch of `[ScatterAssets]`.
+#[derive(Message, Debug, Clone)]
 pub struct SpawnScatterAssets<T = StandardMaterial>
 where
     T: ScatterMaterialAsset,
@@ -83,7 +83,7 @@ impl<T> From<On<'_, '_, ScatterResults<T>>> for SpawnScatterAssets<T>
 where
     T: ScatterMaterial,
 {
-    fn from(value: On<'_, '_, ScatterResults<T>>) -> Self {
+    fn from(value: On<ScatterResults<T>>) -> Self {
         Self::from(SpawnTrigger::from(value))
     }
 }

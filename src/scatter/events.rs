@@ -1,31 +1,26 @@
-use crate::{
-    density_map::DensityMapSampler, height_map::cpu_sampler::HeightMapCpuSampler, prelude::*,
-    scatter::utils::*,
-};
+use crate::{prelude::*, scatter::utils::*};
 
 use bevy_derive::Deref;
 use bevy_ecs::prelude::*;
 use bevy_math::{Quat, Vec3};
 use bevy_pbr::StandardMaterial;
-use bevy_reflect::Reflect;
 use bevy_transform::prelude::*;
 
-use rand::Rng;
-use rand_pcg::{Pcg64, rand_core::SeedableRng};
+use rand::{Rng, SeedableRng};
 
+use crate::height_map::cpu_sampler::HeightMapCpuSampler;
+use rand_pcg::Pcg64;
 use std::{
     hash::{Hash, Hasher},
     marker::PhantomData,
-    slice::Iter,
 };
 
-#[derive(EntityEvent, Component, Reflect)]
+#[derive(EntityEvent)]
 pub struct Scatter<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
     pub entity: Entity,
-    #[reflect(ignore)]
     _marker: PhantomData<T>,
 }
 
@@ -50,14 +45,13 @@ where
     }
 }
 
-#[derive(EntityEvent, Message, Component, Reflect)]
+#[derive(EntityEvent)]
 pub struct ScatterChunk<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
     pub entity: Entity,
     pub scatter_layer: Entity,
-    #[reflect(ignore)]
     _marker: PhantomData<T>,
 }
 
@@ -74,7 +68,7 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, Reflect)]
+#[derive(Clone, Copy, Debug)]
 pub struct ScatterResult {
     pub transform: Transform,
     pub seed: u64,
@@ -179,7 +173,10 @@ impl Hash for ScatterResult {
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Debug, Reflect)]
+/// Event that is triggered on the [`Entity`] that spawns the [`ScatterResults`] as children.
+///
+/// TODO: consider changing this to a message.
+#[derive(EntityEvent, Clone, Debug)]
 pub struct ScatterResults<T = StandardMaterial>
 where
     T: ScatterMaterial,
@@ -191,7 +188,6 @@ where
     pub root: Entity,
     pub seed: u64,
     pub container_global_transform: GlobalTransform,
-    #[reflect(ignore)]
     _marker: PhantomData<T>,
 }
 
@@ -236,7 +232,7 @@ where
         &self.data
     }
 
-    pub fn iter(&self) -> Iter<'_, ScatterResult> {
+    pub fn iter(&self) -> core::slice::Iter<'_, ScatterResult> {
         self.data.iter()
     }
 
@@ -316,13 +312,12 @@ where
     }
 }
 
-#[derive(EntityEvent, Message, Clone, Copy, Reflect, Debug)]
+#[derive(EntityEvent, Clone, Copy, Debug)]
 pub struct ScatterFinished<T = StandardMaterial>
 where
     T: ScatterMaterial,
 {
     pub entity: Entity,
-    #[reflect(ignore)]
     _marker: PhantomData<T>,
 }
 

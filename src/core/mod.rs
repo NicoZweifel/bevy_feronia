@@ -7,6 +7,7 @@ pub mod events;
 pub mod options;
 
 pub use components::*;
+pub use events::*;
 pub use options::prelude::*;
 
 use crate::prelude::*;

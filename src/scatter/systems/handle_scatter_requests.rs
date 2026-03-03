@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::scatter::utils::*;
+
 use bevy_asset::Assets;
 use bevy_camera::primitives::Aabb;
 use bevy_ecs::prelude::*;
@@ -226,7 +227,6 @@ pub fn handle_scatter_requests<T>(
 pub fn handle_finished_scatter_tasks<T>(
     mut cmd: Commands,
     mut tasks: Query<(Entity, &mut CpuScatterTask<ScatterResults<T>>)>,
-    mut mw_results: MessageWriter<ScatterResults<T>>,
     q_target: Query<Entity, Without<Merging>>,
 ) where
     T: ScatterMaterial,
@@ -260,7 +260,5 @@ pub fn handle_finished_scatter_tasks<T>(
                 results
             })
             .for_each(|results| cmd.trigger(results));
-
-        mw_results.write(results);
     }
 }
