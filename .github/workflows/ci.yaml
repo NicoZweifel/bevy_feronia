@@ -10,12 +10,6 @@ on:
       - '.github/workflows/ci.yaml'
   push:
     branches: [main, dev]
-    paths:
-      - '**.rs'
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
-      - '.github/workflows/ci.yaml'
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

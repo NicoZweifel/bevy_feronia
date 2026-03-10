@@ -27,8 +27,3 @@ updates:
         patterns:
           - "*"
 
-#  # rustc
-#  - package-ecosystem: "rust-toolchain"
-#    directory: "/"
-#    schedule:
-#      interval: "weekly"
