@@ -83,6 +83,8 @@ These demonstrate methods and options related to grass scattering.
  
 `cargo run --example scatter_instanced_chunks`
 
+https://github.com/user-attachments/assets/72599eb4-8223-49c6-be67-64ff49f149aa
+
 - Shows how to control instanced grass placement using a DensityMap .
 
 `cargo run --example scatter_instanced_density_map`
