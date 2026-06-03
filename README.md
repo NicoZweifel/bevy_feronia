@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
 [![Downloads](https://img.shields.io/crates/d/bevy_feronia.svg)](https://crates.io/crates/bevy_feronia)
 [![Docs](https://docs.rs/bevy_feronia/badge.svg)](https://docs.rs/bevy_feronia/)
-[![CI](https://github.com/nicozweifel/bevy_feronia/workflows/CI/badge.svg?branch=dev)](https://github.com/NicoZweifel/bevy_feronia/actions)
+[![CI](https://github.com/NicoZweifel/bevy_feronia/actions/workflows/ci.yaml/badge.svg?branch=dev&event=push)](https://github.com/NicoZweifel/bevy_feronia/actions/workflows/ci.yaml)
 
 Environment scattering tools and shaders/materials that prioritize visual fidelity/artistic freedom, a declarative API and modularity.
 
