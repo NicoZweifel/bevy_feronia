@@ -40,7 +40,7 @@ jobs:
         name: Rust Cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
         with:
-          shared-key: "ci"
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@f7ccc83f9ed1e5b9c81d8a67d7ad1a747e22a561
         with:
