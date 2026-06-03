@@ -12,7 +12,7 @@ use bevy::anti_alias::taa::TemporalAntiAliasing;
 use bevy::diagnostic::*;
 use bevy::light::ShadowFilteringMethod;
 use bevy::post_process::bloom::Bloom;
-#[cfg(all(feature = "dlss"))]
+#[cfg(feature = "dlss")]
 use bevy::{
     anti_alias::dlss::{Dlss, DlssPerfQualityMode, DlssProjectId},
     asset::uuid,
@@ -58,7 +58,7 @@ pub struct ExamplePlugin;
 
 impl Plugin for ExamplePlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(all(feature = "dlss"))]
+        #[cfg(feature = "dlss")]
         // NOTE: This is an example project ID, you should generate your own uuid.
         app.insert_resource(DlssProjectId(uuid::uuid!(
             "edac5c37-87f0-4e5c-be93-3636dd13677a"
@@ -206,9 +206,9 @@ fn respawn_directional_light(
     cmd.entity(entity).despawn();
 
     cmd.spawn((
-        light.clone(),
+        *light,
         cfg.clone(),
-        tf.clone(),
+        *tf,
         VolumetricLight,
         ShadowFilteringMethod::Temporal,
     ));
@@ -276,7 +276,7 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
             ..default()
         },
         ShadowFilteringMethod::Temporal,
-        #[cfg(all(feature = "dlss"))]
+        #[cfg(feature = "dlss")]
         (
             Msaa::Off,
             Dlss {
@@ -331,11 +331,7 @@ fn rotate_sun(
     mut sky_query: Query<&mut Skybox>,
 ) {
     let mut rotation_direction = 0.0;
-    let alt = if keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight) {
-        true
-    } else {
-        false
-    };
+    let alt = keys.pressed(KeyCode::AltLeft) || keys.pressed(KeyCode::AltRight);
 
     if keys.pressed(KeyCode::KeyQ) {
         rotation_direction += 1.0;

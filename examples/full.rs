@@ -199,13 +199,12 @@ fn load_assets(
     let load_opt =
         |existing: Option<Handle<Scene>>, condition: bool, path: &'static str| -> Handle<Scene> {
             existing
-                .map(|h| {
+                .and_then(|h| {
                     asset_server
                         .get_load_state(h.id())
                         .is_some_and(|s| s.is_loaded())
-                        .then(|| h)
+                        .then_some(h)
                 })
-                .flatten()
                 .or_else(|| condition.then(|| asset_server.load(path)))
                 .unwrap_or_default()
         };
@@ -553,11 +552,11 @@ impl TreeLayer {
         }
 
         if !disable_wind_displacement {
-            cmd.entity(ctx.entity).insert(WindAffected::default());
+            cmd.entity(ctx.entity).insert(WindAffected);
         }
 
         if static_shadows {
-            cmd.entity(ctx.entity).insert(StaticShadow::default());
+            cmd.entity(ctx.entity).insert(StaticShadow);
         }
 
         match model_quality {
@@ -661,11 +660,11 @@ impl FoliageLayer {
         }
 
         if !disable_wind_displacement {
-            cmd.entity(ctx.entity).insert(WindAffected::default());
+            cmd.entity(ctx.entity).insert(WindAffected);
         }
 
         if static_shadows {
-            cmd.entity(ctx.entity).insert(StaticShadow::default());
+            cmd.entity(ctx.entity).insert(StaticShadow);
         }
 
         match model_quality {

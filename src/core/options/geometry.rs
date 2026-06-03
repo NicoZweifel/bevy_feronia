@@ -73,7 +73,6 @@ mod tests {
         let other = GeometryOptions {
             enable_billboarding: true,
             edge_correction_factor: 0.9,
-            ..default()
         };
 
         // Act

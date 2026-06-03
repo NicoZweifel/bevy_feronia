@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use bevy_feronia::prelude::*;
 
 use bevy_app::{App, Plugin, Startup, Update};
