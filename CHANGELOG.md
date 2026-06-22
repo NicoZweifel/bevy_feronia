@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.2...v0.8.3) - 2026-06-03
+
+### Fixed
+
+- fix ci badge
+- fix clippy
+
+### Other
+
+- Update EXAMPLES.md ([#101](https://github.com/NicoZweifel/bevy_feronia/pull/101))
+- Update handle_scatter_requests.rs
+- Update handle_scatter_requests.rs
+- save
+- Update lib.rs
+
 ## [0.8.2](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.1...v0.8.2) - 2026-02-20
 
 ### Added
