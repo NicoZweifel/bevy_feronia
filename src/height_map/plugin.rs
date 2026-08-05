@@ -29,12 +29,12 @@ impl Plugin for HeightMapPlugin {
                 (
                     draw_height_map.run_if(
                         resource_exists::<HeightMap>
-                            .and(resource_exists::<HeightMapConfig>)
-                            .and(resource_exists::<HeightMapDebugConfig>),
+                            .and_then(resource_exists::<HeightMapConfig>)
+                            .and_then(resource_exists::<HeightMapDebugConfig>),
                     ),
                     skip_setup.run_if(
                         not(resource_exists::<HeightMapConfig>)
-                            .and(in_state(HeightMapState::Setup)),
+                            .and_then(in_state(HeightMapState::Setup)),
                     ),
                     (
                         (setup_materials, setup_height_map_pipeline),
@@ -43,10 +43,11 @@ impl Plugin for HeightMapPlugin {
                         .chain()
                         .run_if(
                             resource_exists::<HeightMapConfig>
-                                .and(in_state(HeightMapState::Pipeline)),
+                                .and_then(in_state(HeightMapState::Pipeline)),
                         ),
                     create_height_map_ghost.run_if(
-                        resource_exists::<HeightMapConfig>.and(in_state(HeightMapState::Ghost)),
+                        resource_exists::<HeightMapConfig>
+                            .and_then(in_state(HeightMapState::Ghost)),
                     ),
                     bake_height_map.run_if(in_state(HeightMapState::Baking)),
                 ),

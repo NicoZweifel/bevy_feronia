@@ -5,7 +5,7 @@ use bevy_app::{App, Plugin, PostUpdate};
 use bevy_ecs::prelude::*;
 use bevy_mesh::Mesh3d;
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
-use bevy_scene::{SceneInstanceReady, SceneRoot};
+use bevy_world_serialization::{WorldAssetRoot, WorldInstanceReady};
 
 use crate::asset::backend::systems::backend;
 use crate::backend::ScatterApp;
@@ -27,9 +27,9 @@ impl Plugin for SceneAssetBackendPlugin {
 }
 
 /// A lightweight listener that tags a scene root as ready for processing
-/// once the SceneInstanceReady event fires.
+/// once the WorldInstanceReady event fires.
 pub fn scene_asset_ready_listener(
-    trigger: On<SceneInstanceReady>,
+    trigger: On<WorldInstanceReady>,
     mut cmd: Commands,
     q_data: Query<&ChildOf, With<Children>>,
     q_layer: Query<&ScatterLayer>,
@@ -63,11 +63,11 @@ type SearchQueryFilter = (
 
 /// A `ScatterAsset` Backend system that collects [`Mesh3d`]/[`MeshMaterial3d`] combinations recursively in a Scene.
 ///
-/// The `SceneRoot` has a root collection which is always assumed to contain parents of all assets in the Tree, e.g.,
+/// The `WorldAssetRoot` has a root collection which is always assumed to contain parents of all assets in the Tree, e.g.,
 /// all [`ScatterAssetPart`]s will be assigned to the children of the root collection.
 pub fn scene_asset_backend(
     _: In<()>,
-    q_collect: Query<Entity, (With<SceneRoot>, With<NeedsAssetCollection>)>,
+    q_collect: Query<Entity, (With<WorldAssetRoot>, With<NeedsAssetCollection>)>,
     q_layers: Query<(Entity, Option<&Name>), With<ScatterLayer>>,
     q_parent: Query<&ChildOf>,
     q_children: Query<&Children>,
