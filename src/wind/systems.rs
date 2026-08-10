@@ -70,7 +70,12 @@ pub fn update_materials<T>(
                 continue;
             };
 
-            T::update_material(&mut *material, wind, prev_wind, asset.properties.options.clone());
+            T::update_material(
+                &mut *material,
+                wind,
+                prev_wind,
+                asset.properties.options.clone(),
+            );
         }
     }
 }

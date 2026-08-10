@@ -23,18 +23,18 @@ use bevy::{
     prelude::*,
     render::view::ColorGrading,
 };
+use bevy_camera::Hdr;
 use bevy_feronia::prelude::*;
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use bevy_light::{CascadeShadowConfig, DirectionalLightShadowMap};
+use bevy_perf_ui::prelude::*;
 use bevy_render::RenderPlugin;
 use bevy_render::render_resource::WgpuLimits;
 use bevy_render::settings::{RenderCreation, WgpuSettings};
-use bevy_camera::Hdr;
 use bevy_show_prepass::{ShowPrepass, ShowPrepassPlugin};
 use camera_controller::*;
-use bevy_perf_ui::prelude::*;
 
 #[derive(Resource, Default, PartialEq, Reflect)]
 #[reflect(Resource)]

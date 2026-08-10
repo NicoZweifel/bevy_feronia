@@ -196,18 +196,20 @@ fn load_assets(
     mut ns_scatter: ResMut<NextState<ScatterState>>,
     scenes: Option<ResMut<Scenes>>,
 ) {
-    let load_opt =
-        |existing: Option<Handle<WorldAsset>>, condition: bool, path: &'static str| -> Handle<WorldAsset> {
-            existing
-                .and_then(|h| {
-                    asset_server
-                        .get_load_state(h.id())
-                        .is_some_and(|s| s.is_loaded())
-                        .then_some(h)
-                })
-                .or_else(|| condition.then(|| asset_server.load(path)))
-                .unwrap_or_default()
-        };
+    let load_opt = |existing: Option<Handle<WorldAsset>>,
+                    condition: bool,
+                    path: &'static str|
+     -> Handle<WorldAsset> {
+        existing
+            .and_then(|h| {
+                asset_server
+                    .get_load_state(h.id())
+                    .is_some_and(|s| s.is_loaded())
+                    .then_some(h)
+            })
+            .or_else(|| condition.then(|| asset_server.load(path)))
+            .unwrap_or_default()
+    };
 
     // High/Ultra: Needs High, Medium, Low, Billboards
     // Medium:     Needs Medium, Low, Billboards (Usually excludes High, but see Grass below)

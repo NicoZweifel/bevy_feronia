@@ -53,7 +53,10 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 InstanceRotationYaw
             ),
             children![
-                (WorldAssetRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),
+                (
+                    WorldAssetRoot(assets.load("grass.glb#Scene0")),
+                    LevelOfDetail(0),
+                ),
                 (
                     WorldAssetRoot(assets.load("grass_medium_lod.glb#Scene0")),
                     LevelOfDetail(1),
