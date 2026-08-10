@@ -58,7 +58,7 @@ bevy = { version = "0.19.0", features = [
 ] }
 
 bytemuck = "1.25.0"
-iyes_perf_ui = "0.5.0"
+bevy_perf_ui = "0.7.0"
 # Set max log levels. This helps avoid unwanted low-severity log spam, which can affect performance.
 log = { version = "0.4", features = [
     "max_level_debug",
@@ -69,7 +69,7 @@ tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-bevy_show_prepass = "0.1.1"
+bevy_show_prepass = "0.3.0"
 
 # Idiomatic Bevy code often triggers these lints, and the CI workflow treats them as errors.
 # In some cases they may still signal poor code quality however, so consider commenting out these lines.
@@ -116,8 +116,6 @@ trace = ["dep:tracing"]
 dlss = ["bevy/dlss"]
 
 [patch.crates-io]
-iyes_perf_ui = { git = "https://github.com/blip-radar/iyes_perf_ui", branch = "bevy-0-18" }
-bevy_show_prepass = { git = "https://github.com/NicoZweifel/bevy_show_prepass", branch = "main" }
 bevy_eidolon = { git = "https://github.com/kisya-games/bevy_eidolon", branch = "bevy-0.19" }
 
 [[example]]

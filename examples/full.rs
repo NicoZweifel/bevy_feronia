@@ -103,7 +103,7 @@ fn spawn_scene(
     let fog_texture = create_spherical_fog_texture(64);
     let fog_texture_handle = images.add(fog_texture);
 
-    if let Some(image) = images.get_mut(&fog_texture_handle) {
+    if let Some(mut image) = images.get_mut(&fog_texture_handle) {
         image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
     }
 
@@ -133,37 +133,37 @@ fn spawn_scene(
 #[derive(Resource, Clone)]
 struct Scenes {
     // Always Loaded
-    landscape: Handle<Scene>,
+    landscape: Handle<WorldAsset>,
     audio: Handle<AudioSource>,
 
     // Low LODs are used by Low Quality (as close) and High Quality (as far)
-    trees_lod_low: Handle<Scene>,
-    trees_billboards: Handle<Scene>,
+    trees_lod_low: Handle<WorldAsset>,
+    trees_billboards: Handle<WorldAsset>,
 
-    foliage_lod_low: Handle<Scene>,
+    foliage_lod_low: Handle<WorldAsset>,
 
-    grass_lod_low: Handle<Scene>,
+    grass_lod_low: Handle<WorldAsset>,
 
     // Note: Low Quality settings use Med grass at LOD0
-    grass_lod_medium: Handle<Scene>,
+    grass_lod_medium: Handle<WorldAsset>,
 
-    rocks_lod_low: Handle<Scene>,
+    rocks_lod_low: Handle<WorldAsset>,
 
     // Conditionally Loaded (Quality Dependent)
-    grass_lod_high: Handle<Scene>,
+    grass_lod_high: Handle<WorldAsset>,
 
-    foliage_lod_high: Handle<Scene>,
-    foliage_lod_medium: Handle<Scene>,
+    foliage_lod_high: Handle<WorldAsset>,
+    foliage_lod_medium: Handle<WorldAsset>,
 
-    trees_lod_high: Handle<Scene>,
-    trees_lod_medium: Handle<Scene>,
+    trees_lod_high: Handle<WorldAsset>,
+    trees_lod_medium: Handle<WorldAsset>,
 
-    rocks_lod_medium: Handle<Scene>,
-    rocks_lod_high: Handle<Scene>,
+    rocks_lod_medium: Handle<WorldAsset>,
+    rocks_lod_high: Handle<WorldAsset>,
 }
 
 impl Scenes {
-    fn active_handles(&self) -> Vec<&Handle<Scene>> {
+    fn active_handles(&self) -> Vec<&Handle<WorldAsset>> {
         [
             &self.landscape,
             &self.trees_lod_low,
@@ -183,7 +183,7 @@ impl Scenes {
             &self.rocks_lod_high,
         ]
         .into_iter()
-        .filter(|x| x.id() != default::<Handle<Scene>>().id())
+        .filter(|x| x.id() != default::<Handle<WorldAsset>>().id())
         .collect()
     }
 }
@@ -197,7 +197,7 @@ fn load_assets(
     scenes: Option<ResMut<Scenes>>,
 ) {
     let load_opt =
-        |existing: Option<Handle<Scene>>, condition: bool, path: &'static str| -> Handle<Scene> {
+        |existing: Option<Handle<WorldAsset>>, condition: bool, path: &'static str| -> Handle<WorldAsset> {
             existing
                 .and_then(|h| {
                     asset_server
@@ -406,7 +406,7 @@ impl Landscape {
             .unwrap_or_default();
 
         world.commands().entity(ctx.entity).insert((
-            SceneRoot(landscape.clone()),
+            WorldAssetRoot(landscape.clone()),
             LodConfig::from(range_quality),
             AudioPlayer::new(audio.clone()),
         ));
@@ -425,7 +425,7 @@ fn spawn_landscape(
     let fog_texture = create_spherical_fog_texture(64);
     let fog_texture_handle = images.add(fog_texture);
 
-    if let Some(image) = images.get_mut(&fog_texture_handle) {
+    if let Some(mut image) = images.get_mut(&fog_texture_handle) {
         image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor::linear());
     }
 
@@ -485,7 +485,7 @@ impl RockLayer {
         cmd.spawn((
             LevelOfDetail(0),
             ChildOf(ctx.entity),
-            SceneRoot(match model_quality {
+            WorldAssetRoot(match model_quality {
                 ModelQuality::Low => handles.rocks_lod_low.clone(),
                 ModelQuality::Medium => handles.rocks_lod_medium.clone(),
                 ModelQuality::High => handles.rocks_lod_high.clone(),
@@ -496,7 +496,7 @@ impl RockLayer {
             cmd.spawn((
                 LevelOfDetail(1),
                 ChildOf(ctx.entity),
-                SceneRoot(match model_quality {
+                WorldAssetRoot(match model_quality {
                     ModelQuality::High => handles.rocks_lod_medium.clone(),
                     ModelQuality::Medium => handles.rocks_lod_low.clone(),
                     _ => default(),
@@ -508,7 +508,7 @@ impl RockLayer {
             cmd.spawn((
                 LevelOfDetail(2),
                 ChildOf(ctx.entity),
-                SceneRoot(handles.rocks_lod_low.clone()),
+                WorldAssetRoot(handles.rocks_lod_low.clone()),
             ));
         }
     }
@@ -564,12 +564,12 @@ impl TreeLayer {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_low.clone()),
+                    WorldAssetRoot(handles.trees_lod_low.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_billboards.clone()),
+                    WorldAssetRoot(handles.trees_billboards.clone()),
                     Unlit,
                 ));
             }
@@ -577,17 +577,17 @@ impl TreeLayer {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_medium.clone()),
+                    WorldAssetRoot(handles.trees_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_low.clone()),
+                    WorldAssetRoot(handles.trees_lod_low.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(2),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_billboards.clone()),
+                    WorldAssetRoot(handles.trees_billboards.clone()),
                     Unlit,
                 ));
             }
@@ -595,22 +595,22 @@ impl TreeLayer {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_high.clone()),
+                    WorldAssetRoot(handles.trees_lod_high.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_medium.clone()),
+                    WorldAssetRoot(handles.trees_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(2),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_lod_low.clone()),
+                    WorldAssetRoot(handles.trees_lod_low.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(3),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.trees_billboards.clone()),
+                    WorldAssetRoot(handles.trees_billboards.clone()),
                     Unlit,
                 ));
             }
@@ -672,36 +672,36 @@ impl FoliageLayer {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_low.clone()),
+                    WorldAssetRoot(handles.foliage_lod_low.clone()),
                 ));
             }
             ModelQuality::Medium => {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_medium.clone()),
+                    WorldAssetRoot(handles.foliage_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_low.clone()),
+                    WorldAssetRoot(handles.foliage_lod_low.clone()),
                 ));
             }
             ModelQuality::High => {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_high.clone()),
+                    WorldAssetRoot(handles.foliage_lod_high.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_medium.clone()),
+                    WorldAssetRoot(handles.foliage_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(2),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.foliage_lod_low.clone()),
+                    WorldAssetRoot(handles.foliage_lod_low.clone()),
                 ));
             }
         }
@@ -795,36 +795,36 @@ impl GrassLayer {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_low.clone()),
+                    WorldAssetRoot(handles.grass_lod_low.clone()),
                 ));
             }
             ModelQuality::Medium => {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_medium.clone()),
+                    WorldAssetRoot(handles.grass_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_low.clone()),
+                    WorldAssetRoot(handles.grass_lod_low.clone()),
                 ));
             }
             ModelQuality::High => {
                 cmd.spawn((
                     LevelOfDetail(0),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_high.clone()),
+                    WorldAssetRoot(handles.grass_lod_high.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(1),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_medium.clone()),
+                    WorldAssetRoot(handles.grass_lod_medium.clone()),
                 ));
                 cmd.spawn((
                     LevelOfDetail(2),
                     ChildOf(ctx.entity),
-                    SceneRoot(handles.grass_lod_low.clone()),
+                    WorldAssetRoot(handles.grass_lod_low.clone()),
                 ));
             }
         }
@@ -1024,7 +1024,7 @@ struct LoadingScreen;
 
 fn setup_loading_screen(mut commands: Commands) {
     let text_style = TextFont {
-        font_size: 67.0,
+        font_size: FontSize::Px(67.0),
         ..default()
     };
 
