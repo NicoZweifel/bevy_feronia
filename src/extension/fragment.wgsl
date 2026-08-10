@@ -2,7 +2,7 @@
     pbr_types,
     pbr_fragment::pbr_input_from_standard_material,
     decal::clustered::apply_decal_base_color,
-    mesh_view_bindings::{view, lights, clusterable_objects},
+    mesh_view_bindings::{view, lights, clustered_lights},
     mesh_bindings::mesh,
     pbr_types::{PbrInput, STANDARD_MATERIAL_FLAGS_UNLIT_BIT},
     forward_io::{FragmentOutput},
@@ -138,7 +138,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
-        let light = clusterable_objects.data[light_id];
+        let light = clustered_lights.data[light_id];
 
         // Skip if covered by shadow
         var shadow = 1.0;

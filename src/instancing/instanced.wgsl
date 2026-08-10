@@ -1,4 +1,4 @@
-#import bevy_pbr::mesh_view_bindings::{view, lights, globals, clusterable_objects}
+#import bevy_pbr::mesh_view_bindings::{view, lights, globals, clustered_lights}
 #import bevy_pbr::shadows::fetch_directional_shadow
 #import bevy_pbr::shadows::fetch_point_shadow
 #import bevy_pbr::mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT
@@ -359,7 +359,7 @@ fn fragment(
 
         for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
             let light_id = get_clusterable_object_id(i);
-            let light = clusterable_objects.data[light_id];
+            let light = clustered_lights.data[light_id];
 
             let light_position = light.position_radius.xyz;
             let scaled_light_color = light.color_inverse_square_range.rgb * material_uniforms.light_intensity;
@@ -442,7 +442,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
-        let light = clusterable_objects.data[light_id];
+        let light = clustered_lights.data[light_id];
 
         // Skip if covered by shadow
         var shadow = 1.0;
