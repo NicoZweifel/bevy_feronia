@@ -100,15 +100,15 @@ impl Plugin for ExamplePlugin {
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_debug_options),
                 ResourceInspectorPlugin::<ChunkDebugConfig>::default().run_if(
                     resource_exists::<ChunkDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_chunks),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_chunks),
                 ),
                 ResourceInspectorPlugin::<HeightMapDebugConfig>::default().run_if(
                     resource_exists::<HeightMapDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_height_map),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_height_map),
                 ),
                 ResourceInspectorPlugin::<ScatterOccupancyMapDebugConfig>::default().run_if(
                     resource_exists::<ScatterOccupancyMapDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_occupancy_map),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_occupancy_map),
                 ),
             ))
             .add_systems(
