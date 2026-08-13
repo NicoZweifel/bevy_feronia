@@ -118,66 +118,6 @@ dlss = ["bevy/dlss"]
 [patch.crates-io]
 bevy_eidolon = { git = "https://github.com/kisya-games/bevy_eidolon", branch = "bevy-0.19" }
 
-# https://github.com/bevyengine/bevy/issues/24690: waiting for bevy 0.19.1.
-bevy = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_a11y = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_android = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_animation = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_anti_alias = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_app = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_asset = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_audio = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_camera = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_camera_controller = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_clipboard = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_color = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_core_pipeline = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_derive = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_dev_tools = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_diagnostic = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_dylib = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_ecs = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_encase_derive = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_feathers = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_gilrs = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_gizmos = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_gizmos_render = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_gltf = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_image = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_input = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_input_focus = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_internal = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_light = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_log = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_macro_utils = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_material = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_math = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_mesh = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_pbr = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_picking = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_platform = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_post_process = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_ptr = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_reflect = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_remote = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_render = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_scene = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_shader = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_solari = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_sprite = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_sprite_render = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_state = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_tasks = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_text = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_time = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_transform = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_ui = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_ui_render = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_ui_widgets = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_utils = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_window = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_winit = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
-bevy_world_serialization = { git = "https://github.com/kisya-games/bevy", branch = "bevy_feronia-0.19" }
 
 [[example]]
 name = "avian"

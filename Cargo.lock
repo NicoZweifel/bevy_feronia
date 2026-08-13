@@ -228,6 +228,7 @@ dependencies = [
  "parking_lot",
  "percent-encoding",
  "windows-sys 0.60.2",
+ "wl-clipboard-rs",
  "x11rb",
 ]
 
@@ -426,8 +427,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bevy"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bfadbebfc6599aa59289b754ac30023959854304f3d393da2cf62bb3cd5df8f"
 dependencies = [
  "bevy_dylib",
  "bevy_internal",
@@ -486,8 +488,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_a11y"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c02cd43f914ef7a0f5b16f8a3d88c378c07c92f1a8c32ac5ac4d4f73e55f9e2"
 dependencies = [
  "accesskit",
  "bevy_app",
@@ -498,16 +501,18 @@ dependencies = [
 
 [[package]]
 name = "bevy_android"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae5ea5245a845cefa8efb5ff7c2a8a36cdebfb99596068780f340f0b5aba6689"
 dependencies = [
  "android-activity",
 ]
 
 [[package]]
 name = "bevy_animation"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc513aac5cda673fb138236e969b4514e0a9b9f93fd33288111f147baa8af623"
 dependencies = [
  "bevy_animation_macros",
  "bevy_app",
@@ -538,8 +543,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_animation_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eed2910d9ca5c3b48968a54c4571789e4e81935cf3c823383fcac34ca28e2b0e"
 dependencies = [
  "bevy_macro_utils",
  "quote",
@@ -548,8 +554,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_anti_alias"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dde973fc942cb596b03cae0dbece0a4d9dc2d2790bbc9852aa415affc1210d3a"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -571,8 +578,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_app"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fd2aa472d43b4d081ef41d26300d17bd22cba6d68df2a223eb358782fa40bc6"
 dependencies = [
  "bevy_derive",
  "bevy_ecs",
@@ -592,8 +600,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_asset"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1624eddbf2293441b2158506aba75e523432b898d9da26eb6ed3e20af4c7fd38"
 dependencies = [
  "async-broadcast",
  "async-channel",
@@ -635,8 +644,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_asset_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "735611c80e926e960d279cba2a6f6ab27a61291752ec3b26e76bf9a0957e11e1"
 dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
@@ -646,8 +656,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_audio"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "750809b7b007dd6de6e5c730e67973027a3d22392fa7fd6f5331f8cefb489a18"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -661,8 +672,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_camera"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96de20d0babfb51e3907eb4eb56f1e36096a6f8c77acd997f5de611df4ee067d"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -686,9 +698,11 @@ dependencies = [
 
 [[package]]
 name = "bevy_clipboard"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0a9792c7f2e8b5b71b9572a6d98fca4ee88ed186c8a02e164540c461ae3a92e"
 dependencies = [
+ "arboard",
  "bevy_app",
  "bevy_ecs",
  "bevy_log",
@@ -700,8 +714,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_color"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e5370beae13bea2db64744f370bb33566aa770dff91c2beae245ce82217fbbc"
 dependencies = [
  "bevy_math",
  "bevy_reflect",
@@ -715,8 +730,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_core_pipeline"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2564f1ba766532e8eeb20059133ff6703e8dd5c3864b92378d0d1c541096ef12"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -743,8 +759,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_derive"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d2a03321f3bd8016a041b3ae6afe83e636b3540fbc61d571bf069a21fda3231"
 dependencies = [
  "bevy_macro_utils",
  "quote",
@@ -753,8 +770,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_dev_tools"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee5887919325facb6142d98de3e3d156c1b86c2375ac569e2e3547601ab05eaf"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -784,8 +802,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_diagnostic"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07a3a736f15486650c4c6866798a78d625c7063c991a3cc7b13f1577d89c82ae"
 dependencies = [
  "atomic-waker",
  "bevy_app",
@@ -801,16 +820,18 @@ dependencies = [
 
 [[package]]
 name = "bevy_dylib"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3c03a128bac8b59a8699b81038b574e3cfa33dfae18e375d46be028d3d13c0e"
 dependencies = [
  "bevy_internal",
 ]
 
 [[package]]
 name = "bevy_ecs"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a350b2e4c2e47f7903d688affb8a723b31bca63af9789f1da88703f1ba04e354"
 dependencies = [
  "arrayvec",
  "bevy_ecs_macros",
@@ -836,8 +857,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ecs_macro_logic"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a10fef45a3e7dad717ba03e8b5f7ecdf3b3fd1cd1c5e425793525938e90d5f"
 dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
@@ -847,8 +869,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ecs_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3916d712264b6f3ec9c964ba10719450ea371e537e202a2ffcfa9f6a5e68169d"
 dependencies = [
  "bevy_ecs_macro_logic",
  "bevy_macro_utils",
@@ -933,8 +956,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_encase_derive"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be03820f64f2279ae9d826c882e4ef764516ff75ab7bdc39bb40801891533b89"
 dependencies = [
  "bevy_macro_utils",
  "encase_derive_impl",
@@ -942,8 +966,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_feathers"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2bb6cfa726defd90add3eb71dc8b1ab32ca441f2531130679bfa880af2fb1f1"
 dependencies = [
  "accesskit",
  "bevy_a11y",
@@ -1016,8 +1041,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_gilrs"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8215d166d5c4a9f821713a1a549a57c5f8bdf404745c84f7a8b920b7b7d92b2"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1031,8 +1057,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_gizmos"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ac5bcad0b8d141ef64f4a89643f74f11827ea6ef48073192b39d69156ed1b92"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1053,8 +1080,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_gizmos_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b37bbaa6241480b119da406fc261c9cf85d435addad880ae564c9b0f54a89a28"
 dependencies = [
  "bevy_macro_utils",
  "quote",
@@ -1063,8 +1091,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_gizmos_render"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ea2b6266d210bca0aa3bcba7e17204e437b4e86cecd4021ab7dcd32da576a02"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1091,8 +1120,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_gltf"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d17df73b26adfb8be89f0716b8667c60660bdd2d589863b8901caca58c99841"
 dependencies = [
  "async-lock",
  "base64",
@@ -1137,8 +1167,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_image"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca63218585b83f98831214431449e9344b363349dd5cab98dae0b8129f0a0e2f"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1165,8 +1196,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_input"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b22e8b1119ff5c0b551cc11b672d25732c4e3eda72aceabc380595bd0e7bbe88"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1181,8 +1213,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_input_focus"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4d5573eb503387f73d12acde3010d49c808c790d34691e2fb410fc54b8c72b9"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1197,8 +1230,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_internal"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ba99ca2e501f14f4af3322d66ae41b5c5b6ebd3aac4d00cda47dea4c00290ae"
 dependencies = [
  "bevy_a11y",
  "bevy_android",
@@ -1256,8 +1290,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_light"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4f91fb900c2412c5cb7ff5083d428d8361a1d39b605df86eb259aff82f7ac45"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1281,8 +1316,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_log"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e24488594832237c1e3abc823642823fa057b810c3a21e14e65bdbd15d1579d5"
 dependencies = [
  "android_log-sys",
  "bevy_app",
@@ -1298,8 +1334,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_macro_utils"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7164fe229422295bba15f1885048f34f4660db069aacb895208f996b0c7784fb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1309,8 +1346,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_material"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3efcdb3ba04a57f6e05548884745684a2051e9692398915f57c5c276306b7f10"
 dependencies = [
  "bevy_asset",
  "bevy_derive",
@@ -1331,8 +1369,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_material_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "854f95c8f3374ef6242790de50b5cb8f5a601c698772d1447bf856067b53ee64"
 dependencies = [
  "bevy_macro_utils",
  "quote",
@@ -1341,8 +1380,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_math"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98ead494dcfaa9b4594eed7f09a27d868b7cc7fc9ebd655c5643322778f4a8a2"
 dependencies = [
  "approx",
  "arrayvec",
@@ -1360,8 +1400,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_mesh"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2adbf8e5a5817c345986756eb0377e18a510e1d7685ef62d6c7bafcd3bab85e"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1393,8 +1434,9 @@ checksum = "bff34eb29ff4b8a8688bc7299f14fb6b597461ca80fec03ed7d22939ab33e48f"
 
 [[package]]
 name = "bevy_pbr"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "244ae7d618b51a59c913c36b0564a295cd85ea91a5e777b542bb7bdb846a23d6"
 dependencies = [
  "arrayvec",
  "bevy_app",
@@ -1446,8 +1488,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_picking"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "235d1ea0cd7d0ff2f37592f37b4d8504c597884296058ecadcb0d206d0258ab7"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1469,8 +1512,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_platform"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd610a417e7b4a3b9602cf11264d16cbbff8eabe689c5fed8be4e84c6a2680a3"
 dependencies = [
  "critical-section",
  "foldhash 0.2.0",
@@ -1490,8 +1534,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_post_process"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eb9340107f7a4292b3b1d138cffb2700f31cef580f5777f2e83f4f00eae4dc1"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1514,13 +1559,15 @@ dependencies = [
 
 [[package]]
 name = "bevy_ptr"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1974de4b140f102fded747229ff4a61921acec07f02f0d1dcdadfe9ce177d0ff"
 
 [[package]]
 name = "bevy_reflect"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b76c3d056da3e299b84652ccf914c487b786857225d8ffbc8fc9509441a9e6b"
 dependencies = [
  "assert_type_match",
  "bevy_platform",
@@ -1547,8 +1594,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_reflect_derive"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fc5f820ee52afeca6d3bb83f15c1bf61ea6196c840a761a21a8bc266a3b166e"
 dependencies = [
  "bevy_macro_utils",
  "indexmap",
@@ -1560,8 +1608,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_render"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc86a32b2eef9859e1e7d323c6d1a9150fe77aa17c30fd05abebc12f645929dc"
 dependencies = [
  "async-channel",
  "bevy_app",
@@ -1613,8 +1662,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_render_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6be6eba0ce9770ae4576693804d6c605f8afd9c4769787414254efcf92196a90"
 dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
@@ -1624,8 +1674,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_scene"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33f6f4f24cd771c6fd67286a8f264a45a644dc798a36614252db220d4fbbd63b"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1644,8 +1695,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_scene_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fc7844c3410e228581200f73be123467c424f62fc40499c3e869b641b582748"
 dependencies = [
  "bevy_ecs_macro_logic",
  "bevy_macro_utils",
@@ -1656,8 +1708,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_shader"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50ba4fa5c5102a9ad1b0508c5bf8a6d02a22d5dc13c23ba908ee6d3d16a357cd"
 dependencies = [
  "bevy_asset",
  "bevy_platform",
@@ -1683,8 +1736,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_solari"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6137adc9b4b9ddba719c63c2cf777607210e8f22b4978fbcf73a58acfe39b920"
 dependencies = [
  "bevy_anti_alias",
  "bevy_app",
@@ -1712,8 +1766,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_sprite"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e93e631436ff9c08613843d46521ee60f2fcb2eb5f4754eec59591ca817a2ba0"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1737,8 +1792,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_sprite_render"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c0a13c775880fe8fb3e7928921b2a1b549fd92c17571e7ca5e1250e53f0e56c"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1769,8 +1825,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_state"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f69ce6a0066eb4626165e2f8c85d3cf4808cfe4cb2027df8840d5cbfe8a3428d"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1784,8 +1841,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_state_macros"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a36dd49049023a0abbd0bd1e2b99580ed83a18c5351c64caba4c06e3b584cf9c"
 dependencies = [
  "bevy_macro_utils",
  "quote",
@@ -1794,8 +1852,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_tasks"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f787d4ba7237b64b30bd2d690a8cbae1ba775e0eec326711c446654cb720e7c"
 dependencies = [
  "async-channel",
  "async-executor",
@@ -1812,8 +1871,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_text"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0b275f50fb01b1e2d411326a7750ecc2fe629c48b89997cf2a3c93fe786e076"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1840,8 +1900,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_time"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6896d83d7ed32a2f89da127b7aeddf01eb702e603897cf5ddac231480a1870e"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1854,8 +1915,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_transform"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d94cc6065320ebeb58ae88a0863a4c4c2a642c6db698e283eb50be01a834ca5a"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -1879,8 +1941,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ui"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a2f97c39dadfef97dbe295fc1ce212825bb9fda2becc8f558d1d7e7d7dbbedf"
 dependencies = [
  "accesskit",
  "bevy_a11y",
@@ -1916,8 +1979,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ui_render"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30a36be1c251417421ee070ecd1a393f0036631f7495564a8c9d4abb6042dc40"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -1948,8 +2012,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_ui_widgets"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a71063099a056a010bdbbcc1f1daf2d50bff517d69d62e5334d4c32d7bf9e9e0"
 dependencies = [
  "accesskit",
  "bevy_a11y",
@@ -1971,8 +2036,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_utils"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de51fa7ea2e95d4c2d1278c5629285d59eec951cc60c992964c03f30910ef5a1"
 dependencies = [
  "async-channel",
  "bevy_platform",
@@ -1983,8 +2049,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_window"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38373ee93a9248c14afe41d2025f4aa5e68b004b06ae7702816b180e72b39ea3"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -2001,8 +2068,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_winit"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1e9c615f4194b1e00ba536892a3d3d3300c2a1f8e66112fdebd7077bf2744c9"
 dependencies = [
  "accesskit",
  "accesskit_winit",
@@ -2033,8 +2101,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_world_serialization"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36855264b9b5d229bde74f01730eb6251c72dc052404ae144a9295cc0abdefc1"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -2061,7 +2130,7 @@ dependencies = [
  "bitflags 2.13.1",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.10.5",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -2294,7 +2363,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766"
 dependencies = [
- "nom",
+ "nom 7.1.3",
 ]
 
 [[package]]
@@ -2950,7 +3019,7 @@ dependencies = [
  "ecolor",
  "emath",
  "epaint_default_fonts",
- "font-types 0.11.3",
+ "font-types",
  "log",
  "nohash-hasher",
  "parking_lot",
@@ -3113,15 +3182,6 @@ name = "font-types"
 version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b38ad915f6dadd993ced50848a8291a543bd41ca62bc10740d5e64e2ab4cfd7"
-dependencies = [
- "bytemuck",
-]
-
-[[package]]
-name = "font-types"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a7299a780854a6d391be2ae1c8521c9368471b559dbfd6a8dbd9f407eaff100"
 dependencies = [
  "bytemuck",
 ]
@@ -3833,15 +3893,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
@@ -4311,6 +4362,15 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "nom"
+version = "8.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -4899,6 +4959,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7d950ca161dc355eaf28f82b11345ed76c6e1f6eb1f4f4479e0323b9e2fbd0e"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "os_pipe"
+version = "1.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
+dependencies = [
+ "libc",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5493,7 +5563,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b634fabf032fab15307ffd272149b622260f55974d9fad689292a5d33df02e5"
 dependencies = [
  "bytemuck",
- "font-types 0.11.3",
+ "font-types",
 ]
 
 [[package]]
@@ -5503,18 +5573,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4ed38b89c2c77ff968c524145ad65fb010f38af5c7a224b53b81d47ac2daa81"
 dependencies = [
  "bytemuck",
- "font-types 0.11.3",
-]
-
-[[package]]
-name = "read-fonts"
-version = "0.41.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046a7d674daf459825b32f5062056d6882db0d2f5a479fbd76ccfc870ac18709"
-dependencies = [
- "bytemuck",
- "font-types 0.12.2",
- "once_cell",
+ "font-types",
 ]
 
 [[package]]
@@ -5874,16 +5933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "skrifa"
-version = "0.44.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "819ab7d62b1d3e72d9d9dea5650bac30424f9111364bb94928dbf5ecad1baa68"
-dependencies = [
- "bytemuck",
- "read-fonts 0.41.0",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6045,7 +6094,7 @@ version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c2499c2d826531388872b2268718aed907a39bd785ab0dcfe57fab26283f92e"
 dependencies = [
- "skrifa 0.44.0",
+ "skrifa 0.40.0",
  "yazi",
  "zeno",
 ]
@@ -6433,6 +6482,17 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "tree_magic_mini"
+version = "3.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8765b90061cba6c22b5831f675da109ae5561588290f9fa2317adab2714d5a6"
+dependencies = [
+ "memchr",
+ "nom 8.0.0",
+ "petgraph",
 ]
 
 [[package]]
@@ -7441,6 +7501,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
+name = "wl-clipboard-rs"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9651471a32e87d96ef3a127715382b2d11cc7c8bb9822ded8a7cc94072eb0a3"
+dependencies = [
+ "libc",
+ "log",
+ "os_pipe",
+ "rustix 1.1.4",
+ "thiserror 2.0.20",
+ "tree_magic_mini",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-protocols",
+ "wayland-protocols-wlr",
+]
+
+[[package]]
 name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7646,13 +7724,3 @@ checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
-
-[[patch.unused]]
-name = "bevy_camera_controller"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
-
-[[patch.unused]]
-name = "bevy_remote"
-version = "0.19.0"
-source = "git+https://github.com/kisya-games/bevy?branch=bevy_feronia-0.19#7fbdac55a1f8ba45b5337495f9a14c6d590a2e65"
