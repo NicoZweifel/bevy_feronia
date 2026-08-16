@@ -46,6 +46,13 @@ impl LevelOfDetail {
 #[reflect(Component, Clone, Debug)]
 pub struct EnableDebug;
 
+/// Marker component to disable the normal/depth prepass for this scatter layer.
+///
+/// Only supported with [`InstancedWindAffectedMaterial`].
+#[derive(Component, Clone, Debug, Reflect, Default)]
+#[reflect(Component, Clone, Debug)]
+pub struct DisablePrepass;
+
 /// Marker component to make instances always face the camera.
 ///
 /// Enables `#ifdef BILLBOARDING` in shaders.

@@ -39,7 +39,7 @@ impl InstancedWindAffectedMaterial {
             aabb: properties.aabb,
             options: properties.options.clone(),
             noise_texture,
-            disable_prepass: false,
+            disable_prepass: properties.options.general.disable_prepass,
         }
     }
 }

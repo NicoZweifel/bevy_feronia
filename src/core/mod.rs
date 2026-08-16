@@ -69,6 +69,7 @@ pub struct MaterialOptionData {
     // General
     pub enable_debug: Option<&'static EnableDebug>,
     pub gpu_cull: Option<&'static GpuCullCompute>,
+    pub disable_prepass: Option<&'static DisablePrepass>,
 
     // Geometry
     pub enable_billboarding: Option<&'static EnableBillboarding>,
@@ -121,6 +122,7 @@ pub type MaterialChangedFilter = Or<(
     Or<(
         Changed<EnableDebug>,
         Changed<GpuCullCompute>,
+        Changed<DisablePrepass>,
         Changed<EnableBillboarding>,
         Changed<WindAffected>,
         Changed<LowQuality>,
