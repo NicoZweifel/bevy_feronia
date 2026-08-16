@@ -85,6 +85,7 @@ mod tests {
             gpu_cull: true,
             controlled: true,         // Overwrite
             debug_color: BLUE.into(), // Overwrite
+            disable_prepass: false,
         };
 
         // Act
