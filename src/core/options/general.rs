@@ -10,6 +10,7 @@ pub struct GeneralOptions {
     pub debug: bool,
     pub debug_color: Color,
     pub gpu_cull: bool,
+    pub disable_prepass: bool,
 }
 
 impl GeneralOptions {
@@ -17,6 +18,7 @@ impl GeneralOptions {
         Self {
             debug: data.enable_debug.is_some(),
             gpu_cull: data.gpu_cull.is_some(),
+            disable_prepass: data.disable_prepass.is_some(),
             ..default()
         }
     }
@@ -24,12 +26,14 @@ impl GeneralOptions {
     pub fn with_data(mut self, data: &MaterialOptionDataItem) -> Self {
         self.debug |= data.enable_debug.is_some();
         self.gpu_cull |= data.gpu_cull.is_some();
+        self.disable_prepass |= data.disable_prepass.is_some();
         self
     }
 
     pub fn with(mut self, other: Self) -> Self {
         self.debug |= other.debug;
         self.gpu_cull |= other.gpu_cull;
+        self.disable_prepass |= other.disable_prepass;
         self.controlled = other.controlled;
         if other.debug_color != Color::default() {
             self.debug_color = other.debug_color;
@@ -81,6 +85,7 @@ mod tests {
             gpu_cull: true,
             controlled: true,         // Overwrite
             debug_color: BLUE.into(), // Overwrite
+            disable_prepass: false,
         };
 
         // Act

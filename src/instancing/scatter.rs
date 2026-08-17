@@ -58,6 +58,7 @@ impl ScatterMaterial for InstancedWindAffectedMaterial {
         {
             material.current = current_wind;
             material.previous = previous_wind;
+            material.disable_prepass = options.general.disable_prepass;
             material.options = options;
         }
     }
