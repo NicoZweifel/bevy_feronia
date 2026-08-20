@@ -1,8 +1,8 @@
-#import bevy_pbr::mesh_view_bindings::{view, lights, globals, clusterable_objects}
+#import bevy_pbr::mesh_view_bindings::{view, lights, globals, clustered_lights}
 #import bevy_pbr::shadows::fetch_directional_shadow
 #import bevy_pbr::shadows::fetch_point_shadow
 #import bevy_pbr::mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT
-#import bevy_pbr::clustered_forward::{fragment_cluster_index, unpack_clusterable_object_index_ranges, get_clusterable_object_id}
+#import bevy_pbr::clustered_forward::{view_fragment_cluster_index, unpack_clusterable_object_index_ranges, get_clusterable_object_id}
 #import bevy_pbr::pbr_types
 #import bevy_pbr::pbr_functions
 #import bevy_pbr::mesh_types::MESH_FLAGS_SHADOW_RECEIVER_BIT
@@ -334,7 +334,8 @@ fn fragment(
                 i,
                 in.world_position,
                 N,
-                view_z
+                view_z,
+                in.clip_position.xy
             );
             let final_shadow = clamp(shadow, 0.1, 1.);
 
@@ -350,7 +351,7 @@ fn fragment(
 
     #ifdef POINT_LIGHTS
         let is_orthographic = view.clip_from_view[3].w == 1.;
-        let cluster_index = fragment_cluster_index(
+        let cluster_index = view_fragment_cluster_index(
             in.clip_position.xy,
             view_z,
             is_orthographic
@@ -359,7 +360,7 @@ fn fragment(
 
         for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
             let light_id = get_clusterable_object_id(i);
-            let light = clusterable_objects.data[light_id];
+            let light = clustered_lights.data[light_id];
 
             let light_position = light.position_radius.xyz;
             let scaled_light_color = light.color_inverse_square_range.rgb * material_uniforms.light_intensity;
@@ -393,7 +394,7 @@ fn fragment(
 
             var shadow = 1.;
             if ((light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT) != 0u) {
-                shadow = fetch_point_shadow(light_id, in.world_position, N);
+                shadow = fetch_point_shadow(light_id, in.world_position, N, in.clip_position.xy);
             }
             let final_shadow = clamp(shadow, 0.1, 1.);
 
@@ -436,18 +437,18 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
 
     let view_pos = view.view_from_world * pbr_input.world_position;
     let view_z = view_pos.z;
-    let cluster_index = fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
+    let cluster_index = view_fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
     let ranges = unpack_clusterable_object_index_ranges(cluster_index);
 
     // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
-        let light = clusterable_objects.data[light_id];
+        let light = clustered_lights.data[light_id];
 
         // Skip if covered by shadow
         var shadow = 1.0;
         if (light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT)!= 0u {
-            shadow = fetch_point_shadow(light_id, pbr_input.world_position, pbr_input.world_normal);
+            shadow = fetch_point_shadow(light_id, pbr_input.world_position, pbr_input.world_normal, pbr_input.frag_coord.xy);
         }
 
         if (shadow <= 0.0) { continue; }
@@ -492,7 +493,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     // Directional lights
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         // Skip if covered by shadow
-        let shadow = fetch_directional_shadow(i, pbr_input.world_position, pbr_input.world_normal, view_z);
+        let shadow = fetch_directional_shadow(i, pbr_input.world_position, pbr_input.world_normal, view_z, pbr_input.frag_coord.xy);
         if (shadow <= 0.0) { continue; }
 
         let sun = lights.directional_lights[i];

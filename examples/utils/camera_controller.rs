@@ -117,7 +117,7 @@ pub fn block_mouse_input(mut mouse: ResMut<ButtonInput<MouseButton>>, mut contex
         return;
     };
 
-    if context.is_pointer_over_area() || context.wants_pointer_input() {
+    if context.is_pointer_over_egui() || context.egui_wants_pointer_input() {
         mouse.reset_all();
     }
 }
@@ -130,7 +130,7 @@ pub fn block_keyboard_input(
         return;
     };
 
-    if context.wants_keyboard_input() {
+    if context.egui_wants_keyboard_input() {
         keyboard_keycode.reset_all();
     }
 }

@@ -28,7 +28,7 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat.glb#Scene0")),
+        WorldAssetRoot(assets.load("landscape_flat.glb#Scene0")),
         Transform::from_xyz(5., 0., 0.)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_4)),
         ScatterRoot::default(),
@@ -53,13 +53,16 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 InstanceRotationYaw
             ),
             children![
-                (SceneRoot(assets.load("grass.glb#Scene0")), LevelOfDetail(0),),
                 (
-                    SceneRoot(assets.load("grass_medium_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass.glb#Scene0")),
+                    LevelOfDetail(0),
+                ),
+                (
+                    WorldAssetRoot(assets.load("grass_medium_lod.glb#Scene0")),
                     LevelOfDetail(1),
                 ),
                 (
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LevelOfDetail(2),
                 )
             ]

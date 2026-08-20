@@ -300,11 +300,11 @@ fn update_quality_settings(
 
         for (mut light, mut cascade_config) in &mut lights {
             if new_settings.shadow_quality == ShadowQuality::Off {
-                light.shadows_enabled = false;
+                light.shadow_maps_enabled = false;
                 continue;
             }
 
-            light.shadows_enabled = true;
+            light.shadow_maps_enabled = true;
 
             #[cfg(feature = "pcss")]
             {

@@ -2,14 +2,12 @@
 #import bevy_pbr::mesh_functions::{
     get_world_from_local,
     get_visibility_range_dither_level,
-    get_model_matrix,
     mesh_tangent_local_to_world,
     get_previous_world_from_local,
     mesh_normal_local_to_world
 }
 #import bevy_pbr::view_transformations::position_world_to_clip
 #import bevy_pbr::pbr_fragment::pbr_input_from_standard_material
-#import bevy_pbr::pbr_fragment::pbr_material_from_standard_material
 #import bevy_pbr::pbr_functions::alpha_discard
 #import bevy_pbr::pbr_functions::apply_pbr_lighting
 #import bevy_pbr::pbr_functions::main_pass_post_lighting_processing

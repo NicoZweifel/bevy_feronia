@@ -75,9 +75,9 @@ where
             Update,
             (update_materials::<T>.run_if(
                 resource_changed::<GlobalWind>
-                    .or(material_options_changed)
-                    .and(resource_exists::<Assets<ScatterAsset<T>>>)
-                    .and(resource_exists::<ScatterAssetManager<T>>),
+                    .or_else(material_options_changed)
+                    .and_then(resource_exists::<Assets<ScatterAsset<T>>>)
+                    .and_then(resource_exists::<ScatterAssetManager<T>>),
             ),),
         );
     }

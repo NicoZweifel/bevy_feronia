@@ -43,8 +43,8 @@ enum AppState {
 
 #[derive(Resource)]
 struct Scenes {
-    landscape: Handle<Scene>,
-    lod_low: Handle<Scene>,
+    landscape: Handle<WorldAsset>,
+    lod_low: Handle<WorldAsset>,
 }
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -78,7 +78,7 @@ fn spawn_scene(
     mut ns_scatter: ResMut<NextState<ScatterState>>,
 ) {
     cmd.spawn((
-        SceneRoot(handles.landscape.clone()),
+        WorldAssetRoot(handles.landscape.clone()),
         ScatterRoot::default(),
         LodConfig::none(),
         children![(
@@ -89,7 +89,7 @@ fn spawn_scene(
             InstanceScaleRange { min: 1., max: 4. },
             WindAffected,
             InstanceJitter,
-            children![SceneRoot(handles.lod_low.clone()),]
+            children![WorldAssetRoot(handles.lod_low.clone()),]
         )],
     ));
 
