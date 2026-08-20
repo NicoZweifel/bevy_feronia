@@ -64,13 +64,18 @@ pub fn update_materials<T>(
         asset.properties.options = options;
 
         for part in &asset.parts {
-            let Some(material) = materials.get_mut(&part.h_material) else {
+            let Some(mut material) = materials.get_mut(&part.h_material) else {
                 #[cfg(feature = "trace")]
                 tracing::warn!("Material not found!");
                 continue;
             };
 
-            T::update_material(material, wind, prev_wind, asset.properties.options.clone());
+            T::update_material(
+                &mut *material,
+                wind,
+                prev_wind,
+                asset.properties.options.clone(),
+            );
         }
     }
 }

@@ -40,7 +40,7 @@ fn main() -> AppExit {
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMap>) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat.glb#Scene0")),
+        WorldAssetRoot(assets.load("landscape_flat.glb#Scene0")),
         ScatterRoot::default(),
         children![(
             scatter_layer("Wind affected Grass Layer"),
@@ -61,13 +61,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>, density_map: Res<DensityMa
                 PointLights,
             ),
             children![
-                SceneRoot(assets.load("grass.glb#Scene0")),
+                WorldAssetRoot(assets.load("grass.glb#Scene0")),
                 (
-                    SceneRoot(assets.load("grass_medium_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass_medium_lod.glb#Scene0")),
                     LevelOfDetail(1),
                 ),
                 (
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LevelOfDetail(2),
                 )
             ]

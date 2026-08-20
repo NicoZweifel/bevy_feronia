@@ -2,7 +2,7 @@
     pbr_types,
     pbr_fragment::pbr_input_from_standard_material,
     decal::clustered::apply_decal_base_color,
-    mesh_view_bindings::{view, lights, clusterable_objects},
+    mesh_view_bindings::{view, lights, clustered_lights},
     mesh_bindings::mesh,
     pbr_types::{PbrInput, STANDARD_MATERIAL_FLAGS_UNLIT_BIT},
     forward_io::{FragmentOutput},
@@ -15,7 +15,7 @@
     shadows::{fetch_directional_shadow, fetch_point_shadow},
     mesh_view_types::POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT,
     clustered_forward::{
-        fragment_cluster_index,
+        view_fragment_cluster_index,
         unpack_clusterable_object_index_ranges,
         get_clusterable_object_id
     }
@@ -132,18 +132,18 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
 
     let view_pos = view.view_from_world * pbr_input.world_position;
     let view_z = view_pos.z;
-    let cluster_index = fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
+    let cluster_index = view_fragment_cluster_index(pbr_input.frag_coord.xy, view_z, pbr_input.is_orthographic);
     let ranges = unpack_clusterable_object_index_ranges(cluster_index);
 
     // Point lights
     for (var i = ranges.first_point_light_index_offset; i < ranges.first_spot_light_index_offset; i = i + 1u) {
         let light_id = get_clusterable_object_id(i);
-        let light = clusterable_objects.data[light_id];
+        let light = clustered_lights.data[light_id];
 
         // Skip if covered by shadow
         var shadow = 1.0;
         if (light.flags & POINT_LIGHT_FLAGS_SHADOWS_ENABLED_BIT)!= 0u {
-            shadow = fetch_point_shadow(light_id, pbr_input.world_position, pbr_input.world_normal);
+            shadow = fetch_point_shadow(light_id, pbr_input.world_position, pbr_input.world_normal, pbr_input.frag_coord.xy);
         }
 
         if (shadow <= 0.0) { continue; }
@@ -188,7 +188,7 @@ fn calc_sss_lighting(scale:f32, intensity:f32, pbr_input: PbrInput, thinness_fac
     // Directional lights
     for (var i = 0u; i < lights.n_directional_lights; i = i + 1u) {
         // Skip if covered by shadow
-        let shadow = fetch_directional_shadow(i, pbr_input.world_position, pbr_input.world_normal, view_z);
+        let shadow = fetch_directional_shadow(i, pbr_input.world_position, pbr_input.world_normal, view_z, pbr_input.frag_coord.xy);
         if (shadow <= 0.0) { continue; }
 
         let sun = lights.directional_lights[i];

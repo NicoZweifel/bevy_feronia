@@ -23,18 +23,18 @@ use bevy::{
     prelude::*,
     render::view::ColorGrading,
 };
+use bevy_camera::Hdr;
 use bevy_feronia::prelude::*;
 use bevy_image::{ImageSampler, ImageSamplerDescriptor};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::ResourceInspectorPlugin};
 use bevy_light::{CascadeShadowConfig, DirectionalLightShadowMap};
+use bevy_perf_ui::prelude::*;
 use bevy_render::RenderPlugin;
 use bevy_render::render_resource::WgpuLimits;
 use bevy_render::settings::{RenderCreation, WgpuSettings};
-use bevy_render::view::Hdr;
 use bevy_show_prepass::{ShowPrepass, ShowPrepassPlugin};
 use camera_controller::*;
-use iyes_perf_ui::prelude::*;
 
 #[derive(Resource, Default, PartialEq, Reflect)]
 #[reflect(Resource)]
@@ -69,14 +69,14 @@ impl Plugin for ExamplePlugin {
             .add_plugins(DefaultPlugins
                 .set(AssetPlugin { use_asset_processor_override:Some(true),..default() })
                 .set(RenderPlugin {
-                    render_creation: RenderCreation::Automatic(WgpuSettings {
+                    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
                         limits: WgpuLimits {
                             max_storage_buffer_binding_size: 1024 << 20,
                             max_buffer_size: 1024 << 20,
                             ..default()
                         },
                         ..default()
-                    }),
+                    })),
                     ..default()
                 })
             )
@@ -100,15 +100,15 @@ impl Plugin for ExamplePlugin {
                     .run_if(|res: Res<ExamplePluginOptions>| res.show_debug_options),
                 ResourceInspectorPlugin::<ChunkDebugConfig>::default().run_if(
                     resource_exists::<ChunkDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_chunks),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_chunks),
                 ),
                 ResourceInspectorPlugin::<HeightMapDebugConfig>::default().run_if(
                     resource_exists::<HeightMapDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_height_map),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_height_map),
                 ),
                 ResourceInspectorPlugin::<ScatterOccupancyMapDebugConfig>::default().run_if(
                     resource_exists::<ScatterOccupancyMapDebugConfig>
-                        .and(|res: Res<ExampleDebugOptions>| res.debug_occupancy_map),
+                        .and_then(|res: Res<ExampleDebugOptions>| res.debug_occupancy_map),
                 ),
             ))
             .add_systems(
@@ -220,7 +220,7 @@ fn spawn_directional_light(mut cmd: Commands) {
             // NOTE: Direct sunlight has over-exposure with the SkyBox ambient
             // FULL_DAYLIGHT seems a bit low but 30_000. seems fine.
             illuminance: 30_000.,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             color: Color::srgb(1.0, 0.98, 0.95),
             ..default()
         },
@@ -247,7 +247,7 @@ pub fn setup(
     .with_child(PointLight {
         radius: 3.0,
         color: Color::srgb(0.1, 0.1, 1.),
-        shadows_enabled: false,
+        shadow_maps_enabled: false,
         range: 20.,
         intensity: 500_000.,
         ..default()
@@ -271,7 +271,7 @@ pub fn setup_camera(mut cmd: Commands, asset_server: Res<AssetServer>, q_camera:
         Tonemapping::TonyMcMapface,
         Transform::from_xyz(-30., 20., 30.).looking_at(Vec3::ZERO, Vec3::Y),
         Skybox {
-            image: asset_server.load("skybox.ktx2"),
+            image: Some(asset_server.load("skybox.ktx2")),
             brightness: 10000.,
             ..default()
         },
@@ -303,7 +303,7 @@ fn anisotropic_filtering(
             continue;
         };
 
-        let Some(image) = image_assets.get_mut(*id) else {
+        let Some(mut image) = image_assets.get_mut(*id) else {
             continue;
         };
 

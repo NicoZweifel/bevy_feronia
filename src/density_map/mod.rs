@@ -29,7 +29,7 @@ impl<'a> Sampler for DensityMapSampler<'a> {
         let pixel_x = (uv_x * (self.image.width() - 1) as f32).round() as u32;
         let pixel_y = (uv_y * (self.image.height() - 1) as f32).round() as u32;
 
-        let Some(bytes) = self.image.pixel_bytes(UVec3::new(pixel_x, pixel_y, 0)) else {
+        let Ok(bytes) = self.image.pixel_bytes(UVec3::new(pixel_x, pixel_y, 0)) else {
             return 0.0;
         };
 

@@ -54,7 +54,7 @@ fn grass_count(query: Query<&InstanceMaterialData>, keys: Res<ButtonInput<KeyCod
 
 fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
     cmd.spawn((
-        SceneRoot(assets.load("landscape_flat_large.glb#Scene0")),
+        WorldAssetRoot(assets.load("landscape_flat_large.glb#Scene0")),
         ChunkRoot::default(),
         ChunkRootSizeDim(4),
         ScatterRoot::default(),
@@ -108,13 +108,13 @@ fn setup(mut cmd: Commands, assets: Res<AssetServer>) {
                 AmbientOcclusion,
             ),
             children![
-                SceneRoot(assets.load("grass.glb#Scene0")),
+                WorldAssetRoot(assets.load("grass.glb#Scene0")),
                 (
-                    SceneRoot(assets.load("grass_medium_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass_medium_lod.glb#Scene0")),
                     LevelOfDetail(1),
                 ),
                 (
-                    SceneRoot(assets.load("grass_low_lod.glb#Scene0")),
+                    WorldAssetRoot(assets.load("grass_low_lod.glb#Scene0")),
                     LevelOfDetail(2),
                 )
             ]
