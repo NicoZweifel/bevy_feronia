@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.4...v0.8.5) - 2026-08-20
+
+### Fixed
+
+- fix examples
+
+### Other
+
+- Merge branch 'dev' of https://github.com/NicoZweifel/bevy_feronia into dev
+- `DisablePrepass` component for instanced material ([#105](https://github.com/NicoZweifel/bevy_feronia/pull/105))
+
 ## [0.8.3](https://github.com/NicoZweifel/bevy_feronia/compare/v0.8.2...v0.8.3) - 2026-06-03
 
 ### Fixed
