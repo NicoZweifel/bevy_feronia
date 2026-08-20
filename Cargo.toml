@@ -115,10 +115,6 @@ trace = ["dep:tracing"]
 # Enables the "dlss" feature in the bevy crate. Used only in examples.
 dlss = ["bevy/dlss"]
 
-[patch.crates-io]
-bevy_eidolon = { git = "https://github.com/NicoZweifel/bevy_eidolon", branch = "bevy-0.19" }
-
-
 [[example]]
 name = "avian"
 required-features = ["avian"]
