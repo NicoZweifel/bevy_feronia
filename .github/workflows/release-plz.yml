@@ -16,7 +16,7 @@ jobs:
     steps:
       - &checkout
         name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 0
       - &rust-toolchain
@@ -26,11 +26,11 @@ jobs:
           toolchain: stable
       - &cache
         name: Rust Cache
-        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
         with:
           shared-key: "release-plz"
       - name: Run release-plz
-        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
+        uses: release-plz/action@064f4d1e36c843611ddf013be726beaa4ad804db
         with:
           command: release
         env:
@@ -51,7 +51,7 @@ jobs:
       - *rust-toolchain
       - *cache
       - name: Run release-plz
-        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
+        uses: release-plz/action@064f4d1e36c843611ddf013be726beaa4ad804db
         with:
             command: release-pr
         env:
